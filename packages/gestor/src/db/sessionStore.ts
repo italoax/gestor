@@ -2,7 +2,7 @@ import session from "express-session";
 import expressMySqlSession from "express-mysql-session";
 import { env } from "../config/env.js";
 
-const MySQLStore = expressMySqlSession(session as unknown as typeof import("express-session"));
+const MySQLStore = expressMySqlSession(session);
 
 // Guarda as sessões no MySQL em vez do MemoryStore padrão (que é volátil:
 // derruba todo mundo a cada restart/deploy e vaza memória em produção).

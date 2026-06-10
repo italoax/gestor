@@ -35,7 +35,6 @@
     "typescript": "latest"
   },
   "devDependencies": {
-    "@types/express-mysql-session": "^3.0.8",
     "tsx": "latest"
   }
 }
