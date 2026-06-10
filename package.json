@@ -11,10 +11,10 @@
   ],
   "scripts": {
     "sync:shared": "node scripts/sync-shared.mjs",
-    "dev:gestor": "npm run dev --workspace packages/gestor",
-    "dev:api": "npm run start --workspace packages/whatsapp-api",
-    "build:gestor": "npm run build --workspace packages/gestor",
-    "test:api": "npm run test --workspace packages/whatsapp-api",
+    "dev:gestor": "npm run sync:shared && npm run dev --workspace packages/gestor",
+    "dev:api": "npm run sync:shared && npm run start --workspace packages/whatsapp-api",
+    "build:gestor": "npm run sync:shared && npm run build --workspace packages/gestor",
+    "test:api": "npm run sync:shared && npm run test --workspace packages/whatsapp-api",
     "deploy:gestor": "npm run deploy --workspace packages/gestor",
     "deploy:api": "npm run deploy --workspace packages/whatsapp-api"
   }

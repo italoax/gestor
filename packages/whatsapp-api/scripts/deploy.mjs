@@ -40,6 +40,10 @@ function copy(src, dest = src) {
 
 try {
   console.log("🚀 Gerando pacote da API WhatsApp...\n");
+
+  console.log("🔄 Sincronizando pacote compartilhado (shared)...");
+  run("node", ["../../scripts/sync-shared.mjs"]);
+
   run("npm", ["test"]);
 
   if (fs.existsSync(archivePath)) fs.unlinkSync(archivePath);

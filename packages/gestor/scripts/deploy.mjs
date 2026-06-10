@@ -252,6 +252,9 @@ function writeZip(zipPath, entries) {
 function createDeploy() {
   console.log("🚀 Iniciando processo de deploy ZIP para Hostinger...\n");
 
+  console.log("🔄 Sincronizando pacote compartilhado (shared)...");
+  run("node", ["../../scripts/sync-shared.mjs"]);
+
   console.log("🔨 Gerando build TypeScript...");
   run("npm", ["run", "build"]);
 

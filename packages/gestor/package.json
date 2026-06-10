@@ -6,10 +6,7 @@
   "description": "Nova versão TypeScript/Node.js do painel gestor, mantendo o projeto PHP original intacto.",
   "main": "dist/server.js",
   "scripts": {
-    "sync:shared": "node ../../scripts/sync-shared.mjs",
-    "predev": "node ../../scripts/sync-shared.mjs",
     "dev": "tsx watch src/server.ts",
-    "prebuild": "node ../../scripts/sync-shared.mjs",
     "build": "tsc",
     "start": "node dist/server.js",
     "deploy": "node scripts/deploy.mjs"
