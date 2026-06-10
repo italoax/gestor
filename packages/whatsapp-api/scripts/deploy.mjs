@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const deployDir = path.join(projectRoot, ".deploy");
-const archiveName = "gestor-whatsapp-api-deploy.tar";
+const archiveName = "gestor-whatsapp-api-deploy.tar.gz";
 const archivePath = path.join(projectRoot, archiveName);
 
 function run(command, args, options = {}) {
@@ -60,7 +60,7 @@ try {
   console.log("🚀 Arquivo Procfile criado...");
 
   console.log(`\n📦 Criando arquivo: ${archiveName}...`);
-  run("tar", ["-cf", `../${archiveName}`, "."], { cwd: deployDir });
+  run("tar", ["-czf", `../${archiveName}`, "."], { cwd: deployDir });
 
   const size = fs.statSync(archivePath).size;
   console.log("✅ Arquivo criado com sucesso!");
