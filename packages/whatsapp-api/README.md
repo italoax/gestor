@@ -85,7 +85,7 @@ Rode:
 npm run deploy
 ```
 
-Suba o arquivo gestor-whatsapp-api-deploy.tar como uma segunda aplicacao Node.js.
+Suba o arquivo gestor-whatsapp-api-deploy.zip como uma segunda aplicacao Node.js.
 
 Variaveis na Hostinger:
 
