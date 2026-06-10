@@ -9,7 +9,7 @@ import {
   makeWASocket,
   useMultiFileAuthState,
 } from "@whiskeysockets/baileys";
-import { resolveSessionName, toJid } from "./utils.js";
+import { normalizeBrazilPhone, resolveSessionName, toJid } from "./utils.js";
 
 const logger = pino({ level: process.env.LOG_LEVEL || "silent" });
 
@@ -28,6 +28,7 @@ export class BaileysSessionManager {
       status: session.status,
       qr: session.qr,
       qrImage: session.qrImage,
+      pairingCode: session.pairingCode || "",
       lastError: session.lastError,
       connected: session.status === "conectado",
     };
@@ -68,6 +69,36 @@ export class BaileysSessionManager {
     return this.start(sessionName);
   }
 
+  // Conecta vinculando por CÓDIGO de 8 dígitos (sem QR Code), útil quando o
+  // usuário tem só um celular e não consegue escanear o QR na própria tela.
+  async startPairing(sessionName, phoneNumber) {
+    const number = normalizeBrazilPhone(phoneNumber, this.defaultCountry);
+    if (!number || number.length < 10) {
+      throw new Error("Informe um número de telefone válido com DDD (ex.: 11999998888).");
+    }
+    await this.stop(sessionName);
+    const session = this.getOrCreateState(sessionName);
+    session.usePairingCode = true;
+    session.pairingNumber = number;
+    session.pairingCode = "";
+    session.reconnectAttempts = 0;
+    session.status = "iniciando";
+    session.lastError = "";
+
+    session.starting = this.createSocket(session)
+      .catch((error) => {
+        session.status = "erro";
+        session.lastError = error instanceof Error ? error.message : String(error);
+        throw error;
+      })
+      .finally(() => {
+        session.starting = null;
+      });
+
+    await session.starting;
+    return this.getState(session.name);
+  }
+
   async stop(sessionName) {
     const session = this.getOrCreateState(sessionName);
     if (session.reconnectTimer) {
@@ -86,6 +117,9 @@ export class BaileysSessionManager {
     session.status = "desconectado";
     session.qr = "";
     session.qrImage = "";
+    session.usePairingCode = false;
+    session.pairingNumber = "";
+    session.pairingCode = "";
     return this.getState(session.name);
   }
 
@@ -138,6 +172,9 @@ export class BaileysSessionManager {
         lastError: "",
         reconnectTimer: null,
         reconnectAttempts: 0,
+        usePairingCode: false,
+        pairingNumber: "",
+        pairingCode: "",
       });
     }
     return this.sessions.get(name);
@@ -170,7 +207,8 @@ export class BaileysSessionManager {
     socket.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
-      if (qr) {
+      // No modo de pareamento por código, ignoramos o QR (mostramos só o código).
+      if (qr && !session.usePairingCode) {
         session.qr = qr;
         session.qrImage = await qrcode.toDataURL(qr);
         session.status = "qr";
@@ -182,6 +220,9 @@ export class BaileysSessionManager {
         session.qrImage = "";
         session.lastError = "";
         session.reconnectAttempts = 0;
+        session.usePairingCode = false;
+        session.pairingNumber = "";
+        session.pairingCode = "";
       }
 
       if (connection === "close") {
@@ -204,6 +245,19 @@ export class BaileysSessionManager {
         }
       }
     });
+
+    // Pareamento por código: se pedido e ainda não registrado, solicita o código
+    // de 8 dígitos para o número informado (sem QR).
+    if (session.usePairingCode && session.pairingNumber && !state.creds.registered) {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        const code = await socket.requestPairingCode(session.pairingNumber);
+        session.pairingCode = code;
+        session.status = "pairing";
+      } catch (error) {
+        session.lastError = errorMessage(error);
+      }
+    }
 
     return socket;
   }

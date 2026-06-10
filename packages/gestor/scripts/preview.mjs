@@ -123,7 +123,10 @@ app.get("/planos", requireUser, (_req, res) => res.render("pages/planos", { titl
 app.get("/servidores", requireUser, (_req, res) => res.render("pages/servidores", { title: "Servidores", servidores }));
 app.get("/mensagens", requireUser, (_req, res) => res.render("pages/mensagens", { title: "Mensagens", mensagens }));
 app.get("/minha-conta", requireUser, (req, res) => res.render("pages/minha-conta", { title: "Minha Conta", account: { ...req.session.user } }));
-app.get("/whatsapp", requireUser, (_req, res) => res.render("pages/whatsapp", { title: "WhatsApp", state: { session: "default", status: "desconectado", connected: false, lastError: "" }, driver: "session-api", sessionApi: true }));
+app.get("/whatsapp", requireUser, (req, res) => {
+  const pair = req.query.pair ? { status: "pairing", pairingCode: "ABCD-1234" } : {};
+  res.render("pages/whatsapp", { title: "WhatsApp", state: { session: "default", status: "desconectado", connected: false, lastError: "", ...pair }, driver: "session-api", sessionApi: true });
+});
 
 app.use((err, _req, res, _next) => { console.error("PREVIEW ERROR:", err.message); res.status(500).send(`<pre>${err.stack}</pre>`); });
 

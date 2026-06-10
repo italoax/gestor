@@ -9,6 +9,7 @@ type WhatsappState = {
   status: string;
   qrCode?: string;
   qr?: string;
+  pairingCode?: string;
   lastError?: string;
   connected?: boolean;
   debug?: Record<string, unknown>;
@@ -85,20 +86,25 @@ function normalizeSessionState(data: unknown): WhatsappState {
   const qrValue = json.qrImage ?? json.qrCode ?? json.qrcode ?? json.qr ?? json.base64 ?? json.image ?? json.data;
   const qrText = typeof qrValue === "string" ? qrValue : "";
   const qrCode = qrText ? (qrText.startsWith("data:image") ? qrText : qrText.startsWith("/9j") || qrText.startsWith("iVBOR") ? `data:image/png;base64,${qrText}` : qrText) : undefined;
-  const hasUsableQr = Boolean(qrCode);
+  const pairingValue = json.pairingCode ?? json.pairing_code ?? json.code;
+  const pairingCode = typeof pairingValue === "string" && pairingValue.trim() ? pairingValue.trim() : undefined;
+  const connected = Boolean(json.connected || status === "conectado");
+  const hasUsableQr = Boolean(qrCode) && !pairingCode;
+  const hasPairing = Boolean(pairingCode) && !connected;
   return {
     session: String(json.session ?? defaultSession()),
-    // Algumas APIs Baileys retornam status "erro" e lastError mesmo já trazendo qrImage.
-    // Se há QR válido, a tela deve mostrar somente o QR aguardando leitura.
-    status: hasUsableQr && status !== "conectado" ? "qr" : status,
-    qrCode,
+    // Se há código de pareamento, a tela mostra só o código (sem QR).
+    // Se há QR válido, mostra só o QR aguardando leitura.
+    status: hasPairing ? "pairing" : hasUsableQr && status !== "conectado" ? "qr" : status,
+    qrCode: hasPairing ? undefined : qrCode,
     qr: typeof json.qr === "string" ? json.qr : undefined,
-    lastError: hasUsableQr && status !== "conectado" ? undefined : traduzirErroWhatsapp(json.lastError ?? json.error),
-    connected: Boolean(json.connected || status === "conectado"),
+    pairingCode: hasPairing ? pairingCode : undefined,
+    lastError: hasPairing || (hasUsableQr && status !== "conectado") ? undefined : traduzirErroWhatsapp(json.lastError ?? json.error),
+    connected,
   };
 }
 
-async function requestSessionApi(pathTemplate: string, method: "GET" | "POST"): Promise<WhatsappState> {
+async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", body?: Record<string, unknown>): Promise<WhatsappState> {
   const url = sessionApiUrl(pathTemplate);
   const debug = {
     pathTemplate,
@@ -117,7 +123,8 @@ async function requestSessionApi(pathTemplate: string, method: "GET" | "POST"): 
   try {
     const response = await fetch(url, {
       method,
-      headers: sessionApiHeaders(),
+      headers: body ? { "Content-Type": "application/json", ...sessionApiHeaders() } : sessionApiHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
     });
     const text = await response.text();
     let data: unknown = text;
@@ -149,7 +156,7 @@ async function requestSessionApi(pathTemplate: string, method: "GET" | "POST"): 
 
 async function getSessionApiStateWithQr() {
   const state = await requestSessionApi(env.whatsapp.sessionStatusPath, "GET");
-  if (state.connected || state.qrCode) return state;
+  if (state.connected || state.qrCode || state.pairingCode) return state;
 
   // Mesmo se o status falhar com 404/erro, tenta buscar o QR em endpoint separado.
   // Isso evita bloquear a tela quando a API já tem qrImage em /session/qr/{session}.
@@ -177,12 +184,13 @@ async function getWhatsappState() {
 
 function hideQrUntilRequested(state: WhatsappState, showQr: boolean): WhatsappState {
   if (showQr || state.connected || state.status === "conectado") return state;
-  if (!state.qrCode && state.status !== "qr") return state;
+  if (!state.qrCode && !state.pairingCode && state.status !== "qr" && state.status !== "pairing") return state;
   return {
     ...state,
     status: "desconectado",
     qrCode: undefined,
     qr: undefined,
+    pairingCode: undefined,
     lastError: undefined,
   };
 }
@@ -211,6 +219,21 @@ whatsappRouter.post("/whatsapp", async (req, res) => {
       } else if (action === "stop") {
         req.session.whatsappShowQr = false;
         await requestSessionApi(env.whatsapp.sessionRestartPath, "POST");
+      } else if (action === "pair") {
+        const phone = String(req.body.phone_number ?? req.body.phone ?? "").trim();
+        if (!phone) {
+          req.flash("error", "Informe o número com DDD para gerar o código de pareamento.");
+        } else {
+          req.session.whatsappShowQr = true;
+          const state = await requestSessionApi(env.whatsapp.sessionPairPath, "POST", { number: phone });
+          if (state.pairingCode) {
+            req.flash("success", `Código gerado: ${state.pairingCode}. No celular, abra WhatsApp › Aparelhos conectados › Conectar com número de telefone e digite o código.`);
+          } else if (state.lastError) {
+            req.flash("error", state.lastError);
+          } else {
+            req.flash("success", "Gerando o código de pareamento. Aguarde a tela atualizar.");
+          }
+        }
       }
     } else if (env.whatsapp.driver !== "wppconnect") {
       req.flash("info", "Driver de WhatsApp atual: " + env.whatsapp.driver);

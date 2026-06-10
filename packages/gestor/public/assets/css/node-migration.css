@@ -1368,3 +1368,48 @@
 .page-app .dashboard-panel-head strong {
   font-size: 19px;
 }
+
+/* Conectar WhatsApp por código de pareamento (sem QR) */
+.whatsapp-pair-form {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .03);
+}
+.whatsapp-pair-form .pair-title {
+  font-weight: 700;
+  color: #e6edf6;
+}
+.whatsapp-pair-form .pair-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.whatsapp-pair-form .pair-row .input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.qr-placeholder.pairing {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+.qr-placeholder.pairing > span {
+  font-size: 30px;
+}
+.pairing-code {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: clamp(20px, 7vw, 30px);
+  font-weight: 800;
+  letter-spacing: 4px;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(90, 161, 255, .16);
+  border: 1px solid rgba(90, 161, 255, .4);
+  border-radius: 12px;
+  padding: 12px 16px;
+}

@@ -33,6 +33,7 @@ export const env = {
     sessionQrPath: process.env.WA_SESSION_QR_PATH ?? "/session/qr/{session}",
     sessionStartPath: process.env.WA_SESSION_START_PATH ?? "/session/start/{session}",
     sessionRestartPath: process.env.WA_SESSION_RESTART_PATH ?? "/session/restart/{session}",
+    sessionPairPath: process.env.WA_SESSION_PAIR_PATH ?? "/session/pair/{session}",
     wppconnectSession: process.env.WA_WPPCONNECT_SESSION ?? process.env.WA_SESSION_NAME_DEFAULT ?? "default",
     wppconnectAutoStart: ["1", "true", "yes", "sim"].includes(String(process.env.WA_WPPCONNECT_AUTO_START ?? "false").toLowerCase()),
     wppconnectHeadless: process.env.WA_WPPCONNECT_HEADLESS === "false" ? false : true,

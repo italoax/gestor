@@ -93,6 +93,18 @@
           </button>
         </form>
 
+        <% if (sessionApi && state.status !== 'conectado') { %>
+        <form method="post" action="/whatsapp" class="whatsapp-pair-form">
+          <input type="hidden" name="action" value="pair">
+          <span class="pair-title">Conectar sem QR (só com um celular)</span>
+          <div class="pair-row">
+            <input class="input" type="tel" name="phone_number" inputmode="numeric" autocomplete="off" placeholder="DDD + número (ex.: 11999998888)" required>
+            <button class="btn btn-blue" type="submit">Gerar código</button>
+          </div>
+          <small class="muted">O WhatsApp gera um código de 8 dígitos para digitar em <strong>Aparelhos conectados › Conectar com número de telefone</strong>. Ideal quando você não consegue escanear o QR.</small>
+        </form>
+        <% } %>
+
         <div class="whatsapp-help-card">
           <strong>Como conectar</strong>
           <ol>
@@ -120,7 +132,14 @@
       </div>
 
       <div class="qr-box <%= state.qrCode ? 'has-qr' : '' %>" data-whatsapp-status-box>
-        <% if (state.qrCode) { %>
+        <% if (state.pairingCode) { %>
+          <div class="qr-placeholder pairing">
+            <span>🔑</span>
+            <strong>Código de pareamento</strong>
+            <div class="pairing-code"><%= state.pairingCode %></div>
+            <small>No celular: WhatsApp › Aparelhos conectados › Conectar com número de telefone › digite este código.</small>
+          </div>
+        <% } else if (state.qrCode) { %>
           <span class="qr-state-pill">QR ativo</span>
           <div class="qr-frame">
             <img class="qr-image" src="<%= state.qrCode %>" alt="QR Code WhatsApp">
@@ -178,6 +197,7 @@
       if (status === 'conectado') return 'badge-green';
       if (status === 'erro') return 'badge-red';
       if (status === 'qr') return 'badge-yellow';
+      if (status === 'pairing') return 'badge-blue';
       if (status === 'iniciando') return 'badge-blue';
       return 'badge-muted';
     };
@@ -198,6 +218,15 @@
           title: 'Sessão conectada',
           text: 'A sessão está ativa. Cobranças e mensagens automáticas já podem ser enviadas por este número.',
           button: ''
+        };
+      }
+      if (status === 'pairing') {
+        return {
+          symbol: '•',
+          orbClass: 'waiting',
+          title: 'Código de pareamento gerado',
+          text: 'Digite o código no WhatsApp do número informado: Aparelhos conectados › Conectar com número de telefone.',
+          button: 'Código gerado'
         };
       }
       if (status === 'qr' || hasQr) {
@@ -237,6 +266,11 @@
     };
 
     const renderQrBox = function (state, status) {
+      if (state.pairingCode) {
+        box.classList.remove('has-qr');
+        box.innerHTML = '\n  <div class="qr-placeholder pairing">\n    <span>🔑</span>\n    <strong>Código de pareamento</strong>\n    <div class="pairing-code">' + state.pairingCode + '</div>\n    <small>No celular: WhatsApp › Aparelhos conectados › Conectar com número de telefone › digite este código.</small>\n  </div>\n  ';
+        return;
+      }
       if (state.qrCode) {
         box.classList.add('has-qr');
         box.innerHTML = '\n  <span class="qr-state-pill">QR ativo</span>\n  <div class="qr-frame">\n    <img class="qr-image" src="' + state.qrCode + '" alt="QR Code WhatsApp">\n  </div>\n  <p class="muted">\n    Abra o WhatsApp no celular, vá em Aparelhos conectados e leia o QR Code.\n  </p>\n  ';
@@ -279,7 +313,7 @@
       if (startButton) {
         startButton.textContent = copy.button;
         startButton.classList.toggle('is-hidden', status === 'conectado');
-        startButton.disabled = status === 'iniciando' || hasQr || status === 'conectado';
+        startButton.disabled = status === 'iniciando' || hasQr || status === 'conectado' || status === 'pairing';
         startButton.setAttribute('aria-disabled', startButton.disabled ? 'true' : 'false');
       }
       if (restartButton) {

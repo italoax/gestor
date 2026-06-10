@@ -39,6 +39,18 @@ export function createApp({ manager, apiToken }) {
     }
   });
 
+  // Vincula por CÓDIGO de 8 dígitos (sem QR). Recebe o número de telefone.
+  app.post("/session/pair/:session", async (req, res) => {
+    try {
+      const number = req.body.number || req.body.phone || req.body.telefone || req.body.phoneNumber;
+      if (!number) return res.status(400).json({ ok: false, error: "Informe o número de telefone com DDD." });
+      const state = await manager.startPairing(req.params.session, number);
+      res.json({ ok: true, ...state });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: errorMessage(error) });
+    }
+  });
+
   app.post("/api/messages/send", async (req, res) => {
     try {
       const session = req.body.session || req.body.sessao || req.body.sessionName;
