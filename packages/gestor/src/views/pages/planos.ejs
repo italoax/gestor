@@ -1,0 +1,219 @@
+<div class="container page-planos" data-search-scope>
+  <div class="section-header toolbar">
+    <div>
+      <h2 class="section-title">
+        Planos
+      </h2>
+      <p class="muted">
+        Planos de assinatura.
+      </p>
+    </div>
+    <button class="btn btn-primary" type="button" data-open-modal="modal-add-plano">
+      Adicionar plano
+    </button>
+  </div>
+  <div class="card filters filter-card">
+    <div class="filter-head">
+      <div>
+        <span class="filter-kicker">
+          Filtros
+        </span>
+        <strong>
+          Localizar planos
+        </strong>
+      </div>
+      <button class="btn btn-muted filter-clear" type="button" data-clear-filters>
+        Limpar
+      </button>
+    </div>
+    <div class="filter-grid">
+      <label class="filter-field">
+        <span>
+          Tipo
+        </span>
+        <select class="input" data-filter-select>
+          <option value="">
+            Todos
+          </option>
+          <option>
+            Mês
+          </option>
+          <option>
+            Mensal
+          </option>
+          <option>
+            Dia
+          </option>
+          <option>
+            Anual
+          </option>
+        </select>
+      </label>
+      <label class="filter-field filter-search">
+        <span>
+          Pesquisar
+        </span>
+        <div class="search-control">
+          <span>
+            ⌕
+          </span>
+          <input class="input" type="search" data-search-input placeholder="Nome, tipo, observação">
+        </div>
+      </label>
+    </div>
+  </div>
+  <div class="card table-card data-table-card">
+    <div class="table-card-head">
+      <div>
+        <span class="filter-kicker">
+          Tabela
+        </span>
+        <strong>
+          Planos cadastrados
+        </strong>
+        <small>
+          Planos, períodos e observações.
+        </small>
+      </div>
+      <span class="table-count">
+        <%= planos.length %>
+      </span>
+    </div>
+    <div class="table-wrapper">
+      <table class="table table-modern">
+        <thead>
+          <tr>
+            <th>
+              Nome
+            </th>
+            <th>
+              Tipo
+            </th>
+            <th>
+              Período
+            </th>
+            <th>
+              Clientes
+            </th>
+            <th>
+              Observação
+            </th>
+            <th>
+              Ações
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!planos.length) { %>
+            <tr class="table-empty-row">
+              <td colspan="6">
+                <div class="table-empty">
+                  Nenhum plano encontrado.
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          <% planos.forEach(p => { %>
+            <tr data-search-item>
+              <td>
+                <strong>
+                  <%= p.nome %>
+                </strong>
+              </td>
+              <td>
+                <%= p.tipo %>
+              </td>
+              <td>
+                <%= p.periodo %>
+              </td>
+              <td>
+                <%= p.clientes || 0 %>
+              </td>
+              <td>
+                <%= p.observacao || '-' %>
+              </td>
+              <td class="table-actions">
+                <button class="btn btn-sm btn-warning edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>">
+                  Editar
+                </button>
+                <form method="post" class="action-form delete-plano">
+                  <input type="hidden" name="action" value="delete_plano">
+                  <input type="hidden" name="id" value="<%= p.id %>">
+                  <button class="btn btn-sm btn-danger">
+                    Apagar
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-add-plano" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>
+        Adicionar Plano
+      </h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
+        ×
+      </button>
+    </div>
+    <form method="post" action="/planos" id="modal-add-plano-form" class="modal-body">
+      <input type="hidden" name="action" value="create_plano">
+      <input type="hidden" name="id" value="">
+      <div class="form-grid">
+        <label class="field">
+          <span>
+            Nome
+          </span>
+          <div class="input-icon">
+            <span class="icon-box">
+              👤
+            </span>
+            <input class="input" name="nome" placeholder="Digite o nome do plano" required>
+          </div>
+        </label>
+        <label class="field">
+          <span>
+            Tipo de período
+          </span>
+          <div class="input-icon">
+            <span class="icon-box">
+              ↻
+            </span>
+            <input class="input" name="tipo" value="Mês">
+          </div>
+        </label>
+        <label class="field">
+          <span>
+            Período
+          </span>
+          <div class="input-icon">
+            <span class="icon-box">
+              #
+            </span>
+            <input class="input" type="number" name="periodo" value="1">
+          </div>
+        </label>
+        <label class="field full">
+          <span>
+            Observação
+          </span>
+          <textarea class="input" name="observacao">
+          </textarea>
+        </label>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>
+        Fechar
+      </button>
+      <button class="btn btn-blue" type="submit" form="modal-add-plano-form">
+        Salvar
+      </button>
+    </div>
+  </div>
+</div>

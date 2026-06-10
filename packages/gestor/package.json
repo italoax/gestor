@@ -1,0 +1,44 @@
+{
+  "name": "gestor-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Nova versão TypeScript/Node.js do painel gestor, mantendo o projeto PHP original intacto.",
+  "main": "dist/server.js",
+  "scripts": {
+    "sync:shared": "node ../../scripts/sync-shared.mjs",
+    "predev": "node ../../scripts/sync-shared.mjs",
+    "dev": "tsx watch src/server.ts",
+    "prebuild": "node ../../scripts/sync-shared.mjs",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "dependencies": {
+    "@types/bcryptjs": "latest",
+    "@types/connect-flash": "latest",
+    "@types/ejs": "latest",
+    "@types/express": "latest",
+    "@types/express-ejs-layouts": "latest",
+    "@types/express-session": "latest",
+    "@types/morgan": "latest",
+    "@types/node": "latest",
+    "bcryptjs": "latest",
+    "connect-flash": "latest",
+    "decimal.js": "^10.6.0",
+    "dotenv": "latest",
+    "ejs": "latest",
+    "express": "latest",
+    "express-ejs-layouts": "latest",
+    "express-mysql-session": "^3.0.3",
+    "express-session": "latest",
+    "helmet": "latest",
+    "morgan": "latest",
+    "mysql2": "^3.22.3",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@types/express-mysql-session": "^3.0.8",
+    "tsx": "latest"
+  }
+}

@@ -1,0 +1,258 @@
+import fs from "node:fs";
+import path from "node:path";
+import qrcode from "qrcode";
+import mime from "mime-types";
+import pino from "pino";
+import {
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  makeWASocket,
+  useMultiFileAuthState,
+} from "@whiskeysockets/baileys";
+import { resolveSessionName, toJid } from "./utils.js";
+
+const logger = pino({ level: process.env.LOG_LEVEL || "silent" });
+
+export class BaileysSessionManager {
+  constructor(options = {}) {
+    this.sessionsDir = options.sessionsDir || path.resolve(process.cwd(), "sessions");
+    this.defaultCountry = options.defaultCountry || "55";
+    this.defaultSession = options.defaultSession || "default";
+    this.sessions = new Map();
+  }
+
+  getState(sessionName) {
+    const session = this.getOrCreateState(sessionName);
+    return {
+      session: session.name,
+      status: session.status,
+      qr: session.qr,
+      qrImage: session.qrImage,
+      lastError: session.lastError,
+      connected: session.status === "conectado",
+    };
+  }
+
+  async start(sessionName) {
+    const session = this.getOrCreateState(sessionName);
+    if (session.socket && session.status === "conectado") return this.getState(session.name);
+    if (session.starting) {
+      await session.starting;
+      return this.getState(session.name);
+    }
+
+    if (session.reconnectTimer) {
+      clearTimeout(session.reconnectTimer);
+      session.reconnectTimer = null;
+    }
+    session.reconnectAttempts = 0;
+    session.status = "iniciando";
+    session.lastError = "";
+
+    session.starting = this.createSocket(session)
+      .catch((error) => {
+        session.status = "erro";
+        session.lastError = error instanceof Error ? error.message : String(error);
+        throw error;
+      })
+      .finally(() => {
+        session.starting = null;
+      });
+
+    await session.starting;
+    return this.getState(session.name);
+  }
+
+  async restart(sessionName) {
+    await this.stop(sessionName);
+    return this.start(sessionName);
+  }
+
+  async stop(sessionName) {
+    const session = this.getOrCreateState(sessionName);
+    if (session.reconnectTimer) {
+      clearTimeout(session.reconnectTimer);
+      session.reconnectTimer = null;
+    }
+    session.reconnectAttempts = 0;
+    try {
+      session.socket?.end?.(undefined);
+      session.socket?.ws?.close?.();
+    } catch {
+      // Ignora erros ao encerrar conexão antiga.
+    }
+    session.socket = null;
+    session.starting = null;
+    session.status = "desconectado";
+    session.qr = "";
+    session.qrImage = "";
+    return this.getState(session.name);
+  }
+
+  async sendText(sessionName, number, body) {
+    const socket = await this.requireConnectedSocket(sessionName);
+    const jid = await this.resolveJid(socket, number);
+    const response = await socket.sendMessage(jid, { text: String(body || "") });
+    return { ok: true, response, messageId: response?.key?.id || "" };
+  }
+
+  async sendMedia(sessionName, number, mediaUrl, caption = "", kind = "image") {
+    const socket = await this.requireConnectedSocket(sessionName);
+    const { buffer, contentType } = await downloadBuffer(mediaUrl);
+    const mimetype = contentType || mime.lookup(String(mediaUrl).split("?")[0]) || "application/octet-stream";
+    const jid = await this.resolveJid(socket, number);
+    const payload = buildMediaPayload(kind, buffer, mimetype, caption);
+    const response = await socket.sendMessage(jid, payload);
+    return { ok: true, response, messageId: response?.key?.id || "" };
+  }
+
+  // Confirma que o número tem WhatsApp e devolve o JID canônico retornado pelo
+  // próprio WhatsApp (resolve, por ex., o 9º dígito de números brasileiros antigos).
+  async resolveJid(socket, number) {
+    const jid = toJid(number, this.defaultCountry);
+    if (jid.endsWith("@g.us")) return jid; // grupos não passam por onWhatsApp
+    try {
+      const results = await socket.onWhatsApp(jid);
+      const hit = Array.isArray(results) ? results.find((item) => item?.exists) : null;
+      if (hit?.jid) return hit.jid;
+      if (Array.isArray(results) && results.length > 0) {
+        throw new Error(`Número sem WhatsApp: ${number}`);
+      }
+    } catch (error) {
+      // Se a checagem em si falhar (rede/sessão), segue com o JID montado.
+      if (error instanceof Error && error.message.startsWith("Número sem WhatsApp")) throw error;
+    }
+    return jid;
+  }
+
+  getOrCreateState(sessionName) {
+    const name = resolveSessionName(sessionName, this.defaultSession);
+    if (!this.sessions.has(name)) {
+      this.sessions.set(name, {
+        name,
+        socket: null,
+        starting: null,
+        status: "desconectado",
+        qr: "",
+        qrImage: "",
+        lastError: "",
+        reconnectTimer: null,
+        reconnectAttempts: 0,
+      });
+    }
+    return this.sessions.get(name);
+  }
+
+  async requireConnectedSocket(sessionName) {
+    const session = this.getOrCreateState(sessionName);
+    if (!session.socket || session.status !== "conectado") {
+      throw new Error("WhatsApp não conectado. Gere o QR Code, leia no celular e tente novamente.");
+    }
+    return session.socket;
+  }
+
+  async createSocket(session) {
+    fs.mkdirSync(this.sessionsDir, { recursive: true });
+    const sessionDir = path.join(this.sessionsDir, session.name);
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const { version } = await fetchLatestBaileysVersion();
+
+    const socket = makeWASocket({
+      version,
+      auth: state,
+      printQRInTerminal: false,
+      browser: ["Gestor WhatsApp API", "Chrome", "1.0.0"],
+      logger,
+    });
+
+    session.socket = socket;
+    socket.ev.on("creds.update", saveCreds);
+    socket.ev.on("connection.update", async (update) => {
+      const { connection, lastDisconnect, qr } = update;
+
+      if (qr) {
+        session.qr = qr;
+        session.qrImage = await qrcode.toDataURL(qr);
+        session.status = "qr";
+      }
+
+      if (connection === "open") {
+        session.status = "conectado";
+        session.qr = "";
+        session.qrImage = "";
+        session.lastError = "";
+        session.reconnectAttempts = 0;
+      }
+
+      if (connection === "close") {
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const loggedOut = statusCode === DisconnectReason.loggedOut;
+        session.socket = null;
+        session.lastError = lastDisconnect?.error?.message || "Conexão fechada.";
+
+        if (loggedOut) {
+          // Sessão encerrada no celular: credenciais salvas ficam inválidas.
+          // Apaga a pasta para o próximo start gerar um QR Code novo.
+          session.status = "desconectado";
+          session.qr = "";
+          session.qrImage = "";
+          this.clearCredentials(session);
+        } else {
+          // Quedas transitórias (515 restart, 428, 408...): reconecta sozinho.
+          session.status = "reconectando";
+          this.scheduleReconnect(session);
+        }
+      }
+    });
+
+    return socket;
+  }
+
+  // Reconecta com backoff exponencial (2s, 4s, 8s... até 30s), sem dar overlap
+  // com um start manual nem com outro reconnect em andamento.
+  scheduleReconnect(session) {
+    if (session.reconnectTimer || session.starting) return;
+    const attempt = (session.reconnectAttempts || 0) + 1;
+    session.reconnectAttempts = attempt;
+    const delay = Math.min(30_000, 2_000 * 2 ** (attempt - 1));
+    session.reconnectTimer = setTimeout(() => {
+      session.reconnectTimer = null;
+      if (session.starting || (session.socket && session.status === "conectado")) return;
+      session.starting = this.createSocket(session)
+        .catch((error) => {
+          session.status = "erro";
+          session.lastError = error instanceof Error ? error.message : String(error);
+          this.scheduleReconnect(session);
+        })
+        .finally(() => {
+          session.starting = null;
+        });
+    }, delay);
+  }
+
+  clearCredentials(session) {
+    try {
+      fs.rmSync(path.join(this.sessionsDir, session.name), { recursive: true, force: true });
+    } catch {
+      // Ignora se a pasta não existir ou estiver em uso.
+    }
+  }
+}
+
+export async function downloadBuffer(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Falha ao baixar mídia: HTTP ${response.status}`);
+  const arrayBuffer = await response.arrayBuffer();
+  return {
+    buffer: Buffer.from(arrayBuffer),
+    contentType: response.headers.get("content-type") || "",
+  };
+}
+
+export function buildMediaPayload(kind, buffer, mimetype, caption = "") {
+  const normalized = String(kind || "image").toLowerCase();
+  if (normalized === "audio") return { audio: buffer, mimetype, ptt: true };
+  if (normalized === "video") return { video: buffer, mimetype, caption };
+  if (normalized === "document") return { document: buffer, mimetype, fileName: "arquivo", caption };
+  return { image: buffer, mimetype, caption };
+}

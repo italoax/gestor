@@ -1,0 +1,274 @@
+<div class="container dashboard-page">
+  <div class="dashboard-hero">
+    <div>
+      <span class="dashboard-kicker">
+        Resumo geral
+      </span>
+      <h2 class="section-title">
+        Dashboard
+      </h2>
+      <p>
+        Acompanhamento automático baseado nos clientes cadastrados.
+      </p>
+    </div>
+    <a class="btn btn-primary" href="/clientes">
+      Gerenciar clientes
+    </a>
+  </div>
+  <div class="dashboard-stats">
+    <div class="dash-stat-card accent-blue">
+      <div class="dash-stat-icon">
+        👥
+      </div>
+      <div>
+        <span>
+          Clientes
+        </span>
+        <strong>
+          <%= stats.clientesTotal %>
+        </strong>
+        <small>
+          <%= stats.ativos %>
+          ativos •
+          <%= ativosPercent %>
+          % da base
+        </small>
+      </div>
+    </div>
+    <div class="dash-stat-card accent-green">
+      <div class="dash-stat-icon">
+        ✅
+      </div>
+      <div>
+        <span>
+          Receita prevista
+        </span>
+        <strong>
+          <%= formatMoney(stats.receitaPrevista) %>
+        </strong>
+        <small>
+          Soma dos valores dos clientes
+        </small>
+      </div>
+    </div>
+    <div class="dash-stat-card accent-red">
+      <div class="dash-stat-icon">
+        ⚠️
+      </div>
+      <div>
+        <span>
+          Vencidos
+        </span>
+        <strong>
+          <%= stats.vencidos %>
+        </strong>
+        <small>
+          <%= vencidosPercent %>
+          % da carteira
+        </small>
+      </div>
+    </div>
+  </div>
+  <div class="dashboard-grid mt-4">
+    <section class="dashboard-panel">
+      <div class="dashboard-panel-head">
+        <div>
+          <span>
+            Vencimentos
+          </span>
+          <strong>
+            Próximos clientes
+          </strong>
+        </div>
+        <em>
+          <%= stats.vencemHoje %>
+          hoje •
+          <%= stats.vencem7 %>
+          em 7 dias
+        </em>
+      </div>
+      <% if (proximos.length) { %>
+        <div class="dash-list">
+          <% proximos.forEach(c => { %>
+            <a class="dash-client-row" href="/clientes">
+              <div>
+                <strong>
+                  <%= c.nome %>
+                </strong>
+                <small>
+                  <%= c.plano || 'Sem plano' %>
+                  •
+                  <%= formatMoney(c.valor) %>
+                </small>
+              </div>
+              <span class="dash-pill <%= Number(c.dias) <= 1 ? 'today' : '' %>">
+                <%= Number(c.dias) === 0 ? 'Hoje' : Number(c.dias) === 1 ? 'Vence amanhã' : 'em ' + c.dias + ' dias' %>
+              </span>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="dash-empty">
+          Nenhum vencimento futuro encontrado.
+        </div>
+      <% } %>
+    </section>
+    <section class="dashboard-panel">
+      <div class="dashboard-panel-head">
+        <div>
+          <span>
+            Financeiro
+          </span>
+          <strong>
+            Mês atual
+          </strong>
+        </div>
+        <em>
+          <%= lucroPercent %>
+          % lucro
+        </em>
+      </div>
+      <div class="finance-stack">
+        <div class="finance-row">
+          <span>
+            Faturamento recebido
+          </span>
+          <strong>
+            <%= formatMoney(stats.faturamentoMes) %>
+          </strong>
+        </div>
+        <div class="finance-row">
+          <span>
+            Custo registrado
+          </span>
+          <strong>
+            <%= formatMoney(stats.custoMes) %>
+          </strong>
+        </div>
+        <div class="finance-row total">
+          <span>
+            Lucro estimado
+          </span>
+          <strong>
+            <%= formatMoney(stats.lucroMes) %>
+          </strong>
+        </div>
+      </div>
+    </section>
+    <section class="dashboard-panel">
+      <div class="dashboard-panel-head">
+        <div>
+          <span>
+            Atenção
+          </span>
+          <strong>
+            Clientes vencidos
+          </strong>
+        </div>
+        <em>
+          <%= stats.vencidos %>
+          pendente(s)
+        </em>
+      </div>
+      <% if (atrasados.length) { %>
+        <div class="dash-list">
+          <% atrasados.forEach(c => { %>
+            <a class="dash-client-row danger" href="/clientes">
+              <div>
+                <strong>
+                  <%= c.nome %>
+                </strong>
+                <small>
+                  <%= c.plano || 'Sem plano' %>
+                  •
+                  <%= formatMoney(c.valor) %>
+                </small>
+              </div>
+              <span class="dash-pill overdue">
+                <%= Math.abs(Number(c.dias)) %>
+                dia(s)
+              </span>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="dash-empty success">
+          Nenhum cliente vencido.
+        </div>
+      <% } %>
+    </section>
+  </div>
+  <div class="dashboard-grid secondary mt-4">
+    <section class="dashboard-panel span-2">
+      <div class="dashboard-panel-head">
+        <div>
+          <span>
+            Servidores
+          </span>
+          <strong>
+            Distribuição por clientes
+          </strong>
+        </div>
+        <em>
+          Baseado em clientes
+        </em>
+      </div>
+      <% if (porServidor.length) { %>
+        <div class="server-bars">
+          <% porServidor.forEach(s => { %>
+            <div class="server-bar-row">
+              <div class="server-bar-label">
+                <strong>
+                  <%= s.servidor %>
+                </strong>
+                <span>
+                  <%= s.total %>
+                  cliente(s) •
+                  <%= formatMoney(s.valor) %>
+                </span>
+              </div>
+              <div class="server-bar">
+                <i style="<%= `width:${s.percent}%` %>">
+                </i>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="dash-empty">
+          Cadastre clientes para gerar este resumo.
+        </div>
+      <% } %>
+    </section>
+    <section class="dashboard-panel quick-actions">
+      <div class="dashboard-panel-head">
+        <div>
+          <span>
+            Ações rápidas
+          </span>
+          <strong>
+            Atalhos
+          </strong>
+        </div>
+      </div>
+      <a class="quick-action" href="/clientes">
+        Adicionar ou editar clientes
+        <span>
+          →
+        </span>
+      </a>
+      <a class="quick-action" href="/mensagens">
+        Mensagens salvas
+        <span>
+          →
+        </span>
+      </a>
+      <a class="quick-action" href="/cobrancas">
+        Ver cobranças
+        <span>
+          →
+        </span>
+      </a>
+    </section>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || 'Gestor' %></title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/node-migration.css?v=cobrancas-table-1" />
+</head>
+<body class="<%= user ? 'page-app' : 'login-page' %>">
+<div class="app">
+  <% if (user) { %>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="brand"><div class="avatar"><%= user.name.substring(0,2).toUpperCase() %></div><div class="brand-text"><div class="brand-name"><%= user.name %></div><div class="brand-role">@<%= user.username %></div></div></div>
+      <nav class="nav" data-nav>
+        <a class="nav-link <%= currentPath === '/dashboard' ? 'active' : '' %>" href="/dashboard">Dashboard</a>
+        <a class="nav-link <%= currentPath === '/clientes' ? 'active' : '' %>" href="/clientes">Clientes</a>
+        <a class="nav-link <%= currentPath === '/cobrancas' ? 'active' : '' %>" href="/cobrancas">Cobranças</a>
+        <a class="nav-link <%= currentPath === '/mensagens' ? 'active' : '' %>" href="/mensagens">Mensagens</a>
+        <a class="nav-link <%= currentPath === '/planos' ? 'active' : '' %>" href="/planos">Planos</a>
+        <a class="nav-link <%= currentPath === '/servidores' ? 'active' : '' %>" href="/servidores">Servidores</a>
+        <a class="nav-link <%= currentPath === '/whatsapp' ? 'active' : '' %>" href="/whatsapp">WhatsApp</a>
+        <a class="nav-link <%= currentPath === '/minha-conta' ? 'active' : '' %>" href="/minha-conta">Minha conta</a>
+        <form method="post" action="/logout" class="action-form"><button class="nav-link" type="submit">Sair</button></form>
+      </nav>
+      <button class="hamburger" data-hamburger><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <% } %>
+  <% if (user) { %>
+  <main class="main-content">
+    <div class="container">
+      <% if (success && success.length) { %><div class="form-alert success"><%= success[0] %></div><% } %>
+      <% if (error && error.length) { %><div class="form-alert error"><%= error[0] %></div><% } %>
+    </div>
+    <%- body %>
+  </main>
+  <footer class="footer"><div class="container">Gestor Node - migração TypeScript</div></footer>
+  <% } else { %>
+    <%- body %>
+  <% } %>
+</div>
+<script src="/assets/js/main.js?v=cliente-pagamento-auto-1"></script>
+</body>
+</html>

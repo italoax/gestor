@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+tokens/
+tokens-test/
+tmp-pup/
+*.deb
+.wwebjs_auth/
+.wwebjs_cache/
+npm-debug.log*

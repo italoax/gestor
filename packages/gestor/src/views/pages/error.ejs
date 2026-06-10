@@ -1,0 +1,12 @@
+<div class="container">
+  <div class="form-alert error">
+    <strong>
+      Erro interno.
+    </strong>
+    <% if (error) { %>
+      <pre>
+        <%= error && error.stack ? error.stack : error %>
+      </pre>
+    <% } %>
+  </div>
+</div>

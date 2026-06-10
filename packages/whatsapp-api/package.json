@@ -1,0 +1,26 @@
+{
+  "name": "gestor-whatsapp-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API WhatsApp Web gratuita com Baileys para o Gestor Node.",
+  "main": "src/server.js",
+  "scripts": {
+    "sync:shared": "node ../../scripts/sync-shared.mjs",
+    "prestart": "node ../../scripts/sync-shared.mjs",
+    "start": "node src/server.js",
+    "pretest": "node ../../scripts/sync-shared.mjs",
+    "test": "node --test",
+    "predeploy": "node ../../scripts/sync-shared.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "mime-types": "latest",
+    "pino": "latest",
+    "qrcode": "latest"
+  },
+  "devDependencies": {}
+}

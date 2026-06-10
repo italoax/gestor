@@ -1,0 +1,21 @@
+{
+  "name": "gestor-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Monorepo do Gestor: painel (gestor) + API de WhatsApp (whatsapp-api) + código compartilhado (shared).",
+  "workspaces": [
+    "packages/shared",
+    "packages/gestor",
+    "packages/whatsapp-api"
+  ],
+  "scripts": {
+    "sync:shared": "node scripts/sync-shared.mjs",
+    "dev:gestor": "npm run dev --workspace packages/gestor",
+    "dev:api": "npm run start --workspace packages/whatsapp-api",
+    "build:gestor": "npm run build --workspace packages/gestor",
+    "test:api": "npm run test --workspace packages/whatsapp-api",
+    "deploy:gestor": "npm run deploy --workspace packages/gestor",
+    "deploy:api": "npm run deploy --workspace packages/whatsapp-api"
+  }
+}
