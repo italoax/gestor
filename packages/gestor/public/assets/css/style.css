@@ -1264,10 +1264,28 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
     display: block;
     margin-bottom: 8px;
   }
+  /* Cartão mobile do cliente: anula regras de desktop que estouravam a largura. */
+  .page-clientes .table-clientes th,
+  .page-clientes .table-clientes td {
+    white-space: normal;
+  }
+  .page-clientes .table-clientes td:last-child {
+    width: auto;
+  }
+  .page-clientes .table-clientes td:last-child .table-actions,
   .page-clientes .table-clientes .action-buttons {
     flex-wrap: wrap;
     justify-content: flex-start;
   }
+  .page-clientes .table-clientes .table-actions .btn,
+  .page-clientes .table-clientes .table-actions .action-form {
+    flex: 1 1 auto;
+  }
+  .page-clientes .table-clientes .table-actions .action-form .btn {
+    width: 100%;
+  }
+  .page-clientes .table-clientes tbody tr td:nth-child(7)::before { content: 'Servidor'; }
+  .page-clientes .table-clientes tbody tr td:last-child::before { content: 'Ações'; }
   .table thead th,
   .table tbody td {
     font-size: 12px;
@@ -1310,10 +1328,12 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   .page-servidores .table-footer {
     padding: 10px 8px 14px;
   }
-  .login-shell { padding: 32px 16px; }
+  .login-shell { padding: 24px 16px; min-height: auto; }
   .login-grid { padding: 18px; gap: 20px; border-radius: 18px; }
   .login-card { padding: 18px; border-radius: 14px; }
-  .login-brand h1 { font-size: 28px; }
+  /* No celular o card já tem título e link de ir/voltar: esconde o painel de
+     marketing para focar no formulário e reduzir a rolagem. */
+  .login-brand { display: none; }
   .login-subtitle { font-size: 14px; }
   .login-highlight { padding: 12px; border-radius: 12px; }
   .login-row { flex-direction: column; align-items: flex-start; }
