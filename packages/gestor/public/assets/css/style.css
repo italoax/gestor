@@ -1,27 +1,60 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #1f232a;
-  --surface: #252b33;
-  --surface-2: #2a3038;
-  --border: #3a3f46;
-  --text: #f3f4f6;
-  --muted: #b6bcc6;
-  --green: #1f8f5f;
-  --red: #c0392b;
-  --yellow: #b38913;
-  --blue: #1f5fbf;
-  --purple: #6c4ab6;
-  --shadow: 0 10px 30px rgba(0,0,0,0.25);
+  color-scheme: dark;
+  /* RGB base para bordas/preenchimentos translúcidos (vira escuro no tema claro) */
+  --tint: 255, 255, 255;
+  /* Superfícies dos cards (gradientes) */
+  --surf-a: 42, 48, 56;
+  --surf-b: 35, 40, 48;
+  --accent-rgb: 129, 140, 248;
+  --bg: #14171c;
+  --surface: #1c2128;
+  --surface-2: #232a32;
+  --border: #2c333c;
+  --text: #e8eaed;
+  --muted: #97a3b4;
+  --primary: #6366f1;
+  --primary-strong: #4f46e5;
+  --accent-bright: #818cf8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --blue: #6366f1;
+  --purple: #8b5cf6;
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --tint: 15, 23, 42;
+  --surf-a: 255, 255, 255;
+  --surf-b: 248, 250, 252;
+  --accent-rgb: 79, 70, 229;
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #5b6675;
+  --primary: #4f46e5;
+  --primary-strong: #4338ca;
+  --accent-bright: #4f46e5;
+  --green: #16a34a;
+  --red: #dc2626;
+  --yellow: #b45309;
+  --blue: #4f46e5;
+  --purple: #7c3aed;
+  --shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-text-size-adjust: 100%;
   overflow-x: hidden;
+  transition: background-color .2s ease, color .2s ease;
 }
 body.modal-open { overflow: hidden; }
 .app { min-height: 100vh; padding-top: 72px; }
@@ -31,7 +64,7 @@ body.modal-open { overflow: hidden; }
 .topbar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  background: rgba(31,35,42,0.95);
+  background: rgba(var(--surf-a),0.95);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(6px);
   z-index: 1000;
@@ -96,7 +129,7 @@ body.modal-open { overflow: hidden; }
 .stat-top {
   display: flex; justify-content: space-between; align-items: center;
   color: var(--muted); font-size: 13px;
-  padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.04);
+  padding: 10px 12px; border-radius: 10px; background: rgba(var(--tint),0.04);
 }
 .stat-label { display: inline-flex; align-items: center; gap: 6px; }
 .stat-icon { font-size: 12px; opacity: 0.9; }
@@ -114,14 +147,14 @@ body.modal-open { overflow: hidden; }
 .color-green .card-value, .color-green .stat-count { color: #44d18f; }
 .color-red .card-value, .color-red .stat-count { color: #ff6b5f; }
 .color-yellow .card-value, .color-yellow .stat-count { color: #f2c94c; }
-.color-blue .card-value, .color-blue .stat-count { color: #5aa1ff; }
+.color-blue .card-value, .color-blue .stat-count { color: var(--accent-bright); }
 .color-purple .card-value, .color-purple .stat-count { color: #b48cff; }
 .color-muted .card-value, .color-muted .stat-count { color: var(--muted); }
 
 .color-green .stat-top { background: rgba(31,143,95,0.25); }
 .color-red .stat-top { background: rgba(192,57,43,0.25); }
 .color-yellow .stat-top { background: rgba(179,137,19,0.25); }
-.color-blue .stat-top { background: rgba(31,95,191,0.25); }
+.color-blue .stat-top { background: rgba(var(--accent-rgb),0.25); }
 .color-purple .stat-top { background: rgba(108,74,182,0.25); }
 .color-muted .stat-top { background: rgba(182,188,198,0.15); }
 
@@ -189,7 +222,7 @@ body.modal-open { overflow: hidden; }
   background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
   padding: 10px 12px; border-radius: 12px; min-width: 160px;
 }
-.input:focus { outline: none; border-color: #5aa1ff; }
+.input:focus { outline: none; border-color: var(--accent-bright); }
 input[data-date-mask]::-webkit-calendar-picker-indicator {
   display: none;
   appearance: none;
@@ -209,13 +242,13 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   position: sticky;
   left: 0;
   z-index: 3;
-  background: #2a3038;
+  background: var(--surface-2);
 }
 .table-servidores tbody td:first-child {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: #252a31;
+  background: var(--surface);
 }
 .table thead th {
   text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 10px;
@@ -263,14 +296,14 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .fat-row.muted { color: var(--muted); font-size: 13px; margin-top: 6px; }
 
 .color-green .fat-top { background: rgba(31,143,95,0.6); }
-.color-blue .fat-top { background: rgba(31,95,191,0.6); }
+.color-blue .fat-top { background: rgba(var(--accent-rgb),0.6); }
 .color-red .fat-top { background: rgba(192,57,43,0.6); }
 .color-yellow .fat-top { background: rgba(179,137,19,0.6); }
 .color-muted .fat-top { background: rgba(182,188,198,0.3); }
 
 .lucro-card { padding: 0; overflow: hidden; }
 .lucro-top {
-  padding: 10px 14px; background: rgba(255,255,255,0.08);
+  padding: 10px 14px; background: rgba(var(--tint),0.08);
   display: flex; align-items: center; gap: 8px; color: var(--muted);
 }
 .lucro-body { padding: 12px 14px 14px; display: grid; gap: 6px; }
@@ -312,13 +345,13 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   padding: 6px 0;
   border-radius: 0;
 }
-.table-grouped thead .th-group.clients { background: rgba(31,95,191,0.65); }
+.table-grouped thead .th-group.clients { background: rgba(var(--accent-rgb),0.65); }
 .table-grouped thead .th-group.tests { background: rgba(108,74,182,0.65); }
 
 .table-grouped thead tr:nth-child(2) th:nth-child(1),
 .table-grouped thead tr:nth-child(2) th:nth-child(2),
 .table-grouped thead tr:nth-child(2) th:nth-child(3) {
-  background: rgba(31,95,191,0.25);
+  background: rgba(var(--accent-rgb),0.25);
   border-bottom: none;
 }
 .table-grouped thead tr:nth-child(2) th:nth-child(4),
@@ -353,7 +386,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .table-grouped tbody td:nth-child(2),
 .table-grouped tbody td:nth-child(3),
 .table-grouped tbody td:nth-child(4) {
-  background: rgba(31,95,191,0.12);
+  background: rgba(var(--accent-rgb),0.12);
 }
 .table-grouped tbody td:nth-child(5),
 .table-grouped tbody td:nth-child(6),
@@ -382,11 +415,11 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   border-left: none !important;
 }
 
-.section-card { padding: 0; background: #252a31; }
+.section-card { padding: 0; background: var(--surface); }
 .section-row {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: #2a3038;
+  background: var(--surface-2);
 }
 .section-row h3 { margin: 0; font-size: 16px; }
 .table-footer {
@@ -402,8 +435,8 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .price { color: #44d18f; }
 .table-grouped td, .table-grouped th { font-size: 13px; }
 .table-grouped tbody tr td { padding-top: 10px; padding-bottom: 10px; }
-.table-grouped tbody tr { box-shadow: inset 0 1px 0 rgba(255,255,255,0.03); }
-.table-grouped tbody tr td { border-top: 1px solid rgba(255,255,255,0.05); }
+.table-grouped tbody tr { box-shadow: inset 0 1px 0 rgba(var(--tint),0.03); }
+.table-grouped tbody tr td { border-top: 1px solid rgba(var(--tint),0.05); }
 .table-grouped tbody tr:first-child td { border-top: none; }
 
 @media (max-width: 1100px) {
@@ -556,7 +589,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   font-size: 10px;
 }
 .phone-prefix.open .phone-prefix-btn {
-  border-color: #5aa1ff;
+  border-color: var(--accent-bright);
 }
 .phone-prefix-menu {
   position: absolute;
@@ -729,7 +762,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(var(--tint),0.04);
 }
 .form-alert {
   padding: 10px 12px;
@@ -773,7 +806,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .login-page {
   font-family: "Space Grotesk", system-ui, sans-serif;
   background:
-    radial-gradient(1200px 500px at 10% 15%, rgba(90,161,255,0.28), transparent 60%),
+    radial-gradient(1200px 500px at 10% 15%, rgba(var(--accent-rgb),0.28), transparent 60%),
     radial-gradient(900px 450px at 85% 20%, rgba(68,209,143,0.22), transparent 55%),
     radial-gradient(700px 450px at 70% 85%, rgba(255,214,102,0.2), transparent 60%),
     linear-gradient(135deg, #0d1117 0%, #161b22 45%, #12161e 100%);
@@ -797,7 +830,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   gap: 32px;
   padding: 34px;
   border-radius: 28px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(var(--tint),0.1);
   background:
     linear-gradient(180deg, rgba(22,27,34,0.86), rgba(17,20,27,0.9));
   box-shadow: 0 40px 90px rgba(4,6,10,0.55);
@@ -818,7 +851,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   height: 240px;
   left: -80px;
   top: -100px;
-  background: linear-gradient(135deg, rgba(90,161,255,0.6), rgba(108,74,182,0.2));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb),0.6), rgba(108,74,182,0.2));
 }
 .login-grid::after {
   width: 200px;
@@ -840,8 +873,8 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   gap: 8px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(90,161,255,0.15);
-  border: 1px solid rgba(90,161,255,0.35);
+  background: rgba(var(--accent-rgb),0.15);
+  border: 1px solid rgba(var(--accent-rgb),0.35);
   color: #a8c7ff;
   font-size: 12px;
   letter-spacing: 1px;
@@ -868,8 +901,8 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(var(--tint),0.04);
+  border: 1px solid rgba(var(--tint),0.08);
   border-radius: 16px;
   padding: 14px 16px;
 }
@@ -889,7 +922,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   flex: 0 0 10px;
 }
 .dot-green { background: #44d18f; }
-.dot-blue { background: #5aa1ff; }
+.dot-blue { background: var(--accent-bright); }
 .dot-gold { background: #f2c94c; }
 .login-footer-note {
   margin-top: auto;
@@ -899,7 +932,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 
 .login-card {
   background: rgba(18,22,29,0.92);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(var(--tint),0.12);
   border-radius: 20px;
   padding: 26px;
   box-shadow: 0 24px 60px rgba(8,11,16,0.55);
@@ -930,15 +963,15 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.14);
+  border: 1px solid rgba(var(--tint),0.14);
   background: rgba(10,12,18,0.7);
   color: #f2f4f7;
   font-size: 14px;
 }
 .login-field input:focus {
   outline: none;
-  border-color: rgba(90,161,255,0.7);
-  box-shadow: 0 0 0 3px rgba(90,161,255,0.2);
+  border-color: rgba(var(--accent-rgb),0.7);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.2);
 }
 .login-row {
   display: flex;
@@ -955,7 +988,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   font-size: 13px;
 }
 .login-check input {
-  accent-color: #5aa1ff;
+  accent-color: var(--accent-bright);
 }
 .login-link {
   color: #9fc3ff;
@@ -970,7 +1003,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   border-radius: 12px;
   padding: 12px 16px;
   border: none;
-  background: linear-gradient(135deg, #5aa1ff, #6c4ab6 60%, #5b7cff);
+  background: linear-gradient(135deg, var(--accent-bright), #6c4ab6 60%, #5b7cff);
   color: #fff;
   font-weight: 600;
   font-size: 14px;
@@ -979,7 +1012,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 }
 .login-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(90,161,255,0.25);
+  box-shadow: 0 12px 24px rgba(var(--accent-rgb),0.25);
 }
 .login-btn-link {
   display: inline-flex;
@@ -989,11 +1022,11 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 }
 .login-btn.outline {
   background: transparent;
-  border: 1px solid rgba(90,161,255,0.6);
+  border: 1px solid rgba(var(--accent-rgb),0.6);
   color: #9fc3ff;
 }
 .login-btn.ghost {
-  background: rgba(255,255,255,0.08);
+  background: rgba(var(--tint),0.08);
   color: rgba(226,231,238,0.8);
 }
 .login-divider {
@@ -1009,7 +1042,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   content: '';
   height: 1px;
   flex: 1;
-  background: rgba(255,255,255,0.1);
+  background: rgba(var(--tint),0.1);
 }
 .login-actions {
   display: grid;
@@ -1232,7 +1265,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
     justify-content: space-between;
     gap: 10px;
     padding: 8px 10px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(var(--tint),0.06);
   }
   .page-clientes .table-clientes tbody tr td::before {
     color: var(--muted);
@@ -1425,7 +1458,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   font-weight: 800;
   font-size: 48px;
   letter-spacing: 1px;
-  text-shadow: 0 2px 10px rgba(255,255,255,0.2);
+  text-shadow: 0 2px 10px rgba(var(--tint),0.2);
 }
 .wa-content {
   padding: 14px;

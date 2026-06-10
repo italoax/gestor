@@ -81,6 +81,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Alternância de tema claro/escuro (persistido em localStorage).
+  document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      const next = isLight ? 'dark' : 'light';
+      if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      else document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('gestor-theme', next); } catch (e) {}
+    });
+  });
+
   document.querySelectorAll('[data-switch] input').forEach(input => {
     input.addEventListener('change', () => {
       const status = input.closest('[data-switch]').querySelector('.switch-status');

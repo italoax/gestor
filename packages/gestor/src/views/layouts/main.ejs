@@ -6,8 +6,9 @@
   <title><%= title || 'Gestor' %></title>
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="/assets/css/style.css" />
-  <link rel="stylesheet" href="/assets/css/node-migration.css?v=cobrancas-table-1" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=theme-indigo-1" />
+  <link rel="stylesheet" href="/assets/css/node-migration.css?v=theme-indigo-1" />
+  <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 </head>
 <body class="<%= user ? 'page-app' : 'login-page' %>">
 <div class="app">
@@ -26,6 +27,7 @@
         <a class="nav-link <%= currentPath === '/minha-conta' ? 'active' : '' %>" href="/minha-conta">Minha conta</a>
         <form method="post" action="/logout" class="action-form"><button class="nav-link" type="submit">Sair</button></form>
       </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema claro/escuro" title="Alternar tema"></button>
       <button class="hamburger" data-hamburger><span></span><span></span><span></span></button>
     </div>
   </header>
@@ -43,6 +45,6 @@
     <%- body %>
   <% } %>
 </div>
-<script src="/assets/js/main.js?v=cliente-pagamento-auto-1"></script>
+<script src="/assets/js/main.js?v=theme-indigo-1"></script>
 </body>
 </html>
