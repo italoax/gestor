@@ -60,7 +60,10 @@ try {
   console.log("🚀 Arquivo Procfile criado...");
 
   console.log(`\n📦 Criando arquivo: ${archiveName}...`);
-  run("tar", ["-czf", `../${archiveName}`, "."], { cwd: deployDir });
+  // Lista os itens pelo nome (sem o prefixo "./" que o `tar .` adiciona) para que
+  // o package.json fique na raiz do pacote — senão a Hostinger não detecta o projeto.
+  const items = fs.readdirSync(deployDir);
+  run("tar", ["-czf", `../${archiveName}`, ...items], { cwd: deployDir });
 
   const size = fs.statSync(archivePath).size;
   console.log("✅ Arquivo criado com sucesso!");
