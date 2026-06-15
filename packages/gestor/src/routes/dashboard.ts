@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { queryRows } from "../db/mysql.js";
 import { appTodayIso } from "../services/dates.js";
+import { PAIS_NOME, UF_NOME, paisFromTelefone, ufFromTelefone } from "../services/geo.js";
 import type { RowDataPacket } from "mysql2";
 
 interface CountRow extends RowDataPacket { total: number; }
@@ -8,28 +9,24 @@ interface DashboardTotalsRow extends RowDataPacket {
   clientesTotal: number;
   ativos: number;
   vencidos: number;
-  vencemHoje: number;
-  vencem7: number;
+  venceHoje: number; venceHojeValor: number;
+  venceAmanha: number; venceAmanhaValor: number;
+  venceuOntem: number; venceuOntemValor: number;
   receitaPrevista: number;
-  faturamentoMes: number;
-  custoMes: number;
-  lucroMes: number;
-  totalPago: number;
+  recebidoHoje: number; custoHoje: number;
+  recebidoMes: number; custoMes: number;
+  recebidoMesAnterior: number; custoMesAnterior: number;
 }
 interface ClientePrazoRow extends RowDataPacket {
-  id: number;
-  nome: string;
-  telefone: string;
-  vencimento: Date | string;
-  plano: string;
-  valor: number;
-  dias: number;
+  id: number; nome: string; telefone: string; vencimento: Date | string; plano: string; valor: number; dias: number;
 }
-interface ServidorResumoRow extends RowDataPacket {
-  servidor: string;
-  total: number;
-  valor: number;
-}
+interface DistribuicaoRow extends RowDataPacket { rotulo: string; total: number; valor: number; }
+interface ServidorPerfRow extends RowDataPacket { servidor: string; total: number; faturamento: number; custo: number; }
+interface SerieDiaRow extends RowDataPacket { dia: number; receita: number; custo: number; }
+interface NovosDiaRow extends RowDataPacket { dia: number; total: number; }
+interface TelefoneRow extends RowDataPacket { telefone: string | null; }
+
+type Periodo = "mes" | "anterior" | "todos";
 
 export const dashboardRouter = Router();
 
@@ -48,19 +45,30 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
   try {
     const userId = req.session.user!.id;
     const today = appTodayIso();
-    const [totalsRows, planos, servidores, proximos, atrasados, porServidor] = await Promise.all([
+    const year = Number(today.slice(0, 4));
+    const month = Number(today.slice(5, 7));
+    const dayOfMonth = Number(today.slice(8, 10));
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const [totalsRows, planosCount, servidoresCount, proximos, atrasados, serieFinanceira, serieNovos] = await Promise.all([
       queryRows<DashboardTotalsRow>(
         `SELECT
             COUNT(*) AS clientesTotal,
-            SUM(CASE WHEN status = 'Ativo' THEN 1 ELSE 0 END) AS ativos,
-            SUM(CASE WHEN vencimento < :today THEN 1 ELSE 0 END) AS vencidos,
-            SUM(CASE WHEN vencimento = :today THEN 1 ELSE 0 END) AS vencemHoje,
-            SUM(CASE WHEN vencimento BETWEEN :today AND DATE_ADD(:today, INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS vencem7,
+            COALESCE(SUM(status = 'Ativo'), 0) AS ativos,
+            COALESCE(SUM(vencimento < :today), 0) AS vencidos,
+            COALESCE(SUM(vencimento = :today), 0) AS venceHoje,
+            COALESCE(SUM(CASE WHEN vencimento = :today THEN valor ELSE 0 END), 0) AS venceHojeValor,
+            COALESCE(SUM(vencimento = DATE_ADD(:today, INTERVAL 1 DAY)), 0) AS venceAmanha,
+            COALESCE(SUM(CASE WHEN vencimento = DATE_ADD(:today, INTERVAL 1 DAY) THEN valor ELSE 0 END), 0) AS venceAmanhaValor,
+            COALESCE(SUM(vencimento = DATE_SUB(:today, INTERVAL 1 DAY)), 0) AS venceuOntem,
+            COALESCE(SUM(CASE WHEN vencimento = DATE_SUB(:today, INTERVAL 1 DAY) THEN valor ELSE 0 END), 0) AS venceuOntemValor,
             COALESCE(SUM(valor), 0) AS receitaPrevista,
-            COALESCE(SUM(CASE WHEN pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN valor_pago ELSE 0 END), 0) AS faturamentoMes,
-            COALESCE(SUM(CASE WHEN pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN custo_pagamento ELSE 0 END), 0) AS custoMes,
-            COALESCE(SUM(CASE WHEN pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN valor_pago - COALESCE(custo_pagamento, 0) ELSE 0 END), 0) AS lucroMes,
-            COALESCE(SUM(valor_pago), 0) AS totalPago
+            COALESCE(SUM(CASE WHEN DATE(pago_em) = :today THEN valor_pago ELSE 0 END), 0) AS recebidoHoje,
+            COALESCE(SUM(CASE WHEN DATE(pago_em) = :today THEN custo_pagamento ELSE 0 END), 0) AS custoHoje,
+            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN valor_pago ELSE 0 END), 0) AS recebidoMes,
+            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN custo_pagamento ELSE 0 END), 0) AS custoMes,
+            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN valor_pago ELSE 0 END), 0) AS recebidoMesAnterior,
+            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN custo_pagamento ELSE 0 END), 0) AS custoMesAnterior
           FROM clientes
           WHERE user_id = :userId`,
         { userId, today },
@@ -69,67 +77,237 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
       count("SELECT COUNT(*) AS total FROM servidores WHERE user_id = :userId", { userId }),
       queryRows<ClientePrazoRow>(
         `SELECT id, nome, telefone, vencimento, plano, valor, DATEDIFF(vencimento, :today) AS dias
-           FROM clientes
-          WHERE user_id = :userId AND vencimento >= :today
-          ORDER BY vencimento ASC, nome ASC
-          LIMIT 8`,
+           FROM clientes WHERE user_id = :userId AND vencimento >= :today
+          ORDER BY vencimento ASC, nome ASC LIMIT 8`,
         { userId, today },
       ),
       queryRows<ClientePrazoRow>(
         `SELECT id, nome, telefone, vencimento, plano, valor, DATEDIFF(vencimento, :today) AS dias
-           FROM clientes
-          WHERE user_id = :userId AND vencimento < :today
-          ORDER BY vencimento ASC, nome ASC
-          LIMIT 8`,
+           FROM clientes WHERE user_id = :userId AND vencimento < :today
+          ORDER BY vencimento DESC, nome ASC LIMIT 8`,
         { userId, today },
       ),
-      queryRows<ServidorResumoRow>(
-        `SELECT COALESCE(NULLIF(TRIM(servidor), ''), 'Sem servidor') AS servidor,
-                COUNT(*) AS total,
-                COALESCE(SUM(valor), 0) AS valor
+      queryRows<SerieDiaRow>(
+        `SELECT DAY(pago_em) AS dia, COALESCE(SUM(valor_pago), 0) AS receita, COALESCE(SUM(custo_pagamento), 0) AS custo
            FROM clientes
-          WHERE user_id = :userId
-          GROUP BY COALESCE(NULLIF(TRIM(servidor), ''), 'Sem servidor')
-          ORDER BY total DESC, servidor ASC
-          LIMIT 6`,
-        { userId },
+          WHERE user_id = :userId AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today)
+          GROUP BY DAY(pago_em) ORDER BY dia`,
+        { userId, today },
+      ),
+      queryRows<NovosDiaRow>(
+        `SELECT DAY(created_at) AS dia, COUNT(*) AS total
+           FROM clientes
+          WHERE user_id = :userId AND YEAR(created_at) = YEAR(:today) AND MONTH(created_at) = MONTH(:today)
+          GROUP BY DAY(created_at) ORDER BY dia`,
+        { userId, today },
       ),
     ]);
 
     const raw = totalsRows[0] ?? {} as DashboardTotalsRow;
+    const recebidoHoje = num(raw.recebidoHoje), custoHoje = num(raw.custoHoje);
+    const recebidoMes = num(raw.recebidoMes), custoMes = num(raw.custoMes);
+    const recebidoMesAnterior = num(raw.recebidoMesAnterior), custoMesAnterior = num(raw.custoMesAnterior);
+
     const stats = {
       clientesTotal: num(raw.clientesTotal),
       ativos: num(raw.ativos),
       vencidos: num(raw.vencidos),
-      vencemHoje: num(raw.vencemHoje),
-      vencem7: num(raw.vencem7),
-      planos,
-      servidores,
+      servidoresCount,
+      planosCount,
       receitaPrevista: num(raw.receitaPrevista),
-      faturamentoMes: num(raw.faturamentoMes),
-      custoMes: num(raw.custoMes),
-      lucroMes: num(raw.lucroMes),
-      totalPago: num(raw.totalPago),
+      vencimentos: {
+        hoje: { total: num(raw.venceHoje), valor: num(raw.venceHojeValor) },
+        amanha: { total: num(raw.venceAmanha), valor: num(raw.venceAmanhaValor) },
+        ontem: { total: num(raw.venceuOntem), valor: num(raw.venceuOntemValor) },
+      },
+      receitaCusto: {
+        hoje: { receita: recebidoHoje, custo: custoHoje, lucro: recebidoHoje - custoHoje },
+        mes: { receita: recebidoMes, custo: custoMes, lucro: recebidoMes - custoMes },
+        mesAnterior: { receita: recebidoMesAnterior, custo: custoMesAnterior, lucro: recebidoMesAnterior - custoMesAnterior },
+      },
+      financeiro: {
+        recebidoHoje,
+        recebidoMes,
+        recebidoMesAnterior,
+        projecao: recebidoMes > 0 && dayOfMonth > 0 ? (recebidoMes / dayOfMonth) * daysInMonth : 0,
+        variacaoMes: recebidoMesAnterior > 0 ? Math.round(((recebidoMes - recebidoMesAnterior) / recebidoMesAnterior) * 100) : 0,
+      },
     };
-    const receitaBase = stats.receitaPrevista || 1;
-    const vencidosPercent = stats.clientesTotal ? Math.round((stats.vencidos / stats.clientesTotal) * 100) : 0;
+
     const ativosPercent = stats.clientesTotal ? Math.round((stats.ativos / stats.clientesTotal) * 100) : 0;
-    const lucroPercent = stats.faturamentoMes ? Math.round((stats.lucroMes / stats.faturamentoMes) * 100) : 0;
+    const vencidosPercent = stats.clientesTotal ? Math.round((stats.vencidos / stats.clientesTotal) * 100) : 0;
+
+    // Séries diárias (1..dia atual) preenchendo zeros.
+    const labels: string[] = [];
+    const serieReceita: number[] = [];
+    const serieCusto: number[] = [];
+    const serieLucro: number[] = [];
+    const serieNovosClientes: number[] = [];
+    const mapaFin = new Map(serieFinanceira.map((r) => [num(r.dia), { receita: num(r.receita), custo: num(r.custo) }]));
+    const mapaNovos = new Map(serieNovos.map((r) => [num(r.dia), num(r.total)]));
+    const mm = String(month).padStart(2, "0");
+    for (let d = 1; d <= dayOfMonth; d += 1) {
+      labels.push(`${String(d).padStart(2, "0")}/${mm}`);
+      const fin = mapaFin.get(d) ?? { receita: 0, custo: 0 };
+      serieReceita.push(fin.receita);
+      serieCusto.push(fin.custo);
+      serieLucro.push(fin.receita - fin.custo);
+      serieNovosClientes.push(mapaNovos.get(d) ?? 0);
+    }
+
+    const novosNoMes = serieNovosClientes.reduce((a, b) => a + b, 0);
+
+    // ---- Distribuição (filtrável por período via ?periodo=) ----
+    const periodoRaw = String(req.query.periodo ?? "mes");
+    const periodo: Periodo = periodoRaw === "anterior" || periodoRaw === "todos" ? periodoRaw : "mes";
+    const dateWhere =
+      periodo === "mes"
+        ? "AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today)"
+        : periodo === "anterior"
+          ? "AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH))"
+          : "";
+
+    const [formasRows, planosRows, indicacoesRows, dispositivosRows, aplicativosRows, servidoresPerf, telefonesRows] = await Promise.all([
+      queryRows<DistribuicaoRow>(
+        `SELECT COALESCE(NULLIF(TRIM(forma_pagamento), ''), 'Não informado') AS rotulo,
+                COUNT(*) AS total, COALESCE(SUM(valor_pago), 0) AS valor
+           FROM clientes
+          WHERE user_id = :userId ${dateWhere} AND forma_pagamento IS NOT NULL AND TRIM(forma_pagamento) <> ''
+          GROUP BY rotulo ORDER BY valor DESC, total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<DistribuicaoRow>(
+        `SELECT COALESCE(NULLIF(TRIM(plano), ''), 'Sem plano') AS rotulo,
+                COUNT(*) AS total, COALESCE(SUM(valor), 0) AS valor
+           FROM clientes WHERE user_id = :userId ${dateWhere}
+          GROUP BY rotulo ORDER BY total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<DistribuicaoRow>(
+        `SELECT COALESCE(NULLIF(TRIM(captacao), ''), 'Não informado') AS rotulo,
+                COUNT(*) AS total, 0 AS valor
+           FROM clientes
+          WHERE user_id = :userId ${dateWhere} AND captacao IS NOT NULL AND TRIM(captacao) <> ''
+          GROUP BY rotulo ORDER BY total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<DistribuicaoRow>(
+        `SELECT COALESCE(NULLIF(TRIM(dispositivo), ''), 'Não informado') AS rotulo,
+                COUNT(*) AS total, 0 AS valor
+           FROM clientes
+          WHERE user_id = :userId ${dateWhere} AND dispositivo IS NOT NULL AND TRIM(dispositivo) <> ''
+          GROUP BY rotulo ORDER BY total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<DistribuicaoRow>(
+        `SELECT COALESCE(NULLIF(TRIM(aplicativo), ''), 'Não informado') AS rotulo,
+                COUNT(*) AS total, 0 AS valor
+           FROM clientes
+          WHERE user_id = :userId ${dateWhere} AND aplicativo IS NOT NULL AND TRIM(aplicativo) <> ''
+          GROUP BY rotulo ORDER BY total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<ServidorPerfRow>(
+        `SELECT COALESCE(NULLIF(TRIM(servidor), ''), 'Sem servidor') AS servidor,
+                COUNT(*) AS total,
+                COALESCE(SUM(valor_pago), 0) AS faturamento,
+                COALESCE(SUM(custo_pagamento), 0) AS custo
+           FROM clientes WHERE user_id = :userId ${dateWhere}
+          GROUP BY servidor ORDER BY faturamento DESC, total DESC LIMIT 8`,
+        { userId, today },
+      ),
+      queryRows<TelefoneRow>(
+        `SELECT telefone FROM clientes WHERE user_id = :userId ${dateWhere}`,
+        { userId, today },
+      ),
+    ]);
+
+    const formasTotalValor = formasRows.reduce((a, r) => a + num(r.valor), 0);
+    const formasPagamento = formasRows.map((r) => ({
+      rotulo: r.rotulo, total: num(r.total), valor: num(r.valor),
+      percent: formasTotalValor ? Math.round((num(r.valor) / formasTotalValor) * 100) : 0,
+    }));
+
+    const planosTotalCli = planosRows.reduce((a, r) => a + num(r.total), 0);
+    const planosDist = planosRows.map((r) => ({
+      rotulo: r.rotulo, total: num(r.total),
+      percent: planosTotalCli ? Math.round((num(r.total) / planosTotalCli) * 100) : 0,
+    }));
+
+    const indicTotal = indicacoesRows.reduce((a, r) => a + num(r.total), 0);
+    const indicacoes = indicacoesRows.map((r) => ({
+      rotulo: r.rotulo, total: num(r.total),
+      percent: indicTotal ? Math.round((num(r.total) / indicTotal) * 100) : 0,
+    }));
+
+    const dispTotal = dispositivosRows.reduce((a, r) => a + num(r.total), 0);
+    const topDispositivos = dispositivosRows.map((r) => ({
+      rotulo: r.rotulo, total: num(r.total),
+      percent: dispTotal ? Math.round((num(r.total) / dispTotal) * 100) : 0,
+    }));
+
+    const appTotal = aplicativosRows.reduce((a, r) => a + num(r.total), 0);
+    const topAplicativos = aplicativosRows.map((r) => ({
+      rotulo: r.rotulo, total: num(r.total),
+      percent: appTotal ? Math.round((num(r.total) / appTotal) * 100) : 0,
+    }));
+
+    const itensServidor = servidoresPerf.map((s) => {
+      const faturamento = num(s.faturamento), custo = num(s.custo);
+      const lucro = faturamento - custo;
+      return {
+        servidor: s.servidor, total: num(s.total), faturamento, custo, lucro,
+        margem: faturamento ? Math.round((lucro / faturamento) * 100) : 0,
+        custoPercent: faturamento ? Math.max(0, Math.round((custo / faturamento) * 100)) : 0,
+        lucroPercent: faturamento ? Math.max(0, Math.round((lucro / faturamento) * 100)) : 0,
+      };
+    });
+    const totalFat = itensServidor.reduce((a, s) => a + s.faturamento, 0);
+    const totalCusto = itensServidor.reduce((a, s) => a + s.custo, 0);
+    const totalLucro = totalFat - totalCusto;
+    const performance = {
+      faturamento: totalFat, custo: totalCusto, lucro: totalLucro,
+      margem: totalFat ? Math.round((totalLucro / totalFat) * 100) : 0,
+      itens: itensServidor,
+    };
+
+    // Geo derivada do DDD do telefone.
+    const estadosMap: Record<string, number> = {};
+    const paisesMap: Record<string, number> = {};
+    for (const r of telefonesRows) {
+      const uf = ufFromTelefone(r.telefone);
+      if (uf) estadosMap[uf] = (estadosMap[uf] ?? 0) + 1;
+      const pais = paisFromTelefone(r.telefone);
+      if (pais) paisesMap[pais] = (paisesMap[pais] ?? 0) + 1;
+    }
+    const estadosTop = Object.entries(estadosMap)
+      .map(([uf, total]) => ({ uf, nome: UF_NOME[uf] ?? uf, total }))
+      .sort((a, b) => b.total - a.total);
+    const paisesTop = Object.entries(paisesMap)
+      .map(([code, total]) => ({ code, nome: PAIS_NOME[code] ?? code, total }))
+      .sort((a, b) => b.total - a.total);
+    const estados = { total: estadosTop.reduce((a, e) => a + e.total, 0), top: estadosTop };
+    const paises = { total: paisesTop.reduce((a, p) => a + p.total, 0), top: paisesTop };
 
     res.render("pages/dashboard", {
       title: "Dashboard",
       stats,
-      vencidosPercent,
       ativosPercent,
-      lucroPercent,
+      vencidosPercent,
       proximos,
       atrasados,
-      porServidor: porServidor.map(item => ({
-        ...item,
-        total: num(item.total),
-        valor: num(item.valor),
-        percent: Math.max(8, Math.round((num(item.valor) / receitaBase) * 100)),
-      })),
+      periodo,
+      formasPagamento,
+      planosDist,
+      indicacoes,
+      topDispositivos,
+      topAplicativos,
+      performance,
+      estados,
+      paises,
+      novosNoMes,
+      chart: JSON.stringify({ labels, receita: serieReceita, custo: serieCusto, lucro: serieLucro, novos: serieNovosClientes }),
+      geo: JSON.stringify({ estados: estadosMap, paises: paisesMap }),
     });
   } catch (error) { next(error); }
 });

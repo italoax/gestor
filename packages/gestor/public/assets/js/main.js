@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function () {
             form.querySelector('[name="action"]').value = 'create_mensagem';
             form.querySelector('[name="id"]').value = '';
             const title = modal.querySelector('.modal-header h3');
-            if (title) title.textContent = 'Adicionar Mensagem';
+            if (title) title.textContent = '+ Novo Template';
           }
         }
         const triggerSelector = '[data-open-modal="' + id + '"]';
@@ -516,7 +516,80 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="tipo"]').value = btn.getAttribute('data-tipo') || '';
       form.querySelector('[name="periodo"]').value = btn.getAttribute('data-periodo') || '1';
       form.querySelector('[name="observacao"]').value = btn.getAttribute('data-observacao') || '';
+      const pCred = form.querySelector('[name="creditos"]'); if (pCred) pCred.value = btn.getAttribute('data-creditos') || '0';
+      const pAtivo = form.querySelector('[name="ativo"]'); if (pAtivo) pAtivo.checked = btn.getAttribute('data-ativo') !== '0';
+      const pTitulo = modal.querySelector('.modal-header h3'); if (pTitulo) pTitulo.textContent = '✎ Editar Plano';
+      const pInfoUpd = form.querySelector('[name="periodo"]'); if (pInfoUpd) pInfoUpd.dispatchEvent(new Event('input', { bubbles: true }));
       setModalState(modal, true);
+    });
+  });
+
+  document.querySelectorAll('[data-open-modal="modal-add-plano"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById('modal-add-plano-form');
+      if (form) {
+        form.reset();
+        const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_plano';
+        const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+      }
+      const t = document.querySelector('#modal-add-plano .modal-header h3'); if (t) t.textContent = '+ Novo Plano';
+    });
+  });
+
+  document.querySelectorAll('.edit-dispositivo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-add-dispositivo');
+      if (!modal) return;
+      const form = modal.querySelector('#modal-add-dispositivo-form');
+      if (!form) return;
+      form.querySelector('[name="action"]').value = 'update_dispositivo';
+      form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+      form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
+      form.querySelector('[name="descricao"]').value = btn.getAttribute('data-descricao') || '';
+      const dStatus = form.querySelector('[name="status"]'); if (dStatus) dStatus.value = btn.getAttribute('data-status') || 'Ativo';
+      const dTit = modal.querySelector('.modal-header h3'); if (dTit) dTit.textContent = '✎ Editar Dispositivo';
+      setModalState(modal, true);
+    });
+  });
+
+  document.querySelectorAll('[data-open-modal="modal-add-dispositivo"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById('modal-add-dispositivo-form');
+      if (form) {
+        form.reset();
+        const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_dispositivo';
+        const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+      }
+      const t = document.querySelector('#modal-add-dispositivo .modal-header h3'); if (t) t.textContent = '🖥️ Novo Dispositivo';
+    });
+  });
+
+  document.querySelectorAll('.edit-aplicativo').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-add-aplicativo');
+      if (!modal) return;
+      const form = modal.querySelector('#modal-add-aplicativo-form');
+      if (!form) return;
+      form.querySelector('[name="action"]').value = 'update_aplicativo';
+      form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+      form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
+      form.querySelector('[name="descricao"]').value = btn.getAttribute('data-descricao') || '';
+      const aVal = form.querySelector('[name="valor_renovacao"]'); if (aVal) aVal.value = btn.getAttribute('data-valor') || '';
+      const aStatus = form.querySelector('[name="status"]'); if (aStatus) aStatus.value = btn.getAttribute('data-status') || 'Ativo';
+      const aTit = modal.querySelector('.modal-header h3'); if (aTit) aTit.textContent = '✎ Editar Aplicativo';
+      setModalState(modal, true);
+    });
+  });
+
+  document.querySelectorAll('[data-open-modal="modal-add-aplicativo"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById('modal-add-aplicativo-form');
+      if (form) {
+        form.reset();
+        const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_aplicativo';
+        const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+      }
+      const t = document.querySelector('#modal-add-aplicativo .modal-header h3'); if (t) t.textContent = '🗓️ Novo Aplicativo';
     });
   });
 
@@ -533,7 +606,33 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="valor_cred"]').value = btn.getAttribute('data-valor') || '0';
       form.querySelector('[name="sessao"]').value = btn.getAttribute('data-sessao') || '';
       form.querySelector('[name="integracao"]').value = btn.getAttribute('data-integracao') || '';
+      const sExtras = {
+        identificador: 'data-identificador', link_painel: 'data-link-painel', observacao_servidor: 'data-obs',
+        dispositivo_whatsapp: 'data-dispositivo', url_app_android: 'data-app-android', url_app_ios: 'data-app-ios',
+        info_servidor: 'data-info', dns_1: 'data-dns1', dns_2: 'data-dns2', dns_3: 'data-dns3', dns_4: 'data-dns4',
+        url_api_xc: 'data-api-xc', url_api_smarters: 'data-api-smarters', epg: 'data-epg',
+        pix: 'data-pix', pix_nome: 'data-pix-nome', pix_tipo: 'data-pix-tipo', url_renovacao: 'data-url-renovacao'
+      };
+      Object.keys(sExtras).forEach(name => {
+        const el = form.querySelector('[name="' + name + '"]');
+        if (el) el.value = btn.getAttribute(sExtras[name]) || '';
+      });
+      const cob = form.querySelector('[name="cobranca_por_telas"]'); if (cob) cob.checked = btn.getAttribute('data-cobranca') === '1';
+      const ren = form.querySelector('[name="renovacao_automatica"]'); if (ren) ren.checked = btn.getAttribute('data-renovacao') === '1';
+      const stitulo = modal.querySelector('.modal-header h3'); if (stitulo) stitulo.textContent = '🗄️ Editar Servidor';
       setModalState(modal, true);
+    });
+  });
+
+  document.querySelectorAll('[data-open-modal="modal-add-servidor"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById('modal-add-servidor-form');
+      if (form) {
+        form.reset();
+        const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_servidor';
+        const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+      }
+      const t = document.querySelector('#modal-add-servidor .modal-header h3'); if (t) t.textContent = '🗄️ Novo Servidor';
     });
   });
 
@@ -597,10 +696,91 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="valor"]').value = btn.getAttribute('data-valor') || '';
       form.querySelector('[name="servidor"]').value = btn.getAttribute('data-servidor') || '';
       form.querySelector('[name="telas"]').value = btn.getAttribute('data-telas') || '1';
+      // Pré-preenche os campos novos (guardado: ignora se o campo não existir no DOM)
+      const extras = {
+        senha: 'data-senha', id_painel: 'data-id-painel', email: 'data-email', captacao: 'data-captacao',
+        aniversario: 'data-aniversario', link_m3u: 'data-link-m3u', time_cliente: 'data-time-cliente',
+        telefone_secundario: 'data-telefone-secundario', observacoes: 'data-observacoes',
+        data_inicio: 'data-data-inicio', hora_vencimento: 'data-hora-vencimento',
+        sistema_painel: 'data-sistema-painel', dispositivo: 'data-dispositivo', aplicativo: 'data-aplicativo', pontos_fidelidade: 'data-pontos'
+      };
+      Object.keys(extras).forEach(name => {
+        const el = form.querySelector('[name="' + name + '"]');
+        if (el) el.value = btn.getAttribute(extras[name]) || '';
+      });
+      const bloquear = form.querySelector('[name="bloquear_notificacoes"]');
+      if (bloquear) bloquear.checked = btn.getAttribute('data-bloquear') === '1';
+      const boas = form.querySelector('[name="enviar_boas_vindas"]');
+      if (boas) boas.checked = btn.getAttribute('data-boas-vindas') === '1';
       syncClienteUsageFields(form);
       setModalState(modal, true);
     });
   });
+
+  // ----- Transações -----
+  document.querySelectorAll('[data-open-modal="modal-nova-transacao"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const form = document.getElementById('modal-nova-transacao-form');
+      if (form) {
+        form.reset();
+        const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_transacao';
+        const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+      }
+      const titulo = document.querySelector('#modal-nova-transacao .modal-header h3');
+      if (titulo) titulo.textContent = '+ Nova Transação';
+    });
+  });
+
+  document.querySelectorAll('.edit-transacao').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-nova-transacao');
+      const form = modal && modal.querySelector('#modal-nova-transacao-form');
+      if (!form) return;
+      const set = (name, val) => { const el = form.querySelector('[name="' + name + '"]'); if (el) el.value = val; };
+      set('action', 'update_transacao');
+      set('id', btn.getAttribute('data-id') || '');
+      set('data', btn.getAttribute('data-data') || '');
+      set('forma_pagamento', btn.getAttribute('data-forma') || '');
+      set('cliente_id', btn.getAttribute('data-cliente-id') || '');
+      set('descricao', btn.getAttribute('data-descricao') || '');
+      set('plano', btn.getAttribute('data-plano') || '');
+      set('servidor', btn.getAttribute('data-servidor') || '');
+      set('telas', btn.getAttribute('data-telas') || '1');
+      set('creditos', btn.getAttribute('data-creditos') || '0');
+      set('custo', btn.getAttribute('data-custo') || '0');
+      set('valor_venda', btn.getAttribute('data-valor-venda') || '');
+      const titulo = modal.querySelector('.modal-header h3'); if (titulo) titulo.textContent = '✎ Editar Transação';
+      setModalState(modal, true);
+    });
+  });
+
+  document.querySelectorAll('.view-transacao').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-transacao-info');
+      if (!modal) return;
+      const put = (id, attr) => { const el = document.getElementById(id); if (el) el.textContent = btn.getAttribute(attr) || '-'; };
+      put('tx-info-data', 'data-data'); put('tx-info-cliente', 'data-cliente'); put('tx-info-pagamento', 'data-pagamento');
+      put('tx-info-descricao', 'data-descricao'); put('tx-info-servidor', 'data-servidor'); put('tx-info-plano', 'data-plano');
+      put('tx-info-telas', 'data-telas'); put('tx-info-creditos', 'data-creditos'); put('tx-info-custo', 'data-custo');
+      put('tx-info-total', 'data-total'); put('tx-info-lucro', 'data-lucro');
+      setModalState(modal, true);
+    });
+  });
+
+  const txClienteSelect = document.querySelector('[data-tx-cliente]');
+  if (txClienteSelect) {
+    txClienteSelect.addEventListener('change', () => {
+      const opt = txClienteSelect.selectedOptions[0];
+      if (!opt || !opt.value) return;
+      const form = txClienteSelect.closest('form');
+      if (!form) return;
+      const fill = (name, val) => { const el = form.querySelector('[name="' + name + '"]'); if (el && !el.value) el.value = val; };
+      fill('plano', opt.getAttribute('data-plano') || '');
+      fill('servidor', opt.getAttribute('data-servidor') || '');
+      const telas = form.querySelector('[name="telas"]'); if (telas) telas.value = opt.getAttribute('data-telas') || '1';
+      fill('valor_venda', opt.getAttribute('data-valor') || '');
+    });
+  }
 
   document.querySelectorAll('form.delete-cliente').forEach(form => {
     form.addEventListener('submit', async (e) => {
@@ -656,19 +836,49 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!form) return;
       form.reset();
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
-      form.dataset.nome = btn.getAttribute('data-nome') || '';
-      form.dataset.user = btn.getAttribute('data-user') || '';
-      form.dataset.telefone = btn.getAttribute('data-telefone') || '';
-      form.dataset.vencimento = btn.getAttribute('data-vencimento') || '';
-      form.dataset.valor = btn.getAttribute('data-valor') || '';
-      form.dataset.plano = btn.getAttribute('data-plano') || '';
-      form.dataset.servidor = btn.getAttribute('data-servidor') || '';
-      const title = modal.querySelector('#whatsapp-title');
       const nome = btn.getAttribute('data-nome') || '';
-      if (title) title.textContent = nome ? 'Enviar WhatsApp - ' + nome : 'Enviar WhatsApp';
+      const tel = btn.getAttribute('data-telefone') || '';
+      const nomeEl = modal.querySelector('[data-wa-nome]'); if (nomeEl) nomeEl.textContent = nome || '—';
+      const telEl = modal.querySelector('[data-wa-telefone]'); if (telEl) telEl.textContent = tel;
+      // reseta a mídia
+      const mt = form.querySelector('[name="media_tipo"]'); if (mt) mt.value = '';
+      const murl = form.querySelector('.wa-media-url'); if (murl) { murl.hidden = true; murl.value = ''; }
+      form.querySelectorAll('[data-wa-media]').forEach(b => b.classList.remove('active'));
       setModalState(modal, true);
     });
   });
+
+  // Template (opcional) -> preenche o textarea da mensagem
+  const waTemplate = document.querySelector('#modal-send-whatsapp-form [data-wa-template]');
+  const waMensagem = document.querySelector('#modal-send-whatsapp-form [data-wa-mensagem]');
+  if (waTemplate && waMensagem) {
+    waTemplate.addEventListener('change', () => {
+      const opt = waTemplate.options[waTemplate.selectedIndex];
+      const msg = opt ? (opt.getAttribute('data-message') || '') : '';
+      if (msg) waMensagem.value = msg;
+    });
+  }
+
+  // Botões de Anexar Mídia: define o tipo e mostra o campo de link
+  const waForm = document.getElementById('modal-send-whatsapp-form');
+  if (waForm) {
+    const urlInput = waForm.querySelector('.wa-media-url');
+    const tipoInput = waForm.querySelector('[name="media_tipo"]');
+    waForm.querySelectorAll('[data-wa-media]').forEach(b => {
+      b.addEventListener('click', () => {
+        const ativo = b.classList.contains('active');
+        waForm.querySelectorAll('[data-wa-media]').forEach(x => x.classList.remove('active'));
+        if (ativo) {
+          if (tipoInput) tipoInput.value = '';
+          if (urlInput) { urlInput.hidden = true; }
+        } else {
+          b.classList.add('active');
+          if (tipoInput) tipoInput.value = b.getAttribute('data-wa-media') || '';
+          if (urlInput) { urlInput.hidden = false; urlInput.focus(); }
+        }
+      });
+    });
+  }
 
   document.querySelectorAll('.open-payment').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -821,11 +1031,12 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="action"]').value = 'update_mensagem';
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
       form.querySelector('[name="titulo"]').value = btn.getAttribute('data-titulo') || '';
+      const desc = form.querySelector('[name="descricao"]'); if (desc) desc.value = btn.getAttribute('data-descricao') || '';
       form.querySelector('[name="mensagem"]').value = btn.getAttribute('data-mensagem') || '';
       form.querySelector('[name="media_tipo"]').value = btn.getAttribute('data-media-tipo') || '';
       form.querySelector('[name="media_path"]').value = btn.getAttribute('data-media-path') || '';
       const title = modal.querySelector('.modal-header h3');
-      if (title) title.textContent = 'Editar Mensagem';
+      if (title) title.textContent = '✎ Editar Template';
       setModalState(modal, true);
     });
   });

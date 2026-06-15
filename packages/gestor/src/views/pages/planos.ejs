@@ -1,219 +1,98 @@
+<%
+  const totalPlanos = planos.length;
+  const planosAtivos = planos.filter(p => p.ativo).length;
+  const clientesAtivos = planos.reduce((a, p) => a + Number(p.clientes || 0), 0);
+%>
 <div class="container page-planos" data-search-scope>
-  <div class="section-header toolbar">
-    <div>
-      <h2 class="section-title">
-        Planos
-      </h2>
-      <p class="muted">
-        Planos de assinatura.
-      </p>
+
+  <div class="plano-stats">
+    <div class="cli-stat accent-blue">
+      <div><strong><%= totalPlanos %></strong><span>Total de Planos</span></div>
+      <div class="cli-stat-ico">📦</div>
     </div>
-    <button class="btn btn-primary" type="button" data-open-modal="modal-add-plano">
-      Adicionar plano
-    </button>
+    <div class="cli-stat accent-green">
+      <div><strong class="pos"><%= planosAtivos %></strong><span>Planos Ativos</span></div>
+      <div class="cli-stat-ico">✅</div>
+    </div>
+    <div class="cli-stat accent-blue">
+      <div><strong><%= clientesAtivos %></strong><span>Clientes Ativos</span></div>
+      <div class="cli-stat-ico">👥</div>
+    </div>
   </div>
-  <div class="card filters filter-card">
-    <div class="filter-head">
-      <div>
-        <span class="filter-kicker">
-          Filtros
-        </span>
-        <strong>
-          Localizar planos
-        </strong>
+
+  <div class="plano-filters">
+    <label class="cli-search plano-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar plano..." data-search-input></label>
+    <label class="cli-filter">
+      <select class="input" data-filter-select aria-label="Status">
+        <option value="">Todos</option><option>Ativo</option><option>Inativo</option>
+      </select>
+    </label>
+    <button class="btn btn-primary plano-new" type="button" data-open-modal="modal-add-plano">+ Novo Plano</button>
+  </div>
+
+  <% if (!planos.length) { %>
+    <div class="cli-empty">
+      <div class="cli-empty-ico">📦</div>
+      <h3>Nenhum plano cadastrado</h3>
+      <p class="muted">Cadastre planos para oferecer aos seus clientes.</p>
+      <button class="btn btn-primary" type="button" data-open-modal="modal-add-plano">+ Novo Plano</button>
+    </div>
+  <% } else { %>
+  <div class="plano-grid">
+    <% planos.forEach(p => { %>
+    <div class="plano-card" data-search-item>
+      <div class="plano-head">
+        <strong><%= p.nome %></strong>
+        <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
-      <button class="btn btn-muted filter-clear" type="button" data-clear-filters>
-        Limpar
-      </button>
-    </div>
-    <div class="filter-grid">
-      <label class="filter-field">
-        <span>
-          Tipo
-        </span>
-        <select class="input" data-filter-select>
-          <option value="">
-            Todos
-          </option>
-          <option>
-            Mês
-          </option>
-          <option>
-            Mensal
-          </option>
-          <option>
-            Dia
-          </option>
-          <option>
-            Anual
-          </option>
-        </select>
-      </label>
-      <label class="filter-field filter-search">
-        <span>
-          Pesquisar
-        </span>
-        <div class="search-control">
-          <span>
-            ⌕
-          </span>
-          <input class="input" type="search" data-search-input placeholder="Nome, tipo, observação">
-        </div>
-      </label>
-    </div>
-  </div>
-  <div class="card table-card data-table-card">
-    <div class="table-card-head">
-      <div>
-        <span class="filter-kicker">
-          Tabela
-        </span>
-        <strong>
-          Planos cadastrados
-        </strong>
-        <small>
-          Planos, períodos e observações.
-        </small>
+      <div class="plano-meta">
+        <span>📅 <%= p.periodo %> <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : p.tipo %></span>
+        <span class="plano-cred">🪙 <%= Number(p.creditos || 0) %> crédito(s)</span>
       </div>
-      <span class="table-count">
-        <%= planos.length %>
-      </span>
+      <p class="plano-desc"><%= p.observacao || 'Sem descrição.' %></p>
+      <div class="plano-clients">👥 <%= p.clientes || 0 %> clientes ativos</div>
+      <div class="plano-actions">
+        <button class="btn btn-muted plano-edit edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>" data-creditos="<%= Number(p.creditos || 0) %>" data-ativo="<%= p.ativo ? 1 : 0 %>">✎ Editar</button>
+        <form method="post" action="/planos" class="action-form delete-plano plano-del-form">
+          <input type="hidden" name="action" value="delete_plano">
+          <input type="hidden" name="id" value="<%= p.id %>">
+          <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+        </form>
+      </div>
     </div>
-    <div class="table-wrapper">
-      <table class="table table-modern">
-        <thead>
-          <tr>
-            <th>
-              Nome
-            </th>
-            <th>
-              Tipo
-            </th>
-            <th>
-              Período
-            </th>
-            <th>
-              Clientes
-            </th>
-            <th>
-              Observação
-            </th>
-            <th>
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (!planos.length) { %>
-            <tr class="table-empty-row">
-              <td colspan="6">
-                <div class="table-empty">
-                  Nenhum plano encontrado.
-                </div>
-              </td>
-            </tr>
-          <% } %>
-          <% planos.forEach(p => { %>
-            <tr data-search-item>
-              <td>
-                <strong>
-                  <%= p.nome %>
-                </strong>
-              </td>
-              <td>
-                <%= p.tipo %>
-              </td>
-              <td>
-                <%= p.periodo %>
-              </td>
-              <td>
-                <%= p.clientes || 0 %>
-              </td>
-              <td>
-                <%= p.observacao || '-' %>
-              </td>
-              <td class="table-actions">
-                <button class="btn btn-sm btn-warning edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>">
-                  Editar
-                </button>
-                <form method="post" class="action-form delete-plano">
-                  <input type="hidden" name="action" value="delete_plano">
-                  <input type="hidden" name="id" value="<%= p.id %>">
-                  <button class="btn btn-sm btn-danger">
-                    Apagar
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+    <% }) %>
   </div>
+  <% } %>
 </div>
+
 <div class="modal-overlay" id="modal-add-plano" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Adicionar Plano
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>+ Novo Plano</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
-    <form method="post" action="/planos" id="modal-add-plano-form" class="modal-body">
+    <form method="post" action="/planos" id="modal-add-plano-form" class="modal-body" data-native-submit="1">
       <input type="hidden" name="action" value="create_plano">
       <input type="hidden" name="id" value="">
       <div class="form-grid">
-        <label class="field">
-          <span>
-            Nome
-          </span>
-          <div class="input-icon">
-            <span class="icon-box">
-              👤
-            </span>
-            <input class="input" name="nome" placeholder="Digite o nome do plano" required>
-          </div>
-        </label>
-        <label class="field">
-          <span>
-            Tipo de período
-          </span>
-          <div class="input-icon">
-            <span class="icon-box">
-              ↻
-            </span>
-            <input class="input" name="tipo" value="Mês">
-          </div>
-        </label>
-        <label class="field">
-          <span>
-            Período
-          </span>
-          <div class="input-icon">
-            <span class="icon-box">
-              #
-            </span>
-            <input class="input" type="number" name="periodo" value="1">
-          </div>
-        </label>
+        <label class="field full"><span>Nome do Plano *</span><input class="input" name="nome" placeholder="Ex: Mensal, Trimestral..." required data-required="1" data-field-label="Nome do Plano"></label>
         <label class="field full">
-          <span>
-            Observação
-          </span>
-          <textarea class="input" name="observacao">
-          </textarea>
+          <span>Tipo de Período *</span>
+          <select class="input" name="tipo"><option>Dias</option><option>Meses</option></select>
+        </label>
+        <label class="field"><span>📅 Período (dias) *</span><input class="input" type="number" name="periodo" value="30" min="1"></label>
+        <label class="field"><span>🪙 Créditos *</span><input class="input" type="number" step="0.01" name="creditos" value="1"></label>
+        <div class="field full plano-info" data-plano-info>Este plano terá duração de <strong>30 dias</strong> e consumirá <strong>1 crédito(s)</strong> do servidor ao renovar.</div>
+        <label class="field full"><span>Descrição</span><textarea class="input" name="observacao" placeholder="Descrição do plano..."></textarea></label>
+        <label class="switch-field full">
+          <span><strong>Plano Ativo</strong><small>Planos inativos não aparecem para novos cadastros</small></span>
+          <input type="checkbox" name="ativo" value="1" class="switch" checked>
         </label>
       </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
-      <button class="btn btn-blue" type="submit" form="modal-add-plano-form">
-        Salvar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-plano-form">Cadastrar</button>
     </div>
   </div>
 </div>

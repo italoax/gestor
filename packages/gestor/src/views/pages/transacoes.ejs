@@ -1,0 +1,173 @@
+<div class="container page-transacoes" data-search-scope>
+
+  <div class="tx-stats">
+    <div class="tx-stat">
+      <div><span>Transações</span><strong><%= stats.total %></strong></div>
+      <div class="tx-stat-ico accent-blue">🔁</div>
+    </div>
+    <div class="tx-stat">
+      <div><span>Telas</span><strong><%= stats.telas %></strong></div>
+      <div class="tx-stat-ico accent-green">👁</div>
+    </div>
+    <div class="tx-stat">
+      <div><span>Créditos</span><strong class="<%= stats.creditos < 0 ? 'neg' : '' %>"><%= stats.creditos %></strong></div>
+      <div class="tx-stat-ico accent-red">📉</div>
+    </div>
+    <div class="tx-stat">
+      <div><span>Receita</span><strong class="pos"><%= formatMoney(stats.receita) %></strong></div>
+      <div class="tx-stat-ico accent-green">💲</div>
+    </div>
+    <div class="tx-stat">
+      <div><span>Lucro</span><strong class="<%= stats.lucro < 0 ? 'neg' : 'pos' %>"><%= formatMoney(stats.lucro) %></strong></div>
+      <div class="tx-stat-ico accent-blue">📈</div>
+    </div>
+  </div>
+
+  <div class="cli-table-card tx-card">
+    <div class="tx-toolbar">
+      <strong class="tx-title">Histórico de Transações</strong>
+      <div class="tx-tools">
+        <label class="topbar-search tx-search"><span class="topbar-search-ico">⌕</span><input type="search" placeholder="Buscar..." data-search-input></label>
+        <button class="btn btn-muted" type="button" disabled>📅 Todas</button>
+        <button class="btn btn-muted" type="button" disabled>Mais recentes ▾</button>
+        <button class="btn btn-muted" type="button" disabled>⬇ Exportar</button>
+        <button class="btn btn-primary" type="button" data-open-modal="modal-nova-transacao">+ Nova</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="cli-table tx-table">
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" class="cli-check" data-check-all aria-label="Selecionar todos"></th>
+            <th>Data</th><th>Cliente</th><th>Pagamento</th><th>Descrição</th><th>Servidor</th><th>Plano</th>
+            <th>Telas</th><th>Créditos</th><th>Custo</th><th>Total</th><th>Lucro</th><th class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!transacoes.length) { %>
+            <tr><td colspan="13"><div class="dist-empty">Nenhuma transação registrada.</div></td></tr>
+          <% } %>
+          <% transacoes.forEach(t => { %>
+          <tr data-search-item data-id="<%= t.id %>">
+            <td class="col-check"><input type="checkbox" class="cli-check" aria-label="Selecionar"></td>
+            <td>📅 <%= formatDateBr(t.data) %></td>
+            <td><%= t.clienteNome || '-' %></td>
+            <td><% if (t.formaPagamento) { %><span class="badge badge-blue"><%= t.formaPagamento %></span><% } else { %>-<% } %></td>
+            <td><%= t.descricao || '-' %></td>
+            <td><%= t.servidor || '-' %></td>
+            <td><% if (t.plano) { %><span class="badge badge-muted"><%= t.plano %></span><% } else { %>-<% } %></td>
+            <td><%= t.telas %></td>
+            <td class="<%= Number(t.creditos) < 0 ? 'tx-neg' : '' %>"><%= Number(t.creditos) %></td>
+            <td class="tx-neg"><%= formatMoney(t.custo) %></td>
+            <td class="tx-pos">+<%= formatMoney(t.valorVenda) %></td>
+            <td class="<%= Number(t.lucro) < 0 ? 'tx-neg' : 'tx-pos' %>"><%= Number(t.lucro) < 0 ? '' : '+' %><%= formatMoney(t.lucro) %></td>
+            <td class="col-acoes">
+              <div class="cli-acoes">
+                <button class="cli-ico-btn view-transacao" type="button" title="Detalhes"
+                  data-data="<%= formatDateBr(t.data) %>" data-cliente="<%= t.clienteNome || '-' %>" data-pagamento="<%= t.formaPagamento || '-' %>" data-descricao="<%= t.descricao || '-' %>" data-servidor="<%= t.servidor || '-' %>" data-plano="<%= t.plano || '-' %>" data-telas="<%= t.telas %>" data-creditos="<%= Number(t.creditos) %>" data-custo="<%= formatMoney(t.custo) %>" data-total="<%= formatMoney(t.valorVenda) %>" data-lucro="<%= formatMoney(t.lucro) %>">👁</button>
+                <button class="cli-ico-btn edit-transacao" type="button" title="Editar"
+                  data-id="<%= t.id %>" data-data="<%= formatDateInput(t.data) %>" data-forma="<%= t.formaPagamento || '' %>" data-cliente-id="<%= t.clienteId || '' %>" data-descricao="<%= t.descricao || '' %>" data-plano="<%= t.plano || '' %>" data-servidor="<%= t.servidor || '' %>" data-telas="<%= t.telas %>" data-creditos="<%= Number(t.creditos) %>" data-custo="<%= Number(t.custo) %>" data-valor-venda="<%= Number(t.valorVenda) %>">✎</button>
+                <form method="post" action="/transacoes" class="action-form delete-transacao cli-acao-form" data-native-submit="1">
+                  <input type="hidden" name="action" value="delete_transacao">
+                  <input type="hidden" name="id" value="<%= t.id %>">
+                  <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cli-table-foot">
+      <div class="cli-foot-left">Linhas por página <select class="input cli-rows-select" disabled><option>25</option></select></div>
+      <div class="cli-foot-right">
+        <span><%= transacoes.length ? 1 : 0 %>-<%= transacoes.length %> de <%= transacoes.length %></span>
+        <div class="cli-pager"><button type="button" disabled>«</button><button type="button" disabled>‹</button><span>1/1</span><button type="button" disabled>›</button><button type="button" disabled>»</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nova-transacao" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>+ Nova Transação</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <form method="post" action="/transacoes" id="modal-nova-transacao-form" class="modal-body" data-native-submit="1">
+      <input type="hidden" name="action" value="create_transacao">
+      <input type="hidden" name="id" value="">
+      <div class="form-grid">
+        <label class="field"><span>Data</span><input class="input" type="date" name="data"></label>
+        <label class="field">
+          <span>Forma de Pagamento *</span>
+          <select class="input" name="forma_pagamento" required>
+            <option value="">Selecione...</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
+          </select>
+        </label>
+        <label class="field full">
+          <span>Cliente</span>
+          <select class="input" name="cliente_id" data-tx-cliente>
+            <option value="">Selecione um cliente...</option>
+            <% clientes.forEach(c => { %>
+              <option value="<%= c.id %>" data-plano="<%= c.plano || '' %>" data-servidor="<%= c.servidor || '' %>" data-telas="<%= c.telas || 1 %>" data-valor="<%= c.valor || 0 %>"><%= c.nome %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="field"><span>Descrição</span><input class="input" name="descricao" placeholder="Ex: Renovação de plano"></label>
+        <label class="field">
+          <span>Plano</span>
+          <select class="input" name="plano">
+            <option value="">Selecione um plano...</option>
+            <% planos.forEach(p => { %><option><%= p.nome %></option><% }) %>
+          </select>
+        </label>
+        <label class="field full">
+          <span>Servidor</span>
+          <select class="input" name="servidor">
+            <option value="">Selecione um servidor...</option>
+            <% servidores.forEach(s => { %><option><%= s.nome %></option><% }) %>
+          </select>
+        </label>
+        <label class="field"><span>Telas *</span><input class="input" type="number" name="telas" value="1" min="0"></label>
+        <label class="field"><span>Créditos *</span><input class="input" type="number" step="0.01" name="creditos" value="10"></label>
+        <label class="field"><span>Custo (R$)</span><input class="input" type="number" step="0.01" name="custo" value="2"></label>
+        <label class="field"><span>Valor de Venda (R$) *</span><input class="input" type="number" step="0.01" name="valor_venda" placeholder="0,00" required></label>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-nova-transacao-form">Registrar Transação</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-transacao-info" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Detalhes da Transação</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body">
+      <ul class="info-list">
+        <li>Data: <span id="tx-info-data"></span></li>
+        <li>Cliente: <span id="tx-info-cliente"></span></li>
+        <li>Pagamento: <span id="tx-info-pagamento"></span></li>
+        <li>Descrição: <span id="tx-info-descricao"></span></li>
+        <li>Servidor: <span id="tx-info-servidor"></span></li>
+        <li>Plano: <span id="tx-info-plano"></span></li>
+        <li>Telas: <span id="tx-info-telas"></span></li>
+        <li>Créditos: <span id="tx-info-creditos"></span></li>
+        <li>Custo: <span id="tx-info-custo"></span></li>
+        <li>Total: <span id="tx-info-total"></span></li>
+        <li>Lucro: <span id="tx-info-lucro"></span></li>
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
+    </div>
+  </div>
+</div>

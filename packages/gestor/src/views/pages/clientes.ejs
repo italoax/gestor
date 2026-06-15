@@ -1,722 +1,508 @@
+<%
+  const cliTotal = clientes.length;
+  const cliAtivos = clientes.filter(c => String(c.status) === 'Ativo').length;
+  const cliVencidos = clientes.filter(c => statusByVencimento(c.status, c.vencimento).type === 'vencido').length;
+  const arq = (typeof verArquivados !== 'undefined') && verArquivados;
+%>
 <div class="container page-clientes" data-search-scope>
-  <div class="section-header toolbar">
-    <div>
-      <h2 class="section-title">
-        Clientes
-      </h2>
-      <p class="muted">
-        Gerencie clientes, pagamentos e vencimentos.
-      </p>
+
+  <div class="cli-stats">
+    <div class="cli-stat accent-blue">
+      <div class="cli-stat-ico">👥</div>
+      <div><strong><%= cliTotal %></strong><span>Total</span></div>
     </div>
-    <div class="actions-row">
-      <span class="badge badge-blue">
-        <%= clientes.length %>
-      </span>
-      <button class="btn btn-primary" type="button" data-open-modal="modal-add-cliente">
-        Adicionar cliente
-      </button>
+    <div class="cli-stat accent-green">
+      <div class="cli-stat-ico">🧑‍🤝‍🧑</div>
+      <div><strong><%= cliAtivos %></strong><span>Ativos</span></div>
+    </div>
+    <div class="cli-stat accent-red">
+      <div class="cli-stat-ico">⚠️</div>
+      <div><strong><%= cliVencidos %></strong><span>Vencidos</span></div>
     </div>
   </div>
-  <div class="card filters filter-card">
-    <div class="filter-head">
-      <div>
-        <span class="filter-kicker">
-          Filtros
-        </span>
-        <strong>
-          Refinar clientes
-        </strong>
-      </div>
-      <button class="btn btn-muted filter-clear" type="button" data-clear-filters>
-        Limpar
-      </button>
-    </div>
-    <div class="filter-grid">
-      <label class="filter-field">
-        <span>
-          Status
-        </span>
-        <select class="input" data-filter-select>
-          <option value="">
-            Todos
-          </option>
-          <option>
-            Ativo
-          </option>
-          <option value="pra vencer">
-            Pra vencer
-          </option>
-          <option>
-            Vence hoje
-          </option>
-          <option>
-            Vencido
-          </option>
-          <option>
-            Inativo
-          </option>
-        </select>
-      </label>
-      <label class="filter-field">
-        <span>
-          Plano
-        </span>
-        <select class="input" data-filter-select>
-          <option value="">
-            Todos
-          </option>
-          <% planos.forEach(p => { %>
-            <option>
-              <%= p.nome %>
-            </option>
-          <% }) %>
-        </select>
-      </label>
-      <label class="filter-field">
-        <span>
-          Servidor
-        </span>
-        <select class="input" data-filter-select>
-          <option value="">
-            Todos
-          </option>
-          <% servidores.forEach(s => { %>
-            <option>
-              <%= s.nome %>
-            </option>
-          <% }) %>
-        </select>
-      </label>
-      <label class="filter-field filter-search">
-        <span>
-          Pesquisar
-        </span>
-        <div class="search-control">
-          <span>
-            ⌕
-          </span>
-          <input class="input" type="search" placeholder="Nome, usuário ou telefone" data-search-input>
-        </div>
-      </label>
-    </div>
+
+  <label class="cli-search">
+    <span class="cli-search-ico">⌕</span>
+    <input class="input" type="search" placeholder="Buscar por nome, usuário, WhatsApp, email, plano ou servidor..." data-search-input>
+  </label>
+
+  <button class="btn btn-primary cli-new-btn" type="button" data-open-modal="modal-add-cliente">
+    👤 Novo Cliente
+  </button>
+
+  <div class="cli-secondary">
+    <% if (arq) { %>
+      <a class="btn btn-primary" href="/clientes">↩ Voltar aos ativos</a>
+    <% } else { %>
+      <a class="btn btn-muted" href="/clientes?arquivados=1">🗃️ Arquivados</a>
+    <% } %>
+    <button class="btn btn-muted" type="button" title="Em breve">🗑️ Lixeira</button>
   </div>
-  <div class="card table-card data-table-card">
-    <div class="table-card-head">
-      <div>
-        <span class="filter-kicker">
-          Tabela
-        </span>
-        <strong>
-          Clientes cadastrados
-        </strong>
-        <small>
-          Lista de clientes, vencimentos, planos e ações rápidas.
-        </small>
-      </div>
-      <span class="table-count">
-        <%= clientes.length %>
-      </span>
+
+  <div class="cli-filters">
+    <label class="cli-filter">
+      <select class="input" data-filter-select aria-label="Status">
+        <option value="">⏱ Status</option>
+        <option>Ativo</option>
+        <option value="pra vencer">Pra vencer</option>
+        <option>Vence hoje</option>
+        <option>Vencido</option>
+        <option>Inativo</option>
+      </select>
+    </label>
+    <label class="cli-filter">
+      <select class="input" data-filter-select aria-label="Servidor">
+        <option value="">🗄 Servidor</option>
+        <% servidores.forEach(s => { %><option><%= s.nome %></option><% }) %>
+      </select>
+    </label>
+    <label class="cli-filter">
+      <select class="input" data-filter-select aria-label="Plano">
+        <option value="">📦 Plano</option>
+        <% planos.forEach(p => { %><option><%= p.nome %></option><% }) %>
+      </select>
+    </label>
+    <label class="cli-filter"><select class="input" aria-label="Aplicativo" disabled><option>📱 Aplicativo</option></select></label>
+    <label class="cli-filter"><select class="input" aria-label="Captação" disabled><option>📣 Captação</option></select></label>
+    <label class="cli-filter"><select class="input" aria-label="Dispositivo" disabled><option>🖥 Dispositivo</option></select></label>
+    <label class="cli-filter"><select class="input" aria-label="Painel Extra" disabled><option>🧩 Painel Extra</option></select></label>
+    <label class="cli-filter"><select class="input" aria-label="Ordenar" disabled><option>↕ Recém Cadastrado</option></select></label>
+    <button class="btn btn-muted" type="button" data-clear-filters>Limpar</button>
+  </div>
+
+  <% if (!clientes.length) { %>
+    <div class="cli-empty">
+      <div class="cli-empty-ico">👥</div>
+      <h3>Nenhum cliente cadastrado</h3>
+      <p class="muted">Comece adicionando seu primeiro cliente para gerenciar seus clientes de forma eficiente.</p>
+      <button class="btn btn-primary" type="button" data-open-modal="modal-add-cliente">👤 Adicionar Primeiro Cliente</button>
     </div>
+  <% } else { %>
+  <div class="cli-table-card">
     <div class="table-wrapper">
-      <table class="table table-modern table-clientes">
+      <table class="cli-table table-clientes">
         <thead>
           <tr>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="0" data-sort-type="text" aria-label="Ordenar cliente">
-                <span>Cliente</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="1" data-sort-type="text" aria-label="Ordenar telefone">
-                <span>Telefone</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="2" data-sort-type="date" aria-label="Ordenar vencimento">
-                <span>Vencimento</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="3" data-sort-type="text" aria-label="Ordenar plano">
-                <span>Plano</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="4" data-sort-type="number" aria-label="Ordenar valor">
-                <span>Valor</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="5" data-sort-type="text" aria-label="Ordenar status">
-                <span>Status</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              <button class="table-sort-toggle" type="button" data-sort-toggle data-sort-table=".table-clientes" data-sort-column="6" data-sort-type="text" aria-label="Ordenar servidor">
-                <span>Servidor</span>
-                <i aria-hidden="true"></i>
-              </button>
-            </th>
-            <th>
-              Ações
-            </th>
+            <th class="col-check"><input type="checkbox" class="cli-check" data-check-all aria-label="Selecionar todos"></th>
+            <th>Cliente</th>
+            <th>WhatsApp</th>
+            <th>Plano</th>
+            <th>Valor</th>
+            <th>Servidor</th>
+            <th>Sistema</th>
+            <th>Aplicativo</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th class="col-acoes">Ações</th>
           </tr>
         </thead>
         <tbody>
-          <% if (!clientes.length) { %>
-            <tr class="table-empty-row">
-              <td colspan="8">
-                <div class="table-empty">
-                  Nenhum cliente encontrado.
-                </div>
-              </td>
-            </tr>
-          <% } %>
           <% clientes.forEach(c => { const cStatus = statusByVencimento(c.status, c.vencimento); const servidorAtual = servidores.find(s => s.nome === c.servidor); %>
           <tr data-search-item data-id="<%= c.id %>" data-vencimento-status="<%= cStatus.type %>">
-            <td data-sort-value="<%= c.nome %> <%= c.user %>">
-              <strong>
-                <%= c.nome %>
-              </strong>
-              <small>
-                <%= c.user %>
-              </small>
+            <td class="col-check"><input type="checkbox" class="cli-check" aria-label="Selecionar"></td>
+            <td class="cli-c-nome">
+              <strong><%= c.nome %></strong>
+              <span class="hidden-search"><%= c.user || '' %> <%= c.email || '' %> <%= c.telefone %></span>
+              <% if (c.idPainel) { %>
+                <small class="cli-id"><%= c.idPainel %><button type="button" class="cli-copy" data-copy="<%= c.idPainel %>" title="Copiar ID">⧉</button></small>
+              <% } else if (c.user) { %>
+                <small><%= c.user %></small>
+              <% } %>
             </td>
-            <td data-sort-value="<%= c.telefone %>">
-              <%= c.telefone %>
-            </td>
-            <td data-sort-value="<%= formatDateInput(c.vencimento) %>">
-              <%= formatDateBr(c.vencimento) %>
-            </td>
-            <td data-sort-value="<%= c.plano || '' %>">
-              <%= c.plano || '-' %>
-            </td>
-            <td data-sort-value="<%= Number(c.valor || 0) %>">
-              <%= formatMoney(c.valor) %>
-            </td>
-            <td data-sort-value="<%= cStatus.label %>">
-              <%- badgeStatusByVencimento(c.status, c.vencimento) %>
-            </td>
-            <td data-sort-value="<%= c.servidor || '' %>">
-              <%= c.servidor || '-' %>
-            </td>
-            <td>
-              <div class="table-actions">
-                <button class="btn btn-sm btn-info info-cliente" type="button"
-                  data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-status="<%= cStatus.label %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>">
-                  Info
-                </button>
-                <button class="btn btn-sm btn-warning edit-cliente" type="button"
-                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateInput(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-status="<%= c.status %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>">
-                  Editar
-                </button>
-                <button class="btn btn-sm btn-success open-payment" type="button"
-                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>">
-                  Pagamento
-                </button>
-                <button class="btn btn-sm btn-green open-whatsapp-message" type="button" data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-servidor="<%= c.servidor %>">
-                  WhatsApp
-                </button>
-                <form method="post" action="/clientes" class="action-form delete-cliente" data-native-submit="1">
-                  <input type="hidden" name="action" value="delete_cliente">
-                  <input type="hidden" name="id" value="<%= c.id %>">
-                  <button class="btn btn-sm btn-danger" type="submit">
-                    Apagar
-                  </button>
-                </form>
+            <td><span class="cli-wpp"><%= c.telefone %></span></td>
+            <td><%= c.plano || '-' %></td>
+            <td><strong><%= formatMoney(c.valor) %></strong></td>
+            <td><%= c.servidor || '-' %></td>
+            <td><%= c.sistemaPainel || '-' %></td>
+            <td class="cli-app-cell">📱 -</td>
+            <td class="cli-venc"><span><%= formatDateBr(c.vencimento) %></span><% if (c.horaVencimento) { %><small><%= String(c.horaVencimento).slice(0,5) %></small><% } %></td>
+            <td><%- badgeStatusByVencimento(c.status, c.vencimento) %></td>
+            <td class="col-acoes">
+              <div class="cli-acoes">
+                <button class="cli-ico-btn open-payment" type="button" title="Renovar"
+                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>">↻</button>
+
+                <div class="cli-menu">
+                  <button class="cli-ico-btn cli-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Mais ações">⋯</button>
+                  <div class="cli-menu-pop" role="menu" hidden>
+                    <button class="cli-menu-item" type="button" data-act="msg">💬 Enviar mensagem</button>
+                    <button class="cli-menu-item" type="button" data-act="edit">✎ Editar</button>
+                    <button class="cli-menu-item" type="button" data-act="renew">↻ Renovar Aplicativo</button>
+                    <button class="cli-menu-item" type="button" data-copy="<%= servidorAtual?.urlRenovacao || '' %>">🔗 Copiar Link Renovação</button>
+                    <% if (arq) { %>
+                      <button class="cli-menu-item" type="button" data-act="unarchive">↩ Desarquivar</button>
+                    <% } else { %>
+                      <button class="cli-menu-item" type="button" data-act="archive">🗄 Arquivar</button>
+                    <% } %>
+                    <div class="cli-menu-sep"></div>
+                    <button class="cli-menu-item danger" type="button" data-act="delete">🗑 Excluir</button>
+                  </div>
+                </div>
+
+                <div class="cli-hidden-actions" hidden>
+                  <button class="open-whatsapp-message" type="button"
+                    data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-servidor="<%= c.servidor %>"></button>
+                  <button class="edit-cliente" type="button"
+                    data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateInput(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-status="<%= c.status %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>"
+                    data-senha="<%= c.senha || '' %>" data-id-painel="<%= c.idPainel || '' %>" data-email="<%= c.email || '' %>" data-captacao="<%= c.captacao || '' %>" data-aniversario="<%= formatDateInput(c.aniversario) %>" data-link-m3u="<%= c.linkM3u || '' %>" data-time-cliente="<%= c.timeCliente || '' %>" data-telefone-secundario="<%= c.telefoneSecundario || '' %>" data-observacoes="<%= c.observacoes || '' %>" data-data-inicio="<%= formatDateInput(c.dataInicio) %>" data-hora-vencimento="<%= c.horaVencimento || '' %>" data-sistema-painel="<%= c.sistemaPainel || '' %>" data-dispositivo="<%= c.dispositivo || '' %>" data-aplicativo="<%= c.aplicativo || '' %>" data-pontos="<%= c.pontosFidelidade || 0 %>" data-bloquear="<%= c.bloquearNotificacoes ? 1 : 0 %>" data-boas-vindas="<%= c.enviarBoasVindas ? 1 : 0 %>"></button>
+                  <form method="post" action="/clientes" class="delete-cliente" data-native-submit="1">
+                    <input type="hidden" name="action" value="delete_cliente">
+                    <input type="hidden" name="id" value="<%= c.id %>">
+                    <button type="submit"></button>
+                  </form>
+                  <% if (arq) { %>
+                  <form method="post" action="/clientes" class="unarchive-cliente">
+                    <input type="hidden" name="action" value="desarquivar_cliente">
+                    <input type="hidden" name="id" value="<%= c.id %>">
+                    <button type="submit"></button>
+                  </form>
+                  <% } else { %>
+                  <form method="post" action="/clientes" class="archive-cliente">
+                    <input type="hidden" name="action" value="arquivar_cliente">
+                    <input type="hidden" name="id" value="<%= c.id %>">
+                    <button type="submit"></button>
+                  </form>
+                  <% } %>
+                </div>
               </div>
             </td>
           </tr>
-        <% }) %>
-      </tbody>
-    </table>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <div class="cli-table-foot">
+      <div class="cli-foot-left">Linhas por página <select class="input cli-rows-select" disabled><option>50</option></select></div>
+      <div class="cli-foot-right">
+        <span><%= clientes.length ? 1 : 0 %>-<%= clientes.length %> de <%= clientes.length %></span>
+        <div class="cli-pager"><button type="button" disabled>«</button><button type="button" disabled>‹</button><span>1/1</span><button type="button" disabled>›</button><button type="button" disabled>»</button></div>
+      </div>
+    </div>
   </div>
+  <% } %>
 </div>
-</div>
+
 <div class="modal-overlay" id="modal-send-whatsapp" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3 id="whatsapp-title">
-        Enviar WhatsApp
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3 id="whatsapp-title">Enviar Mensagem</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <form method="post" action="/clientes" id="modal-send-whatsapp-form" class="modal-body" data-native-submit="1">
       <input type="hidden" name="action" value="send_whatsapp">
       <input type="hidden" name="id" value="">
+      <input type="hidden" name="media_tipo" value="">
       <div class="form-grid">
+        <div class="field full wa-client-box">
+          <strong data-wa-nome>—</strong>
+          <span class="muted" data-wa-telefone></span>
+        </div>
         <label class="field full">
-          <span>
-            Mensagem
-          </span>
-          <select class="input" name="mensagem_id" required>
-            <option value="">
-              Selecione a mensagem
-            </option>
+          <span>Template (opcional)</span>
+          <select class="input" name="mensagem_id" data-wa-template>
+            <option value="">Selecione um template</option>
             <% mensagens.forEach(m => { %>
-              <option value="<%= m.id %>" data-message="<%= m.mensagem || '' %>">
-                <%= m.titulo %>
-              </option>
+              <option value="<%= m.id %>" data-message="<%= m.mensagem || '' %>"><%= m.titulo %></option>
             <% }) %>
           </select>
-          <small>
-            Ao enviar, o sistema pega o telefone cadastrado do cliente e envia direto pelo WPPConnect conectado em /whatsapp. As variáveis do modelo, como {nome}, {vencimento}, {valor}, {plano}, {usuario}, {telefone} e {servidor}, serão preenchidas com os dados do cliente.
-          </small>
         </label>
-      </div>
-      <% if (!mensagens.length) { %>
-        <div class="form-alert error">
-          Nenhuma mensagem cadastrada. Cadastre uma mensagem antes de enviar.
+        <label class="field full">
+          <span>Dispositivo WhatsApp</span>
+          <select class="input" name="dispositivo">
+            <option value="">Automático (padrão)</option>
+            <% (typeof whatsappDevices !== 'undefined' ? whatsappDevices : []).forEach(d => { %>
+              <option value="<%= d.sessao %>"><%= d.nome %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label class="field full">
+          <span>Mensagem</span>
+          <textarea class="input" name="mensagem_texto" rows="4" placeholder="Digite sua mensagem..." data-wa-mensagem></textarea>
+        </label>
+        <div class="field full">
+          <span>Anexar Mídia</span>
+          <div class="wa-media-btns">
+            <button type="button" class="btn btn-muted" data-wa-media="image">🖼 Imagem</button>
+            <button type="button" class="btn btn-muted" data-wa-media="video">🎬 Vídeo</button>
+            <button type="button" class="btn btn-muted" data-wa-media="audio">🎵 Áudio</button>
+            <button type="button" class="btn btn-muted" data-wa-media="document">📄 Documento</button>
+          </div>
+          <input class="input wa-media-url" type="url" name="media_url" placeholder="Cole o link da mídia (https://...)" hidden>
         </div>
-      <% } %>
+      </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Cancelar
-      </button>
-      <button class="btn btn-green" type="submit" form="modal-send-whatsapp-form" <%= mensagens.length ? '' : 'disabled' %>
-        >Enviar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-green" type="submit" form="modal-send-whatsapp-form">✈ Enviar</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-add-cliente" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>
-        Adicionar Cliente
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>👤 Novo Cliente</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-tabs">
-      <button class="tab-btn active" type="button" data-tab="dados">
-        Dados
-      </button>
-      <button class="tab-btn" type="button" data-tab="pagamento">
-        Pagamento
-      </button>
+      <button class="tab-btn active" type="button" data-tab="dados">👤 Dados</button>
+      <button class="tab-btn" type="button" data-tab="plano">📦 Plano</button>
+      <button class="tab-btn" type="button" data-tab="apps">📱 Apps</button>
+      <button class="tab-btn" type="button" data-tab="adicionais">🧩 Adicionais</button>
     </div>
     <form method="post" action="/clientes" id="modal-add-cliente-form" class="modal-body" data-native-submit="1">
       <input type="hidden" name="action" value="create_cliente">
       <input type="hidden" name="id" value="">
+      <input type="hidden" name="status" value="Ativo">
       <div class="modal-error" id="modal-add-cliente-error" aria-live="polite"></div>
+
       <div class="tab-panel active" data-tab-panel="dados">
         <div class="form-grid">
-          <label class="field">
-            <span>
-              Nome
-            </span>
-            <div class="input-icon">
-              <span class="icon-box">
-                👤
-              </span>
-              <input class="input" name="nome" placeholder="Digite o nome do cliente" required data-required="1" data-tab="dados" data-field-label="Nome">
-            </div>
-            <small class="field-error" data-error-for="nome">
-            </small>
+          <label class="field full">
+            <span>Nome *</span>
+            <input class="input" name="nome" placeholder="Nome completo do cliente" required data-required="1" data-tab="dados" data-field-label="Nome">
+            <small class="field-error" data-error-for="nome"></small>
           </label>
-          <label class="field">
-            <span>
-              Usuário
-            </span>
-            <div class="input-icon">
-              <span class="icon-box">
-                @
-              </span>
-              <input class="input" name="user" placeholder="Usuário do aplicativo" required data-required="1" data-tab="dados" data-field-label="Usuário">
-            </div>
-            <small class="field-error" data-error-for="user">
-            </small>
-          </label>
-          <label class="field">
-            <span>
-              Telefone
-            </span>
+          <label class="field"><span>Usuário</span><input class="input" name="user" placeholder="usuario123"></label>
+          <label class="field"><span>Senha</span><input class="input" type="password" name="senha" placeholder="••••••••"></label>
+          <label class="field full"><span>ID Painel</span><input class="input" name="id_painel" placeholder="Ex: IKWOOGbWzo"></label>
+          <label class="field full">
+            <span>WhatsApp *</span>
             <div class="input-icon phone-control">
-              <span class="icon-box">
-                ☎
-              </span>
+              <span class="icon-box">☎</span>
               <div class="phone-prefix" data-phone-prefix>
-                <button class="phone-prefix-btn" type="button" data-phone-prefix-toggle aria-expanded="false">
-                  +55
-                </button>
+                <button class="phone-prefix-btn" type="button" data-phone-prefix-toggle aria-expanded="false">+55</button>
                 <input type="hidden" name="telefone_prefixo" value="+55" data-phone-prefix-value>
                 <div class="phone-prefix-menu" hidden>
                   <input class="input phone-prefix-search" type="search" placeholder="Buscar país ou prefixo" data-phone-prefix-search>
-                  <div class="phone-prefix-list" data-phone-prefix-list>
-                  </div>
+                  <div class="phone-prefix-list" data-phone-prefix-list></div>
                 </div>
               </div>
-              <input class="input" type="tel" name="telefone" placeholder="(00) 00000-0000" inputmode="numeric" autocomplete="tel" maxlength="18" required data-phone-mask data-required="1" data-tab="dados" data-field-label="Telefone">
+              <input class="input" type="tel" name="telefone" placeholder="(00) 0 0000-0000" inputmode="numeric" autocomplete="tel" maxlength="18" required data-phone-mask data-required="1" data-tab="dados" data-field-label="WhatsApp">
             </div>
-            <small class="field-error" data-error-for="telefone">
-            </small>
+            <small class="field-error" data-error-for="telefone"></small>
           </label>
+          <details class="field full cli-details">
+            <summary>+ Adicionar contato secundário</summary>
+            <input class="input" name="telefone_secundario" placeholder="(00) 0 0000-0000">
+          </details>
+          <label class="field full"><span>Email</span><input class="input" type="email" name="email" placeholder="email@exemplo.com"></label>
           <label class="field">
-            <span>
-              Vencimento
-            </span>
-            <div class="input-icon date-control">
-              <span class="icon-box">
-                📅
-              </span>
-              <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" required data-date-mask data-required="1" data-tab="dados" data-field-label="Vencimento">
-            </div>
-            <small class="field-error" data-error-for="vencimento">
-            </small>
-          </label>
-          <input type="hidden" name="status" value="Ativo">
-        </div>
-      </div>
-      <div class="tab-panel" data-tab-panel="pagamento">
-        <div class="form-grid">
-          <label class="field">
-            <span>
-              Pago em
-            </span>
-            <input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask>
-          </label>
-          <label class="field">
-            <span>
-              Plano
-            </span>
-            <select class="input" name="plano">
-              <option value="">
-                Selecione
-              </option>
-              <% planos.forEach(p => { %>
-                <option value="<%= p.nome %>" data-creditos="<%= p.creditoGastos || 0 %>">
-                  <%= p.nome %>
-                </option>
-              <% }) %>
+            <span>Captação</span>
+            <select class="input" name="captacao">
+              <option value="">Origem do cliente</option>
+              <option>Indicação</option><option>Instagram</option><option>WhatsApp</option><option>Facebook</option><option>Google</option><option>Outro</option>
             </select>
           </label>
-          <label class="field">
-            <span>
-              Valor
-            </span>
-            <input class="input" type="number" step="0.01" name="valor">
+          <label class="field"><span>Aniversário</span><input class="input" type="date" name="aniversario"></label>
+          <label class="field full"><span>Link M3U</span><input class="input" name="link_m3u" placeholder="http://..."></label>
+          <label class="field full"><span>Time</span><input class="input" name="time_cliente" placeholder="Selecione o time..."></label>
+          <label class="field full"><span>Observações</span><textarea class="input" name="observacoes" placeholder="Observações internas sobre o cliente..."></textarea></label>
+          <label class="switch-field full">
+            <span><strong>🔕 Bloquear notificações</strong><small>Nenhuma mensagem automática será enviada a este cliente</small></span>
+            <input type="checkbox" name="bloquear_notificacoes" value="1" class="switch">
           </label>
-          <label class="field">
-            <span>
-              Valor pago
-            </span>
-            <input class="input" type="number" step="0.01" name="valor_pago">
-          </label>
-          <label class="field">
-            <span>
-              Servidor
-            </span>
-            <select class="input" name="servidor" data-valor-cred-select>
-              <option value="">
-                Selecione
-              </option>
-              <% servidores.forEach(s => { %>
-                <option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>">
-                  <%= s.nome %>
-                </option>
-              <% }) %>
-            </select>
-          </label>
-          <label class="field">
-            <span>
-              Telas
-            </span>
-            <input class="input" type="number" name="telas" value="1" min="0" data-telas-input>
-          </label>
-          <label class="field">
-            <span>
-              Créditos gastos
-            </span>
-            <input class="input" type="number" step="0.01" name="creditos_gastos" value="1" data-creditos-input>
-          </label>
-          <label class="field">
-            <span>
-              Forma pagamento
-            </span>
-            <select class="input" name="forma_pagamento">
-              <option value="">
-                Selecione
-              </option>
-              <option>
-                PIX
-              </option>
-              <option>
-                Dinheiro
-              </option>
-              <option>
-                Cartão
-              </option>
-            </select>
-          </label>
-          <label class="field">
-            <span>
-              Custo pagamento
-            </span>
-            <input class="input" type="number" step="0.01" name="custo_pagamento" data-custo-total>
+          <label class="switch-field full">
+            <span><strong>💬 Enviar boas-vindas</strong><small>Enviar mensagem de boas-vindas via WhatsApp</small></span>
+            <input type="checkbox" name="enviar_boas_vindas" value="1" class="switch" checked>
           </label>
           <label class="field full">
-            <span>
-              Observação
-            </span>
-            <textarea class="input" name="observacao_pagamento">
-            </textarea>
+            <span>Template de boas-vindas</span>
+            <select class="input" name="template_boas_vindas">
+              <option>Boas-vindas</option>
+              <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
+            </select>
           </label>
+          <label class="field full">
+            <span>Dispositivo WhatsApp</span>
+            <select class="input" name="dispositivo_whatsapp"><option>Automático (padrão)</option></select>
+          </label>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-tab-panel="plano">
+        <div class="form-grid">
+          <label class="field">
+            <span>Plano *</span>
+            <select class="input" name="plano" data-required="1" data-tab="plano" data-field-label="Plano">
+              <option value="">Selecione o plano</option>
+              <% planos.forEach(p => { %><option value="<%= p.nome %>" data-creditos="<%= p.creditoGastos || 0 %>"><%= p.nome %></option><% }) %>
+            </select>
+          </label>
+          <label class="field">
+            <span>Servidor *</span>
+            <select class="input" name="servidor" data-valor-cred-select data-required="1" data-tab="plano" data-field-label="Servidor">
+              <option value="">Selecione o servidor</option>
+              <% servidores.forEach(s => { %><option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option><% }) %>
+            </select>
+          </label>
+          <label class="field"><span>Valor (R$) *</span><input class="input" type="number" step="0.01" name="valor" placeholder="0,00" data-required="1" data-tab="plano" data-field-label="Valor"></label>
+          <label class="field">
+            <span>Pagamento *</span>
+            <select class="input" name="forma_pagamento">
+              <option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
+            </select>
+          </label>
+          <label class="field"><span>Telas</span><input class="input" type="number" name="telas" value="1" min="0" data-telas-input></label>
+          <input type="hidden" name="creditos_gastos" value="1" data-creditos-input>
+          <details class="field full cli-details">
+            <summary>Adicionar pagamento? <small>Registra a cobrança e desconta crédito do servidor</small></summary>
+            <div class="form-grid">
+              <label class="field"><span>Pago em</span><input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
+              <label class="field"><span>Valor pago</span><input class="input" type="number" step="0.01" name="valor_pago"></label>
+              <label class="field"><span>Custo pagamento</span><input class="input" type="number" step="0.01" name="custo_pagamento" data-custo-total></label>
+            </div>
+          </details>
+          <label class="field"><span>Data de Início *</span><input class="input" type="date" name="data_inicio"></label>
+          <label class="field">
+            <span>Vencimento *</span>
+            <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" required data-date-mask data-required="1" data-tab="plano" data-field-label="Vencimento">
+            <small class="field-error" data-error-for="vencimento"></small>
+          </label>
+          <label class="field"><span>Hora de Vencimento</span><input class="input" type="time" name="hora_vencimento" value="23:59"></label>
+          <label class="field full"><span>Sistema no painel</span><input class="input" name="sistema_painel" placeholder="Selecione o sistema"><small>Usado na renovação automática ao confirmar pagamento.</small></label>
+          <label class="field">
+            <span>🖥 Dispositivo</span>
+            <select class="input" name="dispositivo">
+              <option value="">Selecione o dispositivo</option>
+              <% (typeof dispositivos !== 'undefined' ? dispositivos : []).forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
+            </select>
+          </label>
+          <label class="field">
+            <span>📱 Aplicativo</span>
+            <select class="input" name="aplicativo">
+              <option value="">Selecione o aplicativo</option>
+              <% (typeof aplicativos !== 'undefined' ? aplicativos : []).forEach(a => { %><option value="<%= a %>"><%= a %></option><% }) %>
+            </select>
+          </label>
+          <label class="field"><span>⭐ Pontos de fidelidade</span><input class="input" type="number" name="pontos_fidelidade" value="0"></label>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-tab-panel="apps">
+        <div class="cli-apps-card">
+          <strong>Adicionar aplicativo</strong>
+          <div class="form-grid">
+            <label class="field"><span>Aplicativo *</span><select class="input" disabled><option>Selecione</option></select></label>
+            <label class="field"><span>Dispositivo</span><select class="input" disabled><option>Tipo</option></select></label>
+            <label class="field full"><span>MAC Address</span><input class="input" placeholder="00:1a:2b:3c:4d:5e" disabled></label>
+            <label class="field"><span>Vencimento</span><input class="input" type="date" disabled></label>
+            <label class="field"><span>OTP</span><input class="input" placeholder="Código" disabled></label>
+          </div>
+          <button class="btn btn-primary" type="button" disabled>+ Adicionar</button>
+        </div>
+        <p class="muted cli-apps-empty">Gerenciamento de aplicativos (MAC/OTP) chega em breve.</p>
+      </div>
+
+      <div class="tab-panel" data-tab-panel="adicionais">
+        <div class="empty-state" style="margin:20px auto;padding:32px;">
+          <div class="empty-state-icon">🧩</div>
+          <span class="empty-badge">Em breve</span>
+          <p class="muted">Configurações adicionais do cliente serão liberadas em uma próxima atualização.</p>
         </div>
       </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
-      <button class="btn btn-blue" type="submit" form="modal-add-cliente-form">
-        Salvar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-cliente-form">Cadastrar Cliente</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-required-fields" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Campos obrigatórios
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>Campos obrigatórios</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-alert error" id="modal-required-message">
-        Revise os campos obrigatórios.
-      </div>
-      <div class="modal-required-list" id="modal-required-list">
-      </div>
+      <div class="form-alert error" id="modal-required-message">Revise os campos obrigatórios.</div>
+      <div class="modal-required-list" id="modal-required-list"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
-      <button class="btn btn-blue" type="button" id="modal-required-go">
-        Ir para a aba
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
+      <button class="btn btn-blue" type="button" id="modal-required-go">Ir para a aba</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-cliente-info" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Detalhes do Cliente
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>Detalhes do Cliente</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
       <ul class="info-list">
-        <li>
-          Nome:
-          <span id="info-nome">
-          </span>
-        </li>
-        <li>
-          Usuário:
-          <span id="info-user">
-          </span>
-        </li>
-        <li>
-          Telefone:
-          <span id="info-telefone">
-          </span>
-        </li>
-        <li>
-          Vencimento:
-          <span id="info-vencimento">
-          </span>
-        </li>
-        <li>
-          Plano:
-          <span id="info-plano">
-          </span>
-        </li>
-        <li>
-          Valor:
-          <span id="info-valor">
-          </span>
-        </li>
-        <li>
-          Status:
-          <span id="info-status">
-          </span>
-        </li>
-        <li>
-          Servidor:
-          <span id="info-servidor">
-          </span>
-        </li>
-        <li>
-          Telas:
-          <span id="info-telas">
-          </span>
-        </li>
+        <li>Nome: <span id="info-nome"></span></li>
+        <li>Usuário: <span id="info-user"></span></li>
+        <li>Telefone: <span id="info-telefone"></span></li>
+        <li>Vencimento: <span id="info-vencimento"></span></li>
+        <li>Plano: <span id="info-plano"></span></li>
+        <li>Valor: <span id="info-valor"></span></li>
+        <li>Status: <span id="info-status"></span></li>
+        <li>Servidor: <span id="info-servidor"></span></li>
+        <li>Telas: <span id="info-telas"></span></li>
       </ul>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-add-pagamento" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3 id="pagamento-title">
-        ADD Pagamento
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3 id="pagamento-title">ADD Pagamento</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <form method="post" action="/clientes" id="modal-add-pagamento-form" class="modal-body" data-native-submit="1" novalidate>
       <input type="hidden" name="action" value="add_pagamento">
       <input type="hidden" name="id" value="">
       <div class="form-grid">
+        <label class="field"><span>Nova data de vencimento</span><input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
+        <label class="field"><span>Nova hora de vencimento</span><input class="input" type="time" name="hora_vencimento"></label>
+        <label class="field"><span>Plano</span><input class="input" name="plano"></label>
+        <label class="field"><span>Valor</span><input class="input" type="number" step="0.01" name="valor"></label>
+        <label class="field"><span>Valor pago</span><input class="input" type="number" step="0.01" name="valor_pago"></label>
         <label class="field">
-          <span>
-            Nova data de vencimento
-          </span>
-          <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask>
+          <span>Forma pagamento</span>
+          <select class="input" name="forma_pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select>
         </label>
-        <label class="field">
-          <span>
-            Nova hora de vencimento
-          </span>
-          <input class="input" type="time" name="hora_vencimento">
-        </label>
-        <label class="field">
-          <span>
-            Plano
-          </span>
-          <input class="input" name="plano">
-        </label>
-        <label class="field">
-          <span>
-            Valor
-          </span>
-          <input class="input" type="number" step="0.01" name="valor">
-        </label>
-        <label class="field">
-          <span>
-            Valor pago
-          </span>
-          <input class="input" type="number" step="0.01" name="valor_pago">
-        </label>
-        <label class="field">
-          <span>
-            Forma pagamento
-          </span>
-          <select class="input" name="forma_pagamento">
-            <option>
-              PIX
-            </option>
-            <option>
-              Dinheiro
-            </option>
-            <option>
-              Cartão
-            </option>
-          </select>
-        </label>
-        <label class="field">
-          <span>
-            Pago em
-          </span>
-          <input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask>
-        </label>
-        <label class="field">
-          <span>
-            Telas
-          </span>
-          <input class="input" type="number" name="telas">
-        </label>
-        <label class="field">
-          <span>
-            Créditos
-          </span>
-          <input class="input" type="number" step="0.01" name="creditos_gastos">
-        </label>
-        <label class="field">
-          <span>
-            Custo
-          </span>
-          <input class="input" type="number" step="0.01" name="custo_pagamento">
-        </label>
+        <label class="field"><span>Pago em</span><input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
+        <label class="field"><span>Telas</span><input class="input" type="number" name="telas"></label>
+        <label class="field"><span>Créditos</span><input class="input" type="number" step="0.01" name="creditos_gastos"></label>
+        <label class="field"><span>Custo</span><input class="input" type="number" step="0.01" name="custo_pagamento"></label>
+        <label class="field full"><span>Observação</span><textarea class="input" name="observacao_pagamento"></textarea></label>
         <label class="field full">
-          <span>
-            Observação
-          </span>
-          <textarea class="input" name="observacao_pagamento">
-          </textarea>
-        </label>
-        <label class="field full">
-          <span>
-            Mensagem após salvar
-          </span>
+          <span>Mensagem após salvar</span>
           <select class="input" name="mensagem_pagamento_id" data-last-message-select>
-            <option value="">
-              Não enviar WhatsApp
-            </option>
-            <% mensagens.forEach(m => { %>
-              <option value="<%= m.id %>">
-                <%= m.titulo %>
-              </option>
-            <% }) %>
+            <option value="">Não enviar WhatsApp</option>
+            <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
           </select>
-          <small>
-            Escolha uma mensagem pronta para enviar automaticamente pelo WPPConnect depois de salvar o pagamento. A última escolha fica salva para os próximos pagamentos.
-          </small>
+          <small>Escolha uma mensagem pronta para enviar automaticamente pelo WPPConnect depois de salvar o pagamento. A última escolha fica salva para os próximos pagamentos.</small>
         </label>
       </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
-      <button class="btn btn-blue" type="submit" form="modal-add-pagamento-form">
-        Salvar pagamento
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
+      <button class="btn btn-blue" type="submit" form="modal-add-pagamento-form">Salvar pagamento</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-notice" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Aviso
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>Aviso</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-alert success" id="modal-notice-message">
-      </div>
+      <div class="form-alert success" id="modal-notice-message"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
     </div>
   </div>
 </div>

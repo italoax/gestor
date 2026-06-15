@@ -1,135 +1,55 @@
 <div class="container page-mensagens" data-search-scope>
-  <div class="section-header toolbar">
-    <div>
-      <h2 class="section-title">
-        Mensagens
-      </h2>
-      <p class="muted">
-        Modelos para cobrança e WhatsApp.
-      </p>
-    </div>
-    <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">
-      Adicionar mensagem
-    </button>
+
+  <div class="msg-toolbar">
+    <label class="cli-search msg-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar template..." data-search-input></label>
+    <label class="cli-filter"><select class="input" aria-label="Filtro" disabled><option>Todos</option></select></label>
+    <label class="cli-filter"><select class="input" aria-label="Ordenar" disabled><option>Nome A-Z</option></select></label>
+    <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
   </div>
-  <div class="card filters filter-card">
-    <div class="filter-head">
-      <div>
-        <span class="filter-kicker">
-          Filtros
-        </span>
-        <strong>
-          Buscar mensagens
-        </strong>
-      </div>
-      <button class="btn btn-muted filter-clear" type="button" data-clear-filters>
-        Limpar
-      </button>
+
+  <div class="msg-count"><%= mensagens.length %> templates</div>
+
+  <% if (!mensagens.length) { %>
+    <div class="cli-empty">
+      <div class="cli-empty-ico">💬</div>
+      <h3>Nenhum template cadastrado</h3>
+      <p class="muted">Crie templates de mensagem para envio automático e manual.</p>
+      <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
     </div>
-    <div class="filter-grid">
-      <label class="filter-field filter-search">
-        <span>
-          Pesquisar
-        </span>
-        <div class="search-control">
-          <span>
-            ⌕
-          </span>
-          <input class="input" type="search" data-search-input placeholder="Título ou texto">
+  <% } else { %>
+  <div class="msg-grid">
+    <% mensagens.forEach(m => { %>
+    <div class="msg-card" data-search-item>
+      <div class="msg-card-head">
+        <strong><%= m.titulo %></strong>
+        <div class="msg-actions">
+          <button class="cli-ico-btn edit-mensagem" type="button" title="Editar" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-descricao="<%= m.descricao || '' %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>">✎</button>
+          <form method="post" action="/mensagens" class="action-form delete-mensagem msg-del-form">
+            <input type="hidden" name="action" value="delete_mensagem">
+            <input type="hidden" name="id" value="<%= m.id %>">
+            <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+          </form>
         </div>
-      </label>
-    </div>
-  </div>
-  <div class="card table-card data-table-card">
-    <div class="table-card-head">
-      <div>
-        <span class="filter-kicker">
-          Tabela
-        </span>
-        <strong>
-          Mensagens cadastradas
-        </strong>
-        <small>
-          Modelos de texto para envio.
-        </small>
       </div>
-      <span class="table-count">
-        <%= mensagens.length %>
-      </span>
+      <% if (m.descricao) { %><div class="msg-desc"><%= m.descricao %></div><% } %>
+      <div class="msg-preview"><%= (m.mensagem || '').replace(/\s+/g, ' ').slice(0, 110) %><%= (m.mensagem || '').length > 110 ? '…' : '' %></div>
     </div>
-    <div class="table-wrapper">
-      <table class="table table-modern">
-        <thead>
-          <tr>
-            <th>
-              Título
-            </th>
-            <th>
-              Mensagem
-            </th>
-            <th>
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (!mensagens.length) { %>
-            <tr class="table-empty-row">
-              <td colspan="3">
-                <div class="table-empty">
-                  Nenhuma mensagem encontrada.
-                </div>
-              </td>
-            </tr>
-          <% } %>
-          <% mensagens.forEach(m => { %>
-            <tr data-search-item>
-              <td>
-                <strong>
-                  <%= m.titulo %>
-                </strong>
-              </td>
-              <td class="mensagem-cell">
-                <div class="mensagem-preview"><%= (m.mensagem || '').slice(0, 120) %></div>
-              </td>
-              <td class="table-actions">
-                <button class="btn btn-sm btn-warning edit-mensagem" type="button" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>">
-                  Editar
-                </button>
-                <form method="post" class="action-form delete-mensagem">
-                  <input type="hidden" name="action" value="delete_mensagem">
-                  <input type="hidden" name="id" value="<%= m.id %>">
-                  <button class="btn btn-sm btn-danger">
-                    Apagar
-                  </button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+    <% }) %>
   </div>
+  <% } %>
 </div>
+
 <div class="modal-overlay" id="modal-add-mensagem" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Adicionar Mensagem
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>+ Novo Template</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-tabs">
-      <button class="tab-btn active" type="button" data-tab="mensagem">
-        Mensagem
-      </button>
-      <button class="tab-btn" type="button" data-tab="midia">
-        Midia
-      </button>
+      <button class="tab-btn active" type="button" data-tab="mensagem">💬 Mensagem</button>
+      <button class="tab-btn" type="button" data-tab="midia">🖼️ Mídia</button>
     </div>
-    <form method="post" action="/mensagens" id="modal-add-mensagem-form" class="modal-body">
+    <form method="post" action="/mensagens" id="modal-add-mensagem-form" class="modal-body" data-native-submit="1">
       <input type="hidden" name="action" value="create_mensagem">
       <input type="hidden" name="id" value="">
       <input type="hidden" name="media_tipo_atual" value="">
@@ -137,105 +57,63 @@
       <div class="tab-panel active" data-tab-panel="mensagem">
         <div class="form-grid">
           <label class="field full">
-            <span>
-              Nome
-            </span>
-            <div class="input-icon">
-              <span class="icon-box">
-                🏷️
-              </span>
-              <input class="input" name="titulo" placeholder="Nome para identificação" required>
-            </div>
+            <span>Nome do Template *</span>
+            <input class="input" name="titulo" placeholder="Ex: Boas-vindas, Aviso de vencimento..." required>
+          </label>
+          <label class="field full">
+            <span>Descrição</span>
+            <input class="input" name="descricao" placeholder="Quando este template é usado">
           </label>
           <label class="field full">
             <div class="tag-select-row">
-              <span>
-                Mensagem
-              </span>
+              <span>Mensagem</span>
               <select class="input tag-select" name="tags" data-insert-tag>
-                <option value="">
-                  tags
-                </option>
-                <option value="{nome}">
-                  {nome}
-                </option>
-                <option value="{vencimento}">
-                  {vencimento}
-                </option>
-                <option value="{valor}">
-                  {valor}
-                </option>
-                <option value="{plano}">
-                  {plano}
-                </option>
+                <option value="">+ variável</option>
+                <option value="{saudacao}">{saudacao}</option>
+                <option value="{nome}">{nome}</option>
+                <option value="{primeiro_nome}">{primeiro_nome}</option>
+                <option value="{usuario}">{usuario}</option>
+                <option value="{senha}">{senha}</option>
+                <option value="{plano}">{plano}</option>
+                <option value="{vencimento}">{vencimento}</option>
+                <option value="{valor}">{valor}</option>
+                <option value="{servidor}">{servidor}</option>
               </select>
             </div>
-            <textarea class="input" name="mensagem" data-mensagem-text rows="8">
-            </textarea>
+            <textarea class="input" name="mensagem" data-mensagem-text rows="9"></textarea>
           </label>
         </div>
       </div>
       <div class="tab-panel" data-tab-panel="midia">
         <div class="form-grid">
           <label class="field">
-            <span>
-              Tipo mídia
-            </span>
+            <span>Tipo mídia</span>
             <select class="input" name="media_tipo">
-              <option value="">
-                Nenhuma
-              </option>
-              <option>
-                image
-              </option>
-              <option>
-                video
-              </option>
-              <option>
-                audio
-              </option>
-              <option>
-                document
-              </option>
+              <option value="">Nenhuma</option><option>image</option><option>video</option><option>audio</option><option>document</option>
             </select>
           </label>
-          <label class="field full">
-            <span>
-              Caminho/URL mídia
-            </span>
-            <input class="input" name="media_path">
-          </label>
+          <label class="field full"><span>Caminho/URL mídia</span><input class="input" name="media_path"></label>
         </div>
       </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
-      <button class="btn btn-blue" type="submit" form="modal-add-mensagem-form">
-        Salvar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-mensagem-form">Salvar</button>
     </div>
   </div>
 </div>
+
 <div class="modal-overlay" id="modal-mensagem-notice" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3>
-        Aviso
-      </h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">
-        ×
-      </button>
+      <h3>Aviso</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-alert success" id="modal-mensagem-notice-msg">
-      </div>
+      <div class="form-alert success" id="modal-mensagem-notice-msg"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>
-        Fechar
-      </button>
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
     </div>
   </div>
 </div>

@@ -1,274 +1,343 @@
-<div class="container dashboard-page">
-  <div class="dashboard-hero">
-    <div>
-      <span class="dashboard-kicker">
-        Resumo geral
-      </span>
-      <h2 class="section-title">
-        Dashboard
-      </h2>
-      <p>
-        Acompanhamento automático baseado nos clientes cadastrados.
-      </p>
+<div class="container dash">
+
+  <div class="dash-banner">
+    <div class="dash-banner-icon">✈</div>
+    <div class="dash-banner-text">
+      <strong>Novo — Receba avisos no Telegram</strong>
+      <span>Pagamentos recebidos, saldo baixo e falhas de painel direto no seu celular.</span>
     </div>
-    <a class="btn btn-primary" href="/clientes">
-      Gerenciar clientes
-    </a>
+    <a class="btn btn-primary" href="/em-breve/integracoes">Configurar</a>
+    <button class="dash-banner-close" type="button" data-dismiss-banner aria-label="Fechar">×</button>
   </div>
-  <div class="dashboard-stats">
-    <div class="dash-stat-card accent-blue">
-      <div class="dash-stat-icon">
-        👥
-      </div>
+
+  <div class="stat-grid">
+    <div class="stat-box accent-green">
       <div>
-        <span>
-          Clientes
-        </span>
-        <strong>
-          <%= stats.clientesTotal %>
-        </strong>
-        <small>
-          <%= stats.ativos %>
-          ativos •
-          <%= ativosPercent %>
-          % da base
-        </small>
+        <span class="stat-label">Ativos</span>
+        <strong class="stat-value"><%= stats.ativos %></strong>
+        <small class="stat-foot"><%= ativosPercent %>% da base</small>
       </div>
+      <div class="stat-icon">👥</div>
     </div>
-    <div class="dash-stat-card accent-green">
-      <div class="dash-stat-icon">
-        ✅
-      </div>
+    <div class="stat-box accent-red">
       <div>
-        <span>
-          Receita prevista
-        </span>
-        <strong>
-          <%= formatMoney(stats.receitaPrevista) %>
-        </strong>
-        <small>
-          Soma dos valores dos clientes
-        </small>
+        <span class="stat-label">Vencidos</span>
+        <strong class="stat-value"><%= stats.vencidos %></strong>
+        <small class="stat-foot"><%= vencidosPercent %>% da carteira</small>
       </div>
+      <div class="stat-icon">⚠️</div>
     </div>
-    <div class="dash-stat-card accent-red">
-      <div class="dash-stat-icon">
-        ⚠️
-      </div>
+    <div class="stat-box accent-blue">
       <div>
-        <span>
-          Vencidos
-        </span>
-        <strong>
-          <%= stats.vencidos %>
-        </strong>
-        <small>
-          <%= vencidosPercent %>
-          % da carteira
-        </small>
+        <span class="stat-label">Total de Clientes</span>
+        <strong class="stat-value"><%= stats.clientesTotal %></strong>
+        <small class="stat-foot"><%= stats.planosCount %> plano(s)</small>
       </div>
+      <div class="stat-icon">🧑‍🤝‍🧑</div>
+    </div>
+    <div class="stat-box accent-purple">
+      <div>
+        <span class="stat-label">Servidores</span>
+        <strong class="stat-value"><%= stats.servidoresCount %></strong>
+        <small class="stat-foot">Painéis cadastrados</small>
+      </div>
+      <div class="stat-icon">🖥️</div>
     </div>
   </div>
-  <div class="dashboard-grid mt-4">
-    <section class="dashboard-panel">
-      <div class="dashboard-panel-head">
-        <div>
-          <span>
-            Vencimentos
-          </span>
-          <strong>
-            Próximos clientes
-          </strong>
+
+  <div class="dash-section">
+    <h3 class="dash-section-title">💲 Receita x Custo</h3>
+    <div class="rc-grid">
+      <% const blocos = [ ['Hoje', stats.receitaCusto.hoje], ['Mensal', stats.receitaCusto.mes], ['Mês Anterior', stats.receitaCusto.mesAnterior] ]; %>
+      <% blocos.forEach(([rotulo, dados]) => { %>
+        <div class="rc-card">
+          <div class="rc-head">💲 <%= rotulo %></div>
+          <div class="rc-row"><span class="up">↗ Receita</span><strong class="pos"><%= formatMoney(dados.receita) %></strong></div>
+          <div class="rc-row"><span class="down">↘ Custo</span><strong class="neg"><%= formatMoney(dados.custo) %></strong></div>
+          <div class="rc-row total"><span class="up">↗ Lucro</span><strong class="info"><%= formatMoney(dados.lucro) %></strong></div>
         </div>
-        <em>
-          <%= stats.vencemHoje %>
-          hoje •
-          <%= stats.vencem7 %>
-          em 7 dias
-        </em>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <h3 class="dash-section-title">⏰ Vencimentos</h3>
+    <div class="venc-grid">
+      <div class="venc-card accent-yellow">
+        <span class="venc-label">⏰ Vence Hoje</span>
+        <strong class="venc-value"><%= stats.vencimentos.hoje.total %></strong>
+        <small><%= formatMoney(stats.vencimentos.hoje.valor) %></small>
       </div>
-      <% if (proximos.length) { %>
-        <div class="dash-list">
-          <% proximos.forEach(c => { %>
-            <a class="dash-client-row" href="/clientes">
-              <div>
-                <strong>
-                  <%= c.nome %>
-                </strong>
-                <small>
-                  <%= c.plano || 'Sem plano' %>
-                  •
-                  <%= formatMoney(c.valor) %>
-                </small>
+      <div class="venc-card accent-blue">
+        <span class="venc-label">📅 Vence Amanhã</span>
+        <strong class="venc-value"><%= stats.vencimentos.amanha.total %></strong>
+        <small><%= formatMoney(stats.vencimentos.amanha.valor) %></small>
+      </div>
+      <div class="venc-card accent-red">
+        <span class="venc-label">📅 Venceu Ontem</span>
+        <strong class="venc-value"><%= stats.vencimentos.ontem.total %></strong>
+        <small><%= formatMoney(stats.vencimentos.ontem.valor) %></small>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <h3 class="dash-section-title">💲 Financeiro</h3>
+    <div class="fin-grid">
+      <div class="fin-card">
+        <span class="fin-label">💲 Recebido Hoje</span>
+        <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoHoje) %></strong>
+      </div>
+      <div class="fin-card">
+        <span class="fin-label">📅 Recebido no Mês</span>
+        <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoMes) %></strong>
+        <small class="<%= stats.financeiro.variacaoMes >= 0 ? 'pos' : 'neg' %>">
+          <%= stats.financeiro.variacaoMes >= 0 ? '↗' : '↘' %> <%= stats.financeiro.variacaoMes %>% vs mês anterior
+        </small>
+      </div>
+      <div class="fin-card">
+        <span class="fin-label">📆 Mês Anterior</span>
+        <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoMesAnterior) %></strong>
+      </div>
+      <div class="fin-card">
+        <span class="fin-label">↗ Projeção Mensal</span>
+        <strong class="fin-value"><%= formatMoney(stats.financeiro.projecao) %></strong>
+        <small class="muted">Baseada no recebido até hoje</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section">
+    <div class="dash-section-row">
+      <h3 class="dash-section-title">📊 Gráficos</h3>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-head">
+          <strong>↗ Faturamento x Custo x Lucro</strong>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartFinanceiro"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head">
+          <strong>👥 Novos Clientes</strong>
+          <span class="chart-tag"><%= novosNoMes %> este mês</span>
+        </div>
+        <div class="chart-canvas-wrap"><canvas id="chartNovos"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-section dist-section">
+    <div class="dist-section-head">
+      <h3 class="dash-section-title">📦 Distribuição</h3>
+      <form method="get" action="/dashboard" class="dist-period">
+        <span class="dist-period-label">⛛ Período</span>
+        <select name="periodo" onchange="this.form.submit()" aria-label="Período">
+          <option value="mes" <%= periodo === 'mes' ? 'selected' : '' %>>Este Mês</option>
+          <option value="anterior" <%= periodo === 'anterior' ? 'selected' : '' %>>Mês Anterior</option>
+          <option value="todos" <%= periodo === 'todos' ? 'selected' : '' %>>Todos</option>
+        </select>
+      </form>
+    </div>
+
+    <div class="dist-grid">
+      <div class="dist-card">
+        <div class="dist-head spread">
+          <span>📱 Top Aplicativos</span>
+          <% if (topAplicativos.length) { %><span class="dist-total">Total: <strong><%= topAplicativos.reduce((a, x) => a + x.total, 0) %></strong></span><% } %>
+        </div>
+        <% if (topAplicativos.length) { %>
+          <div class="bar-list">
+            <% topAplicativos.forEach(x => { %>
+              <div class="bar-item">
+                <div class="bar-item-head"><span><%= x.rotulo %></span><strong><%= x.total %> <em><%= x.percent %>%</em></strong></div>
+                <div class="meter"><i class="c-blue" style="width:<%= x.percent %>%"></i></div>
               </div>
-              <span class="dash-pill <%= Number(c.dias) <= 1 ? 'today' : '' %>">
-                <%= Number(c.dias) === 0 ? 'Hoje' : Number(c.dias) === 1 ? 'Vence amanhã' : 'em ' + c.dias + ' dias' %>
-              </span>
-            </a>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <div class="dash-empty">
-          Nenhum vencimento futuro encontrado.
-        </div>
-      <% } %>
-    </section>
-    <section class="dashboard-panel">
-      <div class="dashboard-panel-head">
-        <div>
-          <span>
-            Financeiro
-          </span>
-          <strong>
-            Mês atual
-          </strong>
-        </div>
-        <em>
-          <%= lucroPercent %>
-          % lucro
-        </em>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">📱</div>Sem dados de aplicativos</div>
+        <% } %>
       </div>
-      <div class="finance-stack">
-        <div class="finance-row">
-          <span>
-            Faturamento recebido
-          </span>
-          <strong>
-            <%= formatMoney(stats.faturamentoMes) %>
-          </strong>
+
+      <div class="dist-card">
+        <div class="dist-head spread">
+          <span>🖥️ Top Dispositivos</span>
+          <% if (topDispositivos.length) { %><span class="dist-total">Total: <strong><%= topDispositivos.reduce((a, d) => a + d.total, 0) %></strong></span><% } %>
         </div>
-        <div class="finance-row">
-          <span>
-            Custo registrado
-          </span>
-          <strong>
-            <%= formatMoney(stats.custoMes) %>
-          </strong>
-        </div>
-        <div class="finance-row total">
-          <span>
-            Lucro estimado
-          </span>
-          <strong>
-            <%= formatMoney(stats.lucroMes) %>
-          </strong>
-        </div>
-      </div>
-    </section>
-    <section class="dashboard-panel">
-      <div class="dashboard-panel-head">
-        <div>
-          <span>
-            Atenção
-          </span>
-          <strong>
-            Clientes vencidos
-          </strong>
-        </div>
-        <em>
-          <%= stats.vencidos %>
-          pendente(s)
-        </em>
-      </div>
-      <% if (atrasados.length) { %>
-        <div class="dash-list">
-          <% atrasados.forEach(c => { %>
-            <a class="dash-client-row danger" href="/clientes">
-              <div>
-                <strong>
-                  <%= c.nome %>
-                </strong>
-                <small>
-                  <%= c.plano || 'Sem plano' %>
-                  •
-                  <%= formatMoney(c.valor) %>
-                </small>
+        <% if (topDispositivos.length) { %>
+          <div class="bar-list">
+            <% topDispositivos.forEach(d => { %>
+              <div class="bar-item">
+                <div class="bar-item-head"><span><%= d.rotulo %></span><strong><%= d.total %> <em><%= d.percent %>%</em></strong></div>
+                <div class="meter"><i class="c-blue" style="width:<%= d.percent %>%"></i></div>
               </div>
-              <span class="dash-pill overdue">
-                <%= Math.abs(Number(c.dias)) %>
-                dia(s)
-              </span>
-            </a>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <div class="dash-empty success">
-          Nenhum cliente vencido.
-        </div>
-      <% } %>
-    </section>
-  </div>
-  <div class="dashboard-grid secondary mt-4">
-    <section class="dashboard-panel span-2">
-      <div class="dashboard-panel-head">
-        <div>
-          <span>
-            Servidores
-          </span>
-          <strong>
-            Distribuição por clientes
-          </strong>
-        </div>
-        <em>
-          Baseado em clientes
-        </em>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">🖥️</div>Sem dados de dispositivos</div>
+        <% } %>
       </div>
-      <% if (porServidor.length) { %>
-        <div class="server-bars">
-          <% porServidor.forEach(s => { %>
-            <div class="server-bar-row">
-              <div class="server-bar-label">
-                <strong>
-                  <%= s.servidor %>
-                </strong>
-                <span>
-                  <%= s.total %>
-                  cliente(s) •
-                  <%= formatMoney(s.valor) %>
+
+      <div class="dist-card">
+        <div class="dist-head spread">
+          <span>💳 Formas de Pagamento</span>
+          <span class="dist-total">Total: <strong><%= formatMoney(formasPagamento.reduce((a, f) => a + f.valor, 0)) %></strong></span>
+        </div>
+        <% if (formasPagamento.length) { %>
+          <div class="bar-list">
+            <% formasPagamento.forEach(f => { %>
+              <div class="bar-item">
+                <div class="bar-item-head"><span><%= f.rotulo %></span><strong><%= formatMoney(f.valor) %> <em><%= f.percent %>%</em></strong></div>
+                <div class="meter"><i class="c-blue" style="width:<%= f.percent %>%"></i></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">💳</div>Sem transações registradas</div>
+        <% } %>
+      </div>
+
+      <div class="dist-card">
+        <div class="dist-head spread">
+          <span>📦 Distribuição de Planos</span>
+          <span class="dist-total">Total: <strong><%= planosDist.reduce((a, p) => a + p.total, 0) %> clientes</strong></span>
+        </div>
+        <% if (planosDist.length) { %>
+          <div class="bar-list">
+            <% planosDist.forEach(p => { %>
+              <div class="bar-item">
+                <div class="bar-item-head"><span><%= p.rotulo %></span><strong><%= p.total %> cli. <em><%= p.percent %>%</em></strong></div>
+                <div class="meter"><i class="c-blue" style="width:<%= p.percent %>%"></i></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">📦</div>Sem dados de planos</div>
+        <% } %>
+      </div>
+
+      <div class="dist-card">
+        <div class="dist-head spread">
+          <span>🖥️ Performance por Servidor</span>
+          <span class="dist-total">👥 <%= performance.itens.reduce((a, s) => a + s.total, 0) %> clientes</span>
+        </div>
+        <% if (performance.itens.length) { %>
+          <div class="perf-cards">
+            <div class="perf-card fat"><span>Faturamento</span><strong><%= formatMoney(performance.faturamento) %></strong></div>
+            <div class="perf-card cost"><span>Custo</span><strong><%= formatMoney(performance.custo) %></strong></div>
+            <div class="perf-card profit"><span>Lucro</span><strong><%= formatMoney(performance.lucro) %></strong></div>
+          </div>
+          <div class="perf-list">
+            <% performance.itens.forEach(s => { %>
+              <div class="perf-row">
+                <div class="perf-row-head">
+                  <span class="perf-name">🖥️ <%= s.servidor %> <em><%= s.total %> cli.</em></span>
+                  <span class="perf-vals">
+                    <b>Fat.</b> <%= formatMoney(s.faturamento) %>
+                    <b>Custo</b> <%= formatMoney(s.custo) %>
+                    <b>Lucro</b> <%= formatMoney(s.lucro) %>
+                    <span class="perf-margin <%= s.margem >= 0 ? 'pos' : 'neg' %>"><%= s.margem >= 0 ? '↗' : '↘' %> <%= s.margem %>%</span>
+                  </span>
+                </div>
+                <div class="meter split"><i class="c-green" style="width:<%= s.lucroPercent %>%"></i><i class="c-red" style="width:<%= s.custoPercent %>%"></i></div>
+              </div>
+            <% }) %>
+          </div>
+          <div class="perf-legend"><span><i class="dot c-green"></i> Faturamento</span><span><i class="dot c-red"></i> Custo</span></div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">🖥️</div>Sem dados de servidores</div>
+        <% } %>
+      </div>
+
+      <div class="dist-card">
+        <div class="dist-head">👥 Top Indicações</div>
+        <% if (indicacoes.length) { %>
+          <div class="bar-list">
+            <% indicacoes.forEach(i => { %>
+              <div class="bar-item">
+                <div class="bar-item-head"><span><%= i.rotulo %></span><strong><%= i.total %> <em><%= i.percent %>%</em></strong></div>
+                <div class="meter"><i class="c-blue" style="width:<%= i.percent %>%"></i></div>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty tall"><div class="dist-empty-icon">👥</div>Nenhuma indicação registrada</div>
+        <% } %>
+      </div>
+
+      <div class="dist-card map-card">
+        <div class="dist-head spread"><span>📍 Clientes por Estado</span><span class="dist-total">Total: <strong><%= estados.total %></strong></span></div>
+        <div class="map-layout">
+          <div class="map-legend">
+            <span><%= estados.top[0] ? estados.top[0].total : 0 %></span>
+            <i class="map-scale"></i>
+            <span>0</span>
+          </div>
+          <div class="map-figure" id="mapaBrasil" data-empty="Sem dados de localização"></div>
+          <div class="map-aside">
+            <div class="map-aside-title">Top Estados</div>
+            <% if (estados.top.length) { %>
+              <ol class="map-rank">
+                <% estados.top.slice(0, 8).forEach((e, idx) => { %>
+                  <li><span><%= idx + 1 %>. <%= e.uf %></span><strong><%= e.total %></strong></li>
+                <% }) %>
+              </ol>
+            <% } else { %>
+              <div class="map-rank-empty">—</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="dist-card map-card">
+        <div class="dist-head spread"><span>🌐 Clientes por País</span><span class="dist-total">Total: <strong><%= paises.total %></strong></span></div>
+        <div class="map-layout">
+          <div class="map-legend">
+            <span><%= paises.top[0] ? paises.top[0].total : 0 %></span>
+            <i class="map-scale"></i>
+            <span>0</span>
+          </div>
+          <div class="map-figure world" id="mapaMundi" data-empty="Sem dados de localização"></div>
+          <div class="map-aside">
+            <div class="map-aside-title">Top Países</div>
+            <% if (paises.top.length) { %>
+              <ol class="map-rank">
+                <% paises.top.slice(0, 8).forEach((p, idx) => { %>
+                  <li><span><%= idx + 1 %>. <%= p.nome %></span><strong><%= p.total %></strong></li>
+                <% }) %>
+              </ol>
+            <% } else { %>
+              <div class="map-rank-empty">—</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="dist-card span-2">
+        <div class="dist-head">⏰ Próximos vencimentos</div>
+        <% if (proximos.length) { %>
+          <div class="dist-list">
+            <% proximos.forEach(c => { %>
+              <a class="dist-row link" href="/clientes">
+                <span><%= c.nome %> <em class="muted"><%= c.plano || 'Sem plano' %></em></span>
+                <span class="dash-pill <%= Number(c.dias) <= 1 ? 'today' : '' %>">
+                  <%= Number(c.dias) === 0 ? 'Hoje' : Number(c.dias) === 1 ? 'Amanhã' : 'em ' + c.dias + ' dias' %>
                 </span>
-              </div>
-              <div class="server-bar">
-                <i style="<%= `width:${s.percent}%` %>">
-                </i>
-              </div>
-            </div>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <div class="dash-empty">
-          Cadastre clientes para gerar este resumo.
-        </div>
-      <% } %>
-    </section>
-    <section class="dashboard-panel quick-actions">
-      <div class="dashboard-panel-head">
-        <div>
-          <span>
-            Ações rápidas
-          </span>
-          <strong>
-            Atalhos
-          </strong>
-        </div>
+              </a>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="dist-empty">Nenhum vencimento futuro</div>
+        <% } %>
       </div>
-      <a class="quick-action" href="/clientes">
-        Adicionar ou editar clientes
-        <span>
-          →
-        </span>
-      </a>
-      <a class="quick-action" href="/mensagens">
-        Mensagens salvas
-        <span>
-          →
-        </span>
-      </a>
-      <a class="quick-action" href="/cobrancas">
-        Ver cobranças
-        <span>
-          →
-        </span>
-      </a>
-    </section>
+    </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>window.__dashData = <%- chart %>;</script>
+<script src="/assets/js/dashboard-charts.js?v=shell-8"></script>
+<script>window.__geoData = <%- geo %>;</script>
+<script type="module" src="/assets/js/dashboard-maps.js?v=1"></script>

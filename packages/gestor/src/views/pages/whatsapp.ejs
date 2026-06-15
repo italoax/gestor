@@ -1,343 +1,234 @@
-<div class="container page-whatsapp">
-  <div class="section-header toolbar whatsapp-hero">
-    <div>
-      <span class="filter-kicker whatsapp-kicker">
-        Integração WhatsApp
-      </span>
-      <h2 class="section-title">
-        WhatsApp
-      </h2>
-      <p class="muted">
-        Conecte o número principal por QR Code, acompanhe o status da sessão e libere os envios automáticos de cobranças.
-      </p>
-    </div>
-    <div class="whatsapp-hero-icon" aria-hidden="true">
-      <span>☎</span>
-    </div>
+<div class="container page-whatsapp" data-search-scope>
+
+  <div class="wa-stats">
+    <div class="tx-stat"><div><span>Dispositivos Conectados</span><strong data-wa-conectados>0</strong></div><div class="tx-stat-ico accent-green">✅</div></div>
+    <div class="tx-stat"><div><span>Total de Dispositivos</span><strong><%= stats.total %></strong></div><div class="tx-stat-ico accent-blue">📱</div></div>
+    <div class="tx-stat"><div><span>Mensagens Hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-purple">💬</div></div>
+    <div class="tx-stat"><div><span>Taxa de Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red">📈</div></div>
   </div>
 
-  <div class="card whatsapp-card <%= state.status === 'conectado' ? 'is-connected' : state.status === 'erro' ? 'is-error' : state.status === 'qr' ? 'is-qr' : state.status === 'iniciando' ? 'is-loading' : '' %>">
-    <div class="table-card-head whatsapp-card-head">
-      <div>
-        <span class="filter-kicker">
-          Sessão padrão
+  <div class="wa-head">
+    <h3>Dispositivos WhatsApp</h3>
+    <button class="btn btn-primary" type="button" data-open-modal="modal-wa-add">+ Adicionar Dispositivo</button>
+  </div>
+
+  <% if (!sessionApi) { %>
+    <div class="form-alert error">Para gerenciar dispositivos, configure no .env: <code>WA_DRIVER=session-api</code> e os endpoints <code>WA_SESSION_*</code>.</div>
+  <% } %>
+
+  <label class="cli-search wa-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar dispositivos por nome, número ou status..." data-search-input></label>
+
+  <% if (!devices.length) { %>
+    <div class="cli-empty"><div class="cli-empty-ico">📱</div><h3>Nenhum dispositivo configurado</h3><p class="muted">Adicione seu primeiro dispositivo WhatsApp para começar a enviar mensagens.</p><button class="btn btn-primary" type="button" data-open-modal="modal-wa-add">+ Adicionar Dispositivo</button></div>
+  <% } else { %>
+  <div class="wa-list">
+    <% devices.forEach(d => { %>
+    <div class="wa-device" data-search-item data-device-id="<%= d.id %>" data-nome="<%= d.nome %>">
+      <div class="wa-device-head">
+        <span class="wa-device-ico">📱</span>
+        <div class="wa-device-info">
+          <strong><%= d.nome %><% if (d.principal) { %> <span class="wa-star" title="Principal">★</span><% } %></strong>
+          <small data-wa-sub>Sem número vinculado</small>
+        </div>
+        <span class="wa-status-pill" data-wa-status>Verificando...</span>
+        <details class="wa-more">
+          <summary class="cli-ico-btn" aria-label="Mais">⋮</summary>
+          <div class="wa-more-menu">
+            <% if (!d.principal) { %>
+            <form method="post" action="/whatsapp" onsubmit="return confirm('Remover este dispositivo?')">
+              <input type="hidden" name="action" value="delete_device"><input type="hidden" name="id" value="<%= d.id %>">
+              <button type="submit" class="wa-menu-item danger">🗑 Remover dispositivo</button>
+            </form>
+            <% } else { %><span class="wa-menu-item muted">Dispositivo principal</span><% } %>
+          </div>
+        </details>
+      </div>
+      <button class="wa-connect-btn" type="button" data-wa-connect>⏻ Conectar</button>
+      <div class="wa-device-foot">
+        <span>📵 Bloqueio de chamadas</span>
+        <span class="wa-foot-right">
+          <span class="muted">Configurar</span>
+          <form method="post" action="/whatsapp" class="wa-bloq-form">
+            <input type="hidden" name="action" value="toggle_bloqueio"><input type="hidden" name="id" value="<%= d.id %>">
+            <input type="checkbox" class="switch" onchange="this.form.submit()" <%= d.bloqueioChamadas ? 'checked' : '' %> aria-label="Bloqueio de chamadas">
+          </form>
         </span>
-        <strong>
-          <%= state.session %>
-        </strong>
-        <small>
-          Driver atual: <%= driver %>
-        </small>
       </div>
-      <span class="badge whatsapp-status-badge <%= state.status === 'conectado' ? 'badge-green' : state.status === 'erro' ? 'badge-red' : state.status === 'qr' ? 'badge-yellow' : state.status === 'iniciando' ? 'badge-blue' : 'badge-muted' %>" data-whatsapp-status-badge>
-        <i></i>
-        <%= state.status %>
-      </span>
     </div>
+    <% }) %>
+  </div>
+  <% } %>
+</div>
 
-    <% if (driver !== 'wppconnect' && !sessionApi) { %>
-      <div class="form-alert error whatsapp-config-alert">
-        Para usar esta tela, configure no .env: WA_DRIVER=session
-      </div>
-    <% } %>
+<button hidden data-open-modal="modal-wa-connect" data-wa-connect-trigger></button>
 
-    <div class="whatsapp-grid">
-      <div class="whatsapp-info-panel">
-        <div class="whatsapp-status-card">
-          <div class="whatsapp-status-orb <%= state.status === 'conectado' ? 'success' : state.status === 'erro' ? 'error' : state.status === 'qr' ? 'waiting' : state.status === 'iniciando' ? 'loading' : '' %>" data-whatsapp-status-orb>
-            <span data-whatsapp-status-symbol><%= state.status === 'conectado' ? '✓' : state.status === 'erro' ? '!' : '•' %></span>
-          </div>
-          <div>
-            <strong data-whatsapp-status-title><%= state.status === 'conectado' ? 'Sessão conectada' : state.status === 'qr' ? 'QR Code gerado e aguardando leitura' : state.status === 'iniciando' ? 'Gerando QR Code' : state.status === 'erro' ? 'Atenção na conexão' : 'Pronto para gerar QR Code' %></strong>
-            <p class="muted" data-whatsapp-status-text>
-              <%= state.status === 'conectado' ? 'A sessão está ativa. Cobranças e mensagens automáticas já podem ser enviadas por este número.' : state.status === 'qr' ? 'O botão Gerar QR Code fica bloqueado enquanto este QR está ativo para evitar várias sessões ao mesmo tempo.' : state.status === 'iniciando' ? 'Aguarde enquanto o sistema prepara uma conexão limpa. A tela atualiza automaticamente.' : state.status === 'erro' ? 'Revise o aviso abaixo. Se necessário, gere um novo QR Code.' : 'Clique em Gerar QR Code uma vez e leia com o WhatsApp do número que enviará as cobranças.' %>
-            </p>
-            <p class="whatsapp-inline-error <%= state.lastError ? '' : 'is-hidden' %>" data-whatsapp-status-error>
-              <%= state.lastError || '' %>
-            </p>
-          </div>
+<div class="modal-overlay" id="modal-wa-add" aria-hidden="true" inert>
+  <div class="modal modal-sm">
+    <div class="modal-header"><h3>Adicionar Dispositivo WhatsApp</h3><button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button></div>
+    <form method="post" action="/whatsapp" id="modal-wa-add-form" class="modal-body" data-native-submit="1">
+      <input type="hidden" name="action" value="add_device">
+      <label class="field full"><span>Nome do Dispositivo</span><input class="input" name="nome" placeholder="Ex: Empresa Principal" required></label>
+    </form>
+    <div class="modal-footer"><button class="btn btn-muted" type="button" data-close-modal>Cancelar</button><button class="btn btn-primary" type="submit" form="modal-wa-add-form">Adicionar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-wa-connect" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <div><h3>📱 Conectar WhatsApp</h3><p class="muted" data-wa-modal-name></p></div>
+      <button class="modal-close" type="button" data-close-modal data-wa-close aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body wa-connect-body">
+      <div class="wa-qr-col">
+        <div class="wa-qr-box" data-wa-qr-box>
+          <span class="wa-qr-msg" data-wa-qr-msg>Gerando QR Code...</span>
+          <img class="wa-qr-img" data-wa-qr-img hidden alt="QR Code">
+          <div class="wa-pair-code" data-wa-pair-code hidden></div>
         </div>
-
-        <div class="whatsapp-summary-grid">
-          <div class="whatsapp-summary-item">
-            <span>Status</span>
-            <strong data-whatsapp-summary-status><%= state.status %></strong>
-            <small>Acompanhado automaticamente</small>
+        <div class="wa-qr-foot"><span data-wa-expira></span><span data-wa-aguardando>⟳ Aguardando leitura...</span></div>
+        <div class="wa-pair-by-number">
+          <strong>Ou conecte pelo número</strong>
+          <div class="wa-pair-row">
+            <input class="input" data-wa-phone inputmode="numeric" placeholder="5531999999999">
+            <button class="btn btn-primary" type="button" data-wa-pair-btn>Gerar código</button>
           </div>
-          <div class="whatsapp-summary-item">
-            <span>Sessão</span>
-            <strong><%= state.session %></strong>
-            <small>Nome usado pela API</small>
-          </div>
-          <div class="whatsapp-summary-item">
-            <span>Atualização</span>
-            <strong data-whatsapp-poll-label>3s</strong>
-            <small>Consulta de status ativa</small>
-          </div>
-        </div>
-
-        <form method="post" action="/whatsapp" class="actions-row whatsapp-actions">
-          <% const qrAtivo = Boolean(state.qrCode) || state.status === 'qr'; %>
-          <% const bloqueiaGerar = state.status === 'iniciando' || qrAtivo || state.status === 'conectado'; %>
-          <button class="btn btn-green <%= state.status === 'conectado' ? 'is-hidden' : '' %>" type="submit" name="action" value="start" data-whatsapp-start-label <%= bloqueiaGerar ? 'disabled aria-disabled="true"' : '' %>>
-            <%= state.status === 'iniciando' ? 'Gerando...' : qrAtivo ? 'QR Code gerado' : 'Gerar QR Code' %>
-          </button>
-          <button class="btn btn-muted <%= qrAtivo ? '' : 'is-hidden' %>" type="submit" name="action" value="restart_qr" data-whatsapp-restart-label>
-            Gerar novo QR
-          </button>
-          <button class="btn btn-muted <%= state.status === 'conectado' ? '' : 'is-hidden' %>" type="submit" name="action" value="stop" data-whatsapp-stop-label>
-            Parar sessão
-          </button>
-          <button class="btn btn-muted" type="button" data-whatsapp-refresh>
-            Atualizar status
-          </button>
-        </form>
-
-        <% if (sessionApi && state.status !== 'conectado') { %>
-        <form method="post" action="/whatsapp" class="whatsapp-pair-form">
-          <input type="hidden" name="action" value="pair">
-          <span class="pair-title">Conectar sem QR (só com um celular)</span>
-          <div class="pair-row">
-            <input class="input" type="tel" name="phone_number" inputmode="numeric" autocomplete="off" placeholder="DDD + número (ex.: 11999998888)" required>
-            <button class="btn btn-blue" type="submit">Gerar código</button>
-          </div>
-          <small class="muted">O WhatsApp gera um código de 8 dígitos para digitar em <strong>Aparelhos conectados › Conectar com número de telefone</strong>. Ideal quando você não consegue escanear o QR.</small>
-        </form>
-        <% } %>
-
-        <div class="whatsapp-help-card">
-          <strong>Como conectar</strong>
-          <ol>
-            <li>Clique em Gerar QR Code somente uma vez.</li>
-            <li>No celular, abra WhatsApp &gt; Aparelhos conectados &gt; Conectar um aparelho.</li>
-            <li>Leia o QR Code exibido nesta tela.</li>
-            <li>Quando aparecer conectado, teste o envio em um cliente.</li>
-          </ol>
-        </div>
-
-        <div class="whatsapp-steps">
-          <div>
-            <span>1</span>
-            <p>Gere o QR. O botão fica inacessível enquanto o QR estiver ativo.</p>
-          </div>
-          <div>
-            <span>2</span>
-            <p>Leia o QR no celular em Aparelhos conectados.</p>
-          </div>
-          <div>
-            <span>3</span>
-            <p>Depois de conectado, cobranças e botões usam esta sessão.</p>
-          </div>
+          <small class="muted">Digite com DDI + DDD (ex.: 55 31 9 9999-9999)</small>
         </div>
       </div>
-
-      <div class="qr-box <%= state.qrCode ? 'has-qr' : '' %>" data-whatsapp-status-box>
-        <% if (state.pairingCode) { %>
-          <div class="qr-placeholder pairing">
-            <span>🔑</span>
-            <strong>Código de pareamento</strong>
-            <div class="pairing-code"><%= state.pairingCode %></div>
-            <small>No celular: WhatsApp › Aparelhos conectados › Conectar com número de telefone › digite este código.</small>
-          </div>
-        <% } else if (state.qrCode) { %>
-          <span class="qr-state-pill">QR ativo</span>
-          <div class="qr-frame">
-            <img class="qr-image" src="<%= state.qrCode %>" alt="QR Code WhatsApp">
-          </div>
-          <p class="muted">
-            Abra o WhatsApp no celular, vá em Aparelhos conectados e leia o QR Code.
-          </p>
-        <% } else if (state.status === 'conectado') { %>
-          <div class="qr-placeholder success">
-            <span>✓</span>
-            <strong>WhatsApp conectado</strong>
-            <small>Pronto para envios automáticos</small>
-          </div>
-        <% } else if (state.status === 'iniciando') { %>
-          <div class="qr-loading">
-            <div class="loading-balls" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <strong>Gerando QR Code</strong>
-            <small>Aguarde alguns segundos...</small>
-          </div>
-        <% } else { %>
-          <div class="qr-placeholder">
-            <span>⌁</span>
-            <strong>QR Code ainda não gerado</strong>
-            <small>Clique em Gerar QR Code para criar uma nova conexão</small>
-          </div>
-        <% } %>
+      <div class="wa-steps-col">
+        <strong>Como conectar:</strong>
+        <ol class="wa-steps">
+          <li>Abra o WhatsApp no celular</li>
+          <li>Toque em Menu ou Configurações</li>
+          <li>Selecione Dispositivos conectados</li>
+          <li>Toque em Conectar um dispositivo</li>
+          <li>Aponte a câmera para este QR Code</li>
+        </ol>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  (function () {
-    const box = document.querySelector('[data-whatsapp-status-box]');
-    const badge = document.querySelector('[data-whatsapp-status-badge]');
-    const card = document.querySelector('.whatsapp-card');
-    const orb = document.querySelector('[data-whatsapp-status-orb]');
-    const symbol = document.querySelector('[data-whatsapp-status-symbol]');
-    const title = document.querySelector('[data-whatsapp-status-title]');
-    const text = document.querySelector('[data-whatsapp-status-text]');
-    const errorText = document.querySelector('[data-whatsapp-status-error]');
-    const startButton = document.querySelector('[data-whatsapp-start-label]');
-    const restartButton = document.querySelector('[data-whatsapp-restart-label]');
-    const stopButton = document.querySelector('[data-whatsapp-stop-label]');
-    const refreshButton = document.querySelector('[data-whatsapp-refresh]');
-    const summaryStatus = document.querySelector('[data-whatsapp-summary-status]');
-    const pollLabel = document.querySelector('[data-whatsapp-poll-label]');
-    if (!box) return;
+(function () {
+  var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', pairing: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };
 
-    const badgeClass = function (status) {
-      if (status === 'conectado') return 'badge-green';
-      if (status === 'erro') return 'badge-red';
-      if (status === 'qr') return 'badge-yellow';
-      if (status === 'pairing') return 'badge-blue';
-      if (status === 'iniciando') return 'badge-blue';
-      return 'badge-muted';
-    };
+  function atualizarCard(card, st) {
+    var pill = card.querySelector('[data-wa-status]');
+    var btn = card.querySelector('[data-wa-connect]');
+    var sub = card.querySelector('[data-wa-sub]');
+    var conectado = st.connected || st.status === 'conectado';
+    if (pill) { pill.textContent = STATUS_LABEL[st.status] || (conectado ? 'Conectado' : 'Desconectado'); pill.className = 'wa-status-pill ' + (conectado ? 'on' : st.status === 'erro' ? 'err' : 'off'); }
+    if (btn) {
+      btn.classList.toggle('is-on', conectado);
+      btn.innerHTML = conectado ? '⏻ Desconectar' : '⏻ Conectar';
+      btn.dataset.connected = conectado ? '1' : '0';
+    }
+    if (sub && conectado && st.session) sub.textContent = 'Sessão: ' + st.session;
+    card.dataset.connected = conectado ? '1' : '0';
+  }
+  function recontarConectados() {
+    var n = 0; document.querySelectorAll('.wa-device').forEach(function (c) { if (c.dataset.connected === '1') n++; });
+    var el = document.querySelector('[data-wa-conectados]'); if (el) el.textContent = n;
+  }
+  function pollCards() {
+    document.querySelectorAll('.wa-device').forEach(function (card) {
+      var id = card.getAttribute('data-device-id');
+      fetch('/whatsapp/status?device=' + id, { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (st) { if (st) { atualizarCard(card, st); recontarConectados(); } })
+        .catch(function () {});
+    });
+  }
+  pollCards();
+  setInterval(pollCards, 12000);
 
-    const cardClass = function (status) {
-      if (status === 'conectado') return 'is-connected';
-      if (status === 'erro') return 'is-error';
-      if (status === 'qr') return 'is-qr';
-      if (status === 'iniciando') return 'is-loading';
-      return '';
-    };
+  // ----- Conectar / Desconectar -----
+  var modal = document.getElementById('modal-wa-connect');
+  var trigger = document.querySelector('[data-wa-connect-trigger]');
+  var qrImg = modal && modal.querySelector('[data-wa-qr-img]');
+  var qrMsg = modal && modal.querySelector('[data-wa-qr-msg]');
+  var pairCode = modal && modal.querySelector('[data-wa-pair-code]');
+  var modalName = modal && modal.querySelector('[data-wa-modal-name]');
+  var phoneInput = modal && modal.querySelector('[data-wa-phone]');
+  var pairBtn = modal && modal.querySelector('[data-wa-pair-btn]');
+  var aguardando = modal && modal.querySelector('[data-wa-aguardando]');
+  var pollConnect = null;
+  var deviceAtual = null;
 
-    const statusCopy = function (status, hasQr) {
-      if (status === 'conectado') {
-        return {
-          symbol: '✓',
-          orbClass: 'success',
-          title: 'Sessão conectada',
-          text: 'A sessão está ativa. Cobranças e mensagens automáticas já podem ser enviadas por este número.',
-          button: ''
-        };
-      }
-      if (status === 'pairing') {
-        return {
-          symbol: '•',
-          orbClass: 'waiting',
-          title: 'Código de pareamento gerado',
-          text: 'Digite o código no WhatsApp do número informado: Aparelhos conectados › Conectar com número de telefone.',
-          button: 'Código gerado'
-        };
-      }
-      if (status === 'qr' || hasQr) {
-        return {
-          symbol: '•',
-          orbClass: 'waiting',
-          title: 'QR Code gerado e aguardando leitura',
-          text: 'O botão Gerar QR Code fica bloqueado enquanto este QR está ativo para evitar várias sessões ao mesmo tempo.',
-          button: 'QR Code gerado'
-        };
-      }
-      if (status === 'iniciando') {
-        return {
-          symbol: '•',
-          orbClass: 'loading',
-          title: 'Gerando QR Code',
-          text: 'Aguarde enquanto o sistema prepara uma conexão limpa. A tela atualiza automaticamente.',
-          button: 'Gerando...'
-        };
-      }
-      if (status === 'erro') {
-        return {
-          symbol: '!',
-          orbClass: 'error',
-          title: 'Atenção na conexão',
-          text: 'Revise o aviso abaixo. Se necessário, gere um novo QR Code.',
-          button: 'Tentar novamente'
-        };
-      }
-      return {
-        symbol: '•',
-        orbClass: '',
-        title: 'Pronto para gerar QR Code',
-        text: 'Clique em Gerar QR Code uma vez e leia com o WhatsApp do número que enviará as cobranças.',
-        button: 'Gerar QR Code'
-      };
-    };
+  function mostrarEstado(st) {
+    if (!modal) return;
+    if (st.connected || st.status === 'conectado') {
+      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = '✅ Conectado!'; }
+      if (qrImg) qrImg.hidden = true;
+      if (pairCode) pairCode.hidden = true;
+      pararConnect();
+      setTimeout(function () { window.location.reload(); }, 900);
+      return;
+    }
+    if (st.pairingCode) {
+      if (pairCode) { pairCode.hidden = false; pairCode.textContent = st.pairingCode; }
+      if (qrImg) qrImg.hidden = true;
+      if (qrMsg) qrMsg.hidden = true;
+      if (aguardando) aguardando.textContent = '⟳ Digite o código no celular...';
+      return;
+    }
+    if (st.qrCode) {
+      if (qrImg) { qrImg.hidden = false; qrImg.src = st.qrCode; }
+      if (qrMsg) qrMsg.hidden = true;
+      if (pairCode) pairCode.hidden = true;
+      return;
+    }
+    if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = st.lastError || 'Gerando QR Code...'; }
+    if (qrImg) qrImg.hidden = true;
+  }
+  function pararConnect() { if (pollConnect) { clearInterval(pollConnect); pollConnect = null; } }
+  function pollStatusConnect() {
+    if (!deviceAtual) return;
+    fetch('/whatsapp/status?device=' + deviceAtual, { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (st) { if (st) mostrarEstado(st); }).catch(function () {});
+  }
 
-    const renderQrBox = function (state, status) {
-      if (state.pairingCode) {
-        box.classList.remove('has-qr');
-        box.innerHTML = '\n  <div class="qr-placeholder pairing">\n    <span>🔑</span>\n    <strong>Código de pareamento</strong>\n    <div class="pairing-code">' + state.pairingCode + '</div>\n    <small>No celular: WhatsApp › Aparelhos conectados › Conectar com número de telefone › digite este código.</small>\n  </div>\n  ';
+  document.querySelectorAll('[data-wa-connect]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var card = btn.closest('.wa-device');
+      var id = card.getAttribute('data-device-id');
+      if (btn.dataset.connected === '1') {
+        if (!confirm('Desconectar este dispositivo?')) return;
+        fetch('/whatsapp/device/' + id + '/disconnect', { method: 'POST' }).then(function () { window.location.reload(); });
         return;
       }
-      if (state.qrCode) {
-        box.classList.add('has-qr');
-        box.innerHTML = '\n  <span class="qr-state-pill">QR ativo</span>\n  <div class="qr-frame">\n    <img class="qr-image" src="' + state.qrCode + '" alt="QR Code WhatsApp">\n  </div>\n  <p class="muted">\n    Abra o WhatsApp no celular, vá em Aparelhos conectados e leia o QR Code.\n  </p>\n  ';
-      } else {
-        box.classList.remove('has-qr');
-        if (status === 'conectado') {
-          box.innerHTML = '\n  <div class="qr-placeholder success">\n    <span>✓</span>\n    <strong>WhatsApp conectado</strong>\n    <small>Pronto para envios automáticos</small>\n  </div>\n  ';
-        } else if (status === 'iniciando') {
-          box.innerHTML = '\n  <div class="qr-loading">\n    <div class="loading-balls" aria-hidden="true">\n      <span></span>\n      <span></span>\n      <span></span>\n    </div>\n    <strong>Gerando QR Code</strong>\n    <small>Aguarde alguns segundos...</small>\n  </div>\n  ';
-        } else if (status !== 'qr') {
-          box.innerHTML = '\n  <div class="qr-placeholder">\n    <span>⌁</span>\n    <strong>QR Code ainda não gerado</strong>\n    <small>Clique em Gerar QR Code para criar uma nova conexão</small>\n  </div>\n  ';
-        }
-      }
-    };
+      // abre modal de conexão
+      deviceAtual = id;
+      if (modalName) modalName.textContent = card.getAttribute('data-nome') || '';
+      if (qrImg) qrImg.hidden = true;
+      if (pairCode) pairCode.hidden = true;
+      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Gerando QR Code...'; }
+      if (phoneInput) phoneInput.value = '';
+      if (trigger) trigger.click();
+      fetch('/whatsapp/device/' + id + '/connect', { method: 'POST' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (st) { if (st) mostrarEstado(st); }).catch(function () {});
+      pararConnect();
+      pollConnect = setInterval(pollStatusConnect, 3000);
+    });
+  });
 
-    const render = function (state) {
-      const status = state.status || 'desconectado';
-      const hasQr = Boolean(state.qrCode) || status === 'qr';
-      if (badge) {
-        badge.className = 'badge whatsapp-status-badge ' + badgeClass(status);
-        badge.innerHTML = '<i></i>' + status;
-      }
-      if (summaryStatus) summaryStatus.textContent = status;
-      if (pollLabel) pollLabel.textContent = 'agora';
-      if (card) {
-        card.classList.remove('is-connected', 'is-error', 'is-qr', 'is-loading');
-        const className = cardClass(status);
-        if (className) card.classList.add(className);
-      }
-      const copy = statusCopy(status, hasQr);
-      if (orb) orb.className = 'whatsapp-status-orb ' + copy.orbClass;
-      if (symbol) symbol.textContent = copy.symbol;
-      if (title) title.textContent = copy.title;
-      if (text) text.textContent = copy.text;
-      if (errorText) {
-        const message = state.lastError || '';
-        errorText.textContent = message;
-        errorText.classList.toggle('is-hidden', !message);
-      }
-      if (startButton) {
-        startButton.textContent = copy.button;
-        startButton.classList.toggle('is-hidden', status === 'conectado');
-        startButton.disabled = status === 'iniciando' || hasQr || status === 'conectado' || status === 'pairing';
-        startButton.setAttribute('aria-disabled', startButton.disabled ? 'true' : 'false');
-      }
-      if (restartButton) {
-        restartButton.classList.toggle('is-hidden', !hasQr || status === 'conectado');
-      }
-      if (stopButton) {
-        stopButton.classList.toggle('is-hidden', status !== 'conectado');
-      }
-      renderQrBox(state, status);
-    };
+  if (pairBtn) pairBtn.addEventListener('click', function () {
+    if (!deviceAtual) return;
+    var phone = (phoneInput && phoneInput.value || '').replace(/\D+/g, '');
+    if (!phone) { if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Informe o número com DDI+DDD.'; } return; }
+    pairBtn.disabled = true; pairBtn.textContent = 'Gerando...';
+    fetch('/whatsapp/device/' + deviceAtual + '/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone }) })
+      .then(function (r) { return r.json(); })
+      .then(function (st) { mostrarEstado(st); })
+      .catch(function () {})
+      .finally(function () { pairBtn.disabled = false; pairBtn.textContent = 'Gerar código'; });
+  });
 
-    const loadStatus = function () {
-      if (refreshButton) refreshButton.disabled = true;
-      fetch('/whatsapp/status')
-        .then(function (res) { return res.json(); })
-        .then(render)
-        .catch(function () {})
-        .finally(function () {
-          if (refreshButton) refreshButton.disabled = false;
-          if (pollLabel) pollLabel.textContent = '3s';
-        });
-    };
-
-    if (refreshButton) refreshButton.addEventListener('click', loadStatus);
-    setInterval(loadStatus, 3000);
-  })();
+  // Para o polling ao fechar o modal
+  if (modal) modal.querySelectorAll('[data-close-modal]').forEach(function (b) { b.addEventListener('click', pararConnect); });
+})();
 </script>

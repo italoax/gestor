@@ -16,10 +16,14 @@ import { authRouter } from "./routes/auth.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { clientesRouter } from "./routes/clientes.js";
 import { crudRouter } from "./routes/simpleCrud.js";
-import { cobrancasRouter } from "./routes/cobrancas.js";
 import { accountRouter } from "./routes/account.js";
 import { webhookRouter } from "./routes/webhook.js";
 import { whatsappRouter } from "./routes/whatsapp.js";
+import { placeholderRouter } from "./routes/placeholder.js";
+import { dispositivosRouter } from "./routes/dispositivos.js";
+import { aplicativosRouter } from "./routes/aplicativos.js";
+import { transacoesRouter } from "./routes/transacoes.js";
+import { automacaoRouter } from "./routes/automacao.js";
 import { startCobrancasCron } from "./services/cobrancasCron.js";
 import { startWppConnectIfConfigured } from "./services/wppconnect.js";
 import { badgeStatusByVencimento, formatDateBr, formatDateInput, formatMoney, statusByVencimento } from "./services/format.js";
@@ -62,7 +66,7 @@ app.get("/", (_req, res) => {
 
 app.use(webhookRouter);
 app.use(authRouter);
-app.use(requireAuth, dashboardRouter, clientesRouter, crudRouter, cobrancasRouter, accountRouter, whatsappRouter);
+app.use(requireAuth, dashboardRouter, clientesRouter, crudRouter, accountRouter, whatsappRouter, transacoesRouter, automacaoRouter, dispositivosRouter, aplicativosRouter, placeholderRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

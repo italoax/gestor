@@ -87,10 +87,16 @@ export function montarMensagem(template: string, cliente: ClienteMensagem) {
     ? cliente.vencimento.toLocaleDateString("pt-BR", { timeZone: "UTC" })
     : String(cliente.vencimento ?? "");
   const valor = Number(cliente.valor ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const horaSp = Number(new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).format(new Date()));
+  const saudacao = horaSp < 12 ? "Bom dia" : horaSp < 18 ? "Boa tarde" : "Boa noite";
+  const nomeCompleto = String(cliente.nome ?? "").trim();
   const tags: Record<string, string> = {
-    nome: String(cliente.nome ?? ""),
-    nome_completo: String(cliente.nome ?? ""),
-    cliente: String(cliente.nome ?? ""),
+    nome: nomeCompleto,
+    nome_completo: nomeCompleto,
+    primeiro_nome: nomeCompleto.split(/\s+/)[0] ?? "",
+    cliente: nomeCompleto,
+    saudacao,
+    senha: String((cliente as Record<string, unknown>).senha ?? ""),
     vencimento,
     valor,
     plano: String(cliente.plano ?? ""),

@@ -1,30 +1,64 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { queryRows, queryOne, execute } from "../db/mysql.js";
 import { env } from "../config/env.js";
-import { appHhmm, appMinuteKey, appNowSql, appTodayIso, appWeekday } from "./dates.js";
+import { appHhmm, appNowSql, appTodayIso, appWeekday } from "./dates.js";
 import { enviarMensagemModelo } from "./whatsapp.js";
 import type { RowDataPacket } from "mysql2";
 
-interface CobrancaAutoRow extends RowDataPacket { id: number; userId: number; tipo: string; periodo: number; mensagem: string | null; mediaTipo: string | null; mediaPath: string | null; horaEnvio: string | null; diasSemana: string | null; ultimaExecucao: Date | string | null; }
+interface CobrancaAutoRow extends RowDataPacket {
+  id: number; userId: number; tipo: string; periodo: number; mensagem: string | null; mediaTipo: string | null; mediaPath: string | null;
+  horaEnvio: string | null; diasSemana: string | null; jaRodouHoje: number;
+  minDelay: number | null; maxDelay: number | null; filtroServidor: string | null; filtroPlano: string | null;
+  rodapeAntiban: number; envioLotes: number; loteTamanho: number | null; lotePausa: number | null;
+}
 interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; }
 interface EnvioIdRow extends RowDataPacket { id: number; }
 
 let timer: NodeJS.Timeout | null = null;
+let running = false;
 let enviosTableReady: Promise<void> | null = null;
 
 // Intervalo aleatório entre cada envio para reduzir o risco de bloqueio do WhatsApp.
-// Configurável por WA_SEND_MIN_DELAY / WA_SEND_MAX_DELAY (em segundos).
-function delayEntreEnvios() {
-  const minSec = Number.isFinite(env.whatsapp.sendMinDelaySec) ? Math.max(0, env.whatsapp.sendMinDelaySec) : 3;
-  const maxSec = Number.isFinite(env.whatsapp.sendMaxDelaySec) ? Math.max(minSec, env.whatsapp.sendMaxDelaySec) : Math.max(minSec, 7);
+// Usa o min/max da própria regra (em segundos) se definidos; senão cai no padrão de WA_SEND_MIN/MAX_DELAY.
+function delayEntreEnvios(minOverride?: number | null, maxOverride?: number | null) {
+  const minSec = minOverride != null && Number.isFinite(minOverride)
+    ? Math.max(0, minOverride)
+    : (Number.isFinite(env.whatsapp.sendMinDelaySec) ? Math.max(0, env.whatsapp.sendMinDelaySec) : 3);
+  const maxSec = maxOverride != null && Number.isFinite(maxOverride)
+    ? Math.max(minSec, maxOverride)
+    : (Number.isFinite(env.whatsapp.sendMaxDelaySec) ? Math.max(minSec, env.whatsapp.sendMaxDelaySec) : Math.max(minSec, 7));
   const minMs = minSec * 1_000;
   const maxMs = maxSec * 1_000;
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
 }
 
+// Monta a consulta de clientes-alvo conforme o tipo do gatilho + filtros opcionais da regra.
+function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
+  const tipo = String(cobranca.tipo ?? "").toLowerCase().trim();
+  const params: Record<string, unknown> = { userId: cobranca.userId, today };
+  let where = "user_id = :userId AND status = 'Ativo'";
+  if (tipo === "todos") {
+    // Toda a base ativa (sem filtro de data).
+  } else if (tipo === "apos cadastro") {
+    where += " AND DATEDIFF(:today, DATE(created_at)) = :periodoCadastro";
+    params.periodoCadastro = Math.abs(Number(cobranca.periodo) || 0);
+  } else {
+    where += " AND DATEDIFF(vencimento, :today) = :periodoAlvo";
+    params.periodoAlvo = periodoAlvoPorTipo(cobranca.tipo, cobranca.periodo);
+  }
+  if (cobranca.filtroServidor) { where += " AND servidor = :filtroServidor"; params.filtroServidor = cobranca.filtroServidor; }
+  if (cobranca.filtroPlano) { where += " AND plano = :filtroPlano"; params.filtroPlano = cobranca.filtroPlano; }
+  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor FROM clientes WHERE ${where}`, params };
+}
+
 export function startCobrancasCron() {
   if (timer) return;
-  timer = setInterval(() => { void executarCobrancasAutomaticas(); }, 60_000);
+  timer = setInterval(() => {
+    // Evita execuções sobrepostas: um ciclo pode demorar (delays entre envios).
+    if (running) return;
+    running = true;
+    void executarCobrancasAutomaticas().catch((error) => console.error("Erro no cron de cobranças:", error)).finally(() => { running = false; });
+  }, 60_000);
 }
 
 export async function executarCobrancasAutomaticas() {
@@ -32,30 +66,55 @@ export async function executarCobrancasAutomaticas() {
   const now = new Date();
   const hhmm = appHhmm(now);
   const weekday = appWeekday(now);
-  const currentMinuteKey = appMinuteKey(now);
+  const today = appTodayIso(now);
   const cobrancas = await queryRows<CobrancaAutoRow>(
     `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
-            c.ultima_execucao AS ultimaExecucao, m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
+            (DATE(c.ultima_execucao) = :today) AS jaRodouHoje, c.min_delay AS minDelay, c.max_delay AS maxDelay,
+            c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
+            c.rodape_antiban AS rodapeAntiban, c.envio_lotes AS envioLotes, c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa,
+            m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
        FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
       WHERE c.automatica = 1 AND c.status = 'Ativo'`,
+    { today },
   );
   for (const cobranca of cobrancas) {
-    if (cobranca.horaEnvio && String(cobranca.horaEnvio).slice(0, 5) !== hhmm) continue;
+    // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
+    if (cobranca.horaEnvio && hhmm < String(cobranca.horaEnvio).slice(0, 5)) continue;
     if (!deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
-    if (minuteKey(cobranca.ultimaExecucao) === currentMinuteKey) continue;
-    const periodoAlvo = periodoAlvoPorTipo(cobranca.tipo, cobranca.periodo);
-    const clientes = await queryRows<ClienteRow>(`SELECT id, nome, telefone, vencimento, valor, plano, servidor FROM clientes WHERE user_id = :userId AND DATEDIFF(vencimento, :today) = :periodoAlvo AND status = 'Ativo'`, { userId: cobranca.userId, periodoAlvo, today: appTodayIso(now) });
+    if (cobranca.jaRodouHoje) continue;
+    const { sql, params } = montarConsultaClientes(cobranca, appTodayIso(now));
+    const clientes = await queryRows<ClienteRow>(sql, params);
+    // Sessão do WhatsApp = dispositivo principal do usuário (não o servidor do cliente).
+    const sessaoWa = (await queryRows<RowDataPacket & { sessao: string }>(
+      "SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1",
+      { userId: cobranca.userId },
+    ))[0]?.sessao ?? "";
     let enviadosNestaCobranca = 0;
     for (const cliente of clientes) {
       const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
       if (!reservaId) continue;
 
       // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
-      if (enviadosNestaCobranca > 0) await sleep(delayEntreEnvios());
+      if (enviadosNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
+      // Envio em lotes: a cada N mensagens, pausa o tempo configurado antes de continuar.
+      if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
+        const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
+        if (enviadosNestaCobranca % tamanho === 0) {
+          const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
+          if (pausaSec > 0) await sleep(pausaSec * 1_000);
+        }
+      }
       enviadosNestaCobranca += 1;
 
-      const result = await enviarMensagemModelo(cliente.servidor || "", cliente, {
-        mensagem: cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.",
+      // Rodapé anti-ban: código único por mensagem para evitar detecção de spam (mensagens idênticas).
+      let mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
+      if (cobranca.rodapeAntiban) {
+        const cod = Math.random().toString(16).slice(2, 8).toUpperCase();
+        mensagemBase += `\n\n_Prot.: ${cod}_`;
+      }
+
+      const result = await enviarMensagemModelo(sessaoWa, cliente, {
+        mensagem: mensagemBase,
         mediaTipo: cobranca.mediaTipo,
         mediaPath: cobranca.mediaPath,
       });
@@ -151,16 +210,4 @@ function periodoAlvoPorTipo(tipo: string, periodo: number) {
   if (tipoNormalizado === "vencimento") return dias;
 
   return Number(periodo) || 0;
-}
-
-function minuteKey(value: Date | string | null) {
-  if (!value) return "";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }

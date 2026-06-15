@@ -6,45 +6,100 @@
   <title><%= title || 'Gestor' %></title>
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=theme-indigo-1" />
-  <link rel="stylesheet" href="/assets/css/node-migration.css?v=theme-indigo-1" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=shell-8" />
+  <link rel="stylesheet" href="/assets/css/node-migration.css?v=shell-8" />
   <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 </head>
 <body class="<%= user ? 'page-app' : 'login-page' %>">
-<div class="app">
-  <% if (user) { %>
-  <header class="topbar">
-    <div class="container topbar-inner">
-      <div class="brand"><div class="avatar"><%= user.name.substring(0,2).toUpperCase() %></div><div class="brand-text"><div class="brand-name"><%= user.name %></div><div class="brand-role">@<%= user.username %></div></div></div>
-      <nav class="nav" data-nav>
-        <a class="nav-link <%= currentPath === '/dashboard' ? 'active' : '' %>" href="/dashboard">Dashboard</a>
-        <a class="nav-link <%= currentPath === '/clientes' ? 'active' : '' %>" href="/clientes">Clientes</a>
-        <a class="nav-link <%= currentPath === '/cobrancas' ? 'active' : '' %>" href="/cobrancas">Cobranças</a>
-        <a class="nav-link <%= currentPath === '/mensagens' ? 'active' : '' %>" href="/mensagens">Mensagens</a>
-        <a class="nav-link <%= currentPath === '/planos' ? 'active' : '' %>" href="/planos">Planos</a>
-        <a class="nav-link <%= currentPath === '/servidores' ? 'active' : '' %>" href="/servidores">Servidores</a>
-        <a class="nav-link <%= currentPath === '/whatsapp' ? 'active' : '' %>" href="/whatsapp">WhatsApp</a>
-        <a class="nav-link <%= currentPath === '/minha-conta' ? 'active' : '' %>" href="/minha-conta">Minha conta</a>
-        <form method="post" action="/logout" class="action-form"><button class="nav-link" type="submit">Sair</button></form>
-      </nav>
-      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema claro/escuro" title="Alternar tema"></button>
-      <button class="hamburger" data-hamburger><span></span><span></span><span></span></button>
+<% if (user) {
+  const menu = [
+    { label: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { label: 'Clientes', href: '/clientes', icon: '👥' },
+    { label: 'Testes', href: '/em-breve/testes', icon: '🧪' },
+    { label: 'Transações', href: '/transacoes', icon: '🧾' },
+    { label: 'Servidores', href: '/servidores', icon: '🖥️' },
+    { label: 'Integrações', href: '/em-breve/integracoes', icon: '🔌' },
+    { label: 'Planos', href: '/planos', icon: '📦' },
+    { label: 'Aplicativos', href: '/aplicativos', icon: '📱' },
+    { label: 'Dispositivos', href: '/dispositivos', icon: '💻' },
+    { label: 'WhatsApp', href: '/whatsapp', icon: '📲' },
+    { label: 'Mensagens', href: '/mensagens', icon: '💬' },
+    { label: 'Automação', href: '/automacao', icon: '⚡' },
+    { label: 'Meu Plano', href: '/em-breve/meu-plano', icon: '📃' },
+    { label: 'Indique e Ganhe', href: '/em-breve/indique', icon: '🎁', badge: 'NOVO' },
+    { label: 'Integração Pagamento', href: '/em-breve/integracao-pagamento', icon: '💳' },
+    { label: 'Importar', href: '/em-breve/importar', icon: '⬆️' },
+    { label: 'Tutoriais', href: '/em-breve/tutoriais', icon: '▶️' },
+    { label: 'Configurações', href: '/minha-conta', icon: '⚙️' },
+  ];
+  function isActive(href) { return currentPath === href || currentPath.startsWith(href + '/'); }
+%>
+<div class="app-shell" data-shell>
+  <aside class="sidebar" data-sidebar>
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">N</div>
+      <div class="sidebar-brand-text">
+        <strong>Gestor</strong>
+        <span>GESTÃO EMPRESARIAL</span>
+      </div>
     </div>
-  </header>
-  <% } %>
-  <% if (user) { %>
-  <main class="main-content">
-    <div class="container">
+    <nav class="sidebar-nav">
+      <% menu.forEach(item => { %>
+        <a class="sidebar-link <%= isActive(item.href) ? 'active' : '' %>" href="<%= item.href %>">
+          <span class="sidebar-ico"><%= item.icon %></span>
+          <span class="sidebar-label"><%= item.label %></span>
+          <% if (item.badge) { %><span class="sidebar-badge"><%= item.badge %></span><% } %>
+        </a>
+      <% }) %>
+    </nav>
+    <div class="sidebar-foot">
+      <a class="sidebar-telegram" href="/em-breve/tutoriais">
+        <span class="sidebar-ico">✈</span>
+        <span class="sidebar-brand-text"><strong>Telegram Oficial</strong><span>@ngestoroficial</span></span>
+      </a>
+      <button class="sidebar-collapse" type="button" data-sidebar-toggle>
+        <span class="chev">‹</span> <span class="sidebar-label">Recolher</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar2">
+      <button class="topbar-burger" type="button" data-sidebar-mobile aria-label="Menu">☰</button>
+      <div class="topbar2-title">
+        <h1><%= title || 'Gestor' %></h1>
+        <% if (typeof subtitle !== 'undefined' && subtitle) { %><span><%= subtitle %></span><% } else if (currentPath === '/dashboard') { %><span>Visão geral do sistema</span><% } %>
+      </div>
+      <div class="topbar2-actions">
+        <label class="topbar-search">
+          <span class="topbar-search-ico">⌕</span>
+          <input type="search" placeholder="Buscar... (Ctrl+K)" data-global-search>
+        </label>
+        <a class="topbar-chip" href="/whatsapp" data-wa-chip title="Status do WhatsApp">
+          <span class="wa-dot"></span>
+          <span class="wa-ico">📲</span>
+          <span data-wa-count>0/0</span>
+        </a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema claro/escuro" title="Alternar tema"></button>
+        <button class="topbar-icon" type="button" title="Notificações">
+          🔔<span class="topbar-badge">1</span>
+        </button>
+        <a class="topbar-avatar" href="/minha-conta" title="<%= user.name %>"><%= user.name.substring(0,1).toUpperCase() %></a>
+      </div>
+    </header>
+
+    <main class="app-content">
       <% if (success && success.length) { %><div class="form-alert success"><%= success[0] %></div><% } %>
       <% if (error && error.length) { %><div class="form-alert error"><%= error[0] %></div><% } %>
-    </div>
-    <%- body %>
-  </main>
-  <footer class="footer"><div class="container">Gestor Node - migração TypeScript</div></footer>
-  <% } else { %>
-    <%- body %>
-  <% } %>
+      <%- body %>
+    </main>
+  </div>
+  <div class="sidebar-backdrop" data-sidebar-backdrop></div>
 </div>
-<script src="/assets/js/main.js?v=theme-indigo-1"></script>
+<% } else { %>
+  <%- body %>
+<% } %>
+<script src="/assets/js/main.js?v=shell-8"></script>
+<script src="/assets/js/app-shell.js?v=shell-8"></script>
 </body>
 </html>

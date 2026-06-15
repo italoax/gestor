@@ -1,0 +1,387 @@
+<%
+  function badgeTipo(tipo) {
+    const t = String(tipo).toLowerCase();
+    if (t === 'vencimento') return { cls: 'tipo-antes', label: 'Antes do venc. do plano', ico: '⏰' };
+    if (t === 'vence hoje') return { cls: 'tipo-hoje', label: 'No dia do venc. do plano', ico: '📅' };
+    if (t === 'vencidos') return { cls: 'tipo-apos', label: 'Após venc. do plano', ico: '⏰' };
+    if (t === 'apos cadastro') return { cls: 'tipo-cadastro', label: 'Após cadastro', ico: '👤' };
+    return { cls: 'tipo-todos', label: 'Todos os clientes', ico: '👥' };
+  }
+%>
+<div class="container page-automacao" data-search-scope>
+
+  <div class="auto-stats">
+    <div class="tx-stat"><div><span>Regras</span><strong><%= stats.regras %></strong></div><div class="tx-stat-ico accent-blue">⚡</div></div>
+    <div class="tx-stat"><div><span>Ativas</span><strong class="pos"><%= stats.ativas %></strong></div><div class="tx-stat-ico accent-green">✅</div></div>
+    <div class="tx-stat"><div><span>Mensagens hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-blue">💬</div></div>
+    <div class="tx-stat"><div><span>Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red">📊</div></div>
+  </div>
+
+  <div class="auto-tabs">
+    <button class="auto-tab active" type="button" data-auto-tab="regras">⚡ Regras</button>
+    <button class="auto-tab" type="button" data-auto-tab="disparos">➤ Disparos</button>
+    <button class="btn btn-primary auto-new" type="button" data-open-modal="modal-nova-regra">+ Nova Regra</button>
+  </div>
+
+  <div class="auto-panel active" data-auto-panel="regras">
+    <div class="auto-filters">
+      <label class="cli-search auto-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar por nome..." data-search-input></label>
+      <label class="cli-filter"><select class="input" aria-label="Tipos" disabled><option>Todos os tipos</option></select></label>
+      <label class="cli-filter"><select class="input" aria-label="Status" disabled><option>Todos</option></select></label>
+    </div>
+
+    <% if (!regras.length) { %>
+      <div class="cli-empty"><div class="cli-empty-ico">⚡</div><h3>Nenhuma regra criada</h3><p class="muted">Crie regras para enviar mensagens automáticas aos seus clientes.</p><button class="btn btn-primary" type="button" data-open-modal="modal-nova-regra">+ Nova Regra</button></div>
+    <% } else { %>
+    <div class="auto-list">
+      <% regras.forEach(r => { const b = badgeTipo(r.tipo); const ativa = r.status === 'Ativo'; %>
+      <div class="auto-rule <%= ativa ? 'is-on' : '' %>" data-search-item>
+        <div class="auto-rule-main">
+          <span class="auto-rule-ico <%= b.cls %>"><%= b.ico %></span>
+          <div class="auto-rule-body">
+            <div class="auto-rule-top">
+              <strong><%= r.titulo %></strong>
+              <small><%= r.descricao || '' %></small>
+            </div>
+            <span class="auto-badge <%= b.cls %>"><%= b.ico %> <%= b.label %></span>
+            <div class="auto-rule-preview"><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ').slice(0,90) %><%= (r.mensagemTexto||'').length>90?'…':'' %></div>
+            <div class="auto-rule-foot">
+              <span>Arquivo: Não arquivado</span>
+              <span class="dot">•</span>
+              <span><%= ativa ? 'Regra ativada' : 'Regra desativada' %></span>
+              <span class="dot">•</span>
+              <button type="button" class="auto-receb-link" data-regra-id="<%= r.id %>" data-regra-nome="<%= r.titulo %>">👥 <%= r.recebedores %> clientes</button>
+            </div>
+          </div>
+        </div>
+        <div class="auto-rule-actions">
+          <form method="post" action="/automacao" class="auto-toggle-form">
+            <input type="hidden" name="action" value="toggle_regra">
+            <input type="hidden" name="id" value="<%= r.id %>">
+            <input type="checkbox" class="switch" onchange="this.form.submit()" <%= ativa ? 'checked' : '' %> aria-label="Ativar regra">
+          </form>
+          <button class="cli-ico-btn edit-regra" type="button" title="Editar"
+            data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-gatilho="<%= r.gatilho %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>">✎</button>
+          <form method="post" action="/automacao" class="auto-del-form">
+            <input type="hidden" name="action" value="delete_regra">
+            <input type="hidden" name="id" value="<%= r.id %>">
+            <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+          </form>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="auto-panel" data-auto-panel="disparos">
+    <% if (!disparos.length) { %>
+      <div class="cli-empty"><div class="cli-empty-ico">➤</div><h3>Nenhum disparo realizado</h3><p class="muted">Quando você disparar uma regra, o progresso aparecerá aqui em tempo real.</p></div>
+    <% } else { %>
+    <div class="cli-table-card">
+      <div class="table-wrapper">
+        <table class="cli-table">
+          <thead><tr><th>Quando</th><th>Regra</th><th>Cliente</th><th>Status</th><th>Detalhe</th></tr></thead>
+          <tbody>
+            <% disparos.forEach(d => { %>
+            <tr>
+              <td><%= d.quando %></td>
+              <td><%= d.regraTitulo || '-' %></td>
+              <td><%= d.clienteNome || '-' %></td>
+              <td><span class="badge <%= d.status==='enviado'?'badge-green':d.status==='erro'?'badge-red':'badge-muted' %>"><%= d.status==='enviado'?'Enviado':d.status==='erro'?'Erro':'Pendente' %></span></td>
+              <td class="muted"><%= d.status==='erro'?(d.erro||'Falha'):'-' %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nova-regra" aria-hidden="true" inert>
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div><h3>Nova Regra</h3><p class="muted auto-step-sub" data-step-sub>Defina o nome e quando a mensagem será enviada</p></div>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <div class="auto-steps">
+      <span class="auto-step active" data-step-dot="1">① Gatilho</span>
+      <i></i>
+      <span class="auto-step" data-step-dot="2">② Mensagem</span>
+      <i></i>
+      <span class="auto-step" data-step-dot="3">③ Configurar</span>
+    </div>
+    <form method="post" action="/automacao" id="modal-nova-regra-form" class="modal-body" data-native-submit="1" data-wizard>
+      <input type="hidden" name="action" value="create_regra">
+      <input type="hidden" name="id" value="">
+
+      <div class="wizard-step active" data-step="1">
+        <label class="field full"><span>Nome da regra *</span><input class="input" name="nome" placeholder="Ex: Lembrete 3 dias antes" required></label>
+        <div class="field full"><span class="auto-label">Quando enviar? *</span>
+          <div class="auto-segments">
+            <label class="auto-seg"><input type="radio" name="gatilho" value="plano" checked><span>Plano</span></label>
+            <label class="auto-seg"><input type="radio" name="gatilho" value="aplicativo"><span>Aplicativo</span></label>
+            <label class="auto-seg"><input type="radio" name="gatilho" value="aniversario"><span>Aniversário</span></label>
+          </div>
+        </div>
+        <div class="auto-trigger-list">
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Todos"><div><strong>👥 Todos os clientes</strong><small>Envia para toda a base de clientes</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencimento" checked><div><strong>⏰ Antes do vencimento do plano</strong><small>Lembrete antes do plano vencer</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vence hoje"><div><strong>📅 No dia do vencimento do plano</strong><small>Envia no exato dia do vencimento</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencidos"><div><strong>⏰ Após vencimento do plano</strong><small>Cobrança após o plano vencer</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Apos cadastro"><div><strong>👤 Após cadastro</strong><small>Boas-vindas ao novo cliente</small></div></label>
+        </div>
+        <div class="auto-period" data-period-box>
+          <span class="auto-label" data-period-label>Quanto tempo antes do vencimento do plano?</span>
+          <div class="auto-period-row">
+            <input class="input" type="number" name="periodo" value="3" min="0">
+            <label class="auto-seg sm"><input type="radio" name="tipo_periodo" value="Dias" checked><span>Dias</span></label>
+            <label class="auto-seg sm"><input type="radio" name="tipo_periodo" value="Minutos"><span>Minutos</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-step" data-step="2">
+        <label class="field full"><span>Template de mensagem *</span>
+          <select class="input" name="mensagem_id" data-msg-select>
+            <option value="">Selecione um template...</option>
+            <% mensagens.forEach(m => { %><option value="<%= m.id %>" data-msg="<%= (m.mensagem||'').replace(/"/g,'&quot;') %>"><%= m.titulo %></option><% }) %>
+          </select>
+        </label>
+        <span class="auto-label">Pré-visualização</span>
+        <div class="auto-preview" data-msg-preview>Selecione um template para ver a prévia.</div>
+        <small class="muted">As variáveis serão substituídas pelos dados reais no envio</small>
+      </div>
+
+      <div class="wizard-step" data-step="3">
+        <label class="switch-field full"><span><strong>Regra ativa</strong><small>Ativar ao salvar</small></span><input type="checkbox" name="ativa" value="1" class="switch" checked></label>
+        <div class="auto-box">
+          <div class="auto-box-title">⏰ Agendamento</div>
+          <div class="form-grid">
+            <label class="field"><span>Horário</span><input class="input" type="time" name="hora_envio" value="09:00"></label>
+          </div>
+          <span class="auto-label">Dias da semana</span>
+          <div class="auto-days">
+            <% const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']; dias.forEach((d,i) => { %>
+              <label class="auto-day"><input type="checkbox" name="dias_semana[]" value="<%= i %>" checked><span><%= d %></span></label>
+            <% }) %>
+          </div>
+        </div>
+        <div class="auto-box">
+          <div class="auto-box-title">⏱ Intervalo entre envios</div>
+          <small class="muted">Tempo aleatório entre cada mensagem para evitar bloqueios</small>
+          <div class="form-grid">
+            <label class="field"><span>Mín (seg)</span><input class="input" type="number" name="min_delay" value="5" min="0"></label>
+            <label class="field"><span>Máx (seg)</span><input class="input" type="number" name="max_delay" value="15" min="0"></label>
+          </div>
+        </div>
+        <div class="auto-box">
+          <label class="switch-field" style="border:none;background:transparent;padding:0;"><span><strong>➤ Envio em lotes</strong><small>Envia um número fixo de mensagens, pausa o tempo configurado e continua.</small></span><input type="checkbox" name="envio_lotes" value="1" class="switch" data-lotes-toggle></label>
+          <div class="form-grid" data-lotes-config hidden>
+            <label class="field"><span>Mensagens por lote</span><input class="input" type="number" name="lote_tamanho" value="20" min="1"></label>
+            <label class="field"><span>Pausa entre lotes (seg)</span><input class="input" type="number" name="lote_pausa" value="60" min="0"></label>
+          </div>
+        </div>
+        <label class="switch-field full"><span><strong>🛡 Rodapé anti-ban</strong><small>Adiciona um protocolo único ao final de cada mensagem. Evita detecção como spam.</small></span><input type="checkbox" name="rodape_antiban" value="1" class="switch" checked></label>
+        <div class="auto-box">
+          <div class="auto-box-title">👥 Para quais clientes enviar?</div>
+          <div class="form-grid">
+            <label class="field"><span>Servidor</span><select class="input" name="filtro_servidor"><option value="">Todos</option><% servidores.forEach(s => { %><option><%= s.nome %></option><% }) %></select></label>
+            <label class="field"><span>Plano</span><select class="input" name="filtro_plano"><option value="">Todos</option><% planos.forEach(p => { %><option><%= p.nome %></option><% }) %></select></label>
+            <label class="field"><span>Arquivados</span><select class="input" name="filtro_arquivados"><option value="">Não arquivado</option><option>Arquivado</option><option value="todos">Todos</option></select></label>
+          </div>
+        </div>
+      </div>
+    </form>
+    <div class="modal-footer auto-foot">
+      <button class="btn btn-muted" type="button" data-wizard-back hidden>‹ Voltar</button>
+      <span class="auto-foot-spacer"></span>
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="button" data-wizard-next>Próximo ›</button>
+      <button class="btn btn-primary" type="submit" form="modal-nova-regra-form" data-wizard-submit hidden>✓ Criar Regra</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-recebedores" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <div><h3>Clientes que vão receber</h3><p class="muted" data-receb-sub></p></div>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="receb-list" data-receb-list></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Abas de página (Regras / Disparos)
+  document.querySelectorAll('[data-auto-tab]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('[data-auto-tab]').forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      var key = tab.getAttribute('data-auto-tab');
+      document.querySelectorAll('[data-auto-panel]').forEach(function (p) {
+        p.classList.toggle('active', p.getAttribute('data-auto-panel') === key);
+      });
+    });
+  });
+
+  var modal = document.getElementById('modal-nova-regra');
+  if (!modal) return;
+  var form = document.getElementById('modal-nova-regra-form');
+  var steps = modal.querySelectorAll('.wizard-step');
+  var dots = modal.querySelectorAll('[data-step-dot]');
+  var subs = { 1: 'Defina o nome e quando a mensagem será enviada', 2: 'Escolha o conteúdo da mensagem', 3: 'Ajuste filtros, horários e configurações avançadas' };
+  var current = 1;
+  var btnBack = modal.querySelector('[data-wizard-back]');
+  var btnNext = modal.querySelector('[data-wizard-next]');
+  var btnSubmit = modal.querySelector('[data-wizard-submit]');
+  var subEl = modal.querySelector('[data-step-sub]');
+
+  function showStep(n) {
+    current = n;
+    steps.forEach(function (s) { s.classList.toggle('active', Number(s.getAttribute('data-step')) === n); });
+    dots.forEach(function (d) { d.classList.toggle('active', Number(d.getAttribute('data-step-dot')) <= n); });
+    btnBack.hidden = n === 1;
+    btnNext.hidden = n === 3;
+    btnSubmit.hidden = n !== 3;
+    if (subEl) subEl.textContent = subs[n];
+  }
+  btnNext.addEventListener('click', function () {
+    if (current === 1) {
+      var nome = form.querySelector('[name="nome"]');
+      if (nome && !nome.value.trim()) { nome.reportValidity(); return; }
+    }
+    if (current < 3) showStep(current + 1);
+  });
+  btnBack.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
+
+  // Mostra/esconde o período conforme o gatilho
+  var periodBox = modal.querySelector('[data-period-box]');
+  var periodLabel = modal.querySelector('[data-period-label]');
+  function syncPeriod() {
+    var tipo = (form.querySelector('[name="tipo"]:checked') || {}).value || 'Vencimento';
+    var precisa = tipo === 'Vencimento' || tipo === 'Vencidos' || tipo === 'Apos cadastro';
+    if (periodBox) periodBox.style.display = precisa ? '' : 'none';
+    if (periodLabel) {
+      periodLabel.textContent = tipo === 'Vencimento' ? 'Quanto tempo antes do vencimento do plano?'
+        : tipo === 'Vencidos' ? 'Quanto tempo após o vencimento do plano?'
+        : tipo === 'Apos cadastro' ? 'Quanto tempo após o cadastro?' : '';
+    }
+  }
+  form.querySelectorAll('[name="tipo"]').forEach(function (r) { r.addEventListener('change', syncPeriod); });
+
+  // Marca visualmente o trigger selecionado
+  function syncTriggerCards() {
+    form.querySelectorAll('.auto-trigger').forEach(function (lb) {
+      var inp = lb.querySelector('input'); lb.classList.toggle('selected', inp && inp.checked);
+    });
+    form.querySelectorAll('.auto-seg').forEach(function (lb) {
+      var inp = lb.querySelector('input'); lb.classList.toggle('selected', inp && inp.checked);
+    });
+  }
+  form.addEventListener('change', syncTriggerCards);
+
+  // Prévia do template
+  var msgSelect = modal.querySelector('[data-msg-select]');
+  var preview = modal.querySelector('[data-msg-preview]');
+  function syncPreview() {
+    var opt = msgSelect && msgSelect.selectedOptions[0];
+    var txt = opt ? (opt.getAttribute('data-msg') || '') : '';
+    if (preview) {
+      if (txt) { preview.textContent = txt; preview.classList.add('has-msg'); }
+      else { preview.textContent = 'Selecione um template para ver a prévia.'; preview.classList.remove('has-msg'); }
+    }
+  }
+  if (msgSelect) msgSelect.addEventListener('change', syncPreview);
+
+  // Mostra/esconde a configuração de lotes conforme o toggle
+  var lotesToggle = modal.querySelector('[data-lotes-toggle]');
+  var lotesConfig = modal.querySelector('[data-lotes-config]');
+  function syncLotes() { if (lotesConfig) lotesConfig.hidden = !(lotesToggle && lotesToggle.checked); }
+  if (lotesToggle) lotesToggle.addEventListener('change', syncLotes);
+
+  function resetWizard() {
+    form.reset();
+    form.querySelector('[name="action"]').value = 'create_regra';
+    form.querySelector('[name="id"]').value = '';
+    modal.querySelector('.modal-header h3').textContent = 'Nova Regra';
+    showStep(1); syncPeriod(); syncTriggerCards(); syncPreview(); syncLotes();
+  }
+  document.querySelectorAll('[data-open-modal="modal-nova-regra"]').forEach(function (b) {
+    b.addEventListener('click', resetWizard);
+  });
+
+  // Editar regra -> popula o wizard
+  document.querySelectorAll('.edit-regra').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      resetWizard();
+      var set = function (name, val) { var el = form.querySelector('[name="' + name + '"]'); if (el) el.value = val; };
+      var check = function (name, val) { var el = form.querySelector('[name="' + name + '"]'); if (el) el.checked = !!val; };
+      form.querySelector('[name="action"]').value = 'update_regra';
+      set('id', btn.getAttribute('data-id') || '');
+      set('nome', btn.getAttribute('data-nome') || '');
+      var tipo = btn.getAttribute('data-tipo') || 'Vencimento';
+      var tr = form.querySelector('[name="tipo"][value="' + tipo + '"]'); if (tr) tr.checked = true;
+      var gat = form.querySelector('[name="gatilho"][value="' + (btn.getAttribute('data-gatilho') || 'plano') + '"]'); if (gat) gat.checked = true;
+      set('periodo', btn.getAttribute('data-periodo') || '0');
+      var tp = form.querySelector('[name="tipo_periodo"][value="' + (btn.getAttribute('data-tipo-periodo') || 'Dias') + '"]'); if (tp) tp.checked = true;
+      set('mensagem_id', btn.getAttribute('data-mensagem-id') || '');
+      check('ativa', btn.getAttribute('data-ativa') === '1');
+      set('hora_envio', btn.getAttribute('data-hora') || '09:00');
+      var dias = (btn.getAttribute('data-dias') || '').split(',');
+      form.querySelectorAll('[name="dias_semana[]"]').forEach(function (cb) { cb.checked = dias.indexOf(cb.value) !== -1; });
+      set('min_delay', btn.getAttribute('data-min') || '');
+      set('max_delay', btn.getAttribute('data-max') || '');
+      check('envio_lotes', btn.getAttribute('data-lotes') === '1');
+      set('lote_tamanho', btn.getAttribute('data-lote-tam') || '20');
+      set('lote_pausa', btn.getAttribute('data-lote-pausa') || '60');
+      check('rodape_antiban', btn.getAttribute('data-antiban') === '1');
+      set('filtro_servidor', btn.getAttribute('data-f-servidor') || '');
+      set('filtro_plano', btn.getAttribute('data-f-plano') || '');
+      set('filtro_arquivados', btn.getAttribute('data-f-arquivados') || '');
+      modal.querySelector('.modal-header h3').textContent = 'Editar Regra';
+      syncPeriod(); syncTriggerCards(); syncPreview(); syncLotes();
+      // Abre o modal (o botão de editar não tem data-open-modal).
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      modal.removeAttribute('inert');
+    });
+  });
+
+  // Popup "N clientes": lista quem a regra atinge hoje
+  var escapeHtml = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var recebModal = document.getElementById('modal-recebedores');
+  document.querySelectorAll('.auto-receb-link').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!recebModal) return;
+      var id = b.getAttribute('data-regra-id');
+      var list = recebModal.querySelector('[data-receb-list]');
+      var sub = recebModal.querySelector('[data-receb-sub]');
+      if (sub) sub.textContent = b.getAttribute('data-regra-nome') || '';
+      if (list) list.innerHTML = '<div class="receb-empty">Carregando…</div>';
+      recebModal.classList.add('open');
+      recebModal.setAttribute('aria-hidden', 'false');
+      recebModal.removeAttribute('inert');
+      fetch('/automacao/regra/' + encodeURIComponent(id) + '/recebedores', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var cs = (data && data.clientes) || [];
+          if (!cs.length) { list.innerHTML = '<div class="receb-empty">Nenhum cliente atende a essa regra hoje.</div>'; return; }
+          list.innerHTML = cs.map(function (c) {
+            var venc = c.vencimento ? new Date(c.vencimento).toLocaleDateString('pt-BR') : '';
+            return '<div class="receb-row"><div class="receb-info"><strong>' + escapeHtml(c.nome) + '</strong><span>' + escapeHtml(c.telefone || '') + '</span></div><span class="receb-venc">' + escapeHtml(venc) + '</span></div>';
+          }).join('');
+        })
+        .catch(function () { list.innerHTML = '<div class="form-alert error">Não foi possível carregar os clientes.</div>'; });
+    });
+  });
+
+  showStep(1); syncPeriod(); syncTriggerCards(); syncLotes();
+})();
+</script>

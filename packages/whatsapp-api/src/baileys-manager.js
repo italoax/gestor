@@ -21,6 +21,25 @@ export class BaileysSessionManager {
     this.sessions = new Map();
   }
 
+  // Reconecta no boot todas as sessões que já têm credenciais salvas em disco,
+  // para sobreviver a reinícios do servidor sem precisar reler o QR Code.
+  async restoreSessions() {
+    let names = [];
+    try {
+      names = fs.readdirSync(this.sessionsDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .filter((name) => fs.existsSync(path.join(this.sessionsDir, name, "creds.json")));
+    } catch {
+      return [];
+    }
+    for (const name of names) {
+      // Não bloqueia o boot; se uma falhar, o reconnect automático assume.
+      this.start(name).catch(() => {});
+    }
+    return names;
+  }
+
   getState(sessionName) {
     const session = this.getOrCreateState(sessionName);
     return {

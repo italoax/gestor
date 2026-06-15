@@ -19,4 +19,7 @@ const app = createApp({
 
 app.listen(port, () => {
   console.log(`Gestor WhatsApp API rodando em http://localhost:${port}`);
+  manager.restoreSessions()
+    .then((names) => { if (names.length) console.log(`Sessões restauradas no boot: ${names.join(", ")}`); })
+    .catch(() => {});
 });

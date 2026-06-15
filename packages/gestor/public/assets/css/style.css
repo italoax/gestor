@@ -23,6 +23,7 @@
   --blue: #6366f1;
   --purple: #8b5cf6;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  --map-empty: rgba(148, 163, 184, 0.14);
 }
 [data-theme="light"] {
   color-scheme: light;
@@ -45,6 +46,7 @@
   --blue: #4f46e5;
   --purple: #7c3aed;
   --shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+  --map-empty: rgba(100, 116, 139, 0.18);
 }
 * { box-sizing: border-box; }
 body {
@@ -1275,25 +1277,26 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
     min-width: 78px;
     content: '';
   }
-  .page-clientes .table-clientes tbody tr td:nth-child(1)::before { content: 'Cliente'; }
-  .page-clientes .table-clientes tbody tr td:nth-child(2)::before { content: 'Telefone'; }
-  .page-clientes .table-clientes tbody tr td:nth-child(3)::before { content: 'Vencimento'; }
+  .page-clientes .table-clientes tbody tr td.col-check { display: none; }
+  .page-clientes .table-clientes tbody tr td:nth-child(2)::before { content: 'Cliente'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(3)::before { content: 'WhatsApp'; }
   .page-clientes .table-clientes tbody tr td:nth-child(4)::before { content: 'Plano'; }
   .page-clientes .table-clientes tbody tr td:nth-child(5)::before { content: 'Valor'; }
-  .page-clientes .table-clientes tbody tr td:nth-child(6)::before { content: 'Status'; }
-  .page-clientes .table-clientes tbody tr td:nth-child(9)::before { content: 'Ações'; }
-  .page-clientes .table-clientes tbody tr td:first-child {
+  .page-clientes .table-clientes tbody tr td:nth-child(6)::before { content: 'Servidor'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(7)::before { content: 'Sistema'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(8)::before { content: 'Aplicativo'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(9)::before { content: 'Vencimento'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(10)::before { content: 'Status'; }
+  .page-clientes .table-clientes tbody tr td:nth-child(2) {
     border-top: none;
     padding-top: 10px;
-  }
-  .page-clientes .table-clientes tbody tr td:nth-child(4) {
-    display: none;
   }
   .page-clientes .table-clientes tbody tr td:last-child {
     display: block;
     padding-top: 10px;
   }
   .page-clientes .table-clientes tbody tr td:last-child::before {
+    content: 'Ações';
     display: block;
     margin-bottom: 8px;
   }
@@ -1305,20 +1308,9 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   .page-clientes .table-clientes td:last-child {
     width: auto;
   }
-  .page-clientes .table-clientes td:last-child .table-actions,
-  .page-clientes .table-clientes .action-buttons {
-    flex-wrap: wrap;
+  .page-clientes .table-clientes td:last-child .cli-acoes {
     justify-content: flex-start;
   }
-  .page-clientes .table-clientes .table-actions .btn,
-  .page-clientes .table-clientes .table-actions .action-form {
-    flex: 1 1 auto;
-  }
-  .page-clientes .table-clientes .table-actions .action-form .btn {
-    width: 100%;
-  }
-  .page-clientes .table-clientes tbody tr td:nth-child(7)::before { content: 'Servidor'; }
-  .page-clientes .table-clientes tbody tr td:last-child::before { content: 'Ações'; }
   .table thead th,
   .table tbody td {
     font-size: 12px;

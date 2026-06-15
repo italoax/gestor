@@ -1,0 +1,138 @@
+<%
+  const totalApps = aplicativos.length;
+  const appsAtivos = aplicativos.filter(a => String(a.status) !== 'Inativo').length;
+  const comValor = aplicativos.filter(a => Number(a.valorRenovacao) > 0);
+  const valorMedio = comValor.length ? comValor.reduce((s, a) => s + Number(a.valorRenovacao), 0) / comValor.length : null;
+  const totalRenovacoes = 0;
+  const faturadoApps = 0;
+%>
+<div class="container page-aplicativos" data-search-scope>
+
+  <div class="app-stats">
+    <div class="cli-stat accent-blue">
+      <div><strong><%= totalApps %></strong><span>Total de Aplicativos</span></div>
+      <div class="cli-stat-ico">🗓️</div>
+    </div>
+    <div class="cli-stat accent-green">
+      <div><strong class="pos"><%= appsAtivos %></strong><span>Aplicativos Ativos</span></div>
+      <div class="cli-stat-ico">🗓️</div>
+    </div>
+    <div class="cli-stat accent-blue">
+      <div><strong><%= valorMedio === null ? '—' : formatMoney(valorMedio) %></strong><span>Valor Médio de Renovação</span></div>
+      <div class="cli-stat-ico">💲</div>
+    </div>
+    <div class="cli-stat accent-purple">
+      <div><strong><%= totalRenovacoes %></strong><span>Total Renovações</span></div>
+      <div class="cli-stat-ico">🔄</div>
+    </div>
+    <div class="cli-stat accent-green">
+      <div><strong class="pos"><%= formatMoney(faturadoApps) %></strong><span>Faturado em Apps</span></div>
+      <div class="cli-stat-ico">↗</div>
+    </div>
+  </div>
+
+  <div class="app-tabs">
+    <button class="tab-btn active" type="button" data-app-tab="catalogo">🗂️ Catálogo</button>
+    <button class="tab-btn" type="button" data-app-tab="renovacoes">🕘 Últimas Renovações</button>
+  </div>
+
+  <div class="tab-panel active" data-app-panel="catalogo">
+    <div class="plano-filters">
+      <label class="cli-search plano-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar aplicativo..." data-search-input></label>
+      <label class="cli-filter">
+        <select class="input" data-filter-select aria-label="Status">
+          <option value="">Todos</option>
+          <option value="status-ativo">Ativo</option>
+          <option value="status-inativo">Inativo</option>
+        </select>
+      </label>
+      <button class="btn btn-primary plano-new" type="button" data-open-modal="modal-add-aplicativo">+ Novo Aplicativo</button>
+    </div>
+
+    <% if (!aplicativos.length) { %>
+      <div class="cli-empty">
+        <div class="cli-empty-ico">🗓️</div>
+        <h3>Nenhum aplicativo cadastrado</h3>
+        <p class="muted">Cadastre os aplicativos usados pelos seus clientes.</p>
+        <button class="btn btn-primary" type="button" data-open-modal="modal-add-aplicativo">+ Novo Aplicativo</button>
+      </div>
+    <% } else { %>
+    <div class="disp-grid">
+      <% aplicativos.forEach(a => { %>
+      <% const ativo = String(a.status) !== 'Inativo'; %>
+      <div class="disp-card app-card" data-search-item>
+        <span hidden><%= ativo ? 'status-ativo' : 'status-inativo' %></span>
+        <div class="disp-card-top">
+          <span class="disp-ico">🗓️</span>
+          <div class="disp-info">
+            <strong><%= a.nome %></strong>
+            <span class="badge <%= ativo ? 'badge-green' : 'badge-muted' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+          </div>
+        </div>
+        <% if (a.descricao) { %><p class="app-desc"><%= a.descricao %></p><% } %>
+        <div class="app-valor"><%= Number(a.valorRenovacao) > 0 ? '💲 ' + formatMoney(a.valorRenovacao) : '💲 Sem valor definido' %></div>
+        <div class="disp-actions">
+          <button class="btn btn-muted disp-edit edit-aplicativo" type="button" data-id="<%= a.id %>" data-nome="<%= a.nome %>" data-descricao="<%= a.descricao || '' %>" data-valor="<%= Number(a.valorRenovacao) %>" data-status="<%= ativo ? 'Ativo' : 'Inativo' %>">✎ Editar</button>
+          <form method="post" action="/aplicativos" class="action-form disp-del-form">
+            <input type="hidden" name="action" value="delete_aplicativo">
+            <input type="hidden" name="id" value="<%= a.id %>">
+            <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+          </form>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="tab-panel" data-app-panel="renovacoes">
+    <div class="cli-empty">
+      <div class="cli-empty-ico">🕘</div>
+      <h3>Nenhuma renovação registrada</h3>
+      <p class="muted">As renovações de aplicativos aparecerão aqui.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-aplicativo" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🗓️ Novo Aplicativo</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <form method="post" action="/aplicativos" id="modal-add-aplicativo-form" class="modal-body" data-native-submit="1">
+      <input type="hidden" name="action" value="create_aplicativo">
+      <input type="hidden" name="id" value="">
+      <div class="form-grid">
+        <label class="field full"><span>Nome do Aplicativo *</span><input class="input" name="nome" placeholder="Ex: SmartOne, XCIPTV, Tivimate..." required data-required="1" data-field-label="Nome do Aplicativo"></label>
+        <label class="field full"><span>Valor de Renovação (R$)</span><input class="input" type="number" step="0.01" min="0" name="valor_renovacao" placeholder="0,00"></label>
+        <label class="field full"><span>Descrição</span><textarea class="input" name="descricao" placeholder="Descrição opcional do aplicativo..."></textarea></label>
+        <label class="field full">
+          <span>Status</span>
+          <select class="input" name="status"><option>Ativo</option><option>Inativo</option></select>
+        </label>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-aplicativo-form">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var scope = document.querySelector('.page-aplicativos');
+    if (!scope) return;
+    var tabs = scope.querySelectorAll('[data-app-tab]');
+    var panels = scope.querySelectorAll('[data-app-panel]');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var key = tab.getAttribute('data-app-tab');
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        panels.forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-app-panel') === key); });
+        tab.classList.add('active');
+      });
+    });
+  })();
+</script>
