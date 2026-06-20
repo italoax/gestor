@@ -39,7 +39,8 @@
 .form-grid .btn { align-self: end; }
 .form-grid textarea.input { min-height: 110px; resize: vertical; }
 .form-grid .toggle { align-self: center; }
-.form-grid .span-2 { grid-column: 1 / -1; }
+.form-grid .span-2,
+.form-grid .full { grid-column: 1 / -1; }
 .modal-lg { max-width: 980px; }
 .actions-row, .table-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
@@ -1495,12 +1496,18 @@
   display: grid; place-items: center;
   background: linear-gradient(135deg, var(--primary), var(--purple));
   color: #fff; font-weight: 700; font-size: 18px;
+  object-fit: contain;
+  padding: 6px;
 }
 .sidebar-brand-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
 .sidebar-brand-text strong { color: var(--text); font-size: 17px; }
 .sidebar-brand-text span { color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 
-.sidebar-nav { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+.sidebar-nav {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 2px;
+}
 .sidebar-nav::-webkit-scrollbar { width: 8px; }
 .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
 .sidebar-link {
@@ -1600,7 +1607,15 @@
 .sidebar-backdrop { display: none; }
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; top: 0; left: 0; z-index: 200; width: 260px; transform: translateX(-100%); transition: transform .25s ease; }
+  /* Sidebar mobile: drawer fixo, altura dinâmica (100dvh respeita o iOS Safari
+     quando a barra de URL aparece/some), scroll interno do nav + footer com
+     safe-area pra não cobrir o último item atrás do home indicator. */
+  .sidebar {
+    position: fixed; top: 0; left: 0; z-index: 200; width: 260px;
+    height: 100dvh; max-height: 100dvh;
+    transform: translateX(-100%); transition: transform .25s ease;
+  }
+  .sidebar-foot { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
   .sidebar-open .sidebar { transform: translateX(0); }
   .sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.5); }
   .topbar-burger { display: block; }
@@ -1683,14 +1698,14 @@
 .fin-card small.neg { color: var(--red); }
 .fin-card small.muted { color: var(--muted); }
 
-.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .chart-card { padding: 16px 18px; }
 .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .chart-head strong { color: var(--text); font-size: 14.5px; }
 .chart-tag { font-size: 12px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); padding: 3px 9px; border-radius: 999px; }
 .chart-canvas-wrap { position: relative; height: 260px; }
 
-.dist-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.dist-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .dist-card { padding: 16px 18px; min-height: 140px; }
 .dist-head { font-weight: 600; color: var(--text); font-size: 14.5px; margin-bottom: 12px; }
 .dist-list { display: flex; flex-direction: column; gap: 2px; }
@@ -1793,11 +1808,11 @@
 .empty-state p { color: var(--muted); margin: 4px 0 8px; }
 
 @media (max-width: 1100px) {
-  .stat-grid, .fin-grid { grid-template-columns: repeat(2, 1fr); }
-  .rc-grid, .venc-grid, .chart-grid, .dist-grid { grid-template-columns: 1fr; }
+  .stat-grid, .fin-grid, .rc-grid, .venc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-grid, .dist-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
-  .stat-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 }
 
 /* ============================================================
@@ -1870,7 +1885,7 @@
 .cli-apps-empty { text-align: center; margin-top: 14px; }
 
 @media (max-width: 720px) {
-  .cli-stats { grid-template-columns: 1fr; }
+  .cli-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cli-secondary { grid-template-columns: 1fr; }
 }
 
@@ -1886,6 +1901,11 @@
 .cli-table tbody tr:last-child td { border-bottom: none; }
 .cli-table tbody tr:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
 .cli-table tbody tr.hidden { display: none; }
+.cli-table tbody tr.is-selected,
+.cli-table tbody tr.is-selected:hover {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--primary);
+}
 
 .col-check { width: 38px; text-align: center; }
 .cli-check { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
@@ -1978,8 +1998,8 @@
 .tx-neg { color: var(--red); }
 .tx-pos { color: var(--green); }
 
-@media (max-width: 1100px) { .tx-stats { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .tx-stats { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .tx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .tx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ===== Servidores ===== */
 .page-servidores { display: flex; flex-direction: column; gap: 14px; }
@@ -2017,7 +2037,7 @@
 .srv-section-label { color: var(--accent-bright); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 6px 0 2px; }
 .field code, .muted code { color: var(--accent-bright); font-size: 11.5px; }
 
-@media (max-width: 560px) { .srv-top-stats { grid-template-columns: 1fr; } .srv-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .srv-top-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .srv-grid { grid-template-columns: 1fr; } }
 
 /* ===== Planos ===== */
 .page-planos { display: flex; flex-direction: column; gap: 14px; }
@@ -2060,10 +2080,10 @@
 .app-tabs { display: flex; gap: 8px; margin: 18px 0 14px; }
 .app-card .app-desc { color: var(--muted); font-size: 13px; margin: 0; }
 .app-valor { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; font-size: 13px; color: var(--green); }
-@media (max-width: 720px) { .app-stats { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .app-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .plano-info strong { color: var(--text); }
 
-@media (max-width: 720px) { .plano-stats { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .plano-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* ===== Mensagens / Templates ===== */
 .page-mensagens { display: flex; flex-direction: column; gap: 12px; }
@@ -2170,8 +2190,8 @@
 .auto-foot { display: flex; align-items: center; gap: 8px; }
 .auto-foot-spacer { flex: 1; }
 
-@media (max-width: 1100px) { .auto-stats { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .auto-stats { grid-template-columns: 1fr; } .auto-segments { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .auto-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .auto-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-segments { grid-template-columns: 1fr; } }
 
 /* ===== WhatsApp (multi-dispositivo) ===== */
 .page-whatsapp { display: flex; flex-direction: column; gap: 14px; }
@@ -2226,6 +2246,6 @@
 .wa-steps-col strong { color: var(--text); }
 .wa-steps { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.9; }
 
-@media (max-width: 1100px) { .wa-stats { grid-template-columns: repeat(2, 1fr); } .wa-list { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .wa-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wa-list { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .wa-connect-body { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .wa-stats { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .wa-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

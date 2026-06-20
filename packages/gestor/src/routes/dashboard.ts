@@ -13,6 +13,8 @@ interface DashboardTotalsRow extends RowDataPacket {
   venceAmanha: number; venceAmanhaValor: number;
   venceuOntem: number; venceuOntemValor: number;
   receitaPrevista: number;
+}
+interface FinanceirasRow extends RowDataPacket {
   recebidoHoje: number; custoHoje: number;
   recebidoMes: number; custoMes: number;
   recebidoMesAnterior: number; custoMesAnterior: number;
@@ -50,26 +52,40 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
     const dayOfMonth = Number(today.slice(8, 10));
     const daysInMonth = new Date(year, month, 0).getDate();
 
-    const [totalsRows, planosCount, servidoresCount, proximos, atrasados, serieFinanceira, serieNovos] = await Promise.all([
+    const [totalsRows, financeirasRows, planosCount, servidoresCount, proximos, atrasados, serieFinanceira, serieNovos] = await Promise.all([
+      // Contagens de clientes/vencimentos — vêm da tabela de clientes.
       queryRows<DashboardTotalsRow>(
+        // Vencidos só conta clientes Ativos (mesmo critério da tela de Clientes —
+        // statusByVencimento trata 'Inativo' como categoria separada). Antes
+        // inativos vencidos infláva o card "Vencidos" do dashboard sem aparecer
+        // no badge vermelho da listagem.
         `SELECT
             COUNT(*) AS clientesTotal,
-            COALESCE(SUM(status = 'Ativo'), 0) AS ativos,
-            COALESCE(SUM(vencimento < :today), 0) AS vencidos,
+            COALESCE(SUM(status = 'Ativo' AND vencimento >= :today), 0) AS ativos,
+            COALESCE(SUM(status = 'Ativo' AND vencimento < :today), 0) AS vencidos,
             COALESCE(SUM(vencimento = :today), 0) AS venceHoje,
             COALESCE(SUM(CASE WHEN vencimento = :today THEN valor ELSE 0 END), 0) AS venceHojeValor,
             COALESCE(SUM(vencimento = DATE_ADD(:today, INTERVAL 1 DAY)), 0) AS venceAmanha,
             COALESCE(SUM(CASE WHEN vencimento = DATE_ADD(:today, INTERVAL 1 DAY) THEN valor ELSE 0 END), 0) AS venceAmanhaValor,
             COALESCE(SUM(vencimento = DATE_SUB(:today, INTERVAL 1 DAY)), 0) AS venceuOntem,
             COALESCE(SUM(CASE WHEN vencimento = DATE_SUB(:today, INTERVAL 1 DAY) THEN valor ELSE 0 END), 0) AS venceuOntemValor,
-            COALESCE(SUM(valor), 0) AS receitaPrevista,
-            COALESCE(SUM(CASE WHEN DATE(pago_em) = :today THEN valor_pago ELSE 0 END), 0) AS recebidoHoje,
-            COALESCE(SUM(CASE WHEN DATE(pago_em) = :today THEN custo_pagamento ELSE 0 END), 0) AS custoHoje,
-            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN valor_pago ELSE 0 END), 0) AS recebidoMes,
-            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today) THEN custo_pagamento ELSE 0 END), 0) AS custoMes,
-            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN valor_pago ELSE 0 END), 0) AS recebidoMesAnterior,
-            COALESCE(SUM(CASE WHEN YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN custo_pagamento ELSE 0 END), 0) AS custoMesAnterior
+            COALESCE(SUM(valor), 0) AS receitaPrevista
           FROM clientes
+          WHERE user_id = :userId AND arquivado = 0`,
+        { userId, today },
+      ),
+      // Valores financeiros vêm exclusivamente da tabela de transações
+      // (cadastros + renovações com pagamento). Cadastros sem pagamento não
+      // geram transação — então não inflam receita/custo aqui.
+      queryRows<FinanceirasRow>(
+        `SELECT
+            COALESCE(SUM(CASE WHEN DATE(data) = :today THEN valor_venda ELSE 0 END), 0) AS recebidoHoje,
+            COALESCE(SUM(CASE WHEN DATE(data) = :today THEN custo ELSE 0 END), 0) AS custoHoje,
+            COALESCE(SUM(CASE WHEN YEAR(data) = YEAR(:today) AND MONTH(data) = MONTH(:today) THEN valor_venda ELSE 0 END), 0) AS recebidoMes,
+            COALESCE(SUM(CASE WHEN YEAR(data) = YEAR(:today) AND MONTH(data) = MONTH(:today) THEN custo ELSE 0 END), 0) AS custoMes,
+            COALESCE(SUM(CASE WHEN YEAR(data) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(data) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN valor_venda ELSE 0 END), 0) AS recebidoMesAnterior,
+            COALESCE(SUM(CASE WHEN YEAR(data) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(data) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH)) THEN custo ELSE 0 END), 0) AS custoMesAnterior
+          FROM transacoes
           WHERE user_id = :userId`,
         { userId, today },
       ),
@@ -77,36 +93,46 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
       count("SELECT COUNT(*) AS total FROM servidores WHERE user_id = :userId", { userId }),
       queryRows<ClientePrazoRow>(
         `SELECT id, nome, telefone, vencimento, plano, valor, DATEDIFF(vencimento, :today) AS dias
-           FROM clientes WHERE user_id = :userId AND vencimento >= :today
+           FROM clientes WHERE user_id = :userId AND arquivado = 0 AND vencimento >= :today
           ORDER BY vencimento ASC, nome ASC LIMIT 8`,
         { userId, today },
       ),
       queryRows<ClientePrazoRow>(
         `SELECT id, nome, telefone, vencimento, plano, valor, DATEDIFF(vencimento, :today) AS dias
-           FROM clientes WHERE user_id = :userId AND vencimento < :today
+           FROM clientes WHERE user_id = :userId AND arquivado = 0 AND vencimento < :today
           ORDER BY vencimento DESC, nome ASC LIMIT 8`,
         { userId, today },
       ),
+      // Série diária do mês atual — também vem de transações para refletir
+      // exatamente o que aparece na aba "Transações de Clientes".
       queryRows<SerieDiaRow>(
-        `SELECT DAY(pago_em) AS dia, COALESCE(SUM(valor_pago), 0) AS receita, COALESCE(SUM(custo_pagamento), 0) AS custo
-           FROM clientes
-          WHERE user_id = :userId AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today)
-          GROUP BY DAY(pago_em) ORDER BY dia`,
+        `SELECT DAY(data) AS dia, COALESCE(SUM(valor_venda), 0) AS receita, COALESCE(SUM(custo), 0) AS custo
+           FROM transacoes
+          WHERE user_id = :userId AND YEAR(data) = YEAR(:today) AND MONTH(data) = MONTH(:today)
+          GROUP BY DAY(data) ORDER BY dia`,
         { userId, today },
       ),
       queryRows<NovosDiaRow>(
-        `SELECT DAY(created_at) AS dia, COUNT(*) AS total
+        // created_at é UTC; subtrai 3h pra cair em SP antes de agrupar por dia/mês,
+        // senão clientes cadastrados de noite caem no dia errado no gráfico.
+        // Usa `+ INTERVAL -3 HOUR` (sempre disponível) em vez de CONVERT_TZ — esse
+        // último depende das tabelas de timezone estarem carregadas e retorna NULL
+        // se não estiverem, zerando o gráfico sem aviso.
+        `SELECT DAY(created_at + INTERVAL -3 HOUR) AS dia, COUNT(*) AS total
            FROM clientes
-          WHERE user_id = :userId AND YEAR(created_at) = YEAR(:today) AND MONTH(created_at) = MONTH(:today)
-          GROUP BY DAY(created_at) ORDER BY dia`,
+          WHERE user_id = :userId
+            AND YEAR(created_at + INTERVAL -3 HOUR) = YEAR(:today)
+            AND MONTH(created_at + INTERVAL -3 HOUR) = MONTH(:today)
+          GROUP BY dia ORDER BY dia`,
         { userId, today },
       ),
     ]);
 
     const raw = totalsRows[0] ?? {} as DashboardTotalsRow;
-    const recebidoHoje = num(raw.recebidoHoje), custoHoje = num(raw.custoHoje);
-    const recebidoMes = num(raw.recebidoMes), custoMes = num(raw.custoMes);
-    const recebidoMesAnterior = num(raw.recebidoMesAnterior), custoMesAnterior = num(raw.custoMesAnterior);
+    const fin = financeirasRows[0] ?? {} as FinanceirasRow;
+    const recebidoHoje = num(fin.recebidoHoje), custoHoje = num(fin.custoHoje);
+    const recebidoMes = num(fin.recebidoMes), custoMes = num(fin.custoMes);
+    const recebidoMesAnterior = num(fin.recebidoMesAnterior), custoMesAnterior = num(fin.custoMesAnterior);
 
     const stats = {
       clientesTotal: num(raw.clientesTotal),
@@ -157,22 +183,33 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
 
     const novosNoMes = serieNovosClientes.reduce((a, b) => a + b, 0);
 
-    // ---- Distribuição (filtrável por período via ?periodo=) ----
-    const periodoRaw = String(req.query.periodo ?? "mes");
-    const periodo: Periodo = periodoRaw === "anterior" || periodoRaw === "todos" ? periodoRaw : "mes";
-    const dateWhere =
+    // ---- Distribuição (base de clientes não-arquivados, filtrável por vencimento via ?periodo=) ----
+    const periodoRaw = String(req.query.periodo ?? "todos");
+    const periodo: Periodo = periodoRaw === "mes" || periodoRaw === "anterior" ? periodoRaw : "todos";
+    const vencCond = (p: string) =>
       periodo === "mes"
-        ? "AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(:today) AND MONTH(pago_em) = MONTH(:today)"
+        ? ` AND YEAR(${p}vencimento) = YEAR(:today) AND MONTH(${p}vencimento) = MONTH(:today)`
         : periodo === "anterior"
-          ? "AND pago_em IS NOT NULL AND YEAR(pago_em) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(pago_em) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH))"
+          ? ` AND YEAR(${p}vencimento) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(${p}vencimento) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH))`
+          : "";
+    const dateWhere = `AND arquivado = 0${vencCond("")}`;
+    // Filtro equivalente para a tabela de transações: usa a coluna `data` (data do pagamento).
+    const txDateWhere =
+      periodo === "mes"
+        ? " AND YEAR(data) = YEAR(:today) AND MONTH(data) = MONTH(:today)"
+        : periodo === "anterior"
+          ? " AND YEAR(data) = YEAR(DATE_SUB(:today, INTERVAL 1 MONTH)) AND MONTH(data) = MONTH(DATE_SUB(:today, INTERVAL 1 MONTH))"
           : "";
 
     const [formasRows, planosRows, indicacoesRows, dispositivosRows, aplicativosRows, servidoresPerf, telefonesRows] = await Promise.all([
       queryRows<DistribuicaoRow>(
+        // Formas de pagamento agora vêm da tabela de transações: cada cadastro/renovação
+        // com pagamento gerou um registro, então é a fonte exata.
         `SELECT COALESCE(NULLIF(TRIM(forma_pagamento), ''), 'Não informado') AS rotulo,
-                COUNT(*) AS total, COALESCE(SUM(valor_pago), 0) AS valor
-           FROM clientes
-          WHERE user_id = :userId ${dateWhere} AND forma_pagamento IS NOT NULL AND TRIM(forma_pagamento) <> ''
+                COUNT(*) AS total, COALESCE(SUM(valor_venda), 0) AS valor
+           FROM transacoes
+          WHERE user_id = :userId ${txDateWhere}
+            AND forma_pagamento IS NOT NULL AND TRIM(forma_pagamento) <> ''
           GROUP BY rotulo ORDER BY valor DESC, total DESC LIMIT 8`,
         { userId, today },
       ),
@@ -208,11 +245,15 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
         { userId, today },
       ),
       queryRows<ServidorPerfRow>(
+        // Performance por servidor agora vem da tabela de transações: soma direta de
+        // valor_venda e custo agrupado por servidor. "total" = quantidade de clientes
+        // distintos com transação no período (mais útil que nº de transações).
         `SELECT COALESCE(NULLIF(TRIM(servidor), ''), 'Sem servidor') AS servidor,
-                COUNT(*) AS total,
-                COALESCE(SUM(valor_pago), 0) AS faturamento,
-                COALESCE(SUM(custo_pagamento), 0) AS custo
-           FROM clientes WHERE user_id = :userId ${dateWhere}
+                COUNT(DISTINCT COALESCE(cliente_id, CONCAT('_', id))) AS total,
+                COALESCE(SUM(valor_venda), 0) AS faturamento,
+                COALESCE(SUM(custo), 0) AS custo
+           FROM transacoes
+          WHERE user_id = :userId ${txDateWhere}
           GROUP BY servidor ORDER BY faturamento DESC, total DESC LIMIT 8`,
         { userId, today },
       ),

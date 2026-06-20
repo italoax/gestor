@@ -8,8 +8,7 @@
   </div>
 
   <div class="wa-head">
-    <h3>Dispositivos WhatsApp</h3>
-    <button class="btn btn-primary" type="button" data-open-modal="modal-wa-add">+ Adicionar Dispositivo</button>
+    <h3>WhatsApp</h3>
   </div>
 
   <% if (!sessionApi) { %>
@@ -19,7 +18,7 @@
   <label class="cli-search wa-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar dispositivos por nome, número ou status..." data-search-input></label>
 
   <% if (!devices.length) { %>
-    <div class="cli-empty"><div class="cli-empty-ico">📱</div><h3>Nenhum dispositivo configurado</h3><p class="muted">Adicione seu primeiro dispositivo WhatsApp para começar a enviar mensagens.</p><button class="btn btn-primary" type="button" data-open-modal="modal-wa-add">+ Adicionar Dispositivo</button></div>
+    <div class="cli-empty"><div class="cli-empty-ico">📱</div><h3>Conexão sendo preparada…</h3><p class="muted">Recarregue a página em alguns segundos.</p></div>
   <% } else { %>
   <div class="wa-list">
     <% devices.forEach(d => { %>
@@ -31,17 +30,6 @@
           <small data-wa-sub>Sem número vinculado</small>
         </div>
         <span class="wa-status-pill" data-wa-status>Verificando...</span>
-        <details class="wa-more">
-          <summary class="cli-ico-btn" aria-label="Mais">⋮</summary>
-          <div class="wa-more-menu">
-            <% if (!d.principal) { %>
-            <form method="post" action="/whatsapp" onsubmit="return confirm('Remover este dispositivo?')">
-              <input type="hidden" name="action" value="delete_device"><input type="hidden" name="id" value="<%= d.id %>">
-              <button type="submit" class="wa-menu-item danger">🗑 Remover dispositivo</button>
-            </form>
-            <% } else { %><span class="wa-menu-item muted">Dispositivo principal</span><% } %>
-          </div>
-        </details>
       </div>
       <button class="wa-connect-btn" type="button" data-wa-connect>⏻ Conectar</button>
       <div class="wa-device-foot">
@@ -61,17 +49,6 @@
 </div>
 
 <button hidden data-open-modal="modal-wa-connect" data-wa-connect-trigger></button>
-
-<div class="modal-overlay" id="modal-wa-add" aria-hidden="true" inert>
-  <div class="modal modal-sm">
-    <div class="modal-header"><h3>Adicionar Dispositivo WhatsApp</h3><button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button></div>
-    <form method="post" action="/whatsapp" id="modal-wa-add-form" class="modal-body" data-native-submit="1">
-      <input type="hidden" name="action" value="add_device">
-      <label class="field full"><span>Nome do Dispositivo</span><input class="input" name="nome" placeholder="Ex: Empresa Principal" required></label>
-    </form>
-    <div class="modal-footer"><button class="btn btn-muted" type="button" data-close-modal>Cancelar</button><button class="btn btn-primary" type="submit" form="modal-wa-add-form">Adicionar</button></div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="modal-wa-connect" aria-hidden="true" inert>
   <div class="modal">

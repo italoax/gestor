@@ -9,9 +9,10 @@ interface CobrancaAutoRow extends RowDataPacket {
   id: number; userId: number; tipo: string; periodo: number; mensagem: string | null; mediaTipo: string | null; mediaPath: string | null;
   horaEnvio: string | null; diasSemana: string | null; jaRodouHoje: number;
   minDelay: number | null; maxDelay: number | null; filtroServidor: string | null; filtroPlano: string | null;
+  filtroArquivados: string | null;
   rodapeAntiban: number; envioLotes: number; loteTamanho: number | null; lotePausa: number | null;
 }
-interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; }
+interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; user: string | null; senha: string | null; }
 interface EnvioIdRow extends RowDataPacket { id: number; }
 
 let timer: NodeJS.Timeout | null = null;
@@ -36,11 +37,18 @@ function delayEntreEnvios(minOverride?: number | null, maxOverride?: number | nu
 function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
   const tipo = String(cobranca.tipo ?? "").toLowerCase().trim();
   const params: Record<string, unknown> = { userId: cobranca.userId, today };
+  // Arquivados são filtrados pelo filtroArquivados da regra (default: só não-arquivados).
   let where = "user_id = :userId AND status = 'Ativo'";
+  const filtroArquivados = String(cobranca.filtroArquivados ?? "").trim().toLowerCase();
+  if (filtroArquivados === "arquivado") where += " AND arquivado = 1";
+  else if (filtroArquivados !== "todos") where += " AND arquivado = 0";
   if (tipo === "todos") {
     // Toda a base ativa (sem filtro de data).
   } else if (tipo === "apos cadastro") {
-    where += " AND DATEDIFF(:today, DATE(created_at)) = :periodoCadastro";
+    // created_at é TIMESTAMP em UTC (sessão MySQL forçada para UTC). Converte para
+    // SP antes de extrair a data, senão clientes cadastrados depois das 21h SP eram
+    // contados no dia seguinte (UTC já virou).
+    where += " AND DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro";
     params.periodoCadastro = Math.abs(Number(cobranca.periodo) || 0);
   } else {
     where += " AND DATEDIFF(vencimento, :today) = :periodoAlvo";
@@ -48,7 +56,8 @@ function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
   }
   if (cobranca.filtroServidor) { where += " AND servidor = :filtroServidor"; params.filtroServidor = cobranca.filtroServidor; }
   if (cobranca.filtroPlano) { where += " AND plano = :filtroPlano"; params.filtroPlano = cobranca.filtroPlano; }
-  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor FROM clientes WHERE ${where}`, params };
+  // Inclui user/senha para que templates com {usuario}/{senha}/{user} não saiam em branco.
+  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor, user, senha FROM clientes WHERE ${where}`, params };
 }
 
 export function startCobrancasCron() {
@@ -71,6 +80,7 @@ export async function executarCobrancasAutomaticas() {
     `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
             (DATE(c.ultima_execucao) = :today) AS jaRodouHoje, c.min_delay AS minDelay, c.max_delay AS maxDelay,
             c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
+            c.filtro_arquivados AS filtroArquivados,
             c.rodape_antiban AS rodapeAntiban, c.envio_lotes AS envioLotes, c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa,
             m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
        FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
@@ -89,6 +99,12 @@ export async function executarCobrancasAutomaticas() {
       "SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1",
       { userId: cobranca.userId },
     ))[0]?.sessao ?? "";
+    // Se o usuário não tem nenhum dispositivo cadastrado, pula a regra inteira —
+    // antes caía no session "default" e mandava pelo dispositivo de outra conta.
+    if (!sessaoWa) {
+      console.warn(`Regra ${cobranca.id} sem dispositivo WhatsApp cadastrado para o usuário ${cobranca.userId}; pulando.`);
+      continue;
+    }
     let enviadosNestaCobranca = 0;
     for (const cliente of clientes) {
       const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
@@ -106,12 +122,9 @@ export async function executarCobrancasAutomaticas() {
       }
       enviadosNestaCobranca += 1;
 
-      // Rodapé anti-ban: código único por mensagem para evitar detecção de spam (mensagens idênticas).
-      let mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
-      if (cobranca.rodapeAntiban) {
-        const cod = Math.random().toString(16).slice(2, 8).toUpperCase();
-        mensagemBase += `\n\n_Prot.: ${cod}_`;
-      }
+      // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
+      // então não precisamos de rodapé anti-ban — o conteúdo nunca é idêntico entre clientes.
+      const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
 
       const result = await enviarMensagemModelo(sessaoWa, cliente, {
         mensagem: mensagemBase,
@@ -122,6 +135,64 @@ export async function executarCobrancasAutomaticas() {
     }
     await execute("UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id", { id: cobranca.id, ultimaExecucao: appNowSql(now) });
   }
+}
+
+// Disparo manual de uma regra (botão "▶" no card da automação). Ignora hora_envio,
+// dias da semana e ultima_execucao do dia, mas continua passando pela reserva em
+// cobrancas_envios — então clientes que já receberam hoje por essa regra não
+// recebem duas vezes (segura contra cliques duplos no botão).
+export async function dispararRegraManual(userId: number, regraId: number): Promise<{
+  ok: boolean; enviados?: number; elegiveis?: number; error?: string;
+}> {
+  await ensureCobrancasEnviosTable();
+  const cobranca = await queryOne<CobrancaAutoRow>(
+    `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
+            0 AS jaRodouHoje, c.min_delay AS minDelay, c.max_delay AS maxDelay,
+            c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
+            c.filtro_arquivados AS filtroArquivados,
+            c.rodape_antiban AS rodapeAntiban, c.envio_lotes AS envioLotes, c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa,
+            m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
+       FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
+      WHERE c.id = :regraId AND c.user_id = :userId
+      LIMIT 1`,
+    { regraId, userId },
+  );
+  if (!cobranca) return { ok: false, error: "Regra não encontrada." };
+
+  const now = new Date();
+  const { sql, params } = montarConsultaClientes(cobranca, appTodayIso(now));
+  const clientes = await queryRows<ClienteRow>(sql, params);
+  const sessaoWa = (await queryRows<RowDataPacket & { sessao: string }>(
+    "SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1",
+    { userId },
+  ))[0]?.sessao ?? "";
+  if (!sessaoWa) return { ok: false, error: "Cadastre um dispositivo em WhatsApp antes de disparar a regra." };
+
+  let enviadosNestaCobranca = 0;
+  for (const cliente of clientes) {
+    const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
+    if (!reservaId) continue;
+
+    if (enviadosNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
+    if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
+      const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
+      if (enviadosNestaCobranca % tamanho === 0) {
+        const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
+        if (pausaSec > 0) await sleep(pausaSec * 1_000);
+      }
+    }
+    enviadosNestaCobranca += 1;
+
+    const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
+    const result = await enviarMensagemModelo(sessaoWa, cliente, {
+      mensagem: mensagemBase,
+      mediaTipo: cobranca.mediaTipo,
+      mediaPath: cobranca.mediaPath,
+    });
+    await finalizarEnvioCobranca(reservaId, result.ok, result.error);
+  }
+  await execute("UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id", { id: cobranca.id, ultimaExecucao: appNowSql(now) });
+  return { ok: true, enviados: enviadosNestaCobranca, elegiveis: clientes.length };
 }
 
 export async function ensureCobrancasEnviosTable() {

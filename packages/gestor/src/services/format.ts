@@ -83,6 +83,17 @@ function dateOnlyMs(value: unknown) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 }
 
+// "Hoje" no fuso de São Paulo — server da Hostinger costuma estar em UTC, então
+// new Date().getDate() dava o dia ERRADO entre 21h e meia-noite SP (= 00h-03h UTC),
+// fazendo um cliente que vence "hoje" aparecer como "vence amanhã".
+function todayMsSaoPaulo(now: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value ?? "0");
+  return Date.UTC(get("year"), get("month") - 1, get("day"));
+}
+
 export function statusByVencimento(status: string, vencimento: unknown, now: Date = new Date()) {
   const lower = String(status ?? "").toLowerCase();
   if (lower === "inativo") return { label: "Inativo", color: "muted", type: "inativo" };
@@ -90,7 +101,7 @@ export function statusByVencimento(status: string, vencimento: unknown, now: Dat
   const vencMs = dateOnlyMs(vencimento);
   if (vencMs === null) return { label: "Ativo", color: "green", type: "nao-vencido" };
 
-  const todayMs = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayMs = todayMsSaoPaulo(now);
   const days = Math.round((vencMs - todayMs) / 86400000);
 
   if (days < 0) return { label: "Vencido", color: "red", type: "vencido" };

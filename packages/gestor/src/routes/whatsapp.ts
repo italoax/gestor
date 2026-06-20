@@ -3,7 +3,6 @@ import { env } from "../config/env.js";
 import { execute, queryOne, queryRows } from "../db/mysql.js";
 import { appTodayIso } from "../services/dates.js";
 import { ensureCobrancasEnviosTable } from "../services/cobrancasCron.js";
-import { getWppConnectState } from "../services/wppconnect.js";
 import type { RowDataPacket } from "mysql2";
 
 export const whatsappRouter = Router();
@@ -95,8 +94,23 @@ async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", s
   }
 }
 
+async function syncBloqueioChamadas(session: string, enabled: boolean): Promise<void> {
+  const url = sessionApiUrl(env.whatsapp.sessionCallsBlockPath, session);
+  if (!url) return;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    await fetch(url, {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json", ...sessionApiHeaders() },
+      body: JSON.stringify({ enabled }),
+    });
+  } catch { /* falha de sync não deve quebrar o toggle no painel */ }
+  finally { clearTimeout(timer); }
+}
+
 async function getDeviceState(session: string): Promise<WhatsappState> {
-  if (!isSessionApiDriver()) return getWppConnectState() as WhatsappState;
+  if (!isSessionApiDriver()) return { session, status: "erro", lastError: "WA_DRIVER deve ser session-api." };
   const state = await requestSessionApi(env.whatsapp.sessionStatusPath, "GET", session);
   if (state.connected || state.qrCode || state.pairingCode) return state;
   const qrState = await requestSessionApi(env.whatsapp.sessionQrPath, "GET", session);
@@ -120,9 +134,12 @@ async function listarDevices(userId: number) {
 async function ensureDispositivoPrincipal(userId: number) {
   const rows = await queryRows<RowDataPacket & { total: number }>("SELECT COUNT(*) AS total FROM whatsapp_devices WHERE user_id = :userId", { userId });
   if (Number(rows[0]?.total ?? 0) > 0) return;
+  // Gera sessão única por usuário — antes saía "default" para todos, e dois
+  // usuários sem dispositivos próprios acabavam compartilhando a mesma sessão
+  // no microserviço (cada login mandando pelo aparelho do outro).
   await execute(
     "INSERT INTO whatsapp_devices (user_id, nome, sessao, principal) VALUES (:userId, 'Principal', :sessao, 1)",
-    { userId, sessao: env.whatsapp.sessionNameDefault || "default" },
+    { userId, sessao: gerarSessao(`u${userId}-principal`) },
   );
 }
 
@@ -169,15 +186,21 @@ whatsappRouter.post("/whatsapp", async (req, res, next) => {
     const action = String(req.body.action ?? "");
     const id = Number(req.body.id);
     if (action === "add_device") {
-      const nome = String(req.body.nome ?? "").trim();
-      if (!nome) { req.flash("error", "Informe o nome do dispositivo."); return res.redirect("/whatsapp"); }
-      await execute("INSERT INTO whatsapp_devices (user_id, nome, sessao) VALUES (:userId, :nome, :sessao)", { userId, nome, sessao: gerarSessao(nome) });
-      req.flash("success", "Dispositivo criado com sucesso.");
+      // Sistema agora trabalha com apenas 1 conexão por usuário — o "Principal" já é
+      // criado automaticamente em ensureDispositivoPrincipal. Bloqueia tentativa de
+      // cadastrar dispositivo extra.
+      req.flash("error", "Apenas uma conexão WhatsApp por conta.");
+      return res.redirect("/whatsapp");
     } else if (action === "delete_device") {
       await execute("DELETE FROM whatsapp_devices WHERE id = :id AND user_id = :userId", { id, userId });
       req.flash("success", "Dispositivo removido.");
     } else if (action === "toggle_bloqueio") {
       await execute("UPDATE whatsapp_devices SET bloqueio_chamadas = IF(bloqueio_chamadas = 1, 0, 1) WHERE id = :id AND user_id = :userId", { id, userId });
+      // Sincroniza com o microserviço para que ele rejeite chamadas em tempo real.
+      const device = await carregarDevice(userId, id);
+      if (device && isSessionApiDriver()) {
+        await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
+      }
     }
     return res.redirect("/whatsapp");
   } catch (error) { next(error); }
@@ -206,12 +229,14 @@ whatsappRouter.post("/whatsapp/device/:id/:op", async (req, res, next) => {
 
     if (op === "connect") {
       await requestSessionApi(env.whatsapp.sessionStartPath, "POST", device.sessao);
+      await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
       return res.json(await getDeviceState(device.sessao));
     }
     if (op === "pair") {
       const phone = String(req.body.phone ?? req.body.number ?? "").replace(/\D+/g, "");
       if (!phone) return res.json({ status: "erro", lastError: "Informe o número com DDI e DDD (ex: 5531999999999)." });
       const state = await requestSessionApi(env.whatsapp.sessionPairPath, "POST", device.sessao, { number: phone });
+      await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
       return res.json(state);
     }
     if (op === "disconnect") {

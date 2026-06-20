@@ -187,10 +187,20 @@ app.get("/dispositivos", requireUser, (_req, res) => res.render("pages/dispositi
   ],
 }));
 app.get("/minha-conta", requireUser, (req, res) => res.render("pages/minha-conta", { title: "Minha Conta", account: { ...req.session.user } }));
-app.get("/whatsapp", requireUser, (req, res) => {
-  const pair = req.query.pair ? { status: "pairing", pairingCode: "ABCD-1234" } : {};
-  res.render("pages/whatsapp", { title: "WhatsApp", state: { session: "default", status: "desconectado", connected: false, lastError: "", ...pair }, driver: "session-api", sessionApi: true });
-});
+app.get("/transacoes", requireUser, (_req, res) => res.render("pages/transacoes", {
+  title: "Transações de Clientes", subtitle: "Controle de créditos usados e recargas",
+  stats: { total: 3, telas: 5, creditos: 5, receita: 130, lucro: 80 },
+  transacoes: [
+    { id: 1, data: "2026-06-10", clienteNome: "João da Silva Santos", formaPagamento: "PIX", descricao: "Renovação", plano: "Mensal", servidor: "UNITV", telas: 1, creditos: 1, custo: 10, valorVenda: 25, lucro: 15 },
+  ],
+  clientes, planos, servidores,
+}));
+app.get("/whatsapp", requireUser, (req, res) => res.render("pages/whatsapp", {
+  title: "WhatsApp", subtitle: "Gerencie múltiplos dispositivos WhatsApp para envio de mensagens",
+  devices: [{ id: 1, nome: "Principal", sessao: "default", bloqueioChamadas: 0, principal: 1 }],
+  stats: { total: 1, mensagensHoje: 0, entrega: 0 },
+  sessionApi: true, driver: "session-api",
+}));
 
 app.use((err, _req, res, _next) => { console.error("PREVIEW ERROR:", err.message); res.status(500).send(`<pre>${err.stack}</pre>`); });
 

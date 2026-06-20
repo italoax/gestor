@@ -1,6 +1,10 @@
 <%
   const cliTotal = clientes.length;
-  const cliAtivos = clientes.filter(c => String(c.status) === 'Ativo').length;
+  // Ativos = não-vencidos e não-inativos (clientes "vence hoje" continuam contando).
+  const cliAtivos = clientes.filter(c => {
+    const t = statusByVencimento(c.status, c.vencimento).type;
+    return t !== 'vencido' && t !== 'inativo';
+  }).length;
   const cliVencidos = clientes.filter(c => statusByVencimento(c.status, c.vencimento).type === 'vencido').length;
   const arq = (typeof verArquivados !== 'undefined') && verArquivados;
 %>
@@ -89,7 +93,6 @@
             <th>Plano</th>
             <th>Valor</th>
             <th>Servidor</th>
-            <th>Sistema</th>
             <th>Aplicativo</th>
             <th>Vencimento</th>
             <th>Status</th>
@@ -97,7 +100,7 @@
           </tr>
         </thead>
         <tbody>
-          <% clientes.forEach(c => { const cStatus = statusByVencimento(c.status, c.vencimento); const servidorAtual = servidores.find(s => s.nome === c.servidor); %>
+          <% clientes.forEach(c => { const cStatus = statusByVencimento(c.status, c.vencimento); const servidorAtual = servidores.find(s => s.nome === c.servidor); const planoAtual = planos.find(p => p.nome === c.plano); %>
           <tr data-search-item data-id="<%= c.id %>" data-vencimento-status="<%= cStatus.type %>">
             <td class="col-check"><input type="checkbox" class="cli-check" aria-label="Selecionar"></td>
             <td class="cli-c-nome">
@@ -113,14 +116,13 @@
             <td><%= c.plano || '-' %></td>
             <td><strong><%= formatMoney(c.valor) %></strong></td>
             <td><%= c.servidor || '-' %></td>
-            <td><%= c.sistemaPainel || '-' %></td>
-            <td class="cli-app-cell">📱 -</td>
+            <td class="cli-app-cell">📱 <%= c.aplicativo || '-' %></td>
             <td class="cli-venc"><span><%= formatDateBr(c.vencimento) %></span><% if (c.horaVencimento) { %><small><%= String(c.horaVencimento).slice(0,5) %></small><% } %></td>
             <td><%- badgeStatusByVencimento(c.status, c.vencimento) %></td>
             <td class="col-acoes">
               <div class="cli-acoes">
                 <button class="cli-ico-btn open-payment" type="button" title="Renovar"
-                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>">↻</button>
+                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-periodo="<%= planoAtual?.periodo || 30 %>" data-valor="<%= c.valor %>" data-servidor="<%= c.servidor || '' %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>" data-hora="<%= c.horaVencimento || '23:59' %>">↻</button>
 
                 <div class="cli-menu">
                   <button class="cli-ico-btn cli-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Mais ações">⋯</button>
@@ -144,7 +146,8 @@
                     data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-servidor="<%= c.servidor %>"></button>
                   <button class="edit-cliente" type="button"
                     data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateInput(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-status="<%= c.status %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>"
-                    data-senha="<%= c.senha || '' %>" data-id-painel="<%= c.idPainel || '' %>" data-email="<%= c.email || '' %>" data-captacao="<%= c.captacao || '' %>" data-aniversario="<%= formatDateInput(c.aniversario) %>" data-link-m3u="<%= c.linkM3u || '' %>" data-time-cliente="<%= c.timeCliente || '' %>" data-telefone-secundario="<%= c.telefoneSecundario || '' %>" data-observacoes="<%= c.observacoes || '' %>" data-data-inicio="<%= formatDateInput(c.dataInicio) %>" data-hora-vencimento="<%= c.horaVencimento || '' %>" data-sistema-painel="<%= c.sistemaPainel || '' %>" data-dispositivo="<%= c.dispositivo || '' %>" data-aplicativo="<%= c.aplicativo || '' %>" data-pontos="<%= c.pontosFidelidade || 0 %>" data-bloquear="<%= c.bloquearNotificacoes ? 1 : 0 %>" data-boas-vindas="<%= c.enviarBoasVindas ? 1 : 0 %>"></button>
+                    data-forma-pagamento="<%= c.formaPagamento || '' %>"
+                    data-senha="<%= c.senha || '' %>" data-id-painel="<%= c.idPainel || '' %>" data-email="<%= c.email || '' %>" data-captacao="<%= c.captacao || '' %>" data-aniversario="<%= formatDateInput(c.aniversario) %>" data-link-m3u="<%= c.linkM3u || '' %>" data-time-cliente="<%= c.timeCliente || '' %>" data-telefone-secundario="<%= c.telefoneSecundario || '' %>" data-observacoes="<%= c.observacoes || '' %>" data-data-inicio="<%= formatDateInput(c.dataInicio) %>" data-hora-vencimento="<%= c.horaVencimento || '' %>" data-dispositivo="<%= c.dispositivo || '' %>" data-aplicativo="<%= c.aplicativo || '' %>" data-pontos="<%= c.pontosFidelidade || 0 %>"></button>
                   <form method="post" action="/clientes" class="delete-cliente" data-native-submit="1">
                     <input type="hidden" name="action" value="delete_cliente">
                     <input type="hidden" name="id" value="<%= c.id %>">
@@ -203,15 +206,6 @@
             <option value="">Selecione um template</option>
             <% mensagens.forEach(m => { %>
               <option value="<%= m.id %>" data-message="<%= m.mensagem || '' %>"><%= m.titulo %></option>
-            <% }) %>
-          </select>
-        </label>
-        <label class="field full">
-          <span>Dispositivo WhatsApp</span>
-          <select class="input" name="dispositivo">
-            <option value="">Automático (padrão)</option>
-            <% (typeof whatsappDevices !== 'undefined' ? whatsappDevices : []).forEach(d => { %>
-              <option value="<%= d.sessao %>"><%= d.nome %></option>
             <% }) %>
           </select>
         </label>
@@ -299,23 +293,15 @@
           <label class="field full"><span>Time</span><input class="input" name="time_cliente" placeholder="Selecione o time..."></label>
           <label class="field full"><span>Observações</span><textarea class="input" name="observacoes" placeholder="Observações internas sobre o cliente..."></textarea></label>
           <label class="switch-field full">
-            <span><strong>🔕 Bloquear notificações</strong><small>Nenhuma mensagem automática será enviada a este cliente</small></span>
-            <input type="checkbox" name="bloquear_notificacoes" value="1" class="switch">
+            <span><strong>💬 Enviar mensagem</strong><small>Dispara um template pelo WhatsApp logo após salvar o cliente.</small></span>
+            <input type="checkbox" name="enviar_boas_vindas" value="1" class="switch" data-toggle-template>
           </label>
-          <label class="switch-field full">
-            <span><strong>💬 Enviar boas-vindas</strong><small>Enviar mensagem de boas-vindas via WhatsApp</small></span>
-            <input type="checkbox" name="enviar_boas_vindas" value="1" class="switch" checked>
-          </label>
-          <label class="field full">
-            <span>Template de boas-vindas</span>
+          <label class="field full" data-template-wrapper hidden>
+            <span>Template a enviar *</span>
             <select class="input" name="template_boas_vindas">
-              <option>Boas-vindas</option>
+              <option value="">Selecione um template</option>
               <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
             </select>
-          </label>
-          <label class="field full">
-            <span>Dispositivo WhatsApp</span>
-            <select class="input" name="dispositivo_whatsapp"><option>Automático (padrão)</option></select>
           </label>
         </div>
       </div>
@@ -328,6 +314,7 @@
               <option value="">Selecione o plano</option>
               <% planos.forEach(p => { %><option value="<%= p.nome %>" data-creditos="<%= p.creditoGastos || 0 %>"><%= p.nome %></option><% }) %>
             </select>
+            <small class="field-error" data-error-for="plano"></small>
           </label>
           <label class="field">
             <span>Servidor *</span>
@@ -335,32 +322,32 @@
               <option value="">Selecione o servidor</option>
               <% servidores.forEach(s => { %><option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option><% }) %>
             </select>
+            <small class="field-error" data-error-for="servidor"></small>
           </label>
-          <label class="field"><span>Valor (R$) *</span><input class="input" type="number" step="0.01" name="valor" placeholder="0,00" data-required="1" data-tab="plano" data-field-label="Valor"></label>
+          <label class="field">
+            <span>Valor (R$) *</span>
+            <input class="input" type="number" step="0.01" name="valor" placeholder="0,00" data-required="1" data-tab="plano" data-field-label="Valor">
+            <small class="field-error" data-error-for="valor"></small>
+          </label>
           <label class="field">
             <span>Pagamento *</span>
-            <select class="input" name="forma_pagamento">
+            <select class="input" name="forma_pagamento" data-required="1" data-tab="plano" data-field-label="Pagamento">
               <option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
             </select>
+            <small class="field-error" data-error-for="forma_pagamento"></small>
           </label>
           <label class="field"><span>Telas</span><input class="input" type="number" name="telas" value="1" min="0" data-telas-input></label>
           <input type="hidden" name="creditos_gastos" value="1" data-creditos-input>
-          <details class="field full cli-details">
-            <summary>Adicionar pagamento? <small>Registra a cobrança e desconta crédito do servidor</small></summary>
-            <div class="form-grid">
-              <label class="field"><span>Pago em</span><input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
-              <label class="field"><span>Valor pago</span><input class="input" type="number" step="0.01" name="valor_pago"></label>
-              <label class="field"><span>Custo pagamento</span><input class="input" type="number" step="0.01" name="custo_pagamento" data-custo-total></label>
-            </div>
-          </details>
-          <label class="field"><span>Data de Início *</span><input class="input" type="date" name="data_inicio"></label>
+          <label class="switch-field full" data-only-new>
+            <span><strong>💲 Registrar pagamento ao salvar</strong><small>Conta como pago agora e baixa crédito do servidor. Desmarque para só cadastrar.</small></span>
+            <input type="checkbox" name="registrar_pagamento" value="1" class="switch" checked>
+          </label>
           <label class="field">
             <span>Vencimento *</span>
             <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" required data-date-mask data-required="1" data-tab="plano" data-field-label="Vencimento">
             <small class="field-error" data-error-for="vencimento"></small>
           </label>
           <label class="field"><span>Hora de Vencimento</span><input class="input" type="time" name="hora_vencimento" value="23:59"></label>
-          <label class="field full"><span>Sistema no painel</span><input class="input" name="sistema_painel" placeholder="Selecione o sistema"><small>Usado na renovação automática ao confirmar pagamento.</small></label>
           <label class="field">
             <span>🖥 Dispositivo</span>
             <select class="input" name="dispositivo">
@@ -454,40 +441,62 @@
 <div class="modal-overlay" id="modal-add-pagamento" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3 id="pagamento-title">ADD Pagamento</h3>
+      <h3 id="pagamento-title">↻ Renovar Pagamento</h3>
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <form method="post" action="/clientes" id="modal-add-pagamento-form" class="modal-body" data-native-submit="1" novalidate>
       <input type="hidden" name="action" value="add_pagamento">
       <input type="hidden" name="id" value="">
+      <div class="modal-error" id="modal-add-pagamento-error" aria-live="polite"></div>
       <div class="form-grid">
-        <label class="field"><span>Nova data de vencimento</span><input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
-        <label class="field"><span>Nova hora de vencimento</span><input class="input" type="time" name="hora_vencimento"></label>
-        <label class="field"><span>Plano</span><input class="input" name="plano"></label>
-        <label class="field"><span>Valor</span><input class="input" type="number" step="0.01" name="valor"></label>
-        <label class="field"><span>Valor pago</span><input class="input" type="number" step="0.01" name="valor_pago"></label>
         <label class="field">
-          <span>Forma pagamento</span>
-          <select class="input" name="forma_pagamento"><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select>
+          <span>Nova data de vencimento *</span>
+          <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask data-required="1" data-field-label="Vencimento">
+          <small class="field-error" data-error-for="vencimento"></small>
+        </label>
+        <label class="field"><span>Nova hora de vencimento</span><input class="input" type="time" name="hora_vencimento" value="23:59"></label>
+        <label class="field">
+          <span>Plano *</span>
+          <input class="input" type="text" data-plano-display readonly tabindex="-1" placeholder="—">
+          <input type="hidden" name="plano" data-required="1" data-field-label="Plano">
+          <small class="field-error" data-error-for="plano"></small>
+        </label>
+        <label class="field">
+          <span>Servidor *</span>
+          <input class="input" type="text" data-servidor-display readonly tabindex="-1" placeholder="—">
+          <input type="hidden" name="servidor" data-required="1" data-field-label="Servidor">
+          <small class="field-error" data-error-for="servidor"></small>
+        </label>
+        <label class="field">
+          <span>Valor *</span>
+          <input class="input" type="number" step="0.01" name="valor" placeholder="0,00" data-required="1" data-field-label="Valor">
+          <small class="field-error" data-error-for="valor"></small>
+        </label>
+        <label class="field">
+          <span>Forma pagamento *</span>
+          <select class="input" name="forma_pagamento" data-required="1" data-field-label="Forma de pagamento">
+            <option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
+          </select>
+          <small class="field-error" data-error-for="forma_pagamento"></small>
         </label>
         <label class="field"><span>Pago em</span><input class="input" type="text" name="pago_em" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" data-date-mask></label>
-        <label class="field"><span>Telas</span><input class="input" type="number" name="telas"></label>
-        <label class="field"><span>Créditos</span><input class="input" type="number" step="0.01" name="creditos_gastos"></label>
-        <label class="field"><span>Custo</span><input class="input" type="number" step="0.01" name="custo_pagamento"></label>
-        <label class="field full"><span>Observação</span><textarea class="input" name="observacao_pagamento"></textarea></label>
+        <label class="field"><span>Telas</span><input class="input" type="number" name="telas" value="1" min="1" data-telas-input></label>
+        <input type="hidden" name="creditos_gastos" value="1" data-creditos-input>
+        <label class="field"><span>Custo</span><input class="input" type="number" step="0.01" name="custo_pagamento" placeholder="auto" data-custo-input><small>Calculado automático: créditos × valor do crédito do servidor.</small></label>
+        <label class="field full"><span>Observação</span><textarea class="input" name="observacao_pagamento" placeholder="Anotações sobre essa renovação..."></textarea></label>
         <label class="field full">
           <span>Mensagem após salvar</span>
           <select class="input" name="mensagem_pagamento_id" data-last-message-select>
             <option value="">Não enviar WhatsApp</option>
             <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
           </select>
-          <small>Escolha uma mensagem pronta para enviar automaticamente pelo WPPConnect depois de salvar o pagamento. A última escolha fica salva para os próximos pagamentos.</small>
+          <small>Mensagem enviada automaticamente pelo WhatsApp após salvar. A última escolha fica salva.</small>
         </label>
       </div>
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
-      <button class="btn btn-blue" type="submit" form="modal-add-pagamento-form">Salvar pagamento</button>
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-pagamento-form">↻ Salvar renovação</button>
     </div>
   </div>
 </div>

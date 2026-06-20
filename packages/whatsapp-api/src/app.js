@@ -39,6 +39,16 @@ export function createApp({ manager, apiToken }) {
     }
   });
 
+  // Desconecta o aparelho (logout) e libera a vinculação de outro número.
+  app.post("/session/logout/:session", async (req, res) => {
+    try {
+      const state = await manager.logout(req.params.session);
+      res.json({ ok: true, ...state });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: errorMessage(error) });
+    }
+  });
+
   // Vincula por CÓDIGO de 8 dígitos (sem QR). Recebe o número de telefone.
   app.post("/session/pair/:session", async (req, res) => {
     try {
@@ -46,6 +56,19 @@ export function createApp({ manager, apiToken }) {
       if (!number) return res.status(400).json({ ok: false, error: "Informe o número de telefone com DDD." });
       const state = await manager.startPairing(req.params.session, number);
       res.json({ ok: true, ...state });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: errorMessage(error) });
+    }
+  });
+
+  // Liga/desliga rejeição automática de chamadas para esta sessão.
+  // Aceita { enabled: boolean } no corpo (também tolera "1"/"true").
+  app.post("/session/calls-block/:session", (req, res) => {
+    try {
+      const v = req.body?.enabled ?? req.body?.value ?? req.body?.bloqueio;
+      const enabled = v === true || v === 1 || v === "1" || v === "true" || v === "on";
+      const result = manager.setRejectCalls(req.params.session, enabled);
+      res.json({ ok: true, session: req.params.session, rejectCalls: result });
     } catch (error) {
       res.status(500).json({ ok: false, error: errorMessage(error) });
     }
@@ -71,8 +94,9 @@ export function createApp({ manager, apiToken }) {
       const mediaUrl = req.body.mediaUrl || req.body.url || req.body.media;
       const caption = req.body.caption || req.body.body || "";
       const kind = req.body.type || req.body.kind || "image";
+      const fileName = req.body.fileName || req.body.filename || "";
       if (!number || !mediaUrl) return res.status(400).json({ ok: false, error: "number e mediaUrl são obrigatórios." });
-      const result = await manager.sendMedia(session, number, mediaUrl, caption, kind);
+      const result = await manager.sendMedia(session, number, mediaUrl, caption, kind, fileName);
       res.json(result);
     } catch (error) {
       res.status(500).json({ ok: false, error: errorMessage(error) });

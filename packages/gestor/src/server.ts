@@ -1,4 +1,5 @@
 import "./types.js";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
@@ -24,8 +25,7 @@ import { dispositivosRouter } from "./routes/dispositivos.js";
 import { aplicativosRouter } from "./routes/aplicativos.js";
 import { transacoesRouter } from "./routes/transacoes.js";
 import { automacaoRouter } from "./routes/automacao.js";
-import { startCobrancasCron } from "./services/cobrancasCron.js";
-import { startWppConnectIfConfigured } from "./services/wppconnect.js";
+import { executarCobrancasAutomaticas, startCobrancasCron } from "./services/cobrancasCron.js";
 import { badgeStatusByVencimento, formatDateBr, formatDateInput, formatMoney, statusByVencimento } from "./services/format.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -64,13 +64,47 @@ app.get("/", (_req, res) => {
   res.redirect("/login");
 });
 
+// Endpoint público (protegido por token) para um cron externo (Hostinger Cron Job
+// ou cron-job.org) acordar o processo e disparar a execução das cobranças.
+// Em shared hosting o processo Node hiberna sem tráfego — o setInterval interno só
+// roda se alguém estiver acessando o site. Pingar essa rota a cada minuto resolve.
+let cronRunning = false;
+app.get("/__cron/cobrancas", async (req, res) => {
+  // Validação timing-safe do token — bate o tamanho primeiro pra não vazar info.
+  const received = String(req.query.token ?? req.headers["x-cron-token"] ?? "");
+  const expected = env.cronToken;
+  if (!expected) return res.status(401).json({ ok: false, error: "CRON_TOKEN não configurado." });
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ ok: false, error: "Token inválido." });
+  }
+  // Se um tick anterior ainda está rodando (envios espaçados por delay), retorna
+  // imediatamente em vez de empilhar execuções simultâneas que duplicariam envios.
+  if (cronRunning) return res.json({ ok: true, skipped: true, reason: "ja rodando" });
+  cronRunning = true;
+  const start = Date.now();
+  try {
+    await executarCobrancasAutomaticas();
+    res.json({ ok: true, durationMs: Date.now() - start });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    cronRunning = false;
+  }
+});
+
 app.use(webhookRouter);
 app.use(authRouter);
 app.use(requireAuth, dashboardRouter, clientesRouter, crudRouter, accountRouter, whatsappRouter, transacoesRouter, automacaoRouter, dispositivosRouter, aplicativosRouter, placeholderRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
-  res.status(500).render("pages/error", { title: "Erro", error: env.nodeEnv === "development" ? err : null });
+  // Mostra a mensagem do erro pro usuário em prod também — sem stack, só o que veio
+  // do banco/integração. Antes ficava só "Erro interno" e impossível diagnosticar.
+  const message = err instanceof Error ? err.message : String(err);
+  const payload = env.nodeEnv === "development" ? err : { message };
+  res.status(500).render("pages/error", { title: "Erro", error: payload });
 });
 
 process.on("SIGINT", async () => { await db.end(); process.exit(0); });
@@ -79,7 +113,6 @@ async function startServer() {
   await ensureDatabaseSchema();
   app.listen(env.port, () => {
     startCobrancasCron();
-    startWppConnectIfConfigured();
     console.log(`Gestor Node rodando em http://localhost:${env.port}`);
   });
 }

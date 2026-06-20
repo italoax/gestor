@@ -1,7 +1,5 @@
 import { Router } from "express";
-import { execute, queryOne, queryRows } from "../db/mysql.js";
-import { appTodayIso } from "../services/dates.js";
-import { toNullableString, toNumber } from "../services/format.js";
+import { execute, queryRows } from "../db/mysql.js";
 import type { RowDataPacket } from "mysql2";
 
 interface TransacaoRow extends RowDataPacket {
@@ -12,7 +10,6 @@ interface TransacaoRow extends RowDataPacket {
 interface StatRow extends RowDataPacket { totalTx: number; somaTelas: number; somaCreditos: number; somaReceita: number; somaLucro: number; }
 interface ClienteOptRow extends RowDataPacket { id: number; nome: string; plano: string; servidor: string; telas: number; valor: number; }
 interface NomeRow extends RowDataPacket { id: number; nome: string; }
-interface ClienteNomeRow extends RowDataPacket { nome: string; }
 
 export const transacoesRouter = Router();
 
@@ -52,6 +49,8 @@ transacoesRouter.get("/transacoes", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
+// Transações são apenas de leitura: geradas automaticamente em cadastros/renovações.
+// A única ação permitida é apagar (criar/editar foram removidos).
 transacoesRouter.post("/transacoes", async (req, res, next) => {
   try {
     const userId = req.session.user!.id;
@@ -61,53 +60,6 @@ transacoesRouter.post("/transacoes", async (req, res, next) => {
     if (action === "delete_transacao") {
       await execute("DELETE FROM transacoes WHERE id = :id AND user_id = :userId", { id, userId });
       req.flash("success", "Transação apagada.");
-      return res.redirect("/transacoes");
-    }
-
-    const clienteId = req.body.cliente_id ? Number(req.body.cliente_id) : null;
-    let clienteNome: string | null = null;
-    if (clienteId) {
-      const cliente = await queryOne<ClienteNomeRow>("SELECT nome FROM clientes WHERE id = :clienteId AND user_id = :userId LIMIT 1", { clienteId, userId });
-      clienteNome = cliente?.nome ?? null;
-    }
-
-    const custo = toNumber(req.body.custo);
-    const valorVenda = toNumber(req.body.valor_venda);
-    const data = {
-      id, userId,
-      data: toNullableString(req.body.data) ?? appTodayIso(),
-      formaPagamento: toNullableString(req.body.forma_pagamento),
-      clienteId,
-      clienteNome,
-      descricao: toNullableString(req.body.descricao),
-      plano: toNullableString(req.body.plano),
-      servidor: toNullableString(req.body.servidor),
-      telas: toNumber(req.body.telas, 1),
-      creditos: toNumber(req.body.creditos),
-      custo,
-      valorVenda,
-      lucro: Number((valorVenda - custo).toFixed(2)),
-    };
-
-    if (!data.valorVenda && data.valorVenda !== 0) {
-      req.flash("error", "Informe o valor de venda.");
-      return res.redirect("/transacoes");
-    }
-
-    if (action === "update_transacao") {
-      await execute(
-        `UPDATE transacoes SET data = :data, forma_pagamento = :formaPagamento, cliente_id = :clienteId,
-             cliente_nome = :clienteNome, descricao = :descricao, plano = :plano, servidor = :servidor,
-             telas = :telas, creditos = :creditos, custo = :custo, valor_venda = :valorVenda, lucro = :lucro
-          WHERE id = :id AND user_id = :userId`, data);
-      req.flash("success", "Transação atualizada.");
-    } else {
-      await execute(
-        `INSERT INTO transacoes (user_id, data, forma_pagamento, cliente_id, cliente_nome, descricao, plano,
-             servidor, telas, creditos, custo, valor_venda, lucro)
-         VALUES (:userId, :data, :formaPagamento, :clienteId, :clienteNome, :descricao, :plano,
-             :servidor, :telas, :creditos, :custo, :valorVenda, :lucro)`, data);
-      req.flash("success", "Transação registrada.");
     }
     return res.redirect("/transacoes");
   } catch (error) { next(error); }

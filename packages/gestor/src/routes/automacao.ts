@@ -2,7 +2,7 @@ import { Router } from "express";
 import { execute, queryOne, queryRows } from "../db/mysql.js";
 import { appTodayIso } from "../services/dates.js";
 import { boolField, toNullableString, toNumber } from "../services/format.js";
-import { ensureCobrancasEnviosTable } from "../services/cobrancasCron.js";
+import { dispararRegraManual, ensureCobrancasEnviosTable } from "../services/cobrancasCron.js";
 import { jaSemeou, marcarSemeado, seedMensagensPadrao } from "./simpleCrud.js";
 import type { RowDataPacket } from "mysql2";
 
@@ -16,7 +16,7 @@ interface RegraRow extends RowDataPacket {
 interface CountRow extends RowDataPacket { total: number; }
 interface NomeRow extends RowDataPacket { id: number; nome: string; }
 interface MsgRow extends RowDataPacket { id: number; titulo: string; mensagem: string | null; }
-interface DisparoRow extends RowDataPacket { id: number; status: string; erro: string | null; clienteNome: string | null; regraTitulo: string | null; atualizadoEm: Date | string | null; }
+interface DisparoRow extends RowDataPacket { status: string; erro: string | null; clientesNomes: string | null; clientesCount: number; regraTitulo: string | null; atualizadoEm: Date | string | null; }
 
 export const automacaoRouter = Router();
 
@@ -40,17 +40,24 @@ function periodoAlvoPorTipo(tipo: string, periodo: number) {
   return Number(periodo) || 0;
 }
 
-interface RegraFiltro { tipo: string; periodo: number; filtroServidor: string | null; filtroPlano: string | null; }
+interface RegraFiltro { tipo: string; periodo: number; filtroServidor: string | null; filtroPlano: string | null; filtroArquivados: string | null; }
 
 // Monta o WHERE de quem recebe a regra (mesma lógica usada na contagem e na listagem).
 function montarWhereRecebedores(userId: number, regra: RegraFiltro, today: string) {
   const t = String(regra.tipo).toLowerCase();
   const params: Record<string, unknown> = { userId, today };
+  // Por padrão exclui arquivados — respeita o filtro_arquivados da regra
+  // ("Arquivado" => só arquivados; "todos" => ambos).
   let where = "user_id = :userId AND status = 'Ativo'";
+  const arq = String(regra.filtroArquivados ?? "").trim().toLowerCase();
+  if (arq === "arquivado") where += " AND arquivado = 1";
+  else if (arq !== "todos") where += " AND arquivado = 0";
   if (t === "todos") {
     // toda a base ativa
   } else if (t === "apos cadastro") {
-    where += " AND DATEDIFF(:today, DATE(created_at)) = :periodoCadastro";
+    // created_at é TIMESTAMP em UTC — converte para SP antes para o contador
+    // bater com o cron (que faz a mesma conversão antes de disparar).
+    where += " AND DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro";
     params.periodoCadastro = Math.abs(Number(regra.periodo) || 0);
   } else {
     where += " AND DATEDIFF(vencimento, :today) = :periodoAlvo";
@@ -125,10 +132,20 @@ automacaoRouter.get("/automacao", async (req, res, next) => {
         { userId, today },
       ),
       queryRows<DisparoRow>(
-        `SELECT ce.id, ce.status, ce.erro, ce.updated_at AS atualizadoEm, cl.nome AS clienteNome, co.titulo AS regraTitulo
+        // Agrupa por regra + dia + status + erro: 3 clientes que receberam a MESMA
+        // mensagem da MESMA regra hoje aparecem como UMA linha ("Nicole, Walana,
+        // Marcos") em vez de três entradas idênticas.
+        `SELECT MAX(ce.updated_at) AS atualizadoEm,
+                co.titulo AS regraTitulo,
+                ce.status,
+                ce.erro,
+                COUNT(*) AS clientesCount,
+                GROUP_CONCAT(cl.nome ORDER BY cl.nome SEPARATOR ', ') AS clientesNomes
            FROM cobrancas_envios ce JOIN cobrancas co ON co.id = ce.cobranca_id
            LEFT JOIN clientes cl ON cl.id = ce.cliente_id AND cl.user_id = co.user_id
-          WHERE co.user_id = :userId ORDER BY ce.updated_at DESC, ce.id DESC LIMIT 100`,
+          WHERE co.user_id = :userId
+          GROUP BY ce.cobranca_id, ce.data_envio, ce.status, ce.erro, co.titulo
+          ORDER BY atualizadoEm DESC LIMIT 100`,
         { userId },
       ),
       queryRows<CountRow>("SELECT COUNT(*) AS total FROM clientes WHERE user_id = :userId", { userId }),
@@ -176,6 +193,22 @@ automacaoRouter.post("/automacao", async (req, res, next) => {
         "UPDATE cobrancas SET status = IF(status = 'Ativo', 'Inativo', 'Ativo'), automatica = IF(status = 'Ativo', 0, 1) WHERE id = :id AND user_id = :userId",
         { id, userId },
       );
+      return res.redirect("/automacao");
+    }
+    if (action === "dispatch_regra") {
+      // Dispara a regra na hora, ignorando hora_envio/dias da semana/jaRodouHoje.
+      // Mantém a reserva em cobrancas_envios — então clientes já enviados hoje
+      // por essa mesma regra não recebem duas vezes.
+      const resultado = await dispararRegraManual(userId, id);
+      if (!resultado.ok) {
+        req.flash("error", resultado.error ?? "Não foi possível disparar a regra.");
+      } else if (resultado.enviados === 0 && resultado.elegiveis === 0) {
+        req.flash("error", "Nenhum cliente bate com os critérios da regra hoje.");
+      } else if (resultado.enviados === 0) {
+        req.flash("error", `Nenhuma mensagem enviada: ${resultado.elegiveis} cliente(s) já receberam essa regra hoje.`);
+      } else {
+        req.flash("success", `Disparo concluído: ${resultado.enviados} mensagem(ns) enviada(s).`);
+      }
       return res.redirect("/automacao");
     }
 
@@ -234,7 +267,7 @@ automacaoRouter.post("/automacao", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-interface RegraConsultaRow extends RowDataPacket { tipo: string; periodo: number; filtroServidor: string | null; filtroPlano: string | null; }
+interface RegraConsultaRow extends RowDataPacket { tipo: string; periodo: number; filtroServidor: string | null; filtroPlano: string | null; filtroArquivados: string | null; }
 interface RecebedorRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; plano: string; }
 
 // Lista os clientes que a regra atinge hoje (para o popup "N clientes").
@@ -243,7 +276,7 @@ automacaoRouter.get("/automacao/regra/:id/recebedores", async (req, res, next) =
     const userId = req.session.user!.id;
     const id = Number(req.params.id);
     const regra = await queryOne<RegraConsultaRow>(
-      "SELECT tipo, periodo, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1",
+      "SELECT tipo, periodo, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano, filtro_arquivados AS filtroArquivados FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1",
       { id, userId },
     );
     if (!regra) return res.json({ ok: false, clientes: [] });
@@ -258,7 +291,18 @@ automacaoRouter.get("/automacao/regra/:id/recebedores", async (req, res, next) =
 
 function formatDateTimeBr(value: Date | string | null) {
   if (!value) return "-";
-  const date = value instanceof Date ? value : new Date(value);
+  let date: Date;
+  if (value instanceof Date) {
+    date = value;
+  } else {
+    // String do MySQL "YYYY-MM-DD HH:MM:SS" — a conexão está em UTC, então
+    // tratamos como UTC adicionando o "Z" antes de o JS interpretar.
+    const raw = String(value).trim();
+    const iso = /\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(raw) && !/[zZ+\-]\d{2}:?\d{2}$/.test(raw)
+      ? raw.replace(" ", "T") + "Z"
+      : raw;
+    date = new Date(iso);
+  }
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }

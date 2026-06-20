@@ -15,8 +15,8 @@
     "dotenv": "latest",
     "express": "latest",
     "mime-types": "latest",
+    "mupdf": "^1.27.0",
     "pino": "latest",
     "qrcode": "latest"
-  },
-  "devDependencies": {}
+  }
 }

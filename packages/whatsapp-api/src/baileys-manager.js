@@ -50,6 +50,7 @@ export class BaileysSessionManager {
       pairingCode: session.pairingCode || "",
       lastError: session.lastError,
       connected: session.status === "conectado",
+      rejectCalls: Boolean(session.rejectCalls),
     };
   }
 
@@ -86,6 +87,20 @@ export class BaileysSessionManager {
   async restart(sessionName) {
     await this.stop(sessionName);
     return this.start(sessionName);
+  }
+
+  // Desconecta o aparelho (logout) e apaga as credenciais, liberando a
+  // vinculação de outro celular. Diferente de stop(), não reconecta sozinho.
+  async logout(sessionName) {
+    const session = this.getOrCreateState(sessionName);
+    try {
+      await session.socket?.logout?.();
+    } catch {
+      // Sessão já caída — segue para encerrar e limpar mesmo assim.
+    }
+    await this.stop(sessionName);
+    this.clearCredentials(session);
+    return this.getState(session.name);
   }
 
   // Conecta vinculando por CÓDIGO de 8 dígitos (sem QR Code), útil quando o
@@ -149,12 +164,17 @@ export class BaileysSessionManager {
     return { ok: true, response, messageId: response?.key?.id || "" };
   }
 
-  async sendMedia(sessionName, number, mediaUrl, caption = "", kind = "image") {
+  async sendMedia(sessionName, number, mediaUrl, caption = "", kind = "image", fileName = "") {
     const socket = await this.requireConnectedSocket(sessionName);
     const { buffer, contentType } = await downloadBuffer(mediaUrl);
     const mimetype = contentType || mime.lookup(String(mediaUrl).split("?")[0]) || "application/octet-stream";
     const jid = await this.resolveJid(socket, number);
-    const payload = buildMediaPayload(kind, buffer, mimetype, caption);
+    const payload = buildMediaPayload(kind, buffer, mimetype, caption, fileName);
+    // Documentos PDF: embute a miniatura da 1ª página para a prévia aparecer no celular.
+    if (payload.document && String(mimetype).toLowerCase().includes("pdf")) {
+      const thumb = await gerarThumbnailPdf(buffer);
+      if (thumb) payload.jpegThumbnail = thumb;
+    }
     const response = await socket.sendMessage(jid, payload);
     return { ok: true, response, messageId: response?.key?.id || "" };
   }
@@ -194,9 +214,38 @@ export class BaileysSessionManager {
         usePairingCode: false,
         pairingNumber: "",
         pairingCode: "",
+        rejectCalls: this.loadRejectCalls(name),
       });
     }
     return this.sessions.get(name);
+  }
+
+  // Persiste em disco se a sessão deve recusar chamadas, para sobreviver a reinícios.
+  rejectCallsFile(sessionName) {
+    return path.join(this.sessionsDir, sessionName, "bloqueio.json");
+  }
+
+  loadRejectCalls(sessionName) {
+    try {
+      const raw = fs.readFileSync(this.rejectCallsFile(sessionName), "utf8");
+      return Boolean(JSON.parse(raw)?.rejectCalls);
+    } catch { return false; }
+  }
+
+  saveRejectCalls(sessionName, value) {
+    try {
+      fs.mkdirSync(path.join(this.sessionsDir, sessionName), { recursive: true });
+      fs.writeFileSync(this.rejectCallsFile(sessionName), JSON.stringify({ rejectCalls: Boolean(value) }));
+    } catch {
+      // Se não conseguir gravar, ainda mantém em memória — sumirá no próximo restart.
+    }
+  }
+
+  setRejectCalls(sessionName, value) {
+    const session = this.getOrCreateState(sessionName);
+    session.rejectCalls = Boolean(value);
+    this.saveRejectCalls(session.name, session.rejectCalls);
+    return session.rejectCalls;
   }
 
   async requireConnectedSocket(sessionName) {
@@ -223,6 +272,17 @@ export class BaileysSessionManager {
 
     session.socket = socket;
     socket.ev.on("creds.update", saveCreds);
+
+    // Recusa chamadas de voz/vídeo enquanto bloqueio_chamadas estiver ativo.
+    // Só age em "offer" (chamada chegando) — ignora ringing/accept/timeout/reject.
+    socket.ev.on("call", async (events) => {
+      if (!session.rejectCalls) return;
+      for (const ev of events || []) {
+        if (ev?.status !== "offer" || !ev?.id || !ev?.from) continue;
+        try { await socket.rejectCall(ev.id, ev.from); } catch { /* ignora falhas pontuais */ }
+      }
+    });
+
     socket.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -322,10 +382,41 @@ export async function downloadBuffer(url) {
   };
 }
 
-export function buildMediaPayload(kind, buffer, mimetype, caption = "") {
+// Carrega a mupdf (WASM) só uma vez. Import dinâmico: se a lib não estiver
+// disponível, o erro fica contido aqui e o envio segue sem miniatura.
+let _mupdfPromise = null;
+function carregarMupdf() {
+  if (!_mupdfPromise) _mupdfPromise = import("mupdf");
+  return _mupdfPromise;
+}
+
+/**
+ * Gera uma miniatura JPEG (base64) da 1ª página de um PDF, para o WhatsApp mostrar
+ * a prévia do documento no celular. Defensivo: qualquer falha retorna "" e o
+ * envio continua normalmente, só sem a prévia.
+ */
+export async function gerarThumbnailPdf(pdfBuffer) {
+  try {
+    const mupdf = await carregarMupdf();
+    const doc = mupdf.Document.openDocument(pdfBuffer, "application/pdf");
+    if (doc.countPages() < 1) return "";
+    const page = doc.loadPage(0);
+    const bounds = page.getBounds();
+    const largura = Math.max(1, bounds[2] - bounds[0]);
+    const escala = Math.min(2, 400 / largura); // alvo ~400px de largura
+    const pix = page.toPixmap(mupdf.Matrix.scale(escala, escala), mupdf.ColorSpace.DeviceRGB, false);
+    const jpeg = pix.asJPEG(70);
+    return Buffer.from(jpeg).toString("base64");
+  } catch (error) {
+    logger.warn({ err: error?.message }, "falha ao gerar miniatura do PDF");
+    return "";
+  }
+}
+
+export function buildMediaPayload(kind, buffer, mimetype, caption = "", fileName = "") {
   const normalized = String(kind || "image").toLowerCase();
   if (normalized === "audio") return { audio: buffer, mimetype, ptt: true };
   if (normalized === "video") return { video: buffer, mimetype, caption };
-  if (normalized === "document") return { document: buffer, mimetype, fileName: "arquivo", caption };
+  if (normalized === "document") return { document: buffer, mimetype, fileName: fileName || "arquivo", caption };
   return { image: buffer, mimetype, caption };
 }

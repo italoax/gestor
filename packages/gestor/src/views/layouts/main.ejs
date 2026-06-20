@@ -6,8 +6,8 @@
   <title><%= title || 'Gestor' %></title>
   <link rel="icon" href="/favicon.ico" sizes="any" />
   <link rel="shortcut icon" href="/favicon.ico" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=shell-8" />
-  <link rel="stylesheet" href="/assets/css/node-migration.css?v=shell-8" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=shell-25" />
+  <link rel="stylesheet" href="/assets/css/node-migration.css?v=shell-25" />
   <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 </head>
 <body class="<%= user ? 'page-app' : 'login-page' %>">
@@ -37,10 +37,10 @@
 <div class="app-shell" data-shell>
   <aside class="sidebar" data-sidebar>
     <div class="sidebar-brand">
-      <div class="sidebar-logo">N</div>
+      <img class="sidebar-logo" src="/favicon.ico" alt="Gestor IXTV">
       <div class="sidebar-brand-text">
-        <strong>Gestor</strong>
-        <span>GESTÃO EMPRESARIAL</span>
+        <strong>Gestor IXTV</strong>
+        <span>GESTÃO IPTV</span>
       </div>
     </div>
     <nav class="sidebar-nav">
@@ -53,10 +53,6 @@
       <% }) %>
     </nav>
     <div class="sidebar-foot">
-      <a class="sidebar-telegram" href="/em-breve/tutoriais">
-        <span class="sidebar-ico">✈</span>
-        <span class="sidebar-brand-text"><strong>Telegram Oficial</strong><span>@ngestoroficial</span></span>
-      </a>
       <button class="sidebar-collapse" type="button" data-sidebar-toggle>
         <span class="chev">‹</span> <span class="sidebar-label">Recolher</span>
       </button>
@@ -99,7 +95,7 @@
 <% } else { %>
   <%- body %>
 <% } %>
-<script src="/assets/js/main.js?v=shell-8"></script>
-<script src="/assets/js/app-shell.js?v=shell-8"></script>
+<script src="/assets/js/main.js?v=shell-25"></script>
+<script src="/assets/js/app-shell.js?v=shell-25"></script>
 </body>
 </html>

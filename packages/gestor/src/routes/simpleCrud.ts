@@ -1,7 +1,29 @@
 import { Router } from "express";
-import { execute, queryRows } from "../db/mysql.js";
+import { execute, queryOne, queryRows } from "../db/mysql.js";
 import { boolField, toNullableString, toNumber } from "../services/format.js";
 import type { RowDataPacket } from "mysql2";
+
+// Os clientes (e transações) guardam plano/servidor como string denormalizada.
+// Quando o usuário renomeia um catálogo, propaga para todas as linhas vinculadas —
+// senão a tela de Clientes fica mostrando o nome antigo até o próximo cadastro.
+async function propagarRenomeacao(
+  userId: number,
+  campo: "plano" | "servidor" | "dispositivo" | "aplicativo",
+  nomeAntigo: string,
+  nomeNovo: string,
+) {
+  if (!nomeAntigo || !nomeNovo || nomeAntigo === nomeNovo) return;
+  await execute(
+    `UPDATE clientes SET \`${campo}\` = :novo WHERE user_id = :userId AND \`${campo}\` = :antigo`,
+    { userId, antigo: nomeAntigo, novo: nomeNovo },
+  );
+  if (campo === "plano" || campo === "servidor") {
+    await execute(
+      `UPDATE transacoes SET \`${campo}\` = :novo WHERE user_id = :userId AND \`${campo}\` = :antigo`,
+      { userId, antigo: nomeAntigo, novo: nomeNovo },
+    );
+  }
+}
 
 interface PlanoRow extends RowDataPacket { id: number; nome: string; clientes: number; tipo: string; periodo: number; observacao: string | null; creditos: number; ativo: number; }
 
@@ -112,7 +134,11 @@ crudRouter.post("/planos", async (req, res, next) => {
     } else {
       const data = { userId, id, nome: String(req.body.nome ?? "").trim(), tipo: String(req.body.tipo || "Dias"), periodo: toNumber(req.body.periodo, 1), creditoGastos: toNumber(req.body.creditos, 0), observacao: toNullableString(req.body.observacao), ativo: boolField(req.body.ativo) };
       if (action === "update_plano") {
+        const atual = await queryOne<RowDataPacket & { nome: string }>(
+          "SELECT nome FROM planos WHERE id = :id AND user_id = :userId LIMIT 1", { id, userId },
+        );
         await execute(`UPDATE planos SET nome = :nome, tipo = :tipo, periodo = :periodo, credito_gastos = :creditoGastos, observacao = :observacao, ativo = :ativo WHERE id = :id AND user_id = :userId`, data);
+        if (atual?.nome) await propagarRenomeacao(userId, "plano", atual.nome, data.nome);
         req.flash("success", "Plano atualizado.");
       } else {
         await execute(`INSERT INTO planos (user_id, nome, tipo, periodo, credito_gastos, clientes, observacao, ativo) VALUES (:userId, :nome, :tipo, :periodo, :creditoGastos, 0, :observacao, :ativo)`, data);
@@ -178,7 +204,11 @@ crudRouter.post("/servidores", async (req, res, next) => {
       };
       const novosSet = `identificador = :identificador, link_painel = :linkPainel, cobranca_por_telas = :cobrancaPorTelas, observacao_servidor = :observacaoServidor, renovacao_automatica = :renovacaoAutomatica, dispositivo_whatsapp = :dispositivoWhatsapp, url_app_android = :urlAppAndroid, url_app_ios = :urlAppIos, info_servidor = :infoServidor, dns_1 = :dns1, dns_2 = :dns2, dns_3 = :dns3, dns_4 = :dns4, url_api_xc = :urlApiXc, url_api_smarters = :urlApiSmarters, epg = :epg, pix = :pix, pix_nome = :pixNome, pix_tipo = :pixTipo, url_renovacao = :urlRenovacao`;
       if (action === "update_servidor") {
+        const atual = await queryOne<RowDataPacket & { nome: string }>(
+          "SELECT nome FROM servidores WHERE id = :id AND user_id = :userId LIMIT 1", { id, userId },
+        );
         await execute(`UPDATE servidores SET nome = :nome, clientes_total = :clientesTotal, clientes_ativos = :clientesAtivos, clientes_inativos = :clientesInativos, testes_total = :testesTotal, testes_ativos = :testesAtivos, testes_inativos = :testesInativos, creditos = :creditos, valor_cred = :valorCred, sessao = :sessao, integracao = :integracao, ${novosSet} WHERE id = :id AND user_id = :userId`, data);
+        if (atual?.nome) await propagarRenomeacao(userId, "servidor", atual.nome, data.nome);
         req.flash("success", "Servidor atualizado.");
       } else {
         await execute(`INSERT INTO servidores (user_id, nome, clientes_total, clientes_ativos, clientes_inativos, testes_total, testes_ativos, testes_inativos, creditos, valor_cred, sessao, integracao, identificador, link_painel, cobranca_por_telas, observacao_servidor, renovacao_automatica, dispositivo_whatsapp, url_app_android, url_app_ios, info_servidor, dns_1, dns_2, dns_3, dns_4, url_api_xc, url_api_smarters, epg, pix, pix_nome, pix_tipo, url_renovacao) VALUES (:userId, :nome, :clientesTotal, :clientesAtivos, :clientesInativos, :testesTotal, :testesAtivos, :testesInativos, :creditos, :valorCred, :sessao, :integracao, :identificador, :linkPainel, :cobrancaPorTelas, :observacaoServidor, :renovacaoAutomatica, :dispositivoWhatsapp, :urlAppAndroid, :urlAppIos, :infoServidor, :dns1, :dns2, :dns3, :dns4, :urlApiXc, :urlApiSmarters, :epg, :pix, :pixNome, :pixTipo, :urlRenovacao)`, data);

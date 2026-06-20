@@ -7,6 +7,9 @@ export const env = {
   port: Number(process.env.PORT ?? 3000),
   appUrl: process.env.APP_URL ?? "http://localhost:3000",
   sessionSecret: process.env.SESSION_SECRET ?? "dev-secret-change-me",
+  // Token usado pelo endpoint público de cron (/__cron/cobrancas) — pra cron externo
+  // (Hostinger/cron-job.org) acordar o processo e disparar a execução.
+  cronToken: process.env.CRON_TOKEN ?? "",
   db: {
     host: process.env.DB_HOST ?? "127.0.0.1",
     name: process.env.DB_NAME ?? "",
@@ -34,11 +37,7 @@ export const env = {
     sessionStartPath: process.env.WA_SESSION_START_PATH ?? "/session/start/{session}",
     sessionRestartPath: process.env.WA_SESSION_RESTART_PATH ?? "/session/restart/{session}",
     sessionPairPath: process.env.WA_SESSION_PAIR_PATH ?? "/session/pair/{session}",
-    wppconnectSession: process.env.WA_WPPCONNECT_SESSION ?? process.env.WA_SESSION_NAME_DEFAULT ?? "default",
-    wppconnectAutoStart: ["1", "true", "yes", "sim"].includes(String(process.env.WA_WPPCONNECT_AUTO_START ?? "false").toLowerCase()),
-    wppconnectHeadless: process.env.WA_WPPCONNECT_HEADLESS === "false" ? false : true,
-    wppconnectTokensDir: process.env.WA_WPPCONNECT_TOKENS_DIR ?? "./tokens",
-    wppconnectBrowserPath: process.env.WA_WPPCONNECT_BROWSER_PATH ?? "",
+    sessionCallsBlockPath: process.env.WA_SESSION_CALLS_BLOCK_PATH ?? "/session/calls-block/{session}",
     // Intervalo (em segundos) entre cada envio automático, para evitar rajada.
     sendMinDelaySec: Number(process.env.WA_SEND_MIN_DELAY ?? 3),
     sendMaxDelaySec: Number(process.env.WA_SEND_MAX_DELAY ?? 7),

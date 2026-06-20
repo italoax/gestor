@@ -1,6 +1,5 @@
 import { env } from "../config/env.js";
 import { normalizeBrazilPhone } from "../shared/index.js";
-import { enviarAudioWppConnect, enviarMidiaWppConnect, enviarTextoWppConnect } from "./wppconnect.js";
 
 export interface ClienteMensagem {
   nome?: string | null;
@@ -83,9 +82,17 @@ export function normalizarTelefone(telefone: string) {
 }
 
 export function montarMensagem(template: string, cliente: ClienteMensagem) {
-  const vencimento = cliente.vencimento instanceof Date
-    ? cliente.vencimento.toLocaleDateString("pt-BR", { timeZone: "UTC" })
-    : String(cliente.vencimento ?? "");
+  // Vencimento: aceita Date OU string ISO ("YYYY-MM-DD" do MySQL DATE).
+  // Sempre devolve "DD/MM/YYYY" — antes saía "2026-06-19" no template quando
+  // o banco entregava string crua (depois do dateStrings: true).
+  let vencimento = "";
+  if (cliente.vencimento instanceof Date) {
+    vencimento = cliente.vencimento.toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  } else if (cliente.vencimento) {
+    const raw = String(cliente.vencimento).trim();
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    vencimento = iso ? `${iso[3]}/${iso[2]}/${iso[1]}` : raw;
+  }
   const valor = Number(cliente.valor ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const horaSp = Number(new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }).format(new Date()));
   const saudacao = horaSp < 12 ? "Bom dia" : horaSp < 18 ? "Boa tarde" : "Boa noite";
@@ -147,9 +154,6 @@ function isSessionApiDriver() {
 
 export async function enviarTexto(sessao: string, telefone: string, mensagem: string, token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
-  if (env.whatsapp.driver === "wppconnect") {
-    return enviarTextoWppConnect(to, mensagem);
-  }
   if (isSessionApiDriver()) {
     const url = sessionUrl(env.whatsapp.sessionSendTextPath, sessao || env.whatsapp.sessionNameDefault);
     if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
@@ -161,9 +165,6 @@ export async function enviarTexto(sessao: string, telefone: string, mensagem: st
 export async function enviarMidia(sessao: string, telefone: string, urlMidia: string, tipo: string, caption = "", token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
   const urlPublica = resolverUrlMidia(urlMidia);
-  if (env.whatsapp.driver === "wppconnect") {
-    return enviarMidiaWppConnect(to, urlPublica, tipo, caption);
-  }
   if (isSessionApiDriver()) {
     const url = sessionUrl(env.whatsapp.sessionSendMediaPath, sessao || env.whatsapp.sessionNameDefault);
     if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
@@ -176,9 +177,6 @@ export async function enviarMidia(sessao: string, telefone: string, urlMidia: st
 export async function enviarAudio(sessao: string, telefone: string, urlAudio: string, token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
   const urlPublica = resolverUrlMidia(urlAudio);
-  if (env.whatsapp.driver === "wppconnect") {
-    return enviarAudioWppConnect(to, urlPublica);
-  }
   if (isSessionApiDriver()) {
     const url = sessionUrl(env.whatsapp.sessionSendAudioPath, sessao || env.whatsapp.sessionNameDefault);
     if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };

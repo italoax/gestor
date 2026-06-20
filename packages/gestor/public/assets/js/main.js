@@ -259,6 +259,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Mapeia o texto do select de "Status" (Ativo / Vence hoje / Vencido / Inativo / Pra vencer)
+  // para o `data-vencimento-status` da linha — antes era `text.includes(value)`, que
+  // dava match em "Ativo" mesmo para vencido (a palavra "Ativo" aparecia em outras
+  // colunas do row).
+  const STATUS_TYPE_MAP = {
+    'ativo': (t) => t === 'nao-vencido',
+    'vence hoje': (t) => t === 'today',
+    'vencido': (t) => t === 'vencido',
+    'inativo': (t) => t === 'inativo',
+    'pra vencer': (t) => t === 'today' || t === 'nao-vencido',
+  };
   const applyTableScopeFilters = (scope) => {
     const input = scope.querySelector('[data-search-input]');
     const selects = Array.from(scope.querySelectorAll('[data-filter-select]'));
@@ -273,7 +284,13 @@ document.addEventListener('DOMContentLoaded', function () {
       const text = item.textContent.toLowerCase();
       const status = item.dataset.vencimentoStatus || '';
       const matchSearch = !term || text.includes(term);
-      const matchSelects = activeSelects.every(value => text.includes(value));
+      const matchSelects = activeSelects.every(value => {
+        // Se o valor do select corresponde a um rótulo de status, casa pelo tipo
+        // do badge (data-vencimento-status). Senão, busca o texto na linha.
+        const statusMatcher = STATUS_TYPE_MAP[value];
+        if (statusMatcher) return statusMatcher(status);
+        return text.includes(value);
+      });
       const matchVencimento = !vencimentoValue
         || status === vencimentoValue
         || (vencimentoValue === 'nao-vencido' && status !== 'vencido');
@@ -288,6 +305,31 @@ document.addEventListener('DOMContentLoaded', function () {
     if (input) input.addEventListener('input', () => applyTableScopeFilters(scope));
     selects.forEach(sel => sel.addEventListener('change', () => applyTableScopeFilters(scope)));
     if (vencimentoFilter) vencimentoFilter.addEventListener('change', () => applyTableScopeFilters(scope));
+  });
+
+  // Linha selecionada (check da tabela): destaque visual + "selecionar todos" no cabeçalho.
+  // Delegado no document pra cobrir rows criadas via AJAX (cadastro/edição inline).
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t || !t.classList || !t.classList.contains('cli-check')) return;
+    if (t.hasAttribute('data-check-all')) {
+      const table = t.closest('table');
+      if (!table) return;
+      table.querySelectorAll('tbody tr').forEach(row => {
+        const cb = row.querySelector('input.cli-check');
+        if (cb && !row.classList.contains('hidden')) {
+          cb.checked = t.checked;
+          row.classList.toggle('is-selected', t.checked);
+        }
+      });
+    } else {
+      const row = t.closest('tr');
+      if (row) row.classList.toggle('is-selected', t.checked);
+      // Se desmarcou uma linha, desmarca o "todos" do header.
+      const table = t.closest('table');
+      const header = table && table.querySelector('input.cli-check[data-check-all]');
+      if (header && !t.checked) header.checked = false;
+    }
   });
 
   const normalizeSortText = (value) => String(value || '')
@@ -519,6 +561,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const pCred = form.querySelector('[name="creditos"]'); if (pCred) pCred.value = btn.getAttribute('data-creditos') || '0';
       const pAtivo = form.querySelector('[name="ativo"]'); if (pAtivo) pAtivo.checked = btn.getAttribute('data-ativo') !== '0';
       const pTitulo = modal.querySelector('.modal-header h3'); if (pTitulo) pTitulo.textContent = '✎ Editar Plano';
+      const pBtnEd = document.querySelector('button[type="submit"][form="modal-add-plano-form"]'); if (pBtnEd) pBtnEd.textContent = 'Salvar';
       const pInfoUpd = form.querySelector('[name="periodo"]'); if (pInfoUpd) pInfoUpd.dispatchEvent(new Event('input', { bubbles: true }));
       setModalState(modal, true);
     });
@@ -533,6 +576,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
       }
       const t = document.querySelector('#modal-add-plano .modal-header h3'); if (t) t.textContent = '+ Novo Plano';
+      const pBtnNv = document.querySelector('button[type="submit"][form="modal-add-plano-form"]'); if (pBtnNv) pBtnNv.textContent = 'Cadastrar';
     });
   });
 
@@ -620,6 +664,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const cob = form.querySelector('[name="cobranca_por_telas"]'); if (cob) cob.checked = btn.getAttribute('data-cobranca') === '1';
       const ren = form.querySelector('[name="renovacao_automatica"]'); if (ren) ren.checked = btn.getAttribute('data-renovacao') === '1';
       const stitulo = modal.querySelector('.modal-header h3'); if (stitulo) stitulo.textContent = '🗄️ Editar Servidor';
+      const sBtnEd = document.querySelector('button[type="submit"][form="modal-add-servidor-form"]'); if (sBtnEd) sBtnEd.textContent = 'Salvar';
       setModalState(modal, true);
     });
   });
@@ -633,6 +678,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
       }
       const t = document.querySelector('#modal-add-servidor .modal-header h3'); if (t) t.textContent = '🗄️ Novo Servidor';
+      const sBtnNv = document.querySelector('button[type="submit"][form="modal-add-servidor-form"]'); if (sBtnNv) sBtnNv.textContent = 'Cadastrar';
     });
   });
 
@@ -672,6 +718,65 @@ document.addEventListener('DOMContentLoaded', function () {
   bindClienteUsageFields(document.getElementById('modal-add-cliente-form'));
   bindClienteUsageFields(document.getElementById('modal-add-pagamento-form'));
 
+  // Memoriza a preferência do usuário para o switch "Enviar mensagem" e qual
+  // template foi escolhido por último — assim, da próxima vez que abrir o modal
+  // o estado já vem como o usuário deixou.
+  const PREF_KEYS = { enviar_boas_vindas: 'pref-enviar-msg' };
+  const PREF_DEFAULTS = { enviar_boas_vindas: false };
+  const PREF_TEMPLATE_KEY = 'pref-msg-template-id';
+  function lerPref(name) {
+    try {
+      const raw = localStorage.getItem(PREF_KEYS[name]);
+      if (raw === null) return PREF_DEFAULTS[name];
+      return raw === '1';
+    } catch { return PREF_DEFAULTS[name]; }
+  }
+  function gravarPref(name, value) {
+    try { localStorage.setItem(PREF_KEYS[name], value ? '1' : '0'); } catch { /* ignora */ }
+  }
+  // Mostra/oculta o select de template conforme o switch.
+  function aplicarToggleTemplate(form) {
+    if (!form) return;
+    const toggle = form.querySelector('[data-toggle-template]');
+    const wrapper = form.querySelector('[data-template-wrapper]');
+    if (!toggle || !wrapper) return;
+    wrapper.hidden = !toggle.checked;
+  }
+  function aplicarPrefs(form) {
+    if (!form) return;
+    Object.keys(PREF_KEYS).forEach(name => {
+      const el = form.querySelector('[name="' + name + '"]');
+      if (el) el.checked = lerPref(name);
+    });
+    // Reaplica o último template escolhido (se ainda existir no select).
+    const tplSelect = form.querySelector('[name="template_boas_vindas"]');
+    if (tplSelect) {
+      const savedId = localStorage.getItem(PREF_TEMPLATE_KEY) || '';
+      if (savedId && tplSelect.querySelector('option[value="' + savedId + '"]')) {
+        tplSelect.value = savedId;
+      }
+    }
+    aplicarToggleTemplate(form);
+  }
+  // Salva quando o usuário muda o switch — uma única vez basta para virar default.
+  document.addEventListener('change', (e) => {
+    const target = e.target;
+    if (!target || target.tagName !== 'INPUT' || target.type !== 'checkbox') return;
+    const name = target.getAttribute('name');
+    if (PREF_KEYS[name]) gravarPref(name, target.checked);
+    if (target.hasAttribute('data-toggle-template')) {
+      const form = target.closest('form');
+      if (form) aplicarToggleTemplate(form);
+    }
+  });
+  // Memoriza o último template escolhido.
+  document.addEventListener('change', (e) => {
+    const target = e.target;
+    if (target && target.tagName === 'SELECT' && target.getAttribute('name') === 'template_boas_vindas') {
+      try { localStorage.setItem(PREF_TEMPLATE_KEY, target.value || ''); } catch { /* ignora */ }
+    }
+  });
+
   document.querySelectorAll('.edit-cliente').forEach(btn => {
     btn.addEventListener('click', () => {
       const modal = document.getElementById('modal-add-cliente');
@@ -692,9 +797,29 @@ document.addEventListener('DOMContentLoaded', function () {
         formatPhoneInput(telefoneInput);
       }
       setDateInputValue(form.querySelector('[name="vencimento"]'), btn.getAttribute('data-vencimento') || '');
-      form.querySelector('[name="plano"]').value = btn.getAttribute('data-plano') || '';
+      // Para selects: se o valor salvo no cliente não existir mais nas options
+      // (catálogo renomeado/apagado), injeta opção temporária com o valor salvo
+      // pra ele NÃO virar branco no Editar. Antes ficava em branco silenciosamente.
+      const setSelectWithFallback = (name, value) => {
+        const sel = form.querySelector('[name="' + name + '"]');
+        if (!sel) return;
+        // Limpa fallback de uma edição anterior pra não acumular ao trocar de cliente.
+        sel.querySelectorAll('option[data-fallback="1"]').forEach(o => o.remove());
+        const valor = String(value || '');
+        if (!valor) { sel.value = ''; return; }
+        if (sel.tagName === 'SELECT' && !sel.querySelector('option[value="' + valor.replace(/"/g, '\\"') + '"]')) {
+          const opt = document.createElement('option');
+          opt.value = valor;
+          opt.textContent = valor + ' (atual)';
+          opt.dataset.fallback = '1';
+          sel.appendChild(opt);
+        }
+        sel.value = valor;
+      };
+      setSelectWithFallback('plano', btn.getAttribute('data-plano') || '');
       form.querySelector('[name="valor"]').value = btn.getAttribute('data-valor') || '';
-      form.querySelector('[name="servidor"]').value = btn.getAttribute('data-servidor') || '';
+      setSelectWithFallback('servidor', btn.getAttribute('data-servidor') || '');
+      setSelectWithFallback('forma_pagamento', btn.getAttribute('data-forma-pagamento') || '');
       form.querySelector('[name="telas"]').value = btn.getAttribute('data-telas') || '1';
       // Pré-preenche os campos novos (guardado: ignora se o campo não existir no DOM)
       const extras = {
@@ -702,18 +827,57 @@ document.addEventListener('DOMContentLoaded', function () {
         aniversario: 'data-aniversario', link_m3u: 'data-link-m3u', time_cliente: 'data-time-cliente',
         telefone_secundario: 'data-telefone-secundario', observacoes: 'data-observacoes',
         data_inicio: 'data-data-inicio', hora_vencimento: 'data-hora-vencimento',
-        sistema_painel: 'data-sistema-painel', dispositivo: 'data-dispositivo', aplicativo: 'data-aplicativo', pontos_fidelidade: 'data-pontos'
+        pontos_fidelidade: 'data-pontos'
       };
       Object.keys(extras).forEach(name => {
         const el = form.querySelector('[name="' + name + '"]');
         if (el) el.value = btn.getAttribute(extras[name]) || '';
       });
-      const bloquear = form.querySelector('[name="bloquear_notificacoes"]');
-      if (bloquear) bloquear.checked = btn.getAttribute('data-bloquear') === '1';
-      const boas = form.querySelector('[name="enviar_boas_vindas"]');
-      if (boas) boas.checked = btn.getAttribute('data-boas-vindas') === '1';
+      // dispositivo e aplicativo também são selects — aplica o mesmo fallback.
+      setSelectWithFallback('dispositivo', btn.getAttribute('data-dispositivo') || '');
+      setSelectWithFallback('aplicativo', btn.getAttribute('data-aplicativo') || '');
+      // Aplica a preferência salva (sobrepõe o valor do cliente — usuário pediu
+      // explicitamente que, uma vez desmarcado, permaneça desmarcado).
+      aplicarPrefs(form);
+      // "Registrar pagamento" só vale para cliente novo: oculta na edição.
+      const onlyNew = modal.querySelector('[data-only-new]'); if (onlyNew) onlyNew.style.display = 'none';
+      const tituloEd = modal.querySelector('.modal-header h3'); if (tituloEd) tituloEd.textContent = '✎ Editar Cliente';
+      const btnEd = document.querySelector('button[type="submit"][form="modal-add-cliente-form"]'); if (btnEd) btnEd.textContent = 'Salvar Cliente';
       syncClienteUsageFields(form);
       setModalState(modal, true);
+    });
+  });
+
+  // Abrir "Novo Cliente": reexibe e marca a opção de registrar pagamento.
+  document.querySelectorAll('[data-open-modal="modal-add-cliente"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modal = document.getElementById('modal-add-cliente');
+      if (!modal) return;
+      const form = modal.querySelector('#modal-add-cliente-form');
+      // Reseta o form antes — senão valores de uma edição anterior viajam pro novo cliente.
+      if (form) {
+        form.reset();
+        // form.reset() não limpa o prefixo de telefone (componente custom).
+        const phonePrefix = form.querySelector('[data-phone-prefix]');
+        if (phonePrefix) setPhonePrefix(phonePrefix, '+55');
+        // Limpa qualquer destaque de erro deixado por uma validação anterior.
+        form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+        form.querySelectorAll('[data-error-for]').forEach(el => { el.textContent = ''; });
+        const modalErr = document.getElementById('modal-add-cliente-error'); if (modalErr) modalErr.textContent = '';
+      }
+      // Remove qualquer display:none deixado por uma edição anterior — caso
+      // contrário, o switch "Registrar pagamento" some no Novo Cliente.
+      const onlyNew = modal.querySelector('[data-only-new]');
+      if (onlyNew) { onlyNew.style.removeProperty('display'); onlyNew.hidden = false; }
+      const reg = modal.querySelector('[name="registrar_pagamento"]'); if (reg) reg.checked = true;
+      aplicarPrefs(form);
+      const act = modal.querySelector('#modal-add-cliente-form [name="action"]'); if (act) act.value = 'create_cliente';
+      const idf = modal.querySelector('#modal-add-cliente-form [name="id"]'); if (idf) idf.value = '';
+      const tituloNv = modal.querySelector('.modal-header h3'); if (tituloNv) tituloNv.textContent = '👤 Novo Cliente';
+      const btnNv = document.querySelector('button[type="submit"][form="modal-add-cliente-form"]'); if (btnNv) btnNv.textContent = 'Cadastrar Cliente';
+      // Volta para a primeira aba (Dados).
+      const firstTab = modal.querySelector('.tab-btn[data-tab="dados"]'); if (firstTab) firstTab.click();
+      if (form) syncClienteUsageFields(form);
     });
   });
 
@@ -886,42 +1050,73 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!modal) return;
       const form = modal.querySelector('#modal-add-pagamento-form');
       if (!form) return;
+      // Reseta para não vazar dados entre clientes.
+      form.reset();
+      form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      form.querySelectorAll('[data-error-for]').forEach(el => { el.textContent = ''; });
+      const modalErr = document.getElementById('modal-add-pagamento-error'); if (modalErr) modalErr.textContent = '';
+
       const nome = btn.getAttribute('data-nome') || '';
       const venc = btn.getAttribute('data-vencimento') || '';
       const plano = btn.getAttribute('data-plano') || '';
+      const servidor = btn.getAttribute('data-servidor') || '';
       const valor = btn.getAttribute('data-valor') || '0';
       const telas = btn.getAttribute('data-telas') || '1';
-      const creditos = btn.getAttribute('data-creditos') || '1';
       const valorCred = btn.getAttribute('data-valor-cred') || '0';
+      const horaVenc = btn.getAttribute('data-hora') || '23:59';
 
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+      // Novo vencimento = max(hoje, venc antigo) + periodo do plano.
+      // Antes ficava fixo em +30 dias a partir do venc antigo — cliente vencido há
+      // 90 dias renovava pra uma data AINDA no passado. E plano trimestral/anual
+      // ficava com vencimento errado (sempre 30 dias).
+      const periodoDias = Math.max(1, Number(btn.getAttribute('data-periodo') || 30));
       let baseDate = new Date();
       if (venc && /^\d{2}\/\d{2}\/\d{4}$/.test(venc)) {
         const parts = venc.split('/');
-        const day = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1;
-        const year = parseInt(parts[2], 10);
-        baseDate = new Date(year, month, day);
+        const oldVenc = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        baseDate = oldVenc > today ? oldVenc : today;
       }
-      const plus30 = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 30);
-      const dd30 = String(plus30.getDate()).padStart(2, '0');
-      const mm30 = String(plus30.getMonth() + 1).padStart(2, '0');
-      const yyyy30 = plus30.getFullYear();
-      setDateInputValue(form.querySelector('[name="vencimento"]'), yyyy30 + '-' + mm30 + '-' + dd30);
-      form.querySelector('[name="plano"]').value = plano;
+      const novoVenc = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + periodoDias);
+      const ddNv = String(novoVenc.getDate()).padStart(2, '0');
+      const mmNv = String(novoVenc.getMonth() + 1).padStart(2, '0');
+      setDateInputValue(form.querySelector('[name="vencimento"]'), novoVenc.getFullYear() + '-' + mmNv + '-' + ddNv);
+
+      const horaInput = form.querySelector('[name="hora_vencimento"]');
+      if (horaInput) horaInput.value = String(horaVenc).slice(0, 5) || '23:59';
+
+      // Plano e Servidor são FIXOS na renovação (não editáveis). Setamos o
+      // input hidden (que é submetido) e o input visível readonly só pra exibir.
+      const planoInput = form.querySelector('[name="plano"]');
+      if (planoInput) planoInput.value = plano;
+      const planoDisplay = form.querySelector('[data-plano-display]');
+      if (planoDisplay) planoDisplay.value = plano;
+      const servidorInput = form.querySelector('[name="servidor"]');
+      if (servidorInput) servidorInput.value = servidor;
+      const servidorDisplay = form.querySelector('[data-servidor-display]');
+      if (servidorDisplay) servidorDisplay.value = servidor;
+      // Cliente legado sem plano/servidor: avisa no topo do modal — não dá pra editar
+      // esses campos aqui, o usuário precisa abrir a edição do cliente primeiro.
+      const modalErrorTop = document.getElementById('modal-add-pagamento-error');
+      if (modalErrorTop && (!plano || !servidor)) {
+        modalErrorTop.textContent = 'Este cliente está sem plano e/ou servidor. Edite o cliente para preencher esses campos antes de renovar.';
+      }
+
       form.querySelector('[name="valor"]').value = valor;
       form.querySelector('[name="forma_pagamento"]').value = 'PIX';
       form.querySelector('[name="telas"]').value = telas;
       form.dataset.valorCred = valorCred;
+      // Calcula créditos+custo automaticamente; também reage a mudanças nos selects.
       syncClienteUsageFields(form);
-      const custo = form.querySelector('[name="custo_pagamento"]');
-      if (custo && !custo.value) custo.value = valorCred && Number(telas) ? (Number(valorCred) * Number(telas)).toFixed(2) : '';
+
+      // Pago em = hoje.
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, '0');
       const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const yyyy = today.getFullYear();
-      const pagoEm = form.querySelector('[name="pago_em"]');
-      setDateInputValue(pagoEm, yyyy + '-' + mm + '-' + dd);
+      setDateInputValue(form.querySelector('[name="pago_em"]'), today.getFullYear() + '-' + mm + '-' + dd);
+
       const mensagemPagamento = form.querySelector('[name="mensagem_pagamento_id"]');
       if (mensagemPagamento) {
         const savedMessageId = localStorage.getItem('gestor:last-payment-message-id') || '';
@@ -929,10 +1124,35 @@ document.addEventListener('DOMContentLoaded', function () {
         if (mensagemPagamento.value !== savedMessageId) mensagemPagamento.value = '';
       }
       const title = modal.querySelector('#pagamento-title');
-      if (title) title.textContent = 'ADD Pagamento - ' + nome;
+      if (title) title.textContent = '↻ Renovar - ' + nome;
       setModalState(modal, true);
     });
   });
+
+  // Valida campos obrigatórios do modal de renovação (mesmo padrão do cadastro).
+  const pagamentoFormEl = document.getElementById('modal-add-pagamento-form');
+  if (pagamentoFormEl) {
+    pagamentoFormEl.addEventListener('submit', (e) => {
+      const modalError = document.getElementById('modal-add-pagamento-error');
+      pagamentoFormEl.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      pagamentoFormEl.querySelectorAll('[data-error-for]').forEach(el => { el.textContent = ''; });
+      if (modalError) modalError.textContent = '';
+      let missing = false;
+      pagamentoFormEl.querySelectorAll('[data-required="1"]').forEach(field => {
+        if (!String(field.value || '').trim()) {
+          field.classList.add('input-error');
+          const msg = pagamentoFormEl.querySelector('[data-error-for="' + field.getAttribute('name') + '"]');
+          if (msg) msg.textContent = 'Campo obrigatório.';
+          missing = true;
+        }
+      });
+      if (missing) {
+        if (modalError) modalError.textContent = 'Revise os campos obrigatórios destacados.';
+        e.preventDefault();
+      }
+      // Backend usa "valor" como valor_pago quando esse campo não vem no body.
+    });
+  }
 
   const pagamentoForm = document.getElementById('modal-add-pagamento-form');
   if (pagamentoForm) {
@@ -1234,8 +1454,41 @@ document.addEventListener('DOMContentLoaded', function () {
       setModalState(requiredModal, true);
     };
 
+    // Valida campos obrigatórios SEMPRE — inclusive quando o envio é nativo (data-native-submit="1").
+    // Se faltar algo, bloqueia o submit, destaca os campos e exibe a mensagem embaixo.
+    const validarObrigatorios = (form) => {
+      const modalError = document.getElementById('modal-add-cliente-error');
+      form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      form.querySelectorAll('[data-error-for]').forEach(el => { el.textContent = ''; });
+      if (modalError) modalError.textContent = '';
+      const missing = [];
+      form.querySelectorAll('[data-required="1"]').forEach(field => {
+        const name = field.getAttribute('name');
+        const value = (field.value || '').trim();
+        if (!value) {
+          field.classList.add('input-error');
+          const msg = form.querySelector('[data-error-for="' + name + '"]');
+          if (msg && !msg.textContent) msg.textContent = 'Campo obrigatório.';
+          missing.push({
+            label: field.getAttribute('data-field-label') || name,
+            tab: field.getAttribute('data-tab') || 'dados'
+          });
+        }
+      });
+      if (missing.length) {
+        const otherTab = missing.find(m => m.tab !== (document.querySelector('.tab-btn.active')?.getAttribute('data-tab') || 'dados'));
+        if (otherTab) openRequiredModal(missing);
+        else if (modalError) modalError.textContent = 'Revise os campos obrigatórios destacados.';
+        return false;
+      }
+      return true;
+    };
+
     clienteForm.addEventListener('submit', async (e) => {
-      if (clienteForm.dataset.nativeSubmit === '1') return;
+      if (clienteForm.dataset.nativeSubmit === '1') {
+        if (!validarObrigatorios(clienteForm)) { e.preventDefault(); }
+        return;
+      }
       e.preventDefault();
       const form = e.currentTarget;
       const modalError = document.getElementById('modal-add-cliente-error');

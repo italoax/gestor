@@ -1320,14 +1320,53 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   }
   .btn-icon { width: 32px; height: 32px; }
   .modal-overlay {
-    place-items: center;
-    padding: 10px;
+    place-items: stretch;
+    padding: 0;
+    /* Fundo opaco no mobile para esconder flash/alertas verdes que aparecem
+       atrás do modal e criam aquela "barra" colorida na lateral. */
+    background: var(--bg);
   }
+  /* Garante que nenhuma decoração de card (faixa colorida no topo via ::before)
+     vaze por cima do conteúdo do modal. */
+  .modal::before,
+  .modal::after,
+  .modal-header::before,
+  .modal-header::after { display: none !important; }
+  /* Modal vira full-screen no mobile (sheet pattern): elimina barra branca
+     em volta e usa toda a altura disponível incluindo área dinâmica do iOS Safari. */
   .modal {
-    max-width: 560px;
-    max-height: calc(100vh - 20px);
+    max-width: 100%;
+    width: 100%;
+    /* 100dvh = dynamic viewport height — funciona corretamente no iOS Safari
+       quando a barra de URL aparece/desaparece, sem cortar conteúdo no rodapé. */
+    max-height: 100dvh;
+    height: 100dvh;
     min-height: 0;
-    border-radius: 10px;
+    border-radius: 0;
+    border: none;
+    /* Bloqueia qualquer scroll horizontal — modal deve subir/descer apenas. */
+    overflow-x: hidden;
+  }
+  /* Header e tabs travados no topo, body é o único que rola, footer travado embaixo
+     respeitando a área segura do iPhone (home indicator). */
+  .modal-header,
+  .modal-tabs { flex: 0 0 auto; }
+  .modal-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Garante que grids/inputs nunca estourem a largura. */
+  .modal .form-grid { grid-template-columns: 1fr; }
+  .modal .field,
+  .modal .input,
+  .modal select,
+  .modal textarea,
+  .modal .switch-field { max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .modal-footer {
+    flex: 0 0 auto;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
   .modal-header,
   .modal-body,

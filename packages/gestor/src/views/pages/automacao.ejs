@@ -60,6 +60,11 @@
             <input type="hidden" name="id" value="<%= r.id %>">
             <input type="checkbox" class="switch" onchange="this.form.submit()" <%= ativa ? 'checked' : '' %> aria-label="Ativar regra">
           </form>
+          <form method="post" action="/automacao" class="auto-dispatch-form" onsubmit="return confirm('Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo.');">
+            <input type="hidden" name="action" value="dispatch_regra">
+            <input type="hidden" name="id" value="<%= r.id %>">
+            <button class="cli-ico-btn" type="submit" title="Disparar agora">▶</button>
+          </form>
           <button class="cli-ico-btn edit-regra" type="button" title="Editar"
             data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-gatilho="<%= r.gatilho %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>">✎</button>
           <form method="post" action="/automacao" class="auto-del-form">
@@ -81,13 +86,16 @@
     <div class="cli-table-card">
       <div class="table-wrapper">
         <table class="cli-table">
-          <thead><tr><th>Quando</th><th>Regra</th><th>Cliente</th><th>Status</th><th>Detalhe</th></tr></thead>
+          <thead><tr><th>Quando</th><th>Regra</th><th>Clientes</th><th>Status</th><th>Detalhe</th></tr></thead>
           <tbody>
-            <% disparos.forEach(d => { %>
+            <% disparos.forEach(d => { const total = Number(d.clientesCount || 0); const nomes = String(d.clientesNomes || ''); const lista = nomes.split(', ').filter(Boolean); const preview = lista.slice(0, 3).join(', '); const sobra = lista.length - 3; %>
             <tr>
               <td><%= d.quando %></td>
               <td><%= d.regraTitulo || '-' %></td>
-              <td><%= d.clienteNome || '-' %></td>
+              <td<% if (lista.length) { %> title="<%= nomes %>"<% } %>>
+                <% if (total > 1) { %><span class="badge badge-muted" style="margin-right:6px;"><%= total %></span><% } %>
+                <%= preview || '-' %><% if (sobra > 0) { %> <span class="muted">+<%= sobra %></span><% } %>
+              </td>
               <td><span class="badge <%= d.status==='enviado'?'badge-green':d.status==='erro'?'badge-red':'badge-muted' %>"><%= d.status==='enviado'?'Enviado':d.status==='erro'?'Erro':'Pendente' %></span></td>
               <td class="muted"><%= d.status==='erro'?(d.erro||'Falha'):'-' %></td>
             </tr>
@@ -184,7 +192,6 @@
             <label class="field"><span>Pausa entre lotes (seg)</span><input class="input" type="number" name="lote_pausa" value="60" min="0"></label>
           </div>
         </div>
-        <label class="switch-field full"><span><strong>🛡 Rodapé anti-ban</strong><small>Adiciona um protocolo único ao final de cada mensagem. Evita detecção como spam.</small></span><input type="checkbox" name="rodape_antiban" value="1" class="switch" checked></label>
         <div class="auto-box">
           <div class="auto-box-title">👥 Para quais clientes enviar?</div>
           <div class="form-grid">
@@ -341,7 +348,6 @@
       check('envio_lotes', btn.getAttribute('data-lotes') === '1');
       set('lote_tamanho', btn.getAttribute('data-lote-tam') || '20');
       set('lote_pausa', btn.getAttribute('data-lote-pausa') || '60');
-      check('rodape_antiban', btn.getAttribute('data-antiban') === '1');
       set('filtro_servidor', btn.getAttribute('data-f-servidor') || '');
       set('filtro_plano', btn.getAttribute('data-f-plano') || '');
       set('filtro_arquivados', btn.getAttribute('data-f-arquivados') || '');
