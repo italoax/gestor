@@ -1,8 +1,0 @@
-node_modules/
-dist/
-.env
-tokens/
-npm-debug.log*
-
-# Backups do banco gerados em runtime
-backups/

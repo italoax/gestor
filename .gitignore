@@ -1,13 +1,16 @@
 node_modules/
 dist/
-.deploy/
 .env
+tokens/
+npm-debug.log*
+
+# Backups do banco gerados em runtime
+backups/
+
 .env.*
 !.env.example
-tokens/
+.deploy/
+.vscode/
 sessions/
 *.zip
 *.tar
-npm-debug.log*
-.tmp-ui/
-.claude/settings.local.json
