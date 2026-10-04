@@ -15,7 +15,7 @@ return env.localMode ? new session.MemoryStore() : new MySQLStore({
   user: env.db.user,
   password: env.db.password,
   database: env.db.name,
-  compress: false,
+  // The store does not forward compression options; mysql2 defaults to disabled.
   createDatabaseTable: true,
   charset: "utf8mb4_unicode_ci",
   // Remove sessões expiradas a cada 15 min.
