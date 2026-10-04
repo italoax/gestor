@@ -1,0 +1,106 @@
+/* Decorative layer shared by the landing page and the management panel. */
+:is(.site-effects, .page-app) { --fx-accent: #b879dc; --fx-glow: 168, 95, 203; --fx-ease: cubic-bezier(.22, 1, .36, 1); isolation: isolate; }
+[data-theme="light"] .page-app { --fx-accent: #8843aa; --fx-glow: 136, 67, 170; }
+.fx-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; contain: strict; }
+.fx-backdrop span { position: absolute; width: min(70vw, 900px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(var(--fx-glow), .2), transparent 68%); animation: fx-drift 18s ease-in-out infinite alternate; }
+.fx-backdrop span:first-child { top: -24%; right: -16%; }
+.fx-backdrop span:last-child { bottom: -32%; left: -18%; background: radial-gradient(circle, #6965e51c, transparent 68%); animation-delay: -9s; }
+.page-app .fx-backdrop { opacity: .42; }
+[data-theme="light"] .page-app .fx-backdrop { opacity: .25; }
+.site-effects .fx-backdrop::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(#b879dc07 1px, transparent 1px), linear-gradient(90deg, #b879dc07 1px, transparent 1px); background-size: 72px 72px; mask-image: linear-gradient(#000, transparent 75%); }
+.fx-scroll-line { position: fixed; inset: 0 0 auto; z-index: 1100; height: 3px; background: linear-gradient(90deg, #8843aa, #c58ce0, #94baff); transform: scaleX(0); transform-origin: left; pointer-events: none; box-shadow: 0 0 12px #c58ce066; }
+
+/* Content is visible by default, including when JavaScript is unavailable. */
+.fx-enter { animation: fx-enter .65s var(--fx-ease) both; animation-delay: var(--fx-delay, 0ms); }
+.fx-pending { opacity: 0; }
+.fx-pending:focus-within { opacity: 1; }
+.fx-spotlight { --fx-x: 50%; --fx-y: 0%; }
+body.site-effects .fx-spotlight,
+body.page-app .app-content .fx-spotlight { background-image: radial-gradient(480px circle at var(--fx-x) var(--fx-y), rgba(var(--fx-glow), .085), transparent 70%); }
+
+/* Landing: a luminous hero, dimensional offers and a more expressive CTA. */
+.site-effects .site-header { border-bottom-color: #b879dc30; }
+.site-effects .brand-image { transition: filter .3s ease; }
+.site-effects .brand:hover .brand-image { filter: drop-shadow(0 0 14px #b879dc55); }
+.site-effects .hero { position: relative; }
+.site-effects .hero h1 em { color: #d4a3ee; background: linear-gradient(110deg, #a85fcb 5%, #eed5ff 40%, #a7b6ff 70%, #c58ce0); background-size: 180% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: fx-text-glow 9s ease-in-out infinite alternate; }
+.site-effects .hero .eyebrow { width: fit-content; padding: 8px 12px; border: 1px solid #b879dc35; border-radius: 100px; background: #b879dc0c; }
+.site-effects .live-dot { box-shadow: 0 0 0 5px #a85fcb17, 0 0 16px #c58ce077; }
+.site-effects .hero-offer { border-color: #b879dc66; box-shadow: 0 24px 80px #0005, 0 0 65px #a85fcb12, inset 0 1px 0 #efd5ff18; transition: border-color .3s ease, box-shadow .3s ease; }
+.site-effects .offer-option { transition: translate .3s var(--fx-ease), border-color .3s ease, box-shadow .3s ease, background .3s ease; }
+.site-effects .offer-device { transition: rotate .3s var(--fx-ease), background .3s ease; }
+.site-effects .button { position: relative; overflow: hidden; transition: translate .3s var(--fx-ease), box-shadow .3s ease, background .25s ease; }
+.site-effects .button-purple { background: linear-gradient(110deg, #a85fcb, #c28adf); box-shadow: 0 6px 24px #a85fcb26, inset 0 1px 0 #ffffff30; }
+.site-effects .button::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 25%, #ffffff25 50%, transparent 75%); translate: -120% 0; }
+.site-effects .button:focus-visible::after { animation: fx-sheen .7s ease; }
+.site-effects .site-header nav a { position: relative; padding-block: 8px; }
+.site-effects .site-header nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px; background: var(--fx-accent); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
+.site-effects .site-header nav a:hover::after,
+.site-effects .site-header nav a:focus-visible::after { transform: scaleX(1); }
+.site-effects .steps > article { padding: 24px; border: 1px solid #b879dc25; border-radius: 16px; background-color: #1b1521; transition: translate .3s var(--fx-ease), border-color .3s ease; }
+.site-effects .step-number { color: #d0a0eb; text-shadow: 0 0 24px #b879dc45; }
+.site-effects .plan { transition: translate .35s var(--fx-ease), border-color .3s ease, box-shadow .3s ease; }
+.site-effects .plan-highlight { border-color: #b879dc99; box-shadow: 0 0 40px #a85fcb16, inset 0 1px 0 #e3bcff20; }
+.site-effects .plan-highlight .plan-label { color: #dfb9f5; }
+.site-effects .contact-card { position: relative; overflow: hidden; box-shadow: 0 20px 70px #a85fcb20; }
+.site-effects .contact-card::after { content: ''; position: absolute; width: 440px; height: 440px; right: -240px; top: -240px; border: 1px solid #ffffff35; border-radius: 50%; box-shadow: 0 0 0 50px #ffffff08, 0 0 0 100px #ffffff05; pointer-events: none; }
+.site-effects .faq-list details { transition: border-color .25s ease, background .25s ease; }
+.site-effects .faq-list details[open] { border-color: #a85fcb80; background: #a85fcb08; }
+.site-effects .faq-list details[open] p { animation: fx-enter .35s var(--fx-ease); }
+.site-effects .faq-list summary > span { transition: rotate .25s ease; }
+.site-effects .faq-list details[open] summary > span { rotate: 45deg; }
+.site-effects .whatsapp-float { box-shadow: 0 6px 28px #a85fcb45, 0 0 0 6px #a85fcb10; transition: translate .25s ease, box-shadow .25s ease; }
+
+/* Panel effects stay on surfaces; data, menus and table geometry remain stable. */
+.page-app .ui-summary > div { transition: border-color .25s ease, box-shadow .25s ease, translate .3s var(--fx-ease); }
+.page-app .ui-summary :is(.cli-stat-ico, .tx-stat-ico, .stat-icon) { transition: rotate .35s var(--fx-ease), scale .35s var(--fx-ease); }
+.page-app .app-content :is(.disp-card, .plano-card, .srv-card, .msg-card, .int-pag-card, .wa-device, .integ-item, .auto-rule) { transition: border-color .25s ease, box-shadow .25s ease; }
+.page-app .btn-primary { background-image: linear-gradient(110deg, var(--primary), var(--primary-strong)); transition: box-shadow .25s ease, filter .25s ease; }
+.page-app :is(.disp-edit, .cli-ico-btn, .srv-act, .sidebar-link) { transition: background .2s ease, color .2s ease, border-color .2s ease; }
+.page-app .sidebar-link.active { box-shadow: inset 0 0 22px #a85fcb08; }
+.page-app .topbar-chip.is-on .wa-dot { position: relative; animation: fx-connected 2s ease-in-out infinite; }
+.page-app .topbar-chip.is-on .wa-dot::after { content: ''; position: absolute; inset: -3px; border: 1px solid #22c55e; border-radius: 50%; pointer-events: none; animation: fx-connected-ring 2s ease-out infinite; }
+.fx-paused .page-app .topbar-chip.is-on .wa-dot,
+.fx-paused .page-app .topbar-chip.is-on .wa-dot::after { animation: none !important; }
+.fx-paused .page-app .topbar-chip.is-on .wa-dot::after { opacity: 0; }
+@keyframes fx-connected { 0%, 100% { scale: 1; } 50% { scale: 1.15; } }
+@keyframes fx-connected-ring { 0% { scale: .8; opacity: .65; } 85%, 100% { scale: 2.2; opacity: 0; } }
+.page-app .sidebar-link .ui-icon { transition: translate .25s var(--fx-ease); }
+.page-app .cli-search { transition: border-color .25s ease, box-shadow .25s ease; }
+.page-app .cli-table tbody tr { transition: background-color .18s ease; }
+.page-app .cli-table tbody tr:hover { background-color: color-mix(in srgb, var(--primary) 5%, transparent); }
+.page-app .modal-overlay[aria-hidden="false"] .modal { animation: fx-modal .25s var(--fx-ease); }
+
+@media (hover: hover) and (pointer: fine) {
+  .site-effects .offer-option:hover { translate: 0 -3px; box-shadow: 0 10px 28px #0003; }
+  .site-effects .offer-option:hover .offer-device { rotate: -7deg; background: #a85fcb30; }
+  .site-effects .hero-offer:hover { border-color: #d3a2ed; box-shadow: 0 24px 80px #0005, 0 0 65px #a85fcb25; }
+  .site-effects :is(.plan, .steps > article):hover { translate: 0 -6px; border-color: #b879dc99; box-shadow: 0 16px 40px #0003; }
+  .site-effects .button:hover { translate: 0 -3px; box-shadow: 0 12px 30px #a85fcb35; }
+  .site-effects .button:hover::after { animation: fx-sheen .7s ease; }
+  .site-effects .whatsapp-float:hover { translate: 0 -4px; box-shadow: 0 10px 36px #a85fcb60, 0 0 0 8px #a85fcb15; }
+  .page-app .ui-summary > div:hover { translate: 0 -3px; border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); box-shadow: 0 10px 30px #00000012; }
+  .page-app .ui-summary > div:hover :is(.cli-stat-ico, .tx-stat-ico, .stat-icon) { rotate: -6deg; scale: 1.07; }
+  .page-app .app-content :is(.disp-card, .plano-card, .srv-card, .msg-card, .int-pag-card, .wa-device, .integ-item, .auto-rule):hover { border-color: color-mix(in srgb, var(--primary) 55%, var(--border)); box-shadow: 0 6px 24px rgba(var(--fx-glow), .09); }
+  .page-app .btn-primary:hover { box-shadow: 0 6px 22px rgba(var(--fx-glow), .25); filter: brightness(1.08); }
+  .page-app .sidebar-link:hover .ui-icon { translate: 2px 0; }
+}
+@keyframes fx-drift { from { transform: translate3d(-4%, 0, 0) scale(.95); } to { transform: translate3d(8%, 12%, 0) scale(1.12); } }
+@keyframes fx-enter { from { opacity: 0; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
+@keyframes fx-modal { from { opacity: 0; scale: .98; } to { opacity: 1; scale: 1; } }
+@keyframes fx-text-glow { from { background-position: 0% center; } to { background-position: 100% center; } }
+@keyframes fx-sheen { to { translate: 120% 0; } }
+@media (max-width: 600px) { .fx-backdrop span { width: 110vw; } .site-effects .steps > article { padding: 20px; } }
+/* A manual pause and the OS preference stop decorative motion immediately. */
+html.fx-paused { scroll-behavior: auto !important; }
+.fx-paused :is(.fx-backdrop span, .fx-enter, .hero h1 em, .faq-list details p, .modal, .client-dialog),
+.fx-paused .button::after { animation: none !important; }
+.fx-paused :is(.fx-spotlight, .button, .btn, .offer-device, .whatsapp-float, .sidebar-link, .sidebar-link .ui-icon, .ui-summary > div, .cli-stat-ico, .tx-stat-ico, .stat-icon) { transition: none !important; }
+.fx-paused .fx-pending { opacity: 1; }
+.fx-paused :is(.plan, .offer-option, .button, .ui-summary > div, .whatsapp-float) { translate: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html:has(.site-effects, .page-app) { scroll-behavior: auto !important; }
+  :is(.site-effects, .page-app) *, :is(.site-effects, .page-app) *::before, :is(.site-effects, .page-app) *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .fx-pending { opacity: 1; }
+  :is(.site-effects, .page-app) :is(.plan, .offer-option, .button, .ui-summary > div, .whatsapp-float) { translate: none !important; }
+}

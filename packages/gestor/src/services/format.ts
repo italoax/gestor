@@ -106,9 +106,25 @@ export function statusByVencimento(status: string, vencimento: unknown, now: Dat
 
   if (days < 0) return { label: "Vencido", color: "red", type: "vencido" };
   if (days === 0) return { label: "Vence hoje", color: "yellow", type: "today" };
-  if (days === 1) return { label: "Vence amanhã", color: "yellow", type: "nao-vencido" };
-  if (days <= 3) return { label: `${days} dias pra vencer`, color: "yellow", type: "nao-vencido" };
+  if (days === 1) return { label: "Vence amanhã", color: "yellow", type: "pra-vencer" };
+  if (days <= 3) return { label: `${days} dias pra vencer`, color: "yellow", type: "pra-vencer" };
   return { label: "Ativo", color: "green", type: "nao-vencido" };
+}
+
+// Chave numérica de urgência para ORDENAR a coluna Status (não é exibida).
+// Quanto MAIOR o número, mais urgente: vencidos ficam positivos e crescem com os
+// dias de atraso; "vence amanhã" > "3 dias pra vencer"; ativos ficam negativos.
+// Inativo e sem-data ficam no fundo (menos urgentes). Assim, ordem crescente vai
+// do menos urgente (Ativo/Inativo) ao mais urgente (mais vencido), e decrescente
+// mostra os mais vencidos no topo — além de ordenar por data dentro de cada status.
+export function statusUrgency(status: string, vencimento: unknown, now: Date = new Date()) {
+  const lower = String(status ?? "").toLowerCase();
+  if (lower === "inativo") return -1_000_000;
+  const vencMs = dateOnlyMs(vencimento);
+  if (vencMs === null) return -100_000; // Ativo sem data conhecida
+  const todayMs = todayMsSaoPaulo(now);
+  const days = Math.round((vencMs - todayMs) / 86400000);
+  return -days; // days < 0 (vencido) => valor positivo alto => mais urgente
 }
 
 export function badgeStatusByVencimento(status: string, vencimento: unknown) {

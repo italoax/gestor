@@ -1,0 +1,158 @@
+<% const sigmas = integracoes.filter(i => i.tipo === 'sigma'); %>
+<div class="container page-integracoes" data-search-scope>
+
+  <div class="integ-head">
+    <div>
+      <h2 class="section-title"><%- include('../partials/ui-icon', { name: 'link' }) %> Integrações</h2>
+      <p class="muted">Conecte um painel IPTV para renovar seus clientes lá automaticamente ao renovar aqui.</p>
+    </div>
+    <button class="btn btn-primary open-integracao-modal" type="button"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração</button>
+  </div>
+
+  <div class="ui-summary ui-summary-2">
+    <div class="cli-stat accent-green">
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚙️' }) %></div>
+      <div><strong><%= sigmas.length %></strong><span>Sigma</span></div>
+    </div>
+    <div class="cli-stat accent-blue">
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🔗' }) %></div>
+      <div><strong><%= integracoes.length %></strong><span>Total</span></div>
+    </div>
+  </div>
+
+  <div class="card integ-card">
+    <h3 class="integ-card-title"><%- include('../partials/ui-icon', { name: 'settings' }) %> Integrações Sigma</h3>
+
+    <% if (!sigmas.length) { %>
+      <div class="integ-empty">
+        <div class="integ-empty-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
+        <p class="muted">Nenhuma integração Sigma configurada.</p>
+        <button class="btn btn-primary open-integracao-modal" type="button"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Primeira Integração</button>
+      </div>
+    <% } else { %>
+      <div class="integ-list">
+        <% sigmas.forEach(i => { %>
+          <div class="integ-item">
+            <div class="integ-info">
+              <div class="integ-info-top">
+                <strong><%= i.nome %></strong>
+                <span class="badge <%= i.status === 'ativo' ? 'badge-green' : 'badge-muted' %>"><%= i.status === 'ativo' ? 'Ativo' : 'Inativo' %></span>
+              </div>
+              <small class="muted"><%= i.apiUrl %> · 👤 <%= i.username %></small>
+            </div>
+            <div class="integ-acoes">
+              <form method="post" action="/integracoes" class="integ-inline" data-native-submit="1">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="test_integracao">
+                <input type="hidden" name="id" value="<%= i.id %>">
+                <button class="btn btn-muted" type="submit" data-loading-text="Testando">🔌 Testar</button>
+              </form>
+              <button class="btn btn-muted edit-integracao" type="button"
+                data-id="<%= i.id %>" data-nome="<%= i.nome %>" data-api-url="<%= i.apiUrl %>"
+                data-username="<%= i.username %>" data-status="<%= i.status %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
+              <form method="post" action="/integracoes" class="integ-inline delete-integracao" data-native-submit="1">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="delete_integracao">
+                <input type="hidden" name="id" value="<%= i.id %>">
+                <button class="btn btn-muted integ-danger" type="submit"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-integracao" aria-hidden="true" inert>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="integracao-title"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração Sigma</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <form method="post" action="/integracoes" id="modal-add-integracao-form" class="modal-body" data-native-submit="1">
+      <%- csrfInput %>
+      <input type="hidden" name="action" value="create_integracao">
+      <input type="hidden" name="id" value="">
+      <input type="hidden" name="tipo" value="sigma">
+      <div class="form-grid">
+        <label class="field full"><span>Nome da integração *</span>
+          <input class="input" name="nome" placeholder="Ex: Sigma GENIAL" required></label>
+        <label class="field full"><span>URL do painel *</span>
+          <input class="input" name="api_url" placeholder="https://dashgen.net" required>
+          <small>A URL do painel (ex.: https://dashgen.net). Uso a base dela pra chamar a API.</small></label>
+        <label class="field"><span>Usuário / e-mail *</span>
+          <input class="input" name="username" autocomplete="off" required></label>
+        <label class="field"><span>Senha do painel</span>
+          <input class="input" type="password" name="password" autocomplete="new-password">
+          <small>No modo editar, deixe em branco para manter a senha atual.</small></label>
+        <label class="field full"><span>Status</span>
+          <select class="input" name="status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></label>
+      </div>
+      <div class="form-alert integ-cf-note">⚠️ O painel fica atrás do Cloudflare. Se o teste retornar "bloqueado pelo Cloudflare", peça ao provedor para liberar (whitelist) o IP do seu servidor.</div>
+    </form>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="modal-add-integracao-form" data-loading-text="Salvando">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .integ-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .integ-card { margin-top:16px; }
+  .integ-card-title { margin:0 0 14px; font-size:16px; }
+  .integ-empty { text-align:center; padding:28px 12px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .integ-empty-ico { font-size:34px; opacity:.4; }
+  .integ-list { display:flex; flex-direction:column; gap:10px; }
+  .integ-item { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    padding:12px 14px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:rgba(255,255,255,.02); }
+  .integ-info-top { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .integ-info small { word-break:break-all; }
+  .integ-acoes { display:flex; gap:8px; flex-wrap:wrap; }
+  .integ-inline { display:inline; margin:0; }
+  .integ-danger { color:#ff6b6b; }
+  .integ-cf-note { margin-top:10px; }
+</style>
+
+<script>
+(function () {
+  var form = document.getElementById('modal-add-integracao-form');
+  var modal = document.getElementById('modal-add-integracao');
+  var title = document.getElementById('integracao-title');
+  if (!form || !modal) return;
+
+  // Usa o mesmo controle de foco, rolagem e acessibilidade dos demais modais.
+  function openModal() {
+    window.gestorSetModalState(modal, true);
+  }
+
+  document.querySelectorAll('.open-integracao-modal').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      form.reset();
+      form.querySelector('[name="action"]').value = 'create_integracao';
+      form.querySelector('[name="id"]').value = '';
+      if (title) title.textContent = '➕ Adicionar Integração Sigma';
+      openModal();
+    });
+  });
+
+  document.querySelectorAll('.edit-integracao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      form.reset();
+      form.querySelector('[name="action"]').value = 'update_integracao';
+      form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+      form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
+      form.querySelector('[name="api_url"]').value = btn.getAttribute('data-api-url') || '';
+      form.querySelector('[name="username"]').value = btn.getAttribute('data-username') || '';
+      form.querySelector('[name="status"]').value = btn.getAttribute('data-status') || 'ativo';
+      if (title) title.textContent = '✎ Editar Integração';
+      openModal();
+    });
+  });
+
+  document.querySelectorAll('.delete-integracao').forEach(function (f) {
+    f.addEventListener('submit', function (e) { if (!confirm('Remover esta integração?')) e.preventDefault(); });
+  });
+})();
+</script>

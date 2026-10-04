@@ -10,67 +10,65 @@
 %>
 <div class="container page-automacao" data-search-scope>
 
-  <div class="auto-stats">
-    <div class="tx-stat"><div><span>Regras</span><strong><%= stats.regras %></strong></div><div class="tx-stat-ico accent-blue">⚡</div></div>
-    <div class="tx-stat"><div><span>Ativas</span><strong class="pos"><%= stats.ativas %></strong></div><div class="tx-stat-ico accent-green">✅</div></div>
-    <div class="tx-stat"><div><span>Mensagens hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-blue">💬</div></div>
-    <div class="tx-stat"><div><span>Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red">📊</div></div>
+  <div class="ui-summary ui-summary-4">
+    <div class="tx-stat"><div><span>Regras</span><strong><%= stats.regras %></strong></div><div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '⚡' }) %></div></div>
+    <div class="tx-stat"><div><span>Ativas</span><strong class="pos"><%= stats.ativas %></strong></div><div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '✅' }) %></div></div>
+    <div class="tx-stat"><div><span>Mensagens hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '💬' }) %></div></div>
+    <div class="tx-stat"><div><span>Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📊' }) %></div></div>
   </div>
 
   <div class="auto-tabs">
-    <button class="auto-tab active" type="button" data-auto-tab="regras">⚡ Regras</button>
-    <button class="auto-tab" type="button" data-auto-tab="disparos">➤ Disparos</button>
+    <button class="auto-tab active" type="button" data-auto-tab="regras"><%- include('../partials/ui-icon', { name: 'bolt' }) %> Regras</button>
+    <button class="auto-tab" type="button" data-auto-tab="disparos"><%- include('../partials/ui-icon', { name: 'send' }) %> Disparos</button>
     <button class="btn btn-primary auto-new" type="button" data-open-modal="modal-nova-regra">+ Nova Regra</button>
   </div>
 
   <div class="auto-panel active" data-auto-panel="regras">
-    <div class="auto-filters">
-      <label class="cli-search auto-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar por nome..." data-search-input></label>
-      <label class="cli-filter"><select class="input" aria-label="Tipos" disabled><option>Todos os tipos</option></select></label>
-      <label class="cli-filter"><select class="input" aria-label="Status" disabled><option>Todos</option></select></label>
-    </div>
 
     <% if (!regras.length) { %>
-      <div class="cli-empty"><div class="cli-empty-ico">⚡</div><h3>Nenhuma regra criada</h3><p class="muted">Crie regras para enviar mensagens automáticas aos seus clientes.</p><button class="btn btn-primary" type="button" data-open-modal="modal-nova-regra">+ Nova Regra</button></div>
+      <div class="cli-empty"><div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '⚡' }) %></div><h3>Nenhuma regra criada</h3><p class="muted">Crie regras para enviar mensagens automáticas aos seus clientes.</p><button class="btn btn-primary" type="button" data-open-modal="modal-nova-regra">+ Nova Regra</button></div>
     <% } else { %>
     <div class="auto-list">
       <% regras.forEach(r => { const b = badgeTipo(r.tipo); const ativa = r.status === 'Ativo'; %>
       <div class="auto-rule <%= ativa ? 'is-on' : '' %>" data-search-item>
         <div class="auto-rule-main">
-          <span class="auto-rule-ico <%= b.cls %>"><%= b.ico %></span>
+          <span class="auto-rule-ico <%= b.cls %>"><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %></span>
           <div class="auto-rule-body">
             <div class="auto-rule-top">
               <strong><%= r.titulo %></strong>
               <small><%= r.descricao || '' %></small>
             </div>
-            <span class="auto-badge <%= b.cls %>"><%= b.ico %> <%= b.label %></span>
+            <span class="auto-badge <%= b.cls %>"><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %> <%= b.label %></span>
             <div class="auto-rule-preview"><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ').slice(0,90) %><%= (r.mensagemTexto||'').length>90?'…':'' %></div>
             <div class="auto-rule-foot">
               <span>Arquivo: Não arquivado</span>
               <span class="dot">•</span>
               <span><%= ativa ? 'Regra ativada' : 'Regra desativada' %></span>
               <span class="dot">•</span>
-              <button type="button" class="auto-receb-link" data-regra-id="<%= r.id %>" data-regra-nome="<%= r.titulo %>">👥 <%= r.recebedores %> clientes</button>
+              <button type="button" class="auto-receb-link" data-regra-id="<%= r.id %>" data-regra-nome="<%= r.titulo %>"><%- include('../partials/ui-icon', { name: 'users' }) %> <%= r.recebedores %> clientes</button>
             </div>
           </div>
         </div>
         <div class="auto-rule-actions">
           <form method="post" action="/automacao" class="auto-toggle-form">
+            <%- csrfInput %>
             <input type="hidden" name="action" value="toggle_regra">
             <input type="hidden" name="id" value="<%= r.id %>">
-            <input type="checkbox" class="switch" onchange="this.form.submit()" <%= ativa ? 'checked' : '' %> aria-label="Ativar regra">
+            <input type="checkbox" class="switch" onchange="this.form.requestSubmit()" <%= ativa ? 'checked' : '' %> aria-label="Ativar regra">
           </form>
           <form method="post" action="/automacao" class="auto-dispatch-form" onsubmit="return confirm('Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo.');">
+            <%- csrfInput %>
             <input type="hidden" name="action" value="dispatch_regra">
             <input type="hidden" name="id" value="<%= r.id %>">
             <button class="cli-ico-btn" type="submit" title="Disparar agora">▶</button>
           </form>
           <button class="cli-ico-btn edit-regra" type="button" title="Editar"
-            data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-gatilho="<%= r.gatilho %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>">✎</button>
+            data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-gatilho="<%= r.gatilho %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
           <form method="post" action="/automacao" class="auto-del-form">
+            <%- csrfInput %>
             <input type="hidden" name="action" value="delete_regra">
             <input type="hidden" name="id" value="<%= r.id %>">
-            <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+            <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
           </form>
         </div>
       </div>
@@ -81,11 +79,11 @@
 
   <div class="auto-panel" data-auto-panel="disparos">
     <% if (!disparos.length) { %>
-      <div class="cli-empty"><div class="cli-empty-ico">➤</div><h3>Nenhum disparo realizado</h3><p class="muted">Quando você disparar uma regra, o progresso aparecerá aqui em tempo real.</p></div>
+      <div class="cli-empty"><div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '➤' }) %></div><h3>Nenhum disparo realizado</h3><p class="muted">Quando você disparar uma regra, o progresso aparecerá aqui em tempo real.</p></div>
     <% } else { %>
     <div class="cli-table-card">
       <div class="table-wrapper">
-        <table class="cli-table">
+        <table class="cli-table disparos-table">
           <thead><tr><th>Quando</th><th>Regra</th><th>Clientes</th><th>Status</th><th>Detalhe</th></tr></thead>
           <tbody>
             <% disparos.forEach(d => { const total = Number(d.clientesCount || 0); const nomes = String(d.clientesNomes || ''); const lista = nomes.split(', ').filter(Boolean); const preview = lista.slice(0, 3).join(', '); const sobra = lista.length - 3; %>
@@ -122,6 +120,7 @@
       <span class="auto-step" data-step-dot="3">③ Configurar</span>
     </div>
     <form method="post" action="/automacao" id="modal-nova-regra-form" class="modal-body" data-native-submit="1" data-wizard>
+      <%- csrfInput %>
       <input type="hidden" name="action" value="create_regra">
       <input type="hidden" name="id" value="">
 
@@ -135,11 +134,11 @@
           </div>
         </div>
         <div class="auto-trigger-list">
-          <label class="auto-trigger"><input type="radio" name="tipo" value="Todos"><div><strong>👥 Todos os clientes</strong><small>Envia para toda a base de clientes</small></div></label>
-          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencimento" checked><div><strong>⏰ Antes do vencimento do plano</strong><small>Lembrete antes do plano vencer</small></div></label>
-          <label class="auto-trigger"><input type="radio" name="tipo" value="Vence hoje"><div><strong>📅 No dia do vencimento do plano</strong><small>Envia no exato dia do vencimento</small></div></label>
-          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencidos"><div><strong>⏰ Após vencimento do plano</strong><small>Cobrança após o plano vencer</small></div></label>
-          <label class="auto-trigger"><input type="radio" name="tipo" value="Apos cadastro"><div><strong>👤 Após cadastro</strong><small>Boas-vindas ao novo cliente</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Todos"><div><strong><%- include('../partials/ui-icon', { name: 'users' }) %> Todos os clientes</strong><small>Envia para toda a base de clientes</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencimento" checked><div><strong><%- include('../partials/ui-icon', { name: 'clock' }) %> Antes do vencimento do plano</strong><small>Lembrete antes do plano vencer</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vence hoje"><div><strong><%- include('../partials/ui-icon', { name: 'calendar' }) %> No dia do vencimento do plano</strong><small>Envia no exato dia do vencimento</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Vencidos"><div><strong><%- include('../partials/ui-icon', { name: 'clock' }) %> Após vencimento do plano</strong><small>Cobrança após o plano vencer</small></div></label>
+          <label class="auto-trigger"><input type="radio" name="tipo" value="Apos cadastro"><div><strong><%- include('../partials/ui-icon', { name: 'users' }) %> Após cadastro</strong><small>Boas-vindas ao novo cliente</small></div></label>
         </div>
         <div class="auto-period" data-period-box>
           <span class="auto-label" data-period-label>Quanto tempo antes do vencimento do plano?</span>
@@ -166,7 +165,7 @@
       <div class="wizard-step" data-step="3">
         <label class="switch-field full"><span><strong>Regra ativa</strong><small>Ativar ao salvar</small></span><input type="checkbox" name="ativa" value="1" class="switch" checked></label>
         <div class="auto-box">
-          <div class="auto-box-title">⏰ Agendamento</div>
+          <div class="auto-box-title"><%- include('../partials/ui-icon', { name: 'clock' }) %> Agendamento</div>
           <div class="form-grid">
             <label class="field"><span>Horário</span><input class="input" type="time" name="hora_envio" value="09:00"></label>
           </div>
@@ -186,14 +185,14 @@
           </div>
         </div>
         <div class="auto-box">
-          <label class="switch-field" style="border:none;background:transparent;padding:0;"><span><strong>➤ Envio em lotes</strong><small>Envia um número fixo de mensagens, pausa o tempo configurado e continua.</small></span><input type="checkbox" name="envio_lotes" value="1" class="switch" data-lotes-toggle></label>
+          <label class="switch-field" style="border:none;background:transparent;padding:0;"><span><strong><%- include('../partials/ui-icon', { name: 'send' }) %> Envio em lotes</strong><small>Envia um número fixo de mensagens, pausa o tempo configurado e continua.</small></span><input type="checkbox" name="envio_lotes" value="1" class="switch" data-lotes-toggle></label>
           <div class="form-grid" data-lotes-config hidden>
             <label class="field"><span>Mensagens por lote</span><input class="input" type="number" name="lote_tamanho" value="20" min="1"></label>
             <label class="field"><span>Pausa entre lotes (seg)</span><input class="input" type="number" name="lote_pausa" value="60" min="0"></label>
           </div>
         </div>
         <div class="auto-box">
-          <div class="auto-box-title">👥 Para quais clientes enviar?</div>
+          <div class="auto-box-title"><%- include('../partials/ui-icon', { name: 'users' }) %> Para quais clientes enviar?</div>
           <div class="form-grid">
             <label class="field"><span>Servidor</span><select class="input" name="filtro_servidor"><option value="">Todos</option><% servidores.forEach(s => { %><option><%= s.nome %></option><% }) %></select></label>
             <label class="field"><span>Plano</span><select class="input" name="filtro_plano"><option value="">Todos</option><% planos.forEach(p => { %><option><%= p.nome %></option><% }) %></select></label>
@@ -207,7 +206,6 @@
       <span class="auto-foot-spacer"></span>
       <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
       <button class="btn btn-primary" type="button" data-wizard-next>Próximo ›</button>
-      <button class="btn btn-primary" type="submit" form="modal-nova-regra-form" data-wizard-submit hidden>✓ Criar Regra</button>
     </div>
   </div>
 </div>
@@ -247,16 +245,22 @@
   var current = 1;
   var btnBack = modal.querySelector('[data-wizard-back]');
   var btnNext = modal.querySelector('[data-wizard-next]');
-  var btnSubmit = modal.querySelector('[data-wizard-submit]');
   var subEl = modal.querySelector('[data-step-sub]');
+  var actionInput = form.querySelector('[name="action"]');
 
   function showStep(n) {
     current = n;
     steps.forEach(function (s) { s.classList.toggle('active', Number(s.getAttribute('data-step')) === n); });
     dots.forEach(function (d) { d.classList.toggle('active', Number(d.getAttribute('data-step-dot')) <= n); });
     btnBack.hidden = n === 1;
-    btnNext.hidden = n === 3;
-    btnSubmit.hidden = n !== 3;
+    // Botão único morfa entre "Próximo" e "Salvar/Criar" no último passo.
+    // Lê o action atual pra distinguir edição (update_regra) de criação (create_regra).
+    if (n === 3) {
+      var editando = actionInput && actionInput.value === 'update_regra';
+      btnNext.textContent = editando ? '✓ Salvar regra' : '✓ Criar regra';
+    } else {
+      btnNext.textContent = 'Próximo ›';
+    }
     if (subEl) subEl.textContent = subs[n];
   }
   btnNext.addEventListener('click', function () {
@@ -264,7 +268,13 @@
       var nome = form.querySelector('[name="nome"]');
       if (nome && !nome.value.trim()) { nome.reportValidity(); return; }
     }
-    if (current < 3) showStep(current + 1);
+    if (current < 3) {
+      showStep(current + 1);
+    } else {
+      // Último passo: submete o form (cria ou atualiza conforme o action atual).
+      if (form.requestSubmit) form.requestSubmit();
+      else form.submit();
+    }
   });
   btnBack.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
 
@@ -354,9 +364,7 @@
       modal.querySelector('.modal-header h3').textContent = 'Editar Regra';
       syncPeriod(); syncTriggerCards(); syncPreview(); syncLotes();
       // Abre o modal (o botão de editar não tem data-open-modal).
-      modal.classList.add('open');
-      modal.setAttribute('aria-hidden', 'false');
-      modal.removeAttribute('inert');
+      window.gestorSetModalState(modal, true);
     });
   });
 
@@ -371,9 +379,7 @@
       var sub = recebModal.querySelector('[data-receb-sub]');
       if (sub) sub.textContent = b.getAttribute('data-regra-nome') || '';
       if (list) list.innerHTML = '<div class="receb-empty">Carregando…</div>';
-      recebModal.classList.add('open');
-      recebModal.setAttribute('aria-hidden', 'false');
-      recebModal.removeAttribute('inert');
+      window.gestorSetModalState(recebModal, true);
       fetch('/automacao/regra/' + encodeURIComponent(id) + '/recebedores', { headers: { Accept: 'application/json' } })
         .then(function (r) { return r.json(); })
         .then(function (data) {

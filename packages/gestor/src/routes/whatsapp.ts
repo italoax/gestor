@@ -12,6 +12,9 @@ interface DeviceRow extends RowDataPacket { id: number; nome: string; sessao: st
 type WhatsappState = {
   session: string; status: string; qrCode?: string; qr?: string; pairingCode?: string;
   lastError?: string; connected?: boolean;
+  // Número do WhatsApp conectado (só vem dígitos, ex.: "5531999999999") e nome
+  // do perfil/push. Usado pra mostrar "Conectado como +55 31 9999-9999" no painel.
+  number?: string; pushName?: string;
 };
 
 function isSessionApiDriver() {
@@ -58,6 +61,10 @@ function normalizeSessionState(data: unknown, session: string): WhatsappState {
   const connected = Boolean(json.connected || status === "conectado");
   const hasUsableQr = Boolean(qrCode) && !pairingCode;
   const hasPairing = Boolean(pairingCode) && !connected;
+  // Número conectado (devolvido como dígitos puros pelo microserviço).
+  const number = typeof json.number === "string" ? json.number.replace(/\D+/g, "") : "";
+  const pushName = typeof json.pushName === "string" ? json.pushName.trim() : "";
+
   return {
     session: String(json.session ?? session),
     status: hasPairing ? "pairing" : hasUsableQr && status !== "conectado" ? "qr" : status,
@@ -65,14 +72,31 @@ function normalizeSessionState(data: unknown, session: string): WhatsappState {
     pairingCode: hasPairing ? pairingCode : undefined,
     lastError: hasPairing || (hasUsableQr && status !== "conectado") ? undefined : traduzirErroWhatsapp(json.lastError ?? json.error),
     connected,
+    number,
+    pushName,
   };
 }
 
-async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", session: string, body?: Record<string, unknown>): Promise<WhatsappState> {
+// Formata um número internacional pra exibição: "+55 (31) 99919-8954".
+// Aceita só dígitos. Se não for brasileiro, devolve com "+ " na frente.
+export function formatarTelefoneWhatsApp(numero: string): string {
+  const d = String(numero || "").replace(/\D+/g, "");
+  if (!d) return "";
+  // Brasil com DDI 55: 13 dígitos (ex.: 5531999998888) ou 12 (fixo).
+  if (d.startsWith("55") && (d.length === 13 || d.length === 12)) {
+    const ddd = d.slice(2, 4);
+    const resto = d.slice(4);
+    if (resto.length === 9) return `+55 (${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`;
+    if (resto.length === 8) return `+55 (${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;
+  }
+  return `+${d}`;
+}
+
+async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", session: string, body?: Record<string, unknown>, timeoutMs = 9000): Promise<WhatsappState> {
   const url = sessionApiUrl(pathTemplate, session);
   if (!url) return { session, status: "erro", lastError: "WA_SESSION_API_URL ausente." };
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 9000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       method, signal: ctrl.signal,
@@ -96,16 +120,23 @@ async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", s
 
 async function syncBloqueioChamadas(session: string, enabled: boolean): Promise<void> {
   const url = sessionApiUrl(env.whatsapp.sessionCallsBlockPath, session);
-  if (!url) return;
+  if (!url) throw new Error("URL da API do WhatsApp não configurada.");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    await fetch(url, {
+    const response = await fetch(url, {
       method: "POST", signal: ctrl.signal,
       headers: { "Content-Type": "application/json", ...sessionApiHeaders() },
       body: JSON.stringify({ enabled }),
     });
-  } catch { /* falha de sync não deve quebrar o toggle no painel */ }
+    if (!response.ok) throw new Error(`A API do WhatsApp retornou HTTP ${response.status}.`);
+    const data = await response.json() as { ok?: boolean; rejectCalls?: boolean; session?: string };
+    if (data?.ok !== true || data.rejectCalls !== enabled || data.session !== session) {
+      throw new Error("A API do WhatsApp não confirmou o estado solicitado.");
+    }
+  } catch (error) {
+    throw new Error(traduzirErroWhatsapp(error) || "Não foi possível confirmar o bloqueio na API do WhatsApp.");
+  }
   finally { clearTimeout(timer); }
 }
 
@@ -195,11 +226,17 @@ whatsappRouter.post("/whatsapp", async (req, res, next) => {
       await execute("DELETE FROM whatsapp_devices WHERE id = :id AND user_id = :userId", { id, userId });
       req.flash("success", "Dispositivo removido.");
     } else if (action === "toggle_bloqueio") {
-      await execute("UPDATE whatsapp_devices SET bloqueio_chamadas = IF(bloqueio_chamadas = 1, 0, 1) WHERE id = :id AND user_id = :userId", { id, userId });
-      // Sincroniza com o microserviço para que ele rejeite chamadas em tempo real.
-      const device = await carregarDevice(userId, id);
-      if (device && isSessionApiDriver()) {
-        await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
+      try {
+        const device = await carregarDevice(userId, id);
+        if (!device) throw new Error("Dispositivo não encontrado.");
+        if (!isSessionApiDriver()) throw new Error("O bloqueio de chamadas exige a API de sessões do WhatsApp.");
+        // Envia o estado desejado: repetir o POST não deve inverter a opção.
+        const enabled = req.body.bloqueio_chamadas === "1";
+        await syncBloqueioChamadas(device.sessao, enabled);
+        await execute("UPDATE whatsapp_devices SET bloqueio_chamadas = :enabled WHERE id = :id AND user_id = :userId", { enabled: enabled ? 1 : 0, id, userId });
+        req.flash("success", enabled ? "Bloqueio de chamadas ativado e confirmado pela API." : "Bloqueio de chamadas desativado e confirmado pela API.");
+      } catch (error) {
+        req.flash("error", `Não foi possível confirmar a alteração do bloqueio de chamadas. ${traduzirErroWhatsapp(error)}`);
       }
     }
     return res.redirect("/whatsapp");
@@ -229,18 +266,19 @@ whatsappRouter.post("/whatsapp/device/:id/:op", async (req, res, next) => {
 
     if (op === "connect") {
       await requestSessionApi(env.whatsapp.sessionStartPath, "POST", device.sessao);
-      await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
+      try {
+        await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
+      } catch (error) {
+        return res.status(502).json({ status: "erro", lastError: `Não foi possível confirmar o bloqueio de chamadas: ${traduzirErroWhatsapp(error)}` });
+      }
       return res.json(await getDeviceState(device.sessao));
     }
-    if (op === "pair") {
-      const phone = String(req.body.phone ?? req.body.number ?? "").replace(/\D+/g, "");
-      if (!phone) return res.json({ status: "erro", lastError: "Informe o número com DDI e DDD (ex: 5531999999999)." });
-      const state = await requestSessionApi(env.whatsapp.sessionPairPath, "POST", device.sessao, { number: phone });
-      await syncBloqueioChamadas(device.sessao, Boolean(device.bloqueioChamadas));
-      return res.json(state);
-    }
     if (op === "disconnect") {
-      await requestSessionApi(env.whatsapp.sessionRestartPath, "POST", device.sessao);
+      // Logout (não restart): manda o WhatsApp desvincular o aparelho da lista de
+      // "Aparelhos vinculados" no celular E apaga as credenciais locais. Antes
+      // chamava restart, que só fechava o socket — o celular continuava mostrando
+      // a sessão como ativa e na próxima conexão reusava sem QR.
+      await requestSessionApi(env.whatsapp.sessionLogoutPath, "POST", device.sessao);
       return res.json({ status: "desconectado", connected: false });
     }
     return res.status(400).json({ status: "erro", lastError: "Operação inválida." });

@@ -1,5 +1,7 @@
 (function () {
   if (typeof Chart === 'undefined' || !window.__dashData) return;
+  const charts = [];
+  document.addEventListener('gestor:before-swap', () => charts.forEach(chart => chart.destroy()), { once: true });
   var d = window.__dashData;
 
   var css = getComputedStyle(document.documentElement);
@@ -52,7 +54,7 @@
   var elFin = document.getElementById('chartFinanceiro');
   if (elFin) {
     var ctxFin = elFin.getContext('2d');
-    new Chart(ctxFin, {
+    charts.push(new Chart(ctxFin, {
       type: 'line',
       data: { labels: d.labels, datasets: [
         lineDataset('Faturamento', d.receita, COR.receita, ctxFin),
@@ -60,16 +62,16 @@
         lineDataset('Lucro', d.lucro, COR.lucro, ctxFin),
       ] },
       options: baseOpts(true),
-    });
+    }));
   }
 
   var elNovos = document.getElementById('chartNovos');
   if (elNovos) {
     var ctxNovos = elNovos.getContext('2d');
-    new Chart(ctxNovos, {
+    charts.push(new Chart(ctxNovos, {
       type: 'line',
       data: { labels: d.labels, datasets: [lineDataset('Novos clientes', d.novos, COR.novos, ctxNovos)] },
       options: baseOpts(false),
-    });
+    }));
   }
 })();

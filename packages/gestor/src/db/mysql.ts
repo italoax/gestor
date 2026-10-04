@@ -37,9 +37,68 @@ db.on("connection", (conn) => {
 
 type NamedParams = Record<string, unknown>;
 
+// Executa um bloco em transação MySQL. Use quando há 2+ writes que precisam ser
+// atômicos (ex.: INSERT cliente + UPDATE saldo de servidor + INSERT transação —
+// se cair no meio, fica inconsistente sem isso).
+export async function withTransaction<T>(fn: (conn: mysql.PoolConnection) => Promise<T>): Promise<T> {
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await fn(conn);
+    await conn.commit();
+    return result;
+  } catch (error) {
+    try { await conn.rollback(); } catch { /* connection já caiu */ }
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
+// Hostinger derruba conexões inativas sem aviso (wait_timeout baixo). A primeira
+// query depois disso falha, e a pool já cria outra conexão — só precisamos refazer.
+// MAS: refazer um WRITE cegamente pode aplicá-lo 2× (INSERT duplicado, crédito
+// descontado em dobro) se o erro veio DEPOIS de o servidor já ter executado.
+// Por isso separamos os erros em dois grupos:
+
+// Pré-execução: a conexão estava morta ANTES da query sair (o servidor nunca a
+// executou). É o caso clássico do wait_timeout matando conexão ociosa. Seguro
+// refazer QUALQUER query, inclusive write.
+const ERROS_PRE_EXECUCAO = new Set([
+  "PROTOCOL_CONNECTION_LOST",
+]);
+// Ambíguos: podem ter ocorrido DURANTE a execução. Só refazemos em LEITURA
+// (idempotente). Num write, refazer poderia duplicar — então deixamos estourar.
+const ERROS_AMBIGUOS = new Set([
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ER_QUERY_INTERRUPTED",
+]);
+
+function ehErroRecuperavel(error: unknown, permitirAmbiguos: boolean): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = String((error as { code?: string }).code ?? "");
+  if (ERROS_PRE_EXECUCAO.has(code)) return true;
+  return permitirAmbiguos && ERROS_AMBIGUOS.has(code);
+}
+
+// idempotente=true (leituras): refaz em qualquer erro recuperável.
+// idempotente=false (writes): refaz só quando é certo que o servidor não executou.
+async function executarComRetry<T>(fn: () => Promise<T>, idempotente: boolean): Promise<T> {
+  try { return await fn(); }
+  catch (error) {
+    if (!ehErroRecuperavel(error, idempotente)) throw error;
+    // Pequeno delay antes do retry: dá tempo da pool reabrir a conexão.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    return fn();
+  }
+}
+
 export async function queryRows<T extends RowDataPacket>(sql: string, params: NamedParams = {}) {
-  const [rows] = await db.query<T[]>(sql, params as mysql.QueryOptions["values"]);
-  return rows;
+  return executarComRetry(async () => {
+    const [rows] = await db.query<T[]>(sql, params as mysql.QueryOptions["values"]);
+    return rows;
+  }, true);
 }
 
 export async function queryOne<T extends RowDataPacket>(sql: string, params: NamedParams = {}) {
@@ -48,6 +107,8 @@ export async function queryOne<T extends RowDataPacket>(sql: string, params: Nam
 }
 
 export async function execute(sql: string, params: NamedParams = {}) {
-  const [result] = await db.execute<ResultSetHeader>(sql, params as any);
-  return result;
+  return executarComRetry(async () => {
+    const [result] = await db.execute<ResultSetHeader>(sql, params as any);
+    return result;
+  }, false);
 }

@@ -74,6 +74,41 @@ function archiveName(version) {
   return `${version.label}.zip`;
 }
 
+// Bumpa cache-busting de TODOS os assets estaticos (CSS, JS, icones, manifest)
+// e o nome do cache do service worker pra minor version do deploy. Sem isso o
+// browser / SW seguem servindo assets antigos mesmo apos deploy novo.
+// Regra: qualquer `?v=<digitos>` em main.ejs e sw.js sobe pra ?v=<version>.
+// Isso funciona pra style.css, node-migration.css, main.js, app-shell.js,
+// favicon.*, apple-touch-icon-*, manifest.json — todos usam o mesmo padrao.
+// Edita in-place; git status mostra as mudancas junto do commit.
+function bumpAssetsCacheVersion(version) {
+  const v = String(version.minor);
+  const layoutPath = path.join(projectRoot, "src/views/layouts/main.ejs");
+  const swPath = path.join(projectRoot, "public/sw.js");
+
+  const bumpQueryVersion = (source) => source.replace(/\?v=\d+/g, `?v=${v}`);
+
+  if (fs.existsSync(layoutPath)) {
+    const original = fs.readFileSync(layoutPath, "utf8");
+    const updated = bumpQueryVersion(original);
+    if (updated !== original) {
+      fs.writeFileSync(layoutPath, updated);
+      const hits = (original.match(/\?v=\d+/g) || []).length;
+      console.log(`🔁 Cache-busting em ${hits} asset(s) -> ?v=${v} (main.ejs)`);
+    }
+  }
+
+  if (fs.existsSync(swPath)) {
+    const original = fs.readFileSync(swPath, "utf8");
+    const updated = bumpQueryVersion(original)
+      .replace(/const CACHE = "gestor-v[^"]*";/, `const CACHE = "gestor-v${v}";`);
+    if (updated !== original) {
+      fs.writeFileSync(swPath, updated);
+      console.log(`🔁 Service worker CACHE -> gestor-v${v} + assets bumpados (sw.js)`);
+    }
+  }
+}
+
 function cleanOldZipFiles() {
   const zipFiles = fs.readdirSync(projectRoot).filter((file) => file.toLowerCase().endsWith(".zip"));
   for (const file of zipFiles) {
@@ -101,10 +136,11 @@ function collectFiles() {
   const includeDirs = ["dist", "src", "public"];
   const includeFiles = [
     "package.json",
-    "package-lock.json",
     "tsconfig.json",
     "schema-hostinger.sql",
     "README.md",
+    // Configuração de instalação das dependências em produção.
+    ".npmrc",
   ];
 
   function addFile(absPath, zipPath) {
@@ -249,25 +285,33 @@ function writeZip(zipPath, entries) {
   fs.writeFileSync(zipPath, Buffer.concat(chunks));
 }
 
+// Compila o TypeScript em dist/ usando as dependências instaladas com npm ci.
+function buildProject() {
+  run("npm", ["run", "build"]);
+}
+
 function createDeploy() {
   console.log("🚀 Iniciando processo de deploy ZIP para Hostinger...\n");
 
-  console.log("🔄 Sincronizando pacote compartilhado (shared)...");
-  run("node", ["../../scripts/sync-shared.mjs"]);
+  // Precisa vir ANTES do build pra que o layout compilado ja carregue os
+  // assets com a query nova; o SW eh servido direto do public/, mas bumpando
+  // aqui alinha CACHE name com a versao do deploy.
+  const version = nextVersion();
+  console.log(`\n🏷️  Versão automática: ${version.label}`);
+  console.log("\n🧼 Bumpando cache-busting dos assets estaticos...");
+  bumpAssetsCacheVersion(version);
 
-  console.log("🔨 Gerando build TypeScript...");
-  run("npm", ["run", "build"]);
+  console.log("\n🔨 Gerando build TypeScript...");
+  buildProject();
 
   console.log("\n🧹 Removendo ZIPs antigos da raiz do projeto...");
   cleanOldZipFiles();
 
-  const version = nextVersion();
   const name = archiveName(version);
   const outputPath = path.join(projectRoot, name);
   const entries = collectFiles();
 
-  console.log(`\n🏷️  Versão automática: ${version.label}`);
-  console.log(`📦 Criando arquivo: ${name}...`);
+  console.log(`\n📦 Criando arquivo: ${name}...`);
   writeZip(outputPath, entries);
   saveVersion(version);
 

@@ -1,37 +1,247 @@
-document.addEventListener('DOMContentLoaded', function () {
+function initGestor() {
+  // Texto dinâmico do modal de plano
+  var planoInfo = document.querySelector('[data-plano-info]');
+  if (planoInfo) {
+    var pPer = document.querySelector('#modal-add-plano-form [name="periodo"]');
+    var pCred = document.querySelector('#modal-add-plano-form [name="creditos"]');
+    var pTipo = document.querySelector('#modal-add-plano-form [name="tipo"]');
+    var pLabel = document.querySelector('[data-plano-periodo-label]');
+    var updPlano = function () {
+      var per = Number(pPer && pPer.value) || 0;
+      var cred = Number(pCred && pCred.value) || 0;
+      var meses = pTipo && pTipo.value === 'Meses';
+      var unidade = meses ? (per === 1 ? 'mês' : 'meses') : (per === 1 ? 'dia' : 'dias');
+      if (pLabel) pLabel.textContent = 'Período (' + (meses ? 'meses' : 'dias') + ') *';
+      planoInfo.innerHTML = 'Este plano terá duração de <strong>' + per + ' ' + unidade + '</strong> e consumirá <strong>' + cred.toLocaleString('pt-BR') + ' crédito(s)</strong> do servidor ao renovar.';
+    };
+    if (pPer) pPer.addEventListener('input', updPlano);
+    if (pCred) pCred.addEventListener('input', updPlano);
+    if (pTipo) pTipo.addEventListener('change', updPlano);
+    updPlano();
+  }
+
+
+  const setIconLabel = (element, name, label = '') => {
+    const template = document.querySelector('template[data-ui-icon="' + name + '"]');
+    element.replaceChildren();
+    if (template) element.append(template.content.cloneNode(true));
+    if (label) element.append(document.createTextNode(' ' + label));
+  };
+  document.querySelectorAll('[data-password-field]').forEach(field => {
+    const input = field.querySelector('input');
+    const toggle = field.querySelector('[data-password-toggle]');
+    const feedback = field.querySelector('[data-password-feedback]');
+    const reset = () => {
+      input.type = 'password';
+      toggle.setAttribute('aria-label', 'Mostrar senha');
+      toggle.title = 'Mostrar senha';
+      toggle.setAttribute('aria-pressed', 'false');
+      feedback.textContent = '';
+    };
+    toggle.onclick = () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      toggle.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+      toggle.title = toggle.getAttribute('aria-label');
+      toggle.setAttribute('aria-pressed', String(show));
+    };
+    if (input.form) input.form.addEventListener('reset', reset);
+    reset();
+  });
+  // Re-executavel (pjax): a cada init abortamos os listeners globais do init
+  // anterior pra nao acumular. Listeners de document/window/topbar (casca
+  // persistente) sao registrados via on(...) que injeta o { signal }; os de
+  // conteudo (dentro de .app-content) nao precisam — o innerHTML e trocado no
+  // swap, entao os nós antigos (com seus listeners) somem junto.
+  if (window.__gestorAbort) { try { window.__gestorAbort.abort(); } catch (e) {} }
+  const __ac = ('AbortController' in window) ? new AbortController() : null;
+  window.__gestorAbort = __ac;
+  const __sig = __ac ? __ac.signal : undefined;
+  const on = (target, type, handler, opts) => {
+    let o = opts;
+    if (o === true) o = { capture: true };
+    else if (o === false || o == null) o = {};
+    if (__sig) o = Object.assign({}, o, { signal: __sig });
+    target.addEventListener(type, handler, o);
+  };
+
+  // Preserva a posicao de rolagem ao salvar um formulario. Formularios que
+  // navegam (submit nativo -> POST -> redirect -> reload) faziam a pagina voltar
+  // pro topo, perdendo o lugar onde o usuario estava na lista. Guardamos o
+  // scrollY no submit e restauramos no carregamento seguinte da MESMA pagina.
+  // Vale pra TODAS as telas (clientes, planos, servidores...) sem alteracao por tela.
+  const SCROLL_KEY = 'gestor:scroll:' + location.pathname;
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+  (function restoreScrollAfterSave() {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null'); } catch (e) {}
+    try { sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
+    // TTL curto (15s): so restaura logo apos um salvamento, nunca num F5 avulso muito depois.
+    if (!saved || typeof saved.y !== 'number' || (Date.now() - (saved.t || 0)) >= 15000) return;
+    const y = saved.y;
+    const jump = () => window.scrollTo(0, y);
+    jump();
+    requestAnimationFrame(jump);
+    // Reaplica apos o load (fontes/imagens assentarem a altura) pra nao parar no lugar errado.
+    on(window, 'load', () => { jump(); setTimeout(jump, 0); });
+  })();
+
+  // Camada 1 — CLICK IMEDIATO em botoes com data-loading-text.
+  // Sem isso, botoes cujo form redirecionava em <300ms nunca mostravam o
+  // spinner visualmente — a impressao era que o bloqueio nao funcionava.
+  // So opt-in via atributo data-loading-text (evita quebrar botoes de
+  // form-AJAX que dependem de checkValidity/preventDefault posterior).
+  on(document, 'click', function (e) {
+    const btn = e.target.closest('button[data-loading-text], input[data-loading-text]');
+    if (!btn) return;
+    // Ja em submit em andamento? bloqueia click extra sem mexer no default.
+    if (btn.dataset.submitting === '1') { e.preventDefault(); return; }
+    if (btn.disabled) { e.preventDefault(); return; }
+    const formId = btn.getAttribute('form');
+    const form = formId ? document.getElementById(formId) : btn.closest('form');
+    if (!form) return;
+    if (!form.hasAttribute('novalidate') && !form.checkValidity()) return;
+    // CRITICO: NAO usar btn.disabled = true aqui. Se marcar disabled na fase
+    // capture, o browser cancela a acao default (submit do form) porque ve o
+    // botao "desabilitado" ao dispatchar. Usa data-submitting + classe visual
+    // + pointer-events pra bloquear cliques repetidos sem quebrar o submit.
+    btn.dataset.submitting = '1';
+    btn.dataset.prevText = btn.innerHTML;
+    btn.classList.add('is-submitting');
+    btn.style.pointerEvents = 'none';
+    const loadingText = btn.getAttribute('data-loading-text') || 'Salvando';
+    btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> ' + loadingText;
+    setTimeout(function () {
+      if (btn.dataset.prevText === undefined) return; // ja resetado
+      if (form.dataset.submitting === '1') return; // camada 2 assumiu
+      btn.dataset.submitting = '';
+      btn.classList.remove('is-submitting');
+      btn.style.pointerEvents = '';
+      btn.innerHTML = btn.dataset.prevText;
+      delete btn.dataset.prevText;
+    }, 4000);
+  }, true);
+
+  // Camada 2 — SUBMIT no form: cobre botoes SEM data-loading-text (comportamento
+  // legacy — bloqueia com texto padrao "Salvando..."). Tambem cuida do caso
+  // do submit ter vindo via Enter no campo, nao via click.
+  on(document, 'submit', function (e) {
+    const form = e.target;
+    if (!form || form.tagName !== 'FORM') return;
+    if (window.gestorNavigate && form.closest('main.app-content')) return;
+    if (e.defaultPrevented) return; // formularios AJAX ja chamaram preventDefault: nao navegam, nao salvam scroll
+    // Guarda a rolagem atual pra restaurar apos o reload (restoreScrollAfterSave, no topo).
+    try { sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ y: window.scrollY, t: Date.now() })); } catch (e2) {}
+    if (form.dataset.submitting === '1') { e.preventDefault(); return; }
+    form.dataset.submitting = '1';
+    const botoes = new Set();
+    form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach((b) => botoes.add(b));
+    if (form.id) {
+      document.querySelectorAll(
+        'button[type="submit"][form="' + form.id + '"], input[type="submit"][form="' + form.id + '"]'
+      ).forEach((b) => botoes.add(b));
+    }
+    botoes.forEach((btn) => {
+      if (btn.disabled) return;
+      if (btn.dataset.submitting === '1') return; // camada 1 (click) ja tratou
+      btn.disabled = true;
+      btn.dataset.prevText = btn.innerHTML;
+      btn.classList.add('is-submitting');
+      const loadingText = btn.getAttribute('data-loading-text') || 'Salvando';
+      btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> ' + loadingText;
+    });
+    // Failsafe reduzido pra 4s — formularios AJAX que nao redirecionam (ex.:
+    // editar servidor) ficariam travados no antigo 10s. 4s cobre a maioria
+    // dos POSTs; se o server for mais lento, o browser ja vai ter navegado
+    // antes ou vai continuar bloqueado ate o fetch resolver.
+    setTimeout(function () {
+      if (form.dataset.submitting !== '1') return;
+      form.dataset.submitting = '';
+      botoes.forEach((btn) => {
+        btn.disabled = false;
+        btn.classList.remove('is-submitting');
+        if (btn.dataset.prevText) { btn.innerHTML = btn.dataset.prevText; delete btn.dataset.prevText; }
+      });
+    }, 4000);
+  });
+
   const focusableSelector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  let modalStack = Array.from(document.querySelectorAll('.modal-overlay.open'));
   const getOpenModals = () => Array.from(document.querySelectorAll('.modal-overlay.open'));
   const getTopOpenModal = () => {
-    const open = getOpenModals();
-    return open.length ? open[open.length - 1] : null;
+    modalStack = modalStack.filter(modal => modal.isConnected && modal.classList.contains('open'));
+    getOpenModals().forEach(modal => { if (!modalStack.includes(modal)) modalStack.push(modal); });
+    return modalStack[modalStack.length - 1] || null;
   };
+  const syncModalViewport = () => {
+    const viewport = window.visualViewport;
+    const root = document.documentElement;
+    if (getOpenModals().length && viewport && viewport.scale === 1) {
+      root.style.setProperty('--modal-viewport-height', viewport.height + 'px');
+      root.style.setProperty('--modal-viewport-top', viewport.offsetTop + 'px');
+    } else {
+      root.style.removeProperty('--modal-viewport-height');
+      root.style.removeProperty('--modal-viewport-top');
+    }
+  };
+  if (window.visualViewport) {
+    on(window.visualViewport, 'resize', syncModalViewport);
+    on(window.visualViewport, 'scroll', syncModalViewport);
+  }
   const syncModalUiState = () => {
     const hasOpenModal = getOpenModals().length > 0;
     document.body.classList.toggle('modal-open', hasOpenModal);
+    document.documentElement.classList.toggle('modal-open', hasOpenModal);
+    const topModal = getTopOpenModal();
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       const isOpen = overlay.classList.contains('open');
-      overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-      if (isOpen) {
+      const isTop = overlay === topModal;
+      overlay.setAttribute('aria-hidden', isTop ? 'false' : 'true');
+      overlay.style.zIndex = isOpen ? String(2000 + modalStack.indexOf(overlay)) : '';
+      if (isTop) {
         overlay.removeAttribute('inert');
       } else {
         overlay.setAttribute('inert', '');
       }
     });
+    syncModalViewport();
   };
+
+  document.querySelectorAll('.modal-overlay').forEach((overlay, index) => {
+    const dialog = overlay.querySelector('.modal');
+    if (!dialog) return;
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('tabindex', '-1');
+    const heading = dialog.querySelector('.modal-header h3');
+    if (heading) {
+      if (!heading.id) heading.id = (overlay.id || 'dialog-' + index) + '-heading';
+      dialog.setAttribute('aria-labelledby', heading.id);
+    }
+  });
 
   const setModalState = (modal, isOpen, triggerSelector = null) => {
     if (!modal) return;
     if (isOpen) {
+      const wasOpen = modal.classList.contains('open');
+      modalStack = modalStack.filter(item => item !== modal);
+      modalStack.push(modal);
       if (!triggerSelector && document.activeElement instanceof HTMLElement) {
         modal._lastFocusedEl = document.activeElement;
+      }
+      // Fecha o teclado da pesquisa antes de transferir o foco ao modal.
+      if (document.activeElement instanceof HTMLElement && document.activeElement.matches('[data-search-input]')) {
+        document.activeElement.blur();
       }
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
       modal.removeAttribute('inert');
       if (triggerSelector) modal.dataset.lastTrigger = triggerSelector;
       syncModalUiState();
-      const focusable = modal.querySelector(focusableSelector);
-      if (focusable) focusable.focus();
+      const body = modal.querySelector('.modal-body');
+      if (body && !wasOpen) body.scrollTop = 0;
+      const focusable = Array.from(modal.querySelectorAll(focusableSelector)).find(el => el.offsetParent !== null) || modal.querySelector('.modal');
+      if (focusable) focusable.focus({ preventScroll: true });
     } else {
       modal.classList.remove('open');
       modal.setAttribute('aria-hidden', 'true');
@@ -40,14 +250,107 @@ document.addEventListener('DOMContentLoaded', function () {
       if (modal.contains(document.activeElement)) {
         document.activeElement.blur();
       }
-      if (modal.dataset.lastTrigger) {
+      const remainingModal = getTopOpenModal();
+      if (remainingModal) {
+        const previous = modal._lastFocusedEl;
+        const target = previous && remainingModal.contains(previous) ? previous : remainingModal.querySelector(focusableSelector);
+        if (target) target.focus({ preventScroll: true });
+      } else if (modal.dataset.lastTrigger) {
         const el = document.querySelector(modal.dataset.lastTrigger);
-        if (el) el.focus();
+        if (el) el.focus({ preventScroll: true });
       } else if (modal._lastFocusedEl && typeof modal._lastFocusedEl.focus === 'function') {
-        modal._lastFocusedEl.focus();
+        modal._lastFocusedEl.focus({ preventScroll: true });
       }
     }
   };
+
+  window.gestorSetModalState = setModalState;
+  const siteNotice = document.querySelector("[data-auto-notice]");
+  if (siteNotice) setModalState(siteNotice, true);
+  const accessModal = document.getElementById('modal-client-access');
+  if (accessModal) {
+    let accessId = null;
+    let accessBlocked = false;
+    let busy = false;
+    const notice = accessModal.querySelector('[data-access-notice]');
+    const actions = accessModal.querySelector('[data-access-actions]');
+    const toggle = accessModal.querySelector('[data-access-toggle]');
+    const revoke = accessModal.querySelector('[data-access-revoke]');
+    const copyLink = accessModal.querySelector('[data-access-copy]');
+    const linkInput = accessModal.querySelector('[data-access-link]');
+    const loadAccess = async id => {
+      const r = await fetch('/acessos-clientes?cliente=' + id, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+      if (!r.ok || !r.headers.get('content-type')?.includes('application/json')) throw Error('Não foi possível carregar o acesso. Recarregue a página e tente novamente.');
+      const c = await r.json();
+      if (accessId !== id) return;
+      accessBlocked = c.blocked;
+      accessModal.querySelector('[data-access-state]').classList.toggle('is-blocked', c.blocked);
+      copyLink.disabled = c.blocked;
+      accessModal.querySelector('[data-access-name]').textContent = c.nome;
+      accessModal.querySelector('[data-access-user]').textContent = 'Usuário IPTV: ' + c.user;
+      accessModal.querySelector('[data-access-state]').textContent = c.blocked ? 'Desativado' : 'Habilitado';
+      toggle.textContent = c.blocked ? 'Habilitar acesso' : 'Desativar acesso';
+      revoke.disabled = !c.hasLink;
+      actions.hidden = false;
+    };
+    on(document, 'click', async event => {
+      const trigger = event.target.closest('[data-client-access]');
+      if (!trigger || busy) return;
+      accessId = trigger.getAttribute('data-client-access');
+      linkInput.value = '';
+      linkInput.hidden = true;
+      actions.hidden = true;
+      accessModal.querySelector('[data-access-name]').textContent = '';
+      accessModal.querySelector('[data-access-user]').textContent = '';
+      accessModal.querySelector('[data-access-state]').textContent = '';
+      notice.textContent = 'Carregando…';
+      setModalState(accessModal, true);
+      try { await loadAccess(accessId); notice.textContent = ''; } catch (e) { notice.textContent = e.message; }
+    });
+    const saveAccess = async action => {
+      if (busy) return;
+      busy = true;
+      toggle.disabled = revoke.disabled = true;
+      notice.textContent = 'Salvando…';
+      try {
+        const body = new URLSearchParams({ id: accessId, action, _csrf: accessModal.querySelector('[name="_csrf"]').value });
+        const r = await fetch('/acessos-clientes', { method: 'POST', body, headers: { Accept: 'application/json' } });
+        if (!r.ok || !r.headers.get('content-type')?.includes('application/json')) throw Error('Não foi possível salvar. Recarregue a página e tente novamente.');
+        const result = await r.json();
+        linkInput.value = '';
+        linkInput.hidden = true;
+        await loadAccess(accessId);
+        notice.textContent = result.message;
+      } catch (e) { notice.textContent = e.message; }
+      finally { busy = false; toggle.disabled = false; }
+    };
+    toggle.onclick = () => saveAccess(accessBlocked ? 'enable' : 'disable');
+    revoke.onclick = () => saveAccess('revoke-link');
+    copyLink.onclick = async () => {
+      if (busy || accessBlocked) return;
+      busy = true;
+      copyLink.disabled = toggle.disabled = revoke.disabled = true;
+      notice.textContent = 'Preparando link…';
+      try {
+        const r = await fetch('/clientes/' + accessId + '/link-pagamento', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+        if (!r.ok || !r.headers.get('content-type')?.includes('application/json')) throw Error('Não foi possível obter o link. Tente novamente.');
+        const result = await r.json();
+        if (!result.ok || !result.url) throw Error(result.error || 'Link indisponível.');
+        linkInput.value = result.url;
+        linkInput.hidden = false;
+        await loadAccess(accessId);
+        try {
+          await navigator.clipboard.writeText(result.url);
+          notice.textContent = 'Link de acesso copiado!';
+        } catch {
+          linkInput.focus();
+          linkInput.select();
+          notice.textContent = 'Selecione e copie o link no campo acima.';
+        }
+      } catch (e) { notice.textContent = e.message; }
+      finally { busy = false; copyLink.disabled = accessBlocked; toggle.disabled = false; }
+    };
+  }
 
   const showNoticeModal = (message, type = 'success') => {
     const modal = document.getElementById('modal-notice');
@@ -59,6 +362,11 @@ document.addEventListener('DOMContentLoaded', function () {
     setModalState(modal, true);
     return true;
   };
+  const pendingNotice = document.querySelector('#modal-notice[data-open-notice]');
+  if (pendingNotice) {
+    pendingNotice.removeAttribute('data-open-notice');
+    setModalState(pendingNotice, true);
+  }
   const dropdowns = document.querySelectorAll('[data-dropdown]');
   dropdowns.forEach(d => {
     const trigger = d.querySelector('.nav-trigger');
@@ -69,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  document.addEventListener('click', () => {
+  on(document, 'click', () => {
     dropdowns.forEach(d => d.classList.remove('open'));
   });
 
@@ -83,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Alternância de tema claro/escuro (persistido em localStorage).
   document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    on(btn, 'click', () => {
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
       const next = isLight ? 'dark' : 'light';
       if (next === 'light') document.documentElement.setAttribute('data-theme', 'light');
@@ -206,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       });
       if (search) search.addEventListener('input', () => render(search.value));
-      document.addEventListener('click', (e) => {
+      on(document, 'click', (e) => {
         if (!box.contains(e.target)) closeMenu();
       });
     });
@@ -246,9 +554,106 @@ document.addEventListener('DOMContentLoaded', function () {
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
   };
 
+  // Aplica mascara preservando a posicao do cursor — assim editar um digito no
+  // meio (ex.: trocar so o ano) nao embaralha o campo. Contamos digitos antes
+  // do caret, reformatamos, e posicionamos o caret depois do mesmo numero de
+  // digitos no valor novo.
+  const applyDateMaskKeepCaret = (input) => {
+    const original = input.value;
+    const selStart = input.selectionStart ?? original.length;
+    let digitsBeforeCaret = 0;
+    for (let i = 0; i < selStart; i++) if (/\d/.test(original[i])) digitsBeforeCaret++;
+    const formatted = formatDateBrValue(original);
+    if (formatted === original) return;
+    input.value = formatted;
+    let newCaret = formatted.length;
+    let digitsSeen = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (digitsSeen === digitsBeforeCaret) { newCaret = i; break; }
+      if (/\d/.test(formatted[i])) digitsSeen++;
+    }
+    if (digitsSeen < digitsBeforeCaret) newCaret = formatted.length;
+    try { input.setSelectionRange(newCaret, newCaret); } catch (e) {}
+  };
+
+  // Overtype: quando o campo ja tem 8 digitos e o usuario digita sobre um
+  // digito (caret NAO em selecao), substitui o digito da direita em vez de
+  // inserir — evita ter que apagar pra trocar um numero.
+  const dateOvertypeKeydown = (input) => (e) => {
+    if (!/^\d$/.test(e.key)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const value = input.value;
+    if (value.replace(/\D+/g, '').length < 8) return;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    if (start !== end) return;
+    // Encontra o proximo digito a partir do caret pra substituir.
+    let pos = start;
+    while (pos < value.length && !/\d/.test(value[pos])) pos++;
+    if (pos >= value.length) return;
+    e.preventDefault();
+    const novo = value.slice(0, pos) + e.key + value.slice(pos + 1);
+    input.value = novo;
+    // Move caret pra depois do digito substituido, pulando separadores.
+    let after = pos + 1;
+    while (after < novo.length && !/\d/.test(novo[after]) && after < pos + 2) after++;
+    try { input.setSelectionRange(after, after); } catch (err) {}
+  };
+
   document.querySelectorAll('[data-date-mask]').forEach(input => {
     setDateInputValue(input, input.value);
-    input.addEventListener('input', () => setDateInputValue(input, input.value));
+    // Icone de calendario: abre o seletor de data NATIVO e escreve de volta no
+    // campo mascarado (mantendo a digitacao manual em dd/mm/aaaa).
+    (function addDatePicker(inp) {
+      if (inp.dataset.datePicker === '1') return;
+      inp.dataset.datePicker = '1';
+      const wrap = document.createElement('span');
+      wrap.className = 'date-input-wrap';
+      inp.parentNode.insertBefore(wrap, inp);
+      wrap.appendChild(inp);
+      const toIso = (br) => {
+        const m = String(br || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        return m ? (m[3] + '-' + m[2] + '-' + m[1]) : '';
+      };
+      // Input date nativo TRANSPARENTE por cima do icone (ver CSS). O toque cai
+      // direto nele — no iOS e a unica forma do seletor nativo abrir. Ele precisa
+      // ser tocavel de verdade, entao NADA de tabIndex -1 / aria-hidden / pointer-
+      // events:none aqui (isso mataria o iOS).
+      const picker = document.createElement('input');
+      picker.type = 'date';
+      picker.className = 'date-input-native';
+      picker.setAttribute('aria-label', 'Abrir calendário');
+      wrap.appendChild(picker);
+      // Ícone decorativo (pointer-events:none no CSS) — fica visivel
+      // por baixo do input transparente.
+      const btn = document.createElement('span');
+      btn.className = 'date-input-btn';
+      btn.setAttribute('aria-hidden', 'true');
+      setIconLabel(btn, 'calendar');
+      wrap.appendChild(btn);
+      // Sincroniza o mes/dia que o seletor abre com o que ja esta digitado.
+      // pointerdown roda ANTES do iOS ler o value e montar a rodinha.
+      const syncPickerValue = () => { const iso = toIso(inp.value); if (iso) picker.value = iso; };
+      picker.addEventListener('pointerdown', syncPickerValue);
+      picker.addEventListener('focus', syncPickerValue);
+      // Desktop (Chrome/Edge): um clique simples no input date nao abre o dropdown
+      // sozinho — showPicker() resolve. No iOS o proprio toque ja abriu a rodinha e
+      // showPicker() lanca; o try/catch engole sem quebrar nada.
+      picker.addEventListener('click', () => {
+        if (typeof picker.showPicker === 'function') {
+          try { picker.showPicker(); } catch (e) { /* iOS: ja abriu pelo toque */ }
+        }
+      });
+      picker.addEventListener('change', () => {
+        if (!picker.value) return;
+        const p = picker.value.split('-');
+        inp.value = p[2] + '/' + p[1] + '/' + p[0];
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('blur', { bubbles: true }));
+      });
+    })(input);
+    input.addEventListener('input', () => applyDateMaskKeepCaret(input));
+    input.addEventListener('keydown', dateOvertypeKeydown(input));
     input.addEventListener('paste', () => setTimeout(() => setDateInputValue(input, input.value), 0));
     input.addEventListener('blur', () => {
       setDateInputValue(input, input.value, true);
@@ -267,21 +672,28 @@ document.addEventListener('DOMContentLoaded', function () {
     'ativo': (t) => t === 'nao-vencido',
     'vence hoje': (t) => t === 'today',
     'vencido': (t) => t === 'vencido',
-    'inativo': (t) => t === 'inativo',
-    'pra vencer': (t) => t === 'today' || t === 'nao-vencido',
+    // "Pra vencer" = clientes que vencem em 1 a 3 dias (definido em format.ts).
+    'pra vencer': (t) => t === 'pra-vencer',
   };
+  const normalizeSearchText = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
   const applyTableScopeFilters = (scope) => {
     const input = scope.querySelector('[data-search-input]');
     const selects = Array.from(scope.querySelectorAll('[data-filter-select]'));
     const vencimentoFilter = scope.querySelector('[data-vencimento-filter]');
-    const term = input ? input.value.toLowerCase().trim() : '';
+    const term = normalizeSearchText(input ? input.value : '');
     const activeSelects = selects
-      .map(sel => (sel.value || '').toLowerCase().trim())
+      .map(sel => normalizeSearchText(sel.value))
       .filter(Boolean);
     const vencimentoValue = vencimentoFilter ? vencimentoFilter.value : '';
-
-    scope.querySelectorAll('[data-search-item]').forEach(item => {
-      const text = item.textContent.toLowerCase();
+    const items = scope.querySelectorAll('[data-search-item]');
+    let visibleCount = 0;
+    items.forEach(item => {
+      const text = normalizeSearchText(item.dataset.searchText ?? item.textContent);
       const status = item.dataset.vencimentoStatus || '';
       const matchSearch = !term || text.includes(term);
       const matchSelects = activeSelects.every(value => {
@@ -294,22 +706,62 @@ document.addEventListener('DOMContentLoaded', function () {
       const matchVencimento = !vencimentoValue
         || status === vencimentoValue
         || (vencimentoValue === 'nao-vencido' && status !== 'vencido');
-      item.classList.toggle('hidden', !(matchSearch && matchSelects && matchVencimento));
+      const visible = matchSearch && matchSelects && matchVencimento;
+      item.classList.toggle('hidden', !visible);
+      if (visible) visibleCount++;
     });
+    const clearSearch = scope.querySelector('[data-clear-search]');
+    if (clearSearch) clearSearch.hidden = !input || !input.value;
+    const result = scope.querySelector('[data-search-results]');
+    if (result) {
+      const singular = scope.dataset.searchSingular || 'cliente';
+      const plural = scope.dataset.searchPlural || 'clientes';
+      result.hidden = !term && !activeSelects.length && !vencimentoValue;
+      result.textContent = visibleCount === 0
+        ? (scope.dataset.searchEmpty || 'Nenhum cliente encontrado. Tente outro nome ou número.')
+        : visibleCount + (visibleCount === 1 ? ' ' + singular + ' encontrado' : ' ' + plural + ' encontrados') + ' de ' + items.length + '.';
+    }
+  };
+
+  // Visual de filtro ativo: marca o wrapper .cli-filter quando o select tem valor,
+  // e mostra/esconde o botao "Limpar" baseado em ter algo filtrado. Sem isso, o
+  // user nao percebe quais filtros estao aplicados (todos os selects parecem iguais).
+  const refreshFilterChips = (scope) => {
+    const selects = scope.querySelectorAll('[data-filter-select]');
+    let temAlgum = false;
+    selects.forEach(sel => {
+      const ativo = !!sel.value;
+      const wrap = sel.closest('.cli-filter');
+      if (wrap) wrap.classList.toggle('is-active', ativo);
+      if (ativo) temAlgum = true;
+    });
+    const searchInput = scope.querySelector('[data-search-input]');
+    if (searchInput && searchInput.value.trim()) temAlgum = true;
+    const clearBtn = scope.querySelector('[data-clear-filters]');
+    if (clearBtn) clearBtn.classList.toggle('is-visible', temAlgum);
   };
 
   document.querySelectorAll('[data-search-scope]').forEach(scope => {
     const input = scope.querySelector('[data-search-input]');
     const selects = Array.from(scope.querySelectorAll('[data-filter-select]'));
     const vencimentoFilter = scope.querySelector('[data-vencimento-filter]');
-    if (input) input.addEventListener('input', () => applyTableScopeFilters(scope));
-    selects.forEach(sel => sel.addEventListener('change', () => applyTableScopeFilters(scope)));
-    if (vencimentoFilter) vencimentoFilter.addEventListener('change', () => applyTableScopeFilters(scope));
+    const apply = () => { applyTableScopeFilters(scope); refreshFilterChips(scope); };
+    if (input) input.addEventListener('input', apply);
+    const clearSearch = scope.querySelector('[data-clear-search]');
+    if (clearSearch && input) clearSearch.addEventListener('click', () => {
+      input.value = '';
+      apply();
+      input.focus({ preventScroll: true });
+    });
+    selects.forEach(sel => sel.addEventListener('change', apply));
+    if (vencimentoFilter) vencimentoFilter.addEventListener('change', apply);
+    refreshFilterChips(scope);
+    if (scope.querySelector('[data-search-results]')) apply();
   });
 
   // Linha selecionada (check da tabela): destaque visual + "selecionar todos" no cabeçalho.
   // Delegado no document pra cobrir rows criadas via AJAX (cadastro/edição inline).
-  document.addEventListener('change', (e) => {
+  on(document, 'change', (e) => {
     const t = e.target;
     if (!t || !t.classList || !t.classList.contains('cli-check')) return;
     if (t.hasAttribute('data-check-all')) {
@@ -417,11 +869,14 @@ document.addEventListener('DOMContentLoaded', function () {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       applyTableScopeFilters(scope);
+      if (typeof refreshFilterChips === 'function') refreshFilterChips(scope);
     });
   });
 
-  document.querySelectorAll('[data-open-modal]').forEach(btn => {
-    btn.addEventListener('click', () => {
+  on(document, 'click', event => {
+      const btn = event.target.closest('[data-open-modal]');
+      if (!btn) return;
+      event.preventDefault();
       const id = btn.getAttribute('data-open-modal');
       const modal = document.getElementById(id);
       if (modal) {
@@ -469,13 +924,12 @@ document.addEventListener('DOMContentLoaded', function () {
             form.querySelector('[name="action"]').value = 'create_mensagem';
             form.querySelector('[name="id"]').value = '';
             const title = modal.querySelector('.modal-header h3');
-            if (title) title.textContent = '+ Novo Template';
+            if (title) setIconLabel(title, 'plus', 'Novo Template');
           }
         }
         const triggerSelector = '[data-open-modal="' + id + '"]';
         setModalState(modal, true, triggerSelector);
       }
-    });
   });
 
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
@@ -486,14 +940,19 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    let pointerStartedOnBackdrop = false;
+    overlay.addEventListener('pointerdown', (e) => {
+      pointerStartedOnBackdrop = e.target === overlay;
+    });
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
+      if (e.target === overlay && pointerStartedOnBackdrop) {
         setModalState(overlay, false);
       }
+      pointerStartedOnBackdrop = false;
     });
   });
 
-  document.addEventListener('keydown', (e) => {
+  on(document, 'keydown', (e) => {
     const topModal = getTopOpenModal();
     if (!topModal) return;
 
@@ -555,12 +1014,14 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="action"]').value = 'update_plano';
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
       form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
-      form.querySelector('[name="tipo"]').value = btn.getAttribute('data-tipo') || '';
+      form.querySelector('[name="tipo"]').value = /m[eê]s/i.test(btn.getAttribute('data-tipo') || '') ? 'Meses' : 'Dias';
       form.querySelector('[name="periodo"]').value = btn.getAttribute('data-periodo') || '1';
       form.querySelector('[name="observacao"]').value = btn.getAttribute('data-observacao') || '';
       const pCred = form.querySelector('[name="creditos"]'); if (pCred) pCred.value = btn.getAttribute('data-creditos') || '0';
       const pAtivo = form.querySelector('[name="ativo"]'); if (pAtivo) pAtivo.checked = btn.getAttribute('data-ativo') !== '0';
-      const pTitulo = modal.querySelector('.modal-header h3'); if (pTitulo) pTitulo.textContent = '✎ Editar Plano';
+      const pSigPkg = form.querySelector('[name="sigma_package_id"]'); if (pSigPkg) pSigPkg.value = btn.getAttribute('data-sigma-package-id') || '';
+      const pSigConn = form.querySelector('[name="sigma_connections"]'); if (pSigConn) pSigConn.value = btn.getAttribute('data-sigma-connections') || '1';
+      const pTitulo = modal.querySelector('.modal-header h3'); if (pTitulo) setIconLabel(pTitulo, 'edit', 'Editar Plano');
       const pBtnEd = document.querySelector('button[type="submit"][form="modal-add-plano-form"]'); if (pBtnEd) pBtnEd.textContent = 'Salvar';
       const pInfoUpd = form.querySelector('[name="periodo"]'); if (pInfoUpd) pInfoUpd.dispatchEvent(new Event('input', { bubbles: true }));
       setModalState(modal, true);
@@ -574,8 +1035,9 @@ document.addEventListener('DOMContentLoaded', function () {
         form.reset();
         const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_plano';
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
+        form.querySelector('[name="periodo"]').dispatchEvent(new Event('input', { bubbles: true }));
       }
-      const t = document.querySelector('#modal-add-plano .modal-header h3'); if (t) t.textContent = '+ Novo Plano';
+      const t = document.querySelector('#modal-add-plano .modal-header h3'); if (t) setIconLabel(t, 'plus', 'Novo Plano');
       const pBtnNv = document.querySelector('button[type="submit"][form="modal-add-plano-form"]'); if (pBtnNv) pBtnNv.textContent = 'Cadastrar';
     });
   });
@@ -591,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
       form.querySelector('[name="descricao"]').value = btn.getAttribute('data-descricao') || '';
       const dStatus = form.querySelector('[name="status"]'); if (dStatus) dStatus.value = btn.getAttribute('data-status') || 'Ativo';
-      const dTit = modal.querySelector('.modal-header h3'); if (dTit) dTit.textContent = '✎ Editar Dispositivo';
+      const dTit = modal.querySelector('.modal-header h3'); if (dTit) setIconLabel(dTit, 'edit', 'Editar Dispositivo');
       setModalState(modal, true);
     });
   });
@@ -604,7 +1066,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_dispositivo';
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
       }
-      const t = document.querySelector('#modal-add-dispositivo .modal-header h3'); if (t) t.textContent = '🖥️ Novo Dispositivo';
+      const t = document.querySelector('#modal-add-dispositivo .modal-header h3'); if (t) setIconLabel(t, 'plus', 'Novo Dispositivo');
     });
   });
 
@@ -620,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="descricao"]').value = btn.getAttribute('data-descricao') || '';
       const aVal = form.querySelector('[name="valor_renovacao"]'); if (aVal) aVal.value = btn.getAttribute('data-valor') || '';
       const aStatus = form.querySelector('[name="status"]'); if (aStatus) aStatus.value = btn.getAttribute('data-status') || 'Ativo';
-      const aTit = modal.querySelector('.modal-header h3'); if (aTit) aTit.textContent = '✎ Editar Aplicativo';
+      const aTit = modal.querySelector('.modal-header h3'); if (aTit) setIconLabel(aTit, 'edit', 'Editar Aplicativo');
       setModalState(modal, true);
     });
   });
@@ -633,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_aplicativo';
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
       }
-      const t = document.querySelector('#modal-add-aplicativo .modal-header h3'); if (t) t.textContent = '🗓️ Novo Aplicativo';
+      const t = document.querySelector('#modal-add-aplicativo .modal-header h3'); if (t) setIconLabel(t, 'plus', 'Novo Aplicativo');
     });
   });
 
@@ -643,27 +1105,18 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!modal) return;
       const form = modal.querySelector('#modal-add-servidor-form');
       if (!form) return;
+      // Preenche so os campos que ainda existem no form (nome, identificador,
+      // creditos, valor, obs). Campos legados foram removidos da UI mas o
+      // schema continua com as colunas — backend grava NULL/0 por default.
       form.querySelector('[name="action"]').value = 'update_servidor';
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
       form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
       form.querySelector('[name="creditos"]').value = btn.getAttribute('data-creditos') || '0';
       form.querySelector('[name="valor_cred"]').value = btn.getAttribute('data-valor') || '0';
-      form.querySelector('[name="sessao"]').value = btn.getAttribute('data-sessao') || '';
-      form.querySelector('[name="integracao"]').value = btn.getAttribute('data-integracao') || '';
-      const sExtras = {
-        identificador: 'data-identificador', link_painel: 'data-link-painel', observacao_servidor: 'data-obs',
-        dispositivo_whatsapp: 'data-dispositivo', url_app_android: 'data-app-android', url_app_ios: 'data-app-ios',
-        info_servidor: 'data-info', dns_1: 'data-dns1', dns_2: 'data-dns2', dns_3: 'data-dns3', dns_4: 'data-dns4',
-        url_api_xc: 'data-api-xc', url_api_smarters: 'data-api-smarters', epg: 'data-epg',
-        pix: 'data-pix', pix_nome: 'data-pix-nome', pix_tipo: 'data-pix-tipo', url_renovacao: 'data-url-renovacao'
-      };
-      Object.keys(sExtras).forEach(name => {
-        const el = form.querySelector('[name="' + name + '"]');
-        if (el) el.value = btn.getAttribute(sExtras[name]) || '';
-      });
-      const cob = form.querySelector('[name="cobranca_por_telas"]'); if (cob) cob.checked = btn.getAttribute('data-cobranca') === '1';
-      const ren = form.querySelector('[name="renovacao_automatica"]'); if (ren) ren.checked = btn.getAttribute('data-renovacao') === '1';
-      const stitulo = modal.querySelector('.modal-header h3'); if (stitulo) stitulo.textContent = '🗄️ Editar Servidor';
+      const setIfExists = (name, val) => { const el = form.querySelector('[name="' + name + '"]'); if (el) el.value = val || ''; };
+      setIfExists('identificador', btn.getAttribute('data-identificador'));
+      setIfExists('observacao_servidor', btn.getAttribute('data-obs'));
+      const stitulo = modal.querySelector('.modal-header h3'); if (stitulo) setIconLabel(stitulo, 'edit', 'Editar Servidor');
       const sBtnEd = document.querySelector('button[type="submit"][form="modal-add-servidor-form"]'); if (sBtnEd) sBtnEd.textContent = 'Salvar';
       setModalState(modal, true);
     });
@@ -677,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const a = form.querySelector('[name="action"]'); if (a) a.value = 'create_servidor';
         const i = form.querySelector('[name="id"]'); if (i) i.value = '';
       }
-      const t = document.querySelector('#modal-add-servidor .modal-header h3'); if (t) t.textContent = '🗄️ Novo Servidor';
+      const t = document.querySelector('#modal-add-servidor .modal-header h3'); if (t) setIconLabel(t, 'plus', 'Novo Servidor');
       const sBtnNv = document.querySelector('button[type="submit"][form="modal-add-servidor-form"]'); if (sBtnNv) sBtnNv.textContent = 'Cadastrar';
     });
   });
@@ -690,33 +1143,143 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Sync no modal de renovacao:
+  // O plano conta em meses de calendario? Aceita 'Mes', 'Mês' e 'Meses' — o form
+  // de planos grava 'Meses' mas o default do banco e 'Mês'.
+  const periodoEmMeses = (tipo) => /^mes/.test(
+    String(tipo || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+  );
+
+  // base + (periodo × vezes) em dias OU meses de calendario.
+  // ESPELHA core/format.py::somar_periodo — os dois tem que concordar, senao o
+  // modal sugere uma data e a renovacao automatica por PIX grava outra.
+  // Em meses o dia e preso ao ultimo dia valido: 31/01 + 1 mes = 28/02.
+  const somarPeriodo = (base, periodo, tipo, vezes) => {
+    const n = Number(periodo) * Number(vezes || 1);
+    if (!periodoEmMeses(tipo)) {
+      return new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
+    }
+    const total = base.getMonth() + n;
+    const ano = base.getFullYear() + Math.floor(total / 12);
+    const mes = ((total % 12) + 12) % 12;
+    const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+    return new Date(ano, mes, Math.min(base.getDate(), ultimoDia));
+  };
+
+  // - O input "Creditos" eh o driver. Se nao tiver (form de cadastro), cai pra telas.
+  // - Custo = creditos × valorCred do servidor.
+  // - Valor = creditos × valor do plano (so no modal de renovacao, ver valorBase).
+  // - Vencimento = data-base + creditos × periodo do plano (so no modal de renovacao,
+  //   identificado por form.dataset.baseVencIso + form.dataset.periodoQtd).
   const syncClienteUsageFields = (form) => {
     if (!form) return;
-    const telasInput = form.querySelector('[name="telas"]');
-    const creditosInput = form.querySelector('[name="creditos_gastos"]');
+    const creditosInput = form.querySelector('[data-creditos-input], [name="creditos_gastos"]');
+    const telasInput = form.querySelector('[data-telas-input], [name="telas"]');
     const servidorSelect = form.querySelector('[name="servidor"]');
     const custoInput = form.querySelector('[name="custo_pagamento"]');
-    const telas = Math.max(0, Number(telasInput?.value || 0));
-    if (creditosInput) creditosInput.value = String(telas);
+    const valorInput = form.querySelector('[name="valor"]');
+
+    // creditos = numero de PERIODOS renovados (o campo "Creditos" do modal). Cada
+    // periodo estende o vencimento e multiplica valor/custo. NAO confundir com o
+    // consumo do servidor, que e telas × periodos (ver custo abaixo).
+    const creditos = Math.max(1, Number(creditosInput?.value || 0) || 1);
+    // telas do cliente na renovacao (campo oculto, fixo) — no cadastro/edicao esse
+    // querySelector pega o campo visivel, mas la nao ha custoInput, entao so afeta
+    // o custo dentro do modal de renovacao.
+    const telasRenov = Math.max(1, Number(telasInput?.value) || 1);
+
     const selected = servidorSelect?.selectedOptions?.[0];
-    const valorCred = Number(selected?.getAttribute('data-valor-cred') || form.dataset.valorCred || 0);
-    if (custoInput) custoInput.value = valorCred && telas ? (valorCred * telas).toFixed(2) : '';
+    const valorCred = Number(selected?.getAttribute('data-valor-cred') ?? form.dataset.valorCred ?? 0);
+    // Custo = valorCred × telas × periodos. As telas entram porque cada tela e uma
+    // linha no servidor: 2 telas renovando 3 meses consomem 6 creditos (R$ 6×valorCred).
+    const creditosPlano = Number(form.dataset.creditosPlano) || 1;
+    if (custoInput) custoInput.value = (valorCred * telasRenov * creditos * creditosPlano).toFixed(2);
+    const resumoPeriodo = form.querySelector('[data-renovacao-periodo]');
+    if (resumoPeriodo) {
+      const duracao = Number(form.dataset.periodoQtd) * creditos;
+      const unidade = periodoEmMeses(form.dataset.periodoTipo) ? (duracao === 1 ? 'mês' : 'meses') : (duracao === 1 ? 'dia' : 'dias');
+      resumoPeriodo.textContent = 'Renova por ' + duracao + ' ' + unidade + '. Consumo: ' + (telasRenov * creditos * creditosPlano).toLocaleString('pt-BR') + ' créditos do servidor.';
+    }
+
+    // Valor cobrado = valor do plano × creditos. Cada credito e um periodo inteiro
+    // do plano (ja estende o vencimento e ja multiplica o custo), entao renovar 2
+    // creditos de um plano de R$ 25 tem que cobrar R$ 50 — nao R$ 25.
+    // So no modal de renovacao: valorBase so existe la (no cadastro o usuario digita
+    // o valor na mao e nao pode ser sobrescrito).
+    const valorBase = Number(form.dataset.valorBase);
+    if (valorInput && form.dataset.valorBase !== undefined && Number.isFinite(valorBase)) {
+      valorInput.value = (valorBase * creditos).toFixed(2);
+    }
+    // Valor escalonado por telas (SO no cadastro/edicao, onde "Telas" e visivel):
+    // dobrar as telas dobra o valor. Base = "valor por tela" (dataset.valorPorTela),
+    // semeado ao abrir a edicao (valorAtual/telasAtuais) e reajustado quando o
+    // usuario digita o valor na mao (ver o listener de 'valor' em bindClienteUsageFields).
+    // No else pra nunca colidir com o valorBase da renovacao acima.
+    else if (valorInput && telasInput && telasInput.type !== 'hidden' && form.dataset.valorPorTela !== undefined) {
+      const porTela = Number(form.dataset.valorPorTela);
+      const raw = String(telasInput.value).trim();
+      const telasN = Number(raw);
+      // So recalcula com telas valida (>=1). Campo vazio/0 durante a digitacao NAO
+      // zera o valor — deixa o usuario terminar de digitar sem perder o preco.
+      if (Number.isFinite(porTela) && porTela > 0 && raw !== '' && Number.isFinite(telasN) && telasN >= 1) {
+        valorInput.value = (porTela * telasN).toFixed(2);
+      }
+    }
+
+    // Recalcula vencimento: base + creditos × periodo (so no modal de renovacao)
+    const baseIso = form.dataset.baseVencIso;
+    const periodoQtd = Number(form.dataset.periodoQtd || 0);
+    const vencInput = form.querySelector('[name="vencimento"]');
+    if (baseIso && periodoQtd > 0 && vencInput) {
+      const parts = baseIso.split('-');
+      const base = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      const novo = somarPeriodo(base, periodoQtd, form.dataset.periodoTipo, creditos);
+      const dd = String(novo.getDate()).padStart(2, '0');
+      const mm = String(novo.getMonth() + 1).padStart(2, '0');
+      setDateInputValue(vencInput, novo.getFullYear() + '-' + mm + '-' + dd);
+    }
   };
 
   const bindClienteUsageFields = (form) => {
     if (!form) return;
-    ['plano', 'servidor', 'telas'].forEach(name => {
+    ['plano', 'servidor', 'telas', 'creditos_gastos'].forEach(name => {
       const field = form.querySelector('[name="' + name + '"]');
       if (field) {
         field.addEventListener('input', () => syncClienteUsageFields(form));
         field.addEventListener('change', () => syncClienteUsageFields(form));
       }
     });
+    // No cadastro/edicao, digitar o valor na mao REDEFINE o "valor por tela" — assim
+    // um desconto/ajuste manual vira a nova base, e mudar as telas depois escala a
+    // partir dele. Nao chama o sync (senao sobrescreveria o que esta sendo digitado)
+    // e nao roda na renovacao (la o valor e ditado pelos creditos, valorBase).
+    const valorField = form.querySelector('[name="valor"]');
+    if (valorField) {
+      valorField.addEventListener('input', () => {
+        if (form.dataset.valorBase !== undefined) {
+          const periodos = Math.max(1, Number(form.querySelector('[name="creditos_gastos"]')?.value) || 1);
+          form.dataset.valorBase = String(Number(valorField.value) / periodos);
+          return;
+        }
+        const telasN = Math.max(1, Number(form.querySelector('[name="telas"]')?.value) || 1);
+        const v = Number(valorField.value);
+        if (Number.isFinite(v) && v > 0) form.dataset.valorPorTela = String(v / telasN);
+      });
+    }
     syncClienteUsageFields(form);
   };
 
   bindClienteUsageFields(document.getElementById('modal-add-cliente-form'));
   bindClienteUsageFields(document.getElementById('modal-add-pagamento-form'));
+  const renovacaoPlano = document.querySelector('[data-renovacao-plano]');
+  if (renovacaoPlano) renovacaoPlano.addEventListener('change', () => {
+    const form = renovacaoPlano.form;
+    const option = renovacaoPlano.selectedOptions[0];
+    form.dataset.periodoQtd = option?.dataset.periodo || '30';
+    form.dataset.periodoTipo = option?.dataset.tipoPeriodo || 'Dias';
+    form.dataset.creditosPlano = option?.dataset.creditosPlano || '1';
+    syncClienteUsageFields(form);
+  });
 
   // Memoriza a preferência do usuário para o switch "Enviar mensagem" e qual
   // template foi escolhido por último — assim, da próxima vez que abrir o modal
@@ -759,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', function () {
     aplicarToggleTemplate(form);
   }
   // Salva quando o usuário muda o switch — uma única vez basta para virar default.
-  document.addEventListener('change', (e) => {
+  on(document, 'change', (e) => {
     const target = e.target;
     if (!target || target.tagName !== 'INPUT' || target.type !== 'checkbox') return;
     const name = target.getAttribute('name');
@@ -770,7 +1333,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
   // Memoriza o último template escolhido.
-  document.addEventListener('change', (e) => {
+  on(document, 'change', (e) => {
     const target = e.target;
     if (target && target.tagName === 'SELECT' && target.getAttribute('name') === 'template_boas_vindas') {
       try { localStorage.setItem(PREF_TEMPLATE_KEY, target.value || ''); } catch { /* ignora */ }
@@ -817,17 +1380,27 @@ document.addEventListener('DOMContentLoaded', function () {
         sel.value = valor;
       };
       setSelectWithFallback('plano', btn.getAttribute('data-plano') || '');
+      const planoFallback = form.querySelector('[name="plano"] option[data-fallback="1"]');
+      if (planoFallback) planoFallback.dataset.creditos = btn.getAttribute('data-creditos') || '0';
       form.querySelector('[name="valor"]').value = btn.getAttribute('data-valor') || '';
       setSelectWithFallback('servidor', btn.getAttribute('data-servidor') || '');
       setSelectWithFallback('forma_pagamento', btn.getAttribute('data-forma-pagamento') || '');
       form.querySelector('[name="telas"]').value = btn.getAttribute('data-telas') || '1';
+      // Semeia o "valor por tela" com o estado atual do cliente (valor / telas),
+      // pra que aumentar/diminuir as telas escale o valor na mesma proporcao.
+      // Ex.: R$ 25 com 1 tela -> R$ 25/tela; mudar pra 2 telas -> R$ 50.
+      const valEdit = Number(btn.getAttribute('data-valor')) || 0;
+      const telasEdit = Math.max(1, Number(btn.getAttribute('data-telas')) || 1);
+      if (valEdit > 0) form.dataset.valorPorTela = String(valEdit / telasEdit);
+      else delete form.dataset.valorPorTela;
       // Pré-preenche os campos novos (guardado: ignora se o campo não existir no DOM)
       const extras = {
         senha: 'data-senha', id_painel: 'data-id-painel', email: 'data-email', captacao: 'data-captacao',
         aniversario: 'data-aniversario', link_m3u: 'data-link-m3u', time_cliente: 'data-time-cliente',
         telefone_secundario: 'data-telefone-secundario', observacoes: 'data-observacoes',
         data_inicio: 'data-data-inicio', hora_vencimento: 'data-hora-vencimento',
-        pontos_fidelidade: 'data-pontos'
+        pontos_fidelidade: 'data-pontos',
+        sigma_customer_id: 'data-sigma-customer-id'
       };
       Object.keys(extras).forEach(name => {
         const el = form.querySelector('[name="' + name + '"]');
@@ -840,8 +1413,11 @@ document.addEventListener('DOMContentLoaded', function () {
       // explicitamente que, uma vez desmarcado, permaneça desmarcado).
       aplicarPrefs(form);
       // "Registrar pagamento" só vale para cliente novo: oculta na edição.
-      const onlyNew = modal.querySelector('[data-only-new]'); if (onlyNew) onlyNew.style.display = 'none';
-      const tituloEd = modal.querySelector('.modal-header h3'); if (tituloEd) tituloEd.textContent = '✎ Editar Cliente';
+      // querySelectorAll (nao querySelector): sao varios blocos so-de-cadastro
+      // (registrar pagamento, enviar mensagem e o select de template). Com o
+      // singular, so o primeiro sumia na edicao.
+      modal.querySelectorAll('[data-only-new]').forEach(el => { el.style.display = 'none'; });
+      const tituloEd = modal.querySelector('.modal-header h3'); if (tituloEd) setIconLabel(tituloEd, 'edit', 'Editar Cliente');
       const btnEd = document.querySelector('button[type="submit"][form="modal-add-cliente-form"]'); if (btnEd) btnEd.textContent = 'Salvar Cliente';
       syncClienteUsageFields(form);
       setModalState(modal, true);
@@ -857,6 +1433,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // Reseta o form antes — senão valores de uma edição anterior viajam pro novo cliente.
       if (form) {
         form.reset();
+        form.querySelectorAll('option[data-fallback="1"]').forEach(option => option.remove());
         // form.reset() não limpa o prefixo de telefone (componente custom).
         const phonePrefix = form.querySelector('[data-phone-prefix]');
         if (phonePrefix) setPhonePrefix(phonePrefix, '+55');
@@ -867,13 +1444,21 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       // Remove qualquer display:none deixado por uma edição anterior — caso
       // contrário, o switch "Registrar pagamento" some no Novo Cliente.
-      const onlyNew = modal.querySelector('[data-only-new]');
-      if (onlyNew) { onlyNew.style.removeProperty('display'); onlyNew.hidden = false; }
+      modal.querySelectorAll('[data-only-new]').forEach(el => {
+        el.style.removeProperty('display');
+        // O select de template continua governado pelo switch "Enviar mensagem"
+        // (aplicarPrefs, logo abaixo). Forcar hidden=false aqui faria ele
+        // aparecer mesmo com o switch desligado.
+        if (!el.hasAttribute('data-template-wrapper')) el.hidden = false;
+      });
       const reg = modal.querySelector('[name="registrar_pagamento"]'); if (reg) reg.checked = true;
       aplicarPrefs(form);
       const act = modal.querySelector('#modal-add-cliente-form [name="action"]'); if (act) act.value = 'create_cliente';
       const idf = modal.querySelector('#modal-add-cliente-form [name="id"]'); if (idf) idf.value = '';
-      const tituloNv = modal.querySelector('.modal-header h3'); if (tituloNv) tituloNv.textContent = '👤 Novo Cliente';
+      // Cliente novo nao herda o "valor por tela" da edicao anterior — a base so
+      // passa a existir quando o usuario digitar o primeiro valor (listener acima).
+      if (form) delete form.dataset.valorPorTela;
+      const tituloNv = modal.querySelector('.modal-header h3'); if (tituloNv) setIconLabel(tituloNv, 'plus', 'Novo Cliente');
       const btnNv = document.querySelector('button[type="submit"][form="modal-add-cliente-form"]'); if (btnNv) btnNv.textContent = 'Cadastrar Cliente';
       // Volta para a primeira aba (Dados).
       const firstTab = modal.querySelector('.tab-btn[data-tab="dados"]'); if (firstTab) firstTab.click();
@@ -913,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', function () {
       set('creditos', btn.getAttribute('data-creditos') || '0');
       set('custo', btn.getAttribute('data-custo') || '0');
       set('valor_venda', btn.getAttribute('data-valor-venda') || '');
-      const titulo = modal.querySelector('.modal-header h3'); if (titulo) titulo.textContent = '✎ Editar Transação';
+      const titulo = modal.querySelector('.modal-header h3'); if (titulo) setIconLabel(titulo, 'edit', 'Editar Transação');
       setModalState(modal, true);
     });
   });
@@ -922,14 +1507,46 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', () => {
       const modal = document.getElementById('modal-transacao-info');
       if (!modal) return;
-      const put = (id, attr) => { const el = document.getElementById(id); if (el) el.textContent = btn.getAttribute(attr) || '-'; };
+      const put = (id, attr) => { const el = document.getElementById(id); if (el) el.textContent = btn.getAttribute(attr) || '—'; };
       put('tx-info-data', 'data-data'); put('tx-info-cliente', 'data-cliente'); put('tx-info-pagamento', 'data-pagamento');
       put('tx-info-descricao', 'data-descricao'); put('tx-info-servidor', 'data-servidor'); put('tx-info-plano', 'data-plano');
       put('tx-info-telas', 'data-telas'); put('tx-info-creditos', 'data-creditos'); put('tx-info-custo', 'data-custo');
       put('tx-info-total', 'data-total'); put('tx-info-lucro', 'data-lucro');
+      // Aplica cor + sinal correto no Lucro (inline style — independente de CSS file)
+      const lucroEl = document.getElementById('tx-info-lucro');
+      if (lucroEl) {
+        const neg = btn.getAttribute('data-lucro-neg') === '1';
+        const raw = btn.getAttribute('data-lucro') || '—';
+        lucroEl.textContent = (neg || raw.startsWith('-')) ? raw : ('+' + raw);
+        lucroEl.style.color = neg ? '#ef4444' : '#22c55e';
+      }
+      const totalEl = document.getElementById('tx-info-total');
+      if (totalEl) {
+        const raw = btn.getAttribute('data-total') || '—';
+        totalEl.textContent = (raw.startsWith('+') || raw.startsWith('-')) ? raw : ('+' + raw);
+      }
       setModalState(modal, true);
     });
   });
+
+  // Linha inteira de transacao vira tappable — delega para o botao 👁 (view-transacao)
+  // que ja tem todos os data-* atributos. Ignora cliques em form/botoes p/ nao
+  // colidir com o trash.
+  document.querySelectorAll('tr.tx-row').forEach(row => {
+    const open = () => {
+      const btn = row.querySelector('.view-transacao');
+      if (btn) btn.click();
+    };
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('button, a, input, form, select, label')) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
+      open();
+    });
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
+
 
   const txClienteSelect = document.querySelector('[data-tx-cliente]');
   if (txClienteSelect) {
@@ -959,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         const res = await fetch(window.location.href, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'x-csrf-token': (window.getCsrfToken ? window.getCsrfToken() : '') },
           body: formData
         });
         const data = await res.json();
@@ -1044,6 +1661,44 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  let paymentMessagePending = false;
+  let paymentMessageReady = false;
+  async function syncPaymentMessagePreference(method = 'GET') {
+    const select = document.querySelector('#modal-add-pagamento-form [name="mensagem_pagamento_id"]');
+    if (!select || paymentMessagePending) return;
+    paymentMessagePending = true;
+    paymentMessageReady = false;
+    select.disabled = true;
+    try {
+      const options = { method, cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } };
+      if (method === 'POST') {
+        options.headers['Content-Type'] = 'application/json';
+        options.headers['x-csrf-token'] = window.getCsrfToken ? window.getCsrfToken() : '';
+        options.body = JSON.stringify({ mensagemId: select.value });
+      }
+      const response = await fetch('/clientes/preferencias/mensagem-pagamento', options);
+      if (!response.ok) throw new Error('Falha ao sincronizar preferência');
+      const data = await response.json();
+      if (!Object.prototype.hasOwnProperty.call(data, 'mensagemId')) throw new Error('Resposta inválida');
+      const value = data.mensagemId == null ? '' : String(data.mensagemId);
+      select.value = value;
+      if (select.value !== value) {
+        throw new Error('A lista de mensagens mudou. Recarregue a página.');
+      }
+      paymentMessageReady = true;
+    } catch (error) {
+      showToast('Não foi possível sincronizar a mensagem após salvar. Reabra a renovação ou recarregue a página para tentar novamente.', 'error');
+    } finally {
+      select.disabled = false;
+      paymentMessagePending = false;
+    }
+  }
+
+  window.addEventListener('focus', () => {
+    const modal = document.getElementById('modal-add-pagamento');
+    if (modal && modal.getAttribute('aria-hidden') === 'false') syncPaymentMessagePreference();
+  });
+
   document.querySelectorAll('.open-payment').forEach(btn => {
     btn.addEventListener('click', () => {
       const modal = document.getElementById('modal-add-pagamento');
@@ -1066,11 +1721,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const horaVenc = btn.getAttribute('data-hora') || '23:59';
 
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
-      // Novo vencimento = max(hoje, venc antigo) + periodo do plano.
-      // Antes ficava fixo em +30 dias a partir do venc antigo — cliente vencido há
-      // 90 dias renovava pra uma data AINDA no passado. E plano trimestral/anual
-      // ficava com vencimento errado (sempre 30 dias).
-      const periodoDias = Math.max(1, Number(btn.getAttribute('data-periodo') || 30));
+      // Novo vencimento = base + creditos × periodo. Base = max(hoje, venc antigo)
+      // — cliente vencido há 90 dias renova pra data >= hoje, não pro passado.
+      // Salva base+periodo+tipo no dataset pra o syncClienteUsageFields recalcular
+      // sempre que o user mudar o numero de creditos.
+      const periodoQtd = Math.max(1, Number(btn.getAttribute('data-periodo') || 30));
+      const periodoTipo = btn.getAttribute('data-tipo-periodo') || 'Dias';
       let baseDate = new Date();
       if (venc && /^\d{2}\/\d{2}\/\d{4}$/.test(venc)) {
         const parts = venc.split('/');
@@ -1079,21 +1735,40 @@ document.addEventListener('DOMContentLoaded', function () {
         today.setHours(0, 0, 0, 0);
         baseDate = oldVenc > today ? oldVenc : today;
       }
-      const novoVenc = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + periodoDias);
-      const ddNv = String(novoVenc.getDate()).padStart(2, '0');
-      const mmNv = String(novoVenc.getMonth() + 1).padStart(2, '0');
-      setDateInputValue(form.querySelector('[name="vencimento"]'), novoVenc.getFullYear() + '-' + mmNv + '-' + ddNv);
+      form.dataset.baseVencIso = baseDate.getFullYear() + '-' + String(baseDate.getMonth() + 1).padStart(2, '0') + '-' + String(baseDate.getDate()).padStart(2, '0');
+      form.dataset.periodoQtd = String(periodoQtd);
+      form.dataset.periodoTipo = periodoTipo;
+      form.dataset.creditosPlano = btn.getAttribute('data-creditos-plano') || '1';
 
       const horaInput = form.querySelector('[name="hora_vencimento"]');
       if (horaInput) horaInput.value = String(horaVenc).slice(0, 5) || '23:59';
 
-      // Plano e Servidor são FIXOS na renovação (não editáveis). Setamos o
-      // input hidden (que é submetido) e o input visível readonly só pra exibir.
+      // Plano e servidor podem ser alterados na renovação.
       const planoInput = form.querySelector('[name="plano"]');
+      if (planoInput) {
+        planoInput.querySelectorAll('[data-plano-legado]').forEach(option => option.remove());
+        if (plano && !Array.from(planoInput.options).some(option => option.value === plano)) {
+          const option = new Option(plano, plano);
+          option.dataset.planoLegado = '1';
+          option.dataset.periodo = String(periodoQtd);
+          option.dataset.tipoPeriodo = periodoTipo;
+          option.dataset.creditosPlano = form.dataset.creditosPlano;
+          planoInput.add(option);
+        }
+      }
       if (planoInput) planoInput.value = plano;
       const planoDisplay = form.querySelector('[data-plano-display]');
       if (planoDisplay) planoDisplay.value = plano;
       const servidorInput = form.querySelector('[name="servidor"]');
+      if (servidorInput) {
+        servidorInput.querySelectorAll('[data-servidor-legado]').forEach(option => option.remove());
+        if (servidor && !Array.from(servidorInput.options).some(option => option.value === servidor)) {
+          const option = new Option(servidor, servidor);
+          option.dataset.servidorLegado = '1';
+          option.dataset.valorCred = valorCred;
+          servidorInput.add(option);
+        }
+      }
       if (servidorInput) servidorInput.value = servidor;
       const servidorDisplay = form.querySelector('[data-servidor-display]');
       if (servidorDisplay) servidorDisplay.value = servidor;
@@ -1104,11 +1779,22 @@ document.addEventListener('DOMContentLoaded', function () {
         modalErrorTop.textContent = 'Este cliente está sem plano e/ou servidor. Edite o cliente para preencher esses campos antes de renovar.';
       }
 
-      form.querySelector('[name="valor"]').value = valor;
+      // valorBase = preco de 1 periodo do plano. O campo "valor" em si e recalculado
+      // por syncClienteUsageFields (valorBase × creditos) — aqui so guardamos a base,
+      // senao mudar os creditos nao teria de onde remultiplicar.
+      form.dataset.valorBase = String(Number(valor) || 0);
       form.querySelector('[name="forma_pagamento"]').value = 'PIX';
-      form.querySelector('[name="telas"]').value = telas;
+      // Credits = 1 default. Telas (hidden) tambem vai 1 — backend usa o maior dos
+      // dois pro custo. Se o cliente real tinha 2 telas, isso nao se perde porque
+      // o telas no banco continua intacto ate o backend escrever de novo.
+      const creditosInput = form.querySelector('[name="creditos_gastos"]');
+      if (creditosInput) creditosInput.value = '1';
+      // Telas (hidden) = telas do cliente, FIXAS na renovacao. Entram no custo e no
+      // consumo do servidor (telas × creditos) — nao mais espelham os creditos.
+      const telasInput = form.querySelector('[name="telas"]');
+      if (telasInput) telasInput.value = telas;
       form.dataset.valorCred = valorCred;
-      // Calcula créditos+custo automaticamente; também reage a mudanças nos selects.
+      // Calcula data + custo automaticamente (e reage quando user muda creditos).
       syncClienteUsageFields(form);
 
       // Pago em = hoje.
@@ -1117,12 +1803,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const mm = String(today.getMonth() + 1).padStart(2, '0');
       setDateInputValue(form.querySelector('[name="pago_em"]'), today.getFullYear() + '-' + mm + '-' + dd);
 
-      const mensagemPagamento = form.querySelector('[name="mensagem_pagamento_id"]');
-      if (mensagemPagamento) {
-        const savedMessageId = localStorage.getItem('gestor:last-payment-message-id') || '';
-        mensagemPagamento.value = savedMessageId;
-        if (mensagemPagamento.value !== savedMessageId) mensagemPagamento.value = '';
-      }
+      syncPaymentMessagePreference();
       const title = modal.querySelector('#pagamento-title');
       if (title) title.textContent = '↻ Renovar - ' + nome;
       setModalState(modal, true);
@@ -1159,13 +1840,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const mensagemPagamento = pagamentoForm.querySelector('[name="mensagem_pagamento_id"]');
     if (mensagemPagamento) {
       mensagemPagamento.addEventListener('change', () => {
-        localStorage.setItem('gestor:last-payment-message-id', mensagemPagamento.value || '');
+        syncPaymentMessagePreference('POST');
       });
     }
     pagamentoForm.addEventListener('submit', async (e) => {
-      const mensagemPagamentoSubmit = pagamentoForm.querySelector('[name="mensagem_pagamento_id"]');
-      if (mensagemPagamentoSubmit) {
-        localStorage.setItem('gestor:last-payment-message-id', mensagemPagamentoSubmit.value || '');
+      if (e.defaultPrevented) return;
+      if (paymentMessagePending || !paymentMessageReady) {
+        e.preventDefault();
+        showToast('Aguarde a sincronização da mensagem. Se houve uma falha, reabra a renovação para tentar novamente.', 'error');
+        return;
       }
       if (pagamentoForm.dataset.nativeSubmit === '1') return;
       e.preventDefault();
@@ -1176,7 +1859,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         const res = await fetch(window.location.href, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'x-csrf-token': (window.getCsrfToken ? window.getCsrfToken() : '') },
           body: formData
         });
         const data = await res.json();
@@ -1256,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', function () {
       form.querySelector('[name="media_tipo"]').value = btn.getAttribute('data-media-tipo') || '';
       form.querySelector('[name="media_path"]').value = btn.getAttribute('data-media-path') || '';
       const title = modal.querySelector('.modal-header h3');
-      if (title) title.textContent = '✎ Editar Template';
+      if (title) setIconLabel(title, 'edit', 'Editar Template');
       setModalState(modal, true);
     });
   });
@@ -1379,7 +2062,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         await fetch(window.location.href, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'x-csrf-token': (window.getCsrfToken ? window.getCsrfToken() : '') },
           body: formData
         });
       } catch (e) {
@@ -1530,7 +2213,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try {
         const res = await fetch(window.location.href, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'x-csrf-token': (window.getCsrfToken ? window.getCsrfToken() : '') },
           body: formData
         });
         const data = await res.json();
@@ -1657,6 +2340,8 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => { toast.remove(); }, 4000);
   }
 
+  // Limpa o poll da tela anterior (evita acumular intervals a cada navegacao pjax).
+  if (window.__waSessoesInterval) { clearInterval(window.__waSessoesInterval); window.__waSessoesInterval = null; }
   if (document.body.classList.contains('page-whatsapp_sessoes')) {
     const refreshSessionCards = async () => {
       try {
@@ -1664,7 +2349,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.set('action', 'refresh_sessoes');
         const res = await fetch(window.location.href, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'x-csrf-token': (window.getCsrfToken ? window.getCsrfToken() : '') },
           body: formData
         });
         const data = await res.json();
@@ -1702,6 +2387,14 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     setTimeout(refreshSessionCards, 1500);
-    setInterval(refreshSessionCards, 10000);
+    window.__waSessoesInterval = setInterval(refreshSessionCards, 10000);
   }
-});
+}
+
+// Executa na carga inicial; expoe pro pjax re-inicializar a pagina apos cada swap.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGestor);
+} else {
+  initGestor();
+}
+window.__gestorInitPage = initGestor;

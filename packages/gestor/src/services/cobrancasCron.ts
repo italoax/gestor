@@ -2,8 +2,12 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { queryRows, queryOne, execute } from "../db/mysql.js";
 import { env } from "../config/env.js";
 import { appHhmm, appNowSql, appTodayIso, appWeekday } from "./dates.js";
-import { enviarMensagemModelo } from "./whatsapp.js";
+import { enviarMensagemModeloComRetry, verificarConexaoSessao } from "./whatsapp.js";
+import { getPixConfig } from "./pixConfig.js";
+import { createLogger } from "./logger.js";
 import type { RowDataPacket } from "mysql2";
+
+const logger = createLogger("cron-cobrancas");
 
 interface CobrancaAutoRow extends RowDataPacket {
   id: number; userId: number; tipo: string; periodo: number; mensagem: string | null; mediaTipo: string | null; mediaPath: string | null;
@@ -12,12 +16,18 @@ interface CobrancaAutoRow extends RowDataPacket {
   filtroArquivados: string | null;
   rodapeAntiban: number; envioLotes: number; loteTamanho: number | null; lotePausa: number | null;
 }
-interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; user: string | null; senha: string | null; }
+interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; user: string | null; senha: string | null; pagamentoToken: string | null; }
 interface EnvioIdRow extends RowDataPacket { id: number; }
 
 let timer: NodeJS.Timeout | null = null;
-let running = false;
+// Lock global compartilhado pelo cron interno (setInterval) e pelo endpoint
+// público /__cron/cobrancas. Se um tick anterior ainda estiver rodando (envios
+// espaçados por delay), o próximo tick retorna {skipped} em vez de empilhar
+// execuções simultâneas que duplicariam mensagens.
+let cronRodando = false;
 let enviosTableReady: Promise<void> | null = null;
+
+export function cronEstaRodando() { return cronRodando; }
 
 // Intervalo aleatório entre cada envio para reduzir o risco de bloqueio do WhatsApp.
 // Usa o min/max da própria regra (em segundos) se definidos; senão cai no padrão de WA_SEND_MIN/MAX_DELAY.
@@ -57,20 +67,30 @@ function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
   if (cobranca.filtroServidor) { where += " AND servidor = :filtroServidor"; params.filtroServidor = cobranca.filtroServidor; }
   if (cobranca.filtroPlano) { where += " AND plano = :filtroPlano"; params.filtroPlano = cobranca.filtroPlano; }
   // Inclui user/senha para que templates com {usuario}/{senha}/{user} não saiam em branco.
-  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor, user, senha FROM clientes WHERE ${where}`, params };
+  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor, user, senha, pagamento_token AS pagamentoToken FROM clientes WHERE ${where}`, params };
 }
 
 export function startCobrancasCron() {
-  if (timer) return;
+  if (env.localMode || timer) return;
   timer = setInterval(() => {
-    // Evita execuções sobrepostas: um ciclo pode demorar (delays entre envios).
-    if (running) return;
-    running = true;
-    void executarCobrancasAutomaticas().catch((error) => console.error("Erro no cron de cobranças:", error)).finally(() => { running = false; });
+    void executarCobrancasAutomaticas().catch((error) => logger.error("erro no cron de cobranças", error));
   }, 60_000);
 }
 
-export async function executarCobrancasAutomaticas() {
+export async function executarCobrancasAutomaticas(): Promise<{ skipped?: boolean }> {
+  if (env.localMode) return { skipped: true };
+  // Lock unificado: cron interno e endpoint /__cron/cobrancas chamam essa função;
+  // sem o check aqui, os dois podiam rodar ao mesmo tempo e duplicar envios.
+  if (cronRodando) return { skipped: true };
+  cronRodando = true;
+  try {
+    return await executarCobrancasAutomaticasInterno();
+  } finally {
+    cronRodando = false;
+  }
+}
+
+async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolean }> {
   await ensureCobrancasEnviosTable();
   const now = new Date();
   const hhmm = appHhmm(now);
@@ -102,10 +122,15 @@ export async function executarCobrancasAutomaticas() {
     // Se o usuário não tem nenhum dispositivo cadastrado, pula a regra inteira —
     // antes caía no session "default" e mandava pelo dispositivo de outra conta.
     if (!sessaoWa) {
-      console.warn(`Regra ${cobranca.id} sem dispositivo WhatsApp cadastrado para o usuário ${cobranca.userId}; pulando.`);
+      logger.warn(`regra ${cobranca.id} sem dispositivo WhatsApp do usuário ${cobranca.userId}; pulando`);
       continue;
     }
+    // Config PIX do dono da regra — alimenta a tag {pix} nas mensagens automaticas.
+    // Buscada 1x por cobranca (o service cacheia 60s de qualquer forma).
+    const pixCfg = await getPixConfig(cobranca.userId);
     let enviadosNestaCobranca = 0;
+    let falhasSeguidas = 0;
+    let circuitBreaker = false;
     for (const cliente of clientes) {
       const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
       if (!reservaId) continue;
@@ -126,15 +151,33 @@ export async function executarCobrancasAutomaticas() {
       // então não precisamos de rodapé anti-ban — o conteúdo nunca é idêntico entre clientes.
       const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
 
-      const result = await enviarMensagemModelo(sessaoWa, cliente, {
+      const result = await enviarMensagemModeloComRetry(sessaoWa, cliente, {
         mensagem: mensagemBase,
         mediaTipo: cobranca.mediaTipo,
         mediaPath: cobranca.mediaPath,
-      });
+      }, undefined, undefined, pixCfg);
       await finalizarEnvioCobranca(reservaId, result.ok, result.error);
+
+      // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
+      // Pausa a regra (status 'Pausada' não bate no WHERE do cron) pra não
+      // continuar martelando e piorar a situação.
+      if (result.ok) {
+        falhasSeguidas = 0;
+      } else {
+        falhasSeguidas += 1;
+        if (falhasSeguidas >= 5) { circuitBreaker = true; break; }
+      }
+    }
+    if (circuitBreaker) {
+      await execute(
+        "UPDATE cobrancas SET status = 'Pausada' WHERE id = :id",
+        { id: cobranca.id },
+      );
+      console.warn(`Regra ${cobranca.id} pausada por 5 falhas seguidas de envio.`);
     }
     await execute("UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id", { id: cobranca.id, ultimaExecucao: appNowSql(now) });
   }
+  return {};
 }
 
 // Disparo manual de uma regra (botão "▶" no card da automação). Ignora hora_envio,
@@ -167,32 +210,60 @@ export async function dispararRegraManual(userId: number, regraId: number): Prom
     { userId },
   ))[0]?.sessao ?? "";
   if (!sessaoWa) return { ok: false, error: "Cadastre um dispositivo em WhatsApp antes de disparar a regra." };
+  const pixCfg = await getPixConfig(userId);
 
+  // Pré-check: se o WhatsApp está desconectado, falha cedo sem reservar nada.
+  // Evita marcar clientes como "erro" desnecessariamente quando o usuário só
+  // precisa reconectar antes.
+  const conexao = await verificarConexaoSessao(sessaoWa);
+  if (!conexao.connected) {
+    return { ok: false, error: conexao.error || "WhatsApp desconectado. Reconecte antes de disparar." };
+  }
+
+  let tentativasNestaCobranca = 0;
   let enviadosNestaCobranca = 0;
+  let falhasSeguidas = 0;
+  let circuitBreaker = false;
   for (const cliente of clientes) {
     const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
     if (!reservaId) continue;
 
-    if (enviadosNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
-    if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
+    if (tentativasNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
+    if (cobranca.envioLotes && tentativasNestaCobranca > 0) {
       const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
-      if (enviadosNestaCobranca % tamanho === 0) {
+      if (tentativasNestaCobranca % tamanho === 0) {
         const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
         if (pausaSec > 0) await sleep(pausaSec * 1_000);
       }
     }
-    enviadosNestaCobranca += 1;
+    tentativasNestaCobranca += 1;
 
     const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
-    const result = await enviarMensagemModelo(sessaoWa, cliente, {
+    const result = await enviarMensagemModeloComRetry(sessaoWa, cliente, {
       mensagem: mensagemBase,
       mediaTipo: cobranca.mediaTipo,
       mediaPath: cobranca.mediaPath,
-    });
+    }, undefined, undefined, pixCfg);
     await finalizarEnvioCobranca(reservaId, result.ok, result.error);
+
+    if (result.ok) {
+      enviadosNestaCobranca += 1;
+      falhasSeguidas = 0;
+    } else {
+      falhasSeguidas += 1;
+      if (falhasSeguidas >= 5) { circuitBreaker = true; break; }
+    }
+  }
+  if (circuitBreaker) {
+    await execute("UPDATE cobrancas SET status = 'Pausada' WHERE id = :id", { id: cobranca.id });
   }
   await execute("UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id", { id: cobranca.id, ultimaExecucao: appNowSql(now) });
-  return { ok: true, enviados: enviadosNestaCobranca, elegiveis: clientes.length };
+  return {
+    ok: !circuitBreaker,
+    enviados: enviadosNestaCobranca,
+    elegiveis: clientes.length,
+    error: circuitBreaker ? "Regra pausada: 5 falhas seguidas de envio. Reative depois de checar a conexão do WhatsApp." : undefined,
+  };
 }
 
 export async function ensureCobrancasEnviosTable() {

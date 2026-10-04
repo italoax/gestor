@@ -1,0 +1,59 @@
+<div class="container page-admin" data-search-scope>
+  <div class="admin-tabs">
+    <a class="admin-tab" href="/admin/planos">📦 Planos</a>
+    <a class="admin-tab active" href="/admin/usuarios">👥 Usuários</a>
+    <a class="admin-tab" href="/admin/backups">💾 Backups</a>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr><th>#</th><th>Nome</th><th>Usuário</th><th>Vencimento</th><th>Status</th><th>Admin</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        <% usuarios.forEach(u => {
+          const dias = u.diasFaltando == null ? null : Number(u.diasFaltando);
+          let statusLabel = 'Sem assinatura', statusCls = 'badge-muted';
+          if (u.isAdmin) { statusLabel = 'Admin (ilimitado)'; statusCls = 'badge-blue'; }
+          else if (dias == null) { statusLabel = 'Sem vencimento'; statusCls = 'badge-muted'; }
+          else if (dias < 0) { statusLabel = 'Vencido'; statusCls = 'badge-red'; }
+          else if (dias <= 3) { statusLabel = dias + ' dia(s)'; statusCls = 'badge-yellow'; }
+          else { statusLabel = dias + ' dias'; statusCls = 'badge-green'; }
+        %>
+        <tr>
+          <td><%= u.id %></td>
+          <td><%= u.name %></td>
+          <td><span class="muted">@<%= u.username %></span></td>
+          <td><%= u.vencimento ? formatDateBr(u.vencimento) : '—' %></td>
+          <td><span class="badge <%= statusCls %>"><%= statusLabel %></span></td>
+          <td><%= u.isAdmin ? '⭐' : '—' %></td>
+          <td class="admin-user-actions">
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="estender">
+              <input type="hidden" name="id" value="<%= u.id %>">
+              <select name="dias" class="input input-sm">
+                <option value="30">+30d</option><option value="90">+90d</option>
+                <option value="180">+180d</option><option value="365">+365d</option>
+              </select>
+              <button class="btn btn-sm btn-green" type="submit" data-loading-text="...">Estender</button>
+            </form>
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="bloquear">
+              <input type="hidden" name="id" value="<%= u.id %>">
+              <button class="btn btn-sm btn-muted" type="submit" onclick="return confirm('Bloquear a assinatura deste usuário?')">Bloquear</button>
+            </form>
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="toggle_admin">
+              <input type="hidden" name="id" value="<%= u.id %>">
+              <button class="btn btn-sm btn-muted" type="submit" onclick="return confirm('Alterar status de admin?')"><%= u.isAdmin ? 'Remover admin' : 'Tornar admin' %></button>
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

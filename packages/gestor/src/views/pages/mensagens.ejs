@@ -1,17 +1,14 @@
-<div class="container page-mensagens" data-search-scope>
+<div class="container page-mensagens ui-catalog" data-search-scope data-search-singular="template" data-search-plural="templates" data-search-empty="Nenhum template encontrado. Tente outra busca.">
 
-  <div class="msg-toolbar">
-    <label class="cli-search msg-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar template..." data-search-input></label>
-    <label class="cli-filter"><select class="input" aria-label="Filtro" disabled><option>Todos</option></select></label>
-    <label class="cli-filter"><select class="input" aria-label="Ordenar" disabled><option>Nome A-Z</option></select></label>
+  <div class="ui-toolbar ui-toolbar-actions">
     <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
   </div>
 
-  <div class="msg-count"><%= mensagens.length %> templates</div>
+  <div class="ui-catalog-heading"><h2>Templates de mensagem <span><%= mensagens.length %></span></h2><p data-search-results role="status" aria-live="polite" hidden></p></div>
 
   <% if (!mensagens.length) { %>
     <div class="cli-empty">
-      <div class="cli-empty-ico">💬</div>
+      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '💬' }) %></div>
       <h3>Nenhum template cadastrado</h3>
       <p class="muted">Crie templates de mensagem para envio automático e manual.</p>
       <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
@@ -23,11 +20,12 @@
       <div class="msg-card-head">
         <strong><%= m.titulo %></strong>
         <div class="msg-actions">
-          <button class="cli-ico-btn edit-mensagem" type="button" title="Editar" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-descricao="<%= m.descricao || '' %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>">✎</button>
+          <button class="cli-ico-btn edit-mensagem" type="button" title="Editar" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-descricao="<%= m.descricao || '' %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
           <form method="post" action="/mensagens" class="action-form delete-mensagem msg-del-form">
+            <%- csrfInput %>
             <input type="hidden" name="action" value="delete_mensagem">
             <input type="hidden" name="id" value="<%= m.id %>">
-            <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+            <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
           </form>
         </div>
       </div>
@@ -46,10 +44,11 @@
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <div class="modal-tabs">
-      <button class="tab-btn active" type="button" data-tab="mensagem">💬 Mensagem</button>
-      <button class="tab-btn" type="button" data-tab="midia">🖼️ Mídia</button>
+      <button class="tab-btn active" type="button" data-tab="mensagem"><%- include('../partials/ui-icon', { name: 'message' }) %> Mensagem</button>
+      <button class="tab-btn" type="button" data-tab="midia"><%- include('../partials/ui-icon', { name: 'image' }) %> Mídia</button>
     </div>
     <form method="post" action="/mensagens" id="modal-add-mensagem-form" class="modal-body" data-native-submit="1">
+      <%- csrfInput %>
       <input type="hidden" name="action" value="create_mensagem">
       <input type="hidden" name="id" value="">
       <input type="hidden" name="media_tipo_atual" value="">
@@ -78,6 +77,7 @@
                 <option value="{vencimento}">{vencimento}</option>
                 <option value="{valor}">{valor}</option>
                 <option value="{servidor}">{servidor}</option>
+                <option value="{link_cliente}">{link_cliente} — Renovar com PIX</option>
               </select>
             </div>
             <textarea class="input" name="mensagem" data-mensagem-text rows="9"></textarea>

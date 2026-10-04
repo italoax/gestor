@@ -6,6 +6,7 @@
   </div>
   <div class="card account-card">
     <form method="post" class="form-grid account-form-grid">
+      <%- csrfInput %>
       <label class="field">
         Nome
         <input class="input" name="name" value="<%= account?.name || '' %>" required>
@@ -13,10 +14,6 @@
       <label class="field">
         Usuário
         <input class="input" name="username" value="<%= account?.username || '' %>" required>
-      </label>
-      <label class="field account-field-email">
-        E-mail
-        <input class="input" type="email" name="email" value="<%= account?.email || '' %>" required>
       </label>
       <label class="field">
         Nova senha
@@ -33,4 +30,75 @@
       </div>
     </form>
   </div>
+
+  <div class="card account-card">
+    <h3 style="margin-top:0;">💠 Chave PIX</h3>
+    <p class="muted">
+      Configure sua chave PIX pra inserir nas mensagens usando a tag <code>{pix}</code>.
+      Ela vira texto que o cliente copia com um toque longo no WhatsApp.
+      Use <code>{pix_bloco}</code> pra inserir um bloco pronto (nome + chave formatados).
+    </p>
+    <form method="post" action="/minha-conta/pix" class="form-grid" data-native-submit="1">
+      <%- csrfInput %>
+      <label class="field full">
+        <span>Chave PIX</span>
+        <input class="input" name="pix_chave" value="<%= (account && account.pixChave) || '' %>" placeholder="email, CPF/CNPJ, celular ou aleatória">
+      </label>
+      <label class="field">
+        <span>Nome do recebedor</span>
+        <input class="input" name="pix_nome" value="<%= (account && account.pixNome) || '' %>" placeholder="Ex: João da Silva">
+      </label>
+      <label class="field">
+        <span>Tipo da chave</span>
+        <select class="input" name="pix_tipo">
+          <% const tp = (account && account.pixTipo) || ''; %>
+          <option value="" <%= tp === '' ? 'selected' : '' %>>— (não exibir)</option>
+          <% ['Celular','CPF','CNPJ','Email','Aleatória'].forEach(function(o){ %>
+            <option value="<%= o %>" <%= tp === o ? 'selected' : '' %>><%= o %></option>
+          <% }) %>
+        </select>
+      </label>
+      <div class="account-pix-preview full">
+        <span class="muted" style="font-size:12.5px;">Prévia do <code>{pix_bloco}</code>:</span>
+        <pre class="account-pix-box"><%= (account && account.pixNome) ? ('*' + account.pixNome + '*\n') : '' %><%= (account && account.pixTipo) ? (account.pixTipo + ': ') : '' %><%= (account && account.pixChave) || 'sua-chave-aqui' %></pre>
+      </div>
+      <div class="modal-actions account-actions full">
+        <button class="btn btn-primary" data-loading-text="Salvando">Salvar chave PIX</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card account-card" style="margin-top:16px;">
+    <h3 style="margin-top:0;">🔔 Notificações push</h3>
+    <p class="muted">
+      Receba avisos no celular ou desktop quando um cliente pagar, um status agendado falhar ou outras coisas importantes.
+      Funciona mesmo com o gestor fechado, contanto que o navegador esteja aberto (ou app instalado).
+    </p>
+    <div class="push-state-row">
+      <div id="push-state-msg" class="muted" style="font-size:13px;">Verificando…</div>
+      <div>
+        <button class="btn btn-primary" type="button" id="btn-push-on" hidden>🔔 Ativar notificações</button>
+        <button class="btn btn-muted" type="button" id="btn-push-off" hidden>Desativar</button>
+      </div>
+    </div>
+    <script>
+    (function () {
+      var msg = document.getElementById('push-state-msg');
+      var btnOn = document.getElementById('btn-push-on');
+      var btnOff = document.getElementById('btn-push-off');
+      function pintar(s) {
+        btnOn.hidden = true; btnOff.hidden = true;
+        if (s === 'unsupported') { msg.textContent = 'Seu navegador não suporta notificações push.'; return; }
+        if (s === 'denied') { msg.textContent = 'Permissão negada. Habilite nas configurações do navegador.'; return; }
+        if (s === 'subscribed') { msg.textContent = '✓ Ativadas neste dispositivo.'; btnOff.hidden = false; return; }
+        msg.textContent = 'Notificações desativadas neste dispositivo.'; btnOn.hidden = false;
+      }
+      function refresh() { if (window.pushStatus) window.pushStatus().then(pintar); }
+      btnOn.addEventListener('click', async function () { if (await window.pushSubscribe()) refresh(); });
+      btnOff.addEventListener('click', async function () { if (await window.pushUnsubscribe()) refresh(); });
+      setTimeout(refresh, 100);
+    })();
+    </script>
+  </div>
+
 </div>

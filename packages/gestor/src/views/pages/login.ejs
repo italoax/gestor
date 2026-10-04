@@ -69,6 +69,7 @@
         </div>
       <% } %>
       <form class="login-form" action="/login" method="post">
+        <%- csrfInput %>
         <label class="login-field">
           <span>
             Nome de usuário
@@ -96,16 +97,8 @@
           Acessar painel
         </button>
       </form>
-      <div class="login-divider">
-        <span>
-          ou
-        </span>
-      </div>
-      <div class="login-actions">
-        <a class="login-btn ghost login-btn-link" href="/register">
-          Criar conta
-        </a>
-      </div>
+
     </div>
   </section>
 </main>
+<script src="/assets/js/login.js?v=199" defer></script>

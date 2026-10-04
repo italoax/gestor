@@ -1,0 +1,253 @@
+<div class="container page-status">
+
+  <% if (!temWhatsapp) { %>
+    <div class="cli-empty">
+      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></div>
+      <h3>WhatsApp não conectado</h3>
+      <p class="muted">Cadastre e conecte um dispositivo WhatsApp antes de publicar status.</p>
+      <a class="btn btn-primary" href="/whatsapp">Ir para WhatsApp</a>
+    </div>
+  <% } else { %>
+
+  <div class="section-header">
+    <div>
+      <h2 class="status-page-title">Status WhatsApp</h2><p class="muted">Agende novidades, ofertas e avisos para o seu status.</p>
+    </div>
+    <button class="btn btn-primary" type="button" data-open-modal="modal-novo-status">
+      <%- include('../partials/ui-icon', { name: 'broadcast' }) %> Nova publicação
+    </button>
+  </div>
+
+  <!-- Histórico -->
+  <%- include('../partials/status-historico', { historico }) %>
+
+  <% } %>
+</div>
+
+<!-- Modal: Nova publicação -->
+<% if (temWhatsapp) { %>
+<div class="modal-overlay" id="modal-novo-status" aria-hidden="true" inert>
+  <div class="modal modal-lg status-composer">
+    <div class="modal-header">
+      <h3><%- include('../partials/ui-icon', { name: 'broadcast' }) %> Nova publicação</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
+    <form method="post" action="/status" id="form-status" enctype="multipart/form-data" class="modal-body">
+      <%- csrfInput %>
+      <input type="hidden" name="tipo" id="status-tipo" value="text">
+
+      <p class="status-intro muted">Escolha o conteúdo e o horário. A publicação aparece em Meu status por 24 horas.</p>
+      <div class="status-tabs" aria-label="Tipo de publicação">
+        <button type="button" class="status-tab active" aria-pressed="true" data-tipo="text"><%- include('../partials/ui-icon', { name: 'message' }) %> Texto</button>
+        <button type="button" class="status-tab" aria-pressed="false" data-tipo="image"><%- include('../partials/ui-icon', { name: 'image' }) %> Imagem</button>
+        <button type="button" class="status-tab" aria-pressed="false" data-tipo="video">🎬 Vídeo</button>
+      </div>
+
+      <div class="status-modal-grid">
+        <div class="status-modal-form">
+          <!-- Aba TEXTO -->
+          <div class="status-panel" data-panel="text">
+            <label class="field full">
+              <span>Texto do status *</span>
+              <textarea class="input" name="texto" id="status-texto" rows="5" maxlength="700" placeholder="O que você quer publicar?"></textarea>
+              <small class="muted status-counter" id="status-text-count">0 / 700</small>
+            </label>
+            <div class="status-colors">
+              <span class="muted">Cor de fundo:</span>
+              <% const cores = [
+                ['#075E54','Verde escuro'],
+                ['#25D366','Verde claro'],
+                ['#128C7E','Verde-água'],
+                ['#34B7F1','Azul'],
+                ['#EF4444','Vermelho'],
+                ['#F59E0B','Laranja'],
+                ['#A855F7','Roxo'],
+                ['#111827','Preto'],
+                ['#FFFFFF','Branco'],
+              ]; %>
+              <% cores.forEach(([hex, nome], i) => { %>
+                <label class="status-color">
+                  <input type="radio" name="cor_fundo" aria-label="<%= nome %>" value="<%= hex %>"<%= i === 0 ? ' checked' : '' %>>
+                  <span style="background: <%= hex %>;" title="<%= nome %>"></span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+
+          <!-- Aba IMAGEM -->
+          <div class="status-panel hidden" data-panel="image">
+            <label class="status-drop" id="status-image-drop">
+              <input type="file" name="media_file" id="status-image-file" accept="image/*" class="status-file-input">
+              <span class="status-drop-ico"><%- include('../partials/ui-icon', { name: 'image' }) %></span>
+              <span class="status-drop-text"><strong>Selecionar imagem</strong><small>PNG, JPG ou WebP · máx 5 MB</small></span>
+            </label>
+            <label class="field full">
+              <span>Legenda (opcional)</span>
+              <textarea class="input" name="legenda" id="status-image-caption" rows="5" maxlength="500" placeholder="Escreva ou cole sua legenda aqui"></textarea><small class="muted">Use Enter para separar linhas e parágrafos. A legenda será enviada como você escreveu.</small>
+            </label>
+          </div>
+
+          <!-- Aba VÍDEO -->
+          <div class="status-panel hidden" data-panel="video">
+            <label class="status-drop" id="status-video-drop">
+              <input type="file" name="media_file" id="status-video-file" accept="video/*" class="status-file-input">
+              <span class="status-drop-ico">🎬</span>
+              <span class="status-drop-text"><strong>Selecionar vídeo</strong><small>MP4 · máx 30s e 5 MB</small></span>
+            </label>
+            <label class="field full">
+              <span>Legenda (opcional)</span>
+              <textarea class="input" name="legenda" id="status-video-caption" rows="5" maxlength="500" placeholder="Escreva ou cole sua legenda aqui"></textarea><small class="muted">Use Enter para separar linhas e parágrafos. A legenda será enviada como você escreveu.</small>
+            </label>
+          </div>
+
+          <!-- Agendamento (obrigatório) -->
+          <label class="field full status-schedule">
+            <span><%- include('../partials/ui-icon', { name: 'clock' }) %> Data e hora da publicação *</span>
+            <input class="input" type="datetime-local" name="agendado_para" id="status-agendado-input" required>
+            <input type="hidden" name="agendado_offset" id="status-agendado-offset" value="180">
+            <small class="muted">O sistema posta automaticamente no horário escolhido. Mantém o WhatsApp conectado.</small>
+          </label>
+        </div>
+
+        <!-- Preview -->
+        <details class="status-modal-preview" open>
+          <summary>Prévia do status</summary>
+          <div class="status-preview-content">
+          <div class="status-preview" id="status-preview" data-bg="#075E54" data-show-on="text">
+            <div class="status-preview-text" id="status-preview-text">Seu texto aparece aqui…</div>
+          </div>
+          <div class="status-media-preview hidden" id="status-image-preview" data-show-on="image"><span class="muted">Pré-visualização</span></div>
+          <div class="status-media-preview hidden" id="status-video-preview" data-show-on="video"><span class="muted">Pré-visualização</span></div>
+          </div>
+        </details>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+        <button class="btn btn-primary" type="submit" id="status-submit-btn"><%- include('../partials/ui-icon', { name: 'clock' }) %> Agendar status</button>
+      </div>
+    </form>
+  </div>
+</div>
+<% } %>
+
+<script>
+(function() {
+  const controller = new AbortController();
+  let stopped = false, timer, previous = '';
+  function stop() { stopped = true; clearTimeout(timer); controller.abort(); }
+  document.addEventListener('gestor:before-swap', stop, { once: true });
+  async function refreshHistory() {
+    try {
+      if (!document.hidden) {
+        const response = await fetch('/status/historico', { signal: controller.signal, headers: { Accept: 'text/html' }, cache: 'no-store' });
+        if (response.ok && !response.redirected) {
+          const html = await response.text();
+          const current = document.querySelector('.status-historico');
+          if (current && html !== previous) {
+            const template = document.createElement('template');
+            template.innerHTML = html.trim();
+            const replacement = template.content.querySelector('.status-historico');
+            if (replacement) { current.replaceWith(replacement); previous = html; }
+          }
+        }
+      }
+    } catch (_) { /* Retry on the next poll. */ }
+    if (!stopped) timer = setTimeout(refreshHistory, 5000);
+  }
+  timer = setTimeout(refreshHistory, 5000);
+  const tipoHidden = document.getElementById('status-tipo');
+  if (!tipoHidden) return; // página sem WhatsApp conectado
+
+  const previewDetails = document.querySelector('.status-modal-preview');
+  if (previewDetails && matchMedia('(max-width: 600px)').matches) previewDetails.open = false;
+  const tabs = document.querySelectorAll('.status-tab');
+  const panels = document.querySelectorAll('.status-panel');
+  const previews = document.querySelectorAll('[data-show-on]');
+
+  function showTab(tipo) {
+    tipoHidden.value = tipo;
+    tabs.forEach(t => { t.classList.toggle('active', t.dataset.tipo === tipo); t.setAttribute('aria-pressed', String(t.dataset.tipo === tipo)); });
+    panels.forEach(p => { p.classList.toggle('hidden', p.dataset.panel !== tipo); p.querySelectorAll('input, textarea').forEach(input => { input.disabled = p.dataset.panel !== tipo; }); });
+    previews.forEach(p => p.classList.toggle('hidden', p.dataset.showOn !== tipo));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tipo)));
+
+  showTab(tipoHidden.value);
+
+  // Preview de texto + cor
+  const txt = document.getElementById('status-texto');
+  const preview = document.getElementById('status-preview');
+  const previewText = document.getElementById('status-preview-text');
+  if (txt) {
+    txt.addEventListener('input', () => {
+      document.getElementById('status-text-count').textContent = txt.value.length + ' / 700';
+      previewText.textContent = txt.value || 'Seu texto aparece aqui…';
+    });
+  }
+  document.querySelectorAll('input[name="cor_fundo"]').forEach(r => {
+    r.addEventListener('change', () => {
+      preview.style.background = r.value;
+      const escuro = r.value !== '#FFFFFF';
+      previewText.style.color = escuro ? '#fff' : '#111';
+    });
+  });
+
+  function bindPreview(inputId, previewId, mediaType, dropId) {
+    const input = document.getElementById(inputId);
+    const preview = document.getElementById(previewId);
+    const drop = document.getElementById(dropId);
+    if (!input || !preview) return;
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) {
+        preview.innerHTML = '<span class="muted">Pré-visualização</span>';
+        if (drop) drop.querySelector('strong').textContent = 'Selecionar arquivo';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        preview.innerHTML = '<span class="muted" style="color:var(--red);">Arquivo maior que 5 MB. Escolha outro.</span>';
+        input.value = '';
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      if (mediaType === 'video') {
+        preview.innerHTML = '<video src="' + url + '" controls playsinline></video>';
+      } else {
+        preview.innerHTML = '<img src="' + url + '" alt="preview">';
+      }
+      if (drop) {
+        const kb = (file.size / 1024).toFixed(0);
+        drop.querySelector('.status-drop-ico').textContent = '\u2713';
+        drop.querySelector('strong').textContent = file.name || 'arquivo';
+        drop.querySelector('small').textContent = kb + ' KB \u00b7 clique pra trocar';
+      }
+    });
+  }
+  bindPreview('status-image-file', 'status-image-preview', 'image', 'status-image-drop');
+  bindPreview('status-video-file', 'status-video-preview', 'video', 'status-video-drop');
+
+  // Agendamento (sempre obrigatório agora — limite mínimo = agora + 1min)
+  const agendarInput = document.getElementById('status-agendado-input');
+  if (agendarInput) {
+    const d = new Date(Date.now() + 60_000);
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60_000);
+    agendarInput.min = local.toISOString().slice(0, 16);
+  }
+
+  const form = document.getElementById('form-status');
+  if (form) {
+    form.addEventListener('submit', () => {
+      const selectedDate = new Date(agendarInput.value);
+      document.getElementById('status-agendado-offset').value = String(selectedDate.getTimezoneOffset());
+      const tipo = tipoHidden.value;
+      panels.forEach(p => {
+        if (p.dataset.panel !== tipo) {
+          p.querySelectorAll('input, textarea').forEach(i => i.disabled = true);
+        }
+      });
+    });
+  }
+})();
+</script>

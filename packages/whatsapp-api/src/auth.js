@@ -18,6 +18,18 @@ export function requireToken(expectedToken) {
     const b = Buffer.from(expectedToken);
     if (a.length === b.length && timingSafeEqual(a, b)) return next();
 
-    return res.status(401).json({ ok: false, error: "Token inválido ou ausente." });
+    // Sem token (ou inválido): finge que o serviço nem existe. Antes devolvia
+    // 401 + JSON revelando "Token inválido ou ausente", o que entregava pra
+    // qualquer scanner que aqui rodava uma API. Agora parece site comum 404.
+    res.status(404)
+      .set("Content-Type", "text/html; charset=utf-8")
+      .send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>404 Not Found</title></head>
+<body>
+  <h1>Not Found</h1>
+  <p>The requested URL was not found on this server.</p>
+</body>
+</html>`);
   };
 }

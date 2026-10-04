@@ -1,13 +1,13 @@
 <div class="container dash">
 
-  <div class="stat-grid">
+  <div class="ui-summary ui-summary-4">
     <div class="stat-box accent-green">
       <div>
         <span class="stat-label">Ativos</span>
         <strong class="stat-value"><%= stats.ativos %></strong>
         <small class="stat-foot"><%= ativosPercent %>% da base</small>
       </div>
-      <div class="stat-icon">👥</div>
+      <div class="stat-icon"><%- include('../partials/ui-icon', { name: '👥' }) %></div>
     </div>
     <div class="stat-box accent-red">
       <div>
@@ -15,7 +15,7 @@
         <strong class="stat-value"><%= stats.vencidos %></strong>
         <small class="stat-foot"><%= vencidosPercent %>% da carteira</small>
       </div>
-      <div class="stat-icon">⚠️</div>
+      <div class="stat-icon"><%- include('../partials/ui-icon', { name: '⚠️' }) %></div>
     </div>
     <div class="stat-box accent-blue">
       <div>
@@ -23,7 +23,7 @@
         <strong class="stat-value"><%= stats.clientesTotal %></strong>
         <small class="stat-foot"><%= stats.planosCount %> plano(s)</small>
       </div>
-      <div class="stat-icon">🧑‍🤝‍🧑</div>
+      <div class="stat-icon"><%- include('../partials/ui-icon', { name: '🧑‍🤝‍🧑' }) %></div>
     </div>
     <div class="stat-box accent-purple">
       <div>
@@ -31,17 +31,17 @@
         <strong class="stat-value"><%= stats.servidoresCount %></strong>
         <small class="stat-foot">Painéis cadastrados</small>
       </div>
-      <div class="stat-icon">🖥️</div>
+      <div class="stat-icon"><%- include('../partials/ui-icon', { name: '🖥️' }) %></div>
     </div>
   </div>
 
   <div class="dash-section">
-    <h3 class="dash-section-title">💲 Receita x Custo</h3>
+    <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'money' }) %> Receita x Custo</h3>
     <div class="rc-grid">
       <% const blocos = [ ['Hoje', stats.receitaCusto.hoje], ['Mensal', stats.receitaCusto.mes], ['Mês Anterior', stats.receitaCusto.mesAnterior] ]; %>
       <% blocos.forEach(([rotulo, dados]) => { %>
         <div class="rc-card">
-          <div class="rc-head">💲 <%= rotulo %></div>
+          <div class="rc-head"><%- include('../partials/ui-icon', { name: 'money' }) %> <%= rotulo %></div>
           <div class="rc-row"><span class="up">↗ Receita</span><strong class="pos"><%= formatMoney(dados.receita) %></strong></div>
           <div class="rc-row"><span class="down">↘ Custo</span><strong class="neg"><%= formatMoney(dados.custo) %></strong></div>
           <div class="rc-row total"><span class="up">↗ Lucro</span><strong class="info"><%= formatMoney(dados.lucro) %></strong></div>
@@ -51,20 +51,20 @@
   </div>
 
   <div class="dash-section">
-    <h3 class="dash-section-title">⏰ Vencimentos</h3>
+    <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'clock' }) %> Vencimentos</h3>
     <div class="venc-grid">
       <div class="venc-card accent-yellow">
-        <span class="venc-label">⏰ Vence Hoje</span>
+        <span class="venc-label"><%- include('../partials/ui-icon', { name: 'clock' }) %> Vence Hoje</span>
         <strong class="venc-value"><%= stats.vencimentos.hoje.total %></strong>
         <small><%= formatMoney(stats.vencimentos.hoje.valor) %></small>
       </div>
       <div class="venc-card accent-blue">
-        <span class="venc-label">📅 Vence Amanhã</span>
+        <span class="venc-label"><%- include('../partials/ui-icon', { name: 'calendar' }) %> Vence Amanhã</span>
         <strong class="venc-value"><%= stats.vencimentos.amanha.total %></strong>
         <small><%= formatMoney(stats.vencimentos.amanha.valor) %></small>
       </div>
       <div class="venc-card accent-red">
-        <span class="venc-label">📅 Venceu Ontem</span>
+        <span class="venc-label"><%- include('../partials/ui-icon', { name: 'calendar' }) %> Venceu Ontem</span>
         <strong class="venc-value"><%= stats.vencimentos.ontem.total %></strong>
         <small><%= formatMoney(stats.vencimentos.ontem.valor) %></small>
       </div>
@@ -72,14 +72,14 @@
   </div>
 
   <div class="dash-section">
-    <h3 class="dash-section-title">💲 Financeiro</h3>
+    <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'money' }) %> Financeiro</h3>
     <div class="fin-grid">
       <div class="fin-card">
-        <span class="fin-label">💲 Recebido Hoje</span>
+        <span class="fin-label"><%- include('../partials/ui-icon', { name: 'money' }) %> Recebido Hoje</span>
         <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoHoje) %></strong>
       </div>
       <div class="fin-card">
-        <span class="fin-label">📅 Recebido no Mês</span>
+        <span class="fin-label"><%- include('../partials/ui-icon', { name: 'calendar' }) %> Recebido no Mês</span>
         <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoMes) %></strong>
         <small class="<%= stats.financeiro.variacaoMes >= 0 ? 'pos' : 'neg' %>">
           <%= stats.financeiro.variacaoMes >= 0 ? '↗' : '↘' %> <%= stats.financeiro.variacaoMes %>% vs mês anterior
@@ -99,7 +99,7 @@
 
   <div class="dash-section">
     <div class="dash-section-row">
-      <h3 class="dash-section-title">📊 Gráficos</h3>
+      <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'chart' }) %> Gráficos</h3>
     </div>
     <div class="chart-grid">
       <div class="chart-card">
@@ -110,7 +110,7 @@
       </div>
       <div class="chart-card">
         <div class="chart-head">
-          <strong>👥 Novos Clientes</strong>
+          <strong><%- include('../partials/ui-icon', { name: 'users' }) %> Novos Clientes</strong>
           <span class="chart-tag"><%= novosNoMes %> este mês</span>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chartNovos"></canvas></div>
@@ -120,10 +120,10 @@
 
   <div class="dash-section dist-section">
     <div class="dist-section-head">
-      <h3 class="dash-section-title">📦 Distribuição</h3>
+      <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'package' }) %> Distribuição</h3>
       <form method="get" action="/dashboard" class="dist-period">
         <span class="dist-period-label">⛛ Período</span>
-        <select name="periodo" onchange="this.form.submit()" aria-label="Período">
+        <select name="periodo" onchange="this.form.requestSubmit()" aria-label="Período">
           <option value="mes" <%= periodo === 'mes' ? 'selected' : '' %>>Este Mês</option>
           <option value="anterior" <%= periodo === 'anterior' ? 'selected' : '' %>>Mês Anterior</option>
           <option value="todos" <%= periodo === 'todos' ? 'selected' : '' %>>Todos</option>
@@ -134,7 +134,7 @@
     <div class="dist-grid">
       <div class="dist-card">
         <div class="dist-head spread">
-          <span>📱 Top Aplicativos</span>
+          <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Top Aplicativos</span>
           <% if (topAplicativos.length) { %><span class="dist-total">Total: <strong><%= topAplicativos.reduce((a, x) => a + x.total, 0) %></strong></span><% } %>
         </div>
         <% if (topAplicativos.length) { %>
@@ -147,13 +147,13 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">📱</div>Sem dados de aplicativos</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'phone' }) %></div>Sem dados de aplicativos</div>
         <% } %>
       </div>
 
       <div class="dist-card">
         <div class="dist-head spread">
-          <span>🖥️ Top Dispositivos</span>
+          <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Top Dispositivos</span>
           <% if (topDispositivos.length) { %><span class="dist-total">Total: <strong><%= topDispositivos.reduce((a, d) => a + d.total, 0) %></strong></span><% } %>
         </div>
         <% if (topDispositivos.length) { %>
@@ -166,13 +166,13 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">🖥️</div>Sem dados de dispositivos</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>Sem dados de dispositivos</div>
         <% } %>
       </div>
 
       <div class="dist-card">
         <div class="dist-head spread">
-          <span>💳 Formas de Pagamento</span>
+          <span><%- include('../partials/ui-icon', { name: 'card' }) %> Formas de Pagamento</span>
           <span class="dist-total">Total: <strong><%= formatMoney(formasPagamento.reduce((a, f) => a + f.valor, 0)) %></strong></span>
         </div>
         <% if (formasPagamento.length) { %>
@@ -185,13 +185,13 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">💳</div>Sem transações registradas</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'card' }) %></div>Sem transações registradas</div>
         <% } %>
       </div>
 
       <div class="dist-card">
         <div class="dist-head spread">
-          <span>📦 Distribuição de Planos</span>
+          <span><%- include('../partials/ui-icon', { name: 'package' }) %> Distribuição de Planos</span>
           <span class="dist-total">Total: <strong><%= planosDist.reduce((a, p) => a + p.total, 0) %> clientes</strong></span>
         </div>
         <% if (planosDist.length) { %>
@@ -204,14 +204,14 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">📦</div>Sem dados de planos</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'package' }) %></div>Sem dados de planos</div>
         <% } %>
       </div>
 
       <div class="dist-card">
         <div class="dist-head spread">
-          <span>🖥️ Performance por Servidor</span>
-          <span class="dist-total">👥 <%= performance.itens.reduce((a, s) => a + s.total, 0) %> clientes</span>
+          <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Performance por Servidor</span>
+          <span class="dist-total"><%- include('../partials/ui-icon', { name: 'users' }) %> <%= performance.itens.reduce((a, s) => a + s.total, 0) %> clientes</span>
         </div>
         <% if (performance.itens.length) { %>
           <div class="perf-cards">
@@ -223,7 +223,7 @@
             <% performance.itens.forEach(s => { %>
               <div class="perf-row">
                 <div class="perf-row-head">
-                  <span class="perf-name">🖥️ <%= s.servidor %> <em><%= s.total %> cli.</em></span>
+                  <span class="perf-name"><%- include('../partials/ui-icon', { name: 'monitor' }) %> <%= s.servidor %> <em><%= s.total %> cli.</em></span>
                   <span class="perf-vals">
                     <b>Fat.</b> <%= formatMoney(s.faturamento) %>
                     <b>Custo</b> <%= formatMoney(s.custo) %>
@@ -237,12 +237,12 @@
           </div>
           <div class="perf-legend"><span><i class="dot c-green"></i> Faturamento</span><span><i class="dot c-red"></i> Custo</span></div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">🖥️</div>Sem dados de servidores</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>Sem dados de servidores</div>
         <% } %>
       </div>
 
       <div class="dist-card">
-        <div class="dist-head">👥 Top Indicações</div>
+        <div class="dist-head"><%- include('../partials/ui-icon', { name: 'users' }) %> Top Indicações</div>
         <% if (indicacoes.length) { %>
           <div class="bar-list">
             <% indicacoes.forEach(i => { %>
@@ -253,7 +253,7 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon">👥</div>Nenhuma indicação registrada</div>
+          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'users' }) %></div>Nenhuma indicação registrada</div>
         <% } %>
       </div>
 
@@ -306,7 +306,7 @@
       </div>
 
       <div class="dist-card span-2">
-        <div class="dist-head">⏰ Próximos vencimentos</div>
+        <div class="dist-head"><%- include('../partials/ui-icon', { name: 'clock' }) %> Próximos vencimentos</div>
         <% if (proximos.length) { %>
           <div class="dist-list">
             <% proximos.forEach(c => { %>
@@ -326,8 +326,8 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script data-nav-once src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>window.__dashData = <%- chart %>;</script>
-<script src="/assets/js/dashboard-charts.js?v=shell-13"></script>
+<script src="/assets/js/dashboard-charts.js?v=188"></script>
 <script>window.__geoData = <%- geo %>;</script>
-<script type="module" src="/assets/js/dashboard-maps.js?v=1"></script>
+<script src="/assets/js/dashboard-maps.js?v=188"></script>

@@ -2,14 +2,6 @@
 
 API gratuita de WhatsApp Web com Baileys para ser usada pelo Gestor Node via WA_DRIVER=session.
 
-## Desenvolvimento local
-
-```bash
-npm install
-cp .env.example .env
-npm start
-```
-
 ## Endpoints
 
 Todos os endpoints abaixo, exceto /health, exigem token quando API_TOKEN está definido.

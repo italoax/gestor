@@ -5,23 +5,23 @@
   /* RGB base para bordas/preenchimentos translúcidos (vira escuro no tema claro) */
   --tint: 255, 255, 255;
   /* Superfícies dos cards (gradientes) */
-  --surf-a: 42, 48, 56;
-  --surf-b: 35, 40, 48;
-  --accent-rgb: 129, 140, 248;
-  --bg: #14171c;
-  --surface: #1c2128;
-  --surface-2: #232a32;
-  --border: #2c333c;
-  --text: #e8eaed;
-  --muted: #97a3b4;
-  --primary: #6366f1;
-  --primary-strong: #4f46e5;
-  --accent-bright: #818cf8;
+  --surf-a: 30, 29, 34;
+  --surf-b: 18, 18, 21;
+  --accent-rgb: 197, 140, 224;
+  --bg: #121214;
+  --surface: #1e1d22;
+  --surface-2: #29272f;
+  --border: #403a48;
+  --text: #f0eef2;
+  --muted: #b8b0bd;
+  --primary: #a85fcb;
+  --primary-strong: #8843aa;
+  --accent-bright: #c58ce0;
   --green: #22c55e;
   --red: #ef4444;
   --yellow: #eab308;
-  --blue: #6366f1;
-  --purple: #8b5cf6;
+  --blue: #a85fcb;
+  --purple: #a85fcb;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
   --map-empty: rgba(148, 163, 184, 0.14);
 }
@@ -30,21 +30,21 @@
   --tint: 15, 23, 42;
   --surf-a: 255, 255, 255;
   --surf-b: 248, 250, 252;
-  --accent-rgb: 79, 70, 229;
+  --accent-rgb: 136, 67, 170;
   --bg: #eef1f6;
   --surface: #ffffff;
   --surface-2: #f1f5f9;
   --border: #e2e8f0;
   --text: #0f172a;
   --muted: #5b6675;
-  --primary: #4f46e5;
-  --primary-strong: #4338ca;
-  --accent-bright: #4f46e5;
+  --primary: #8843aa;
+  --primary-strong: #743591;
+  --accent-bright: #8843aa;
   --green: #16a34a;
   --red: #dc2626;
   --yellow: #b45309;
-  --blue: #4f46e5;
-  --purple: #7c3aed;
+  --blue: #8843aa;
+  --purple: #8843aa;
   --shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
   --map-empty: rgba(100, 116, 139, 0.18);
 }
@@ -933,11 +933,11 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 }
 
 .login-card {
-  background: rgba(18,22,29,0.92);
+  background: rgba(30,29,34,0.94);
   border: 1px solid rgba(var(--tint),0.12);
   border-radius: 20px;
   padding: 26px;
-  box-shadow: 0 24px 60px rgba(8,11,16,0.55);
+  box-shadow: 0 24px 60px rgba(5,5,7,0.42);
   z-index: 1;
 }
 .login-card-header h2 {
@@ -966,7 +966,7 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(var(--tint),0.14);
-  background: rgba(10,12,18,0.7);
+  background: rgba(24,23,28,0.82);
   color: #f2f4f7;
   font-size: 14px;
 }
@@ -1533,4 +1533,53 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   .wa-title {
     font-size: 24px;
   }
+}
+
+/* Campo de data com icone de calendario (abre o seletor nativo) */
+.date-input-wrap {
+  position: relative;
+  display: block;
+}
+.date-input-wrap > .input {
+  padding-right: 42px;
+}
+.date-input-btn {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+  border-radius: 8px;
+  opacity: 0.7;
+  /* So visual (o emoji). Quem recebe o toque e o input nativo por cima (z-index 2),
+     senao o iOS nunca abre o seletor — ver .date-input-native. */
+  pointer-events: none;
+  z-index: 1;
+}
+/* Input date nativo TRANSPARENTE sobreposto na area do icone. Fica por cima do
+   botao (z-index 2) com pointer-events:auto pra que o toque do dedo caia direto
+   nele — e so assim o Safari do iOS abre o seletor nativo. NAO usar opacity:0 com
+   pointer-events:none + showPicker(): no iOS isso nao abre nada. */
+.date-input-native {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  -webkit-appearance: none;
+  appearance: none;
 }

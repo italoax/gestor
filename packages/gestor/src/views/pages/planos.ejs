@@ -3,36 +3,36 @@
   const planosAtivos = planos.filter(p => p.ativo).length;
   const clientesAtivos = planos.reduce((a, p) => a + Number(p.clientes || 0), 0);
 %>
-<div class="container page-planos" data-search-scope>
+<div class="container page-planos ui-catalog" data-search-scope data-search-singular="plano" data-search-plural="planos" data-search-empty="Nenhum plano encontrado. Tente outra busca.">
 
-  <div class="plano-stats">
+  <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div><strong><%= totalPlanos %></strong><span>Total de Planos</span></div>
-      <div class="cli-stat-ico">📦</div>
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '📦' }) %></div>
     </div>
     <div class="cli-stat accent-green">
       <div><strong class="pos"><%= planosAtivos %></strong><span>Planos Ativos</span></div>
-      <div class="cli-stat-ico">✅</div>
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '✅' }) %></div>
     </div>
     <div class="cli-stat accent-blue">
       <div><strong><%= clientesAtivos %></strong><span>Clientes Ativos</span></div>
-      <div class="cli-stat-ico">👥</div>
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '👥' }) %></div>
     </div>
   </div>
 
-  <div class="plano-filters">
-    <label class="cli-search plano-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar plano..." data-search-input></label>
-    <label class="cli-filter">
-      <select class="input" data-filter-select aria-label="Status">
-        <option value="">Todos</option><option>Ativo</option><option>Inativo</option>
-      </select>
-    </label>
-    <button class="btn btn-primary plano-new" type="button" data-open-modal="modal-add-plano">+ Novo Plano</button>
+  <div class="ui-toolbar ui-toolbar-actions">
+
+  <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-plano">
+    <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo plano
+  </button>
+
   </div>
+
+  <div class="ui-catalog-heading"><h2>Catálogo de planos <span><%= totalPlanos %></span></h2><p data-search-results role="status" aria-live="polite" hidden></p></div>
 
   <% if (!planos.length) { %>
     <div class="cli-empty">
-      <div class="cli-empty-ico">📦</div>
+      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📦' }) %></div>
       <h3>Nenhum plano cadastrado</h3>
       <p class="muted">Cadastre planos para oferecer aos seus clientes.</p>
       <button class="btn btn-primary" type="button" data-open-modal="modal-add-plano">+ Novo Plano</button>
@@ -46,17 +46,18 @@
         <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
       <div class="plano-meta">
-        <span>📅 <%= p.periodo %> <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : p.tipo %></span>
-        <span class="plano-cred">🪙 <%= Number(p.creditos || 0) %> crédito(s)</span>
+        <span><%- include('../partials/ui-icon', { name: 'calendar' }) %> <%= p.periodo %> <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : p.tipo %></span>
+        <span class="plano-cred"><%- include('../partials/ui-icon', { name: 'money' }) %> <%= Number(p.creditos || 0) %> crédito(s)</span>
       </div>
       <p class="plano-desc"><%= p.observacao || 'Sem descrição.' %></p>
-      <div class="plano-clients">👥 <%= p.clientes || 0 %> clientes ativos</div>
+      <div class="plano-clients"><%- include('../partials/ui-icon', { name: 'users' }) %> <%= p.clientes || 0 %> clientes ativos</div>
       <div class="plano-actions">
-        <button class="btn btn-muted plano-edit edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>" data-creditos="<%= Number(p.creditos || 0) %>" data-ativo="<%= p.ativo ? 1 : 0 %>">✎ Editar</button>
+        <button class="btn btn-muted plano-edit edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>" data-creditos="<%= Number(p.creditos || 0) %>" data-ativo="<%= p.ativo ? 1 : 0 %>" data-sigma-package-id="<%= p.sigmaPackageId || '' %>" data-sigma-connections="<%= p.sigmaConnections || 1 %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
         <form method="post" action="/planos" class="action-form delete-plano plano-del-form">
+          <%- csrfInput %>
           <input type="hidden" name="action" value="delete_plano">
           <input type="hidden" name="id" value="<%= p.id %>">
-          <button class="cli-ico-btn danger" type="submit" title="Apagar">🗑</button>
+          <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
         </form>
       </div>
     </div>
@@ -72,16 +73,19 @@
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
     <form method="post" action="/planos" id="modal-add-plano-form" class="modal-body" data-native-submit="1">
+      <%- csrfInput %>
       <input type="hidden" name="action" value="create_plano">
       <input type="hidden" name="id" value="">
       <div class="form-grid">
-        <label class="field full"><span>Nome do Plano *</span><input class="input" name="nome" placeholder="Ex: Mensal, Trimestral..." required data-required="1" data-field-label="Nome do Plano"></label>
+        <label class="field full"><span>Nome do Plano *</span><input class="input" name="nome" maxlength="120" pattern=".*\S.*" placeholder="Ex: Mensal, Trimestral..." required data-required="1" data-field-label="Nome do Plano"></label>
         <label class="field full">
           <span>Tipo de Período *</span>
           <select class="input" name="tipo"><option>Dias</option><option>Meses</option></select>
         </label>
-        <label class="field"><span>📅 Período (dias) *</span><input class="input" type="number" name="periodo" value="30" min="1"></label>
-        <label class="field"><span>🪙 Créditos *</span><input class="input" type="number" step="0.01" name="creditos" value="1"></label>
+        <label class="field"><span><%- include('../partials/ui-icon', { name: 'calendar' }) %> <span data-plano-periodo-label>Período (dias) *</span></span><input class="input" type="number" name="periodo" value="30" min="1" max="2147483647" step="1" required></label>
+        <label class="field"><span><%- include('../partials/ui-icon', { name: 'money' }) %> Créditos *</span><input class="input" type="number" step="0.01" min="0" max="9999999999.99" name="creditos" value="1" required></label>
+        <label class="field"><span><%- include('../partials/ui-icon', { name: 'settings' }) %> Sigma: package_id <small>(opcional)</small></span><input class="input" name="sigma_package_id" maxlength="120" placeholder="ex: bQELo0Dgro" autocomplete="off"><small>ID do pacote no painel Sigma — usado na renovação automática.</small></label>
+        <label class="field"><span><%- include('../partials/ui-icon', { name: 'settings' }) %> Sigma: conexões</span><input class="input" type="number" name="sigma_connections" value="1" min="1" max="2147483647" step="1" required></label>
         <div class="field full plano-info" data-plano-info>Este plano terá duração de <strong>30 dias</strong> e consumirá <strong>1 crédito(s)</strong> do servidor ao renovar.</div>
         <label class="field full"><span>Descrição</span><textarea class="input" name="observacao" placeholder="Descrição do plano..."></textarea></label>
         <label class="switch-field full">

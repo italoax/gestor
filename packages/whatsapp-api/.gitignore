@@ -1,6 +1,9 @@
 node_modules/
 .env
+.env.*
+!.env.example
 sessions/
 .deploy/
 gestor-whatsapp-api-deploy.tar
+gestor-whatsapp-api-deploy.zip
 npm-debug.log*

@@ -1,3 +1,4 @@
+(function () {
 // Mapas de distribuição do dashboard: Brasil por UF e Mundo por país (coropléticos).
 // A geometria vem de @svg-maps via CDN, carregada sob demanda. Se o CDN falhar,
 // as listas "Top Estados / Top Países" renderizadas no servidor continuam visíveis.
@@ -106,3 +107,5 @@ async function boot() {
 }
 
 boot();
+
+})();

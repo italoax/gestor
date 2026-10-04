@@ -1,4 +1,4 @@
-// Reexporta do pacote compartilhado (fonte única em packages/shared).
+// Expõe a normalização de telefone incluída neste serviço.
 export { normalizeBrazilPhone } from "./shared/index.js";
 import { normalizeBrazilPhone } from "./shared/index.js";
 

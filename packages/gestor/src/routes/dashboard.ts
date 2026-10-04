@@ -43,9 +43,31 @@ function num(value: unknown) {
 
 dashboardRouter.get("/", (_, res) => res.redirect("/dashboard"));
 
+// Cache em memória do payload do dashboard. Dashboard roda 14 queries pesadas
+// (DATEDIFF, GROUP BY mês, série diária) — refresh a cada clique custa caro.
+// 60s é o suficiente pra cobrir o usuário recarregando, mas curto pra dados
+// novos aparecerem rápido. Chave inclui periodo porque ?periodo= muda o filtro.
+type DashboardPayload = Record<string, unknown>;
+const dashboardCache = new Map<string, { expiresAt: number; payload: DashboardPayload }>();
+const DASHBOARD_CACHE_TTL_MS = 60_000;
+
+// Invalida cache do usuário — chame quando algo mudar (criar cliente, renovar, etc).
+// Por ora é usado só na sessão atual; rotas que escrevem podem chamar isso pra forçar refresh.
+export function invalidarDashboardCache(userId: number) {
+  for (const key of dashboardCache.keys()) {
+    if (key.startsWith(`${userId}:`)) dashboardCache.delete(key);
+  }
+}
+
 dashboardRouter.get("/dashboard", async (req, res, next) => {
   try {
     const userId = req.session.user!.id;
+    const periodoRawCache = String(req.query.periodo ?? "todos");
+    const cacheKey = `${userId}:${periodoRawCache}`;
+    const cached = dashboardCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.render("pages/dashboard", cached.payload);
+    }
     const today = appTodayIso();
     const year = Number(today.slice(0, 4));
     const month = Number(today.slice(5, 7));
@@ -330,7 +352,7 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
     const estados = { total: estadosTop.reduce((a, e) => a + e.total, 0), top: estadosTop };
     const paises = { total: paisesTop.reduce((a, p) => a + p.total, 0), top: paisesTop };
 
-    res.render("pages/dashboard", {
+    const payload: DashboardPayload = {
       title: "Dashboard",
       stats,
       ativosPercent,
@@ -349,6 +371,8 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
       novosNoMes,
       chart: JSON.stringify({ labels, receita: serieReceita, custo: serieCusto, lucro: serieLucro, novos: serieNovosClientes }),
       geo: JSON.stringify({ estados: estadosMap, paises: paisesMap }),
-    });
+    };
+    dashboardCache.set(cacheKey, { expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS, payload });
+    res.render("pages/dashboard", payload);
   } catch (error) { next(error); }
 });

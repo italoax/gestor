@@ -1,10 +1,8 @@
 <div class="container page-whatsapp" data-search-scope>
 
-  <div class="wa-stats">
-    <div class="tx-stat"><div><span>Dispositivos Conectados</span><strong data-wa-conectados>0</strong></div><div class="tx-stat-ico accent-green">✅</div></div>
-    <div class="tx-stat"><div><span>Total de Dispositivos</span><strong><%= stats.total %></strong></div><div class="tx-stat-ico accent-blue">📱</div></div>
-    <div class="tx-stat"><div><span>Mensagens Hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-purple">💬</div></div>
-    <div class="tx-stat"><div><span>Taxa de Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red">📈</div></div>
+  <div class="ui-summary ui-summary-2">
+    <div class="tx-stat"><div><span>Mensagens Hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-purple"><%- include('../partials/ui-icon', { name: '💬' }) %></div></div>
+    <div class="tx-stat"><div><span>Taxa de Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📈' }) %></div></div>
   </div>
 
   <div class="wa-head">
@@ -15,19 +13,18 @@
     <div class="form-alert error">Para gerenciar dispositivos, configure no .env: <code>WA_DRIVER=session-api</code> e os endpoints <code>WA_SESSION_*</code>.</div>
   <% } %>
 
-  <label class="cli-search wa-search"><span class="cli-search-ico">⌕</span><input class="input" type="search" placeholder="Buscar dispositivos por nome, número ou status..." data-search-input></label>
 
   <% if (!devices.length) { %>
-    <div class="cli-empty"><div class="cli-empty-ico">📱</div><h3>Conexão sendo preparada…</h3><p class="muted">Recarregue a página em alguns segundos.</p></div>
+    <div class="cli-empty"><div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></div><h3>Conexão sendo preparada…</h3><p class="muted">Recarregue a página em alguns segundos.</p></div>
   <% } else { %>
   <div class="wa-list">
     <% devices.forEach(d => { %>
     <div class="wa-device" data-search-item data-device-id="<%= d.id %>" data-nome="<%= d.nome %>">
       <div class="wa-device-head">
-        <span class="wa-device-ico">📱</span>
+        <span class="wa-device-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></span>
         <div class="wa-device-info">
           <strong><%= d.nome %><% if (d.principal) { %> <span class="wa-star" title="Principal">★</span><% } %></strong>
-          <small data-wa-sub>Sem número vinculado</small>
+          <small data-wa-sub>Verificando número...</small>
         </div>
         <span class="wa-status-pill" data-wa-status>Verificando...</span>
       </div>
@@ -35,10 +32,11 @@
       <div class="wa-device-foot">
         <span>📵 Bloqueio de chamadas</span>
         <span class="wa-foot-right">
-          <span class="muted">Configurar</span>
+          <span class="muted">Ajustar bloqueio</span>
           <form method="post" action="/whatsapp" class="wa-bloq-form">
+            <%- csrfInput %>
             <input type="hidden" name="action" value="toggle_bloqueio"><input type="hidden" name="id" value="<%= d.id %>">
-            <input type="checkbox" class="switch" onchange="this.form.submit()" <%= d.bloqueioChamadas ? 'checked' : '' %> aria-label="Bloqueio de chamadas">
+            <input type="checkbox" class="switch" name="bloqueio_chamadas" value="1" onchange="this.form.requestSubmit()" <%= d.bloqueioChamadas ? 'checked' : '' %> aria-label="Bloqueio de chamadas">
           </form>
         </span>
       </div>
@@ -51,9 +49,9 @@
 <button hidden data-open-modal="modal-wa-connect" data-wa-connect-trigger></button>
 
 <div class="modal-overlay" id="modal-wa-connect" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal wa-connect-modal">
     <div class="modal-header">
-      <div><h3>📱 Conectar WhatsApp</h3><p class="muted" data-wa-modal-name></p></div>
+      <div><h3><%- include('../partials/ui-icon', { name: 'phone' }) %> Conectar WhatsApp</h3><p class="wa-device-name" data-wa-modal-name></p></div>
       <button class="modal-close" type="button" data-close-modal data-wa-close aria-label="Fechar">×</button>
     </div>
     <div class="modal-body wa-connect-body">
@@ -61,27 +59,19 @@
         <div class="wa-qr-box" data-wa-qr-box>
           <span class="wa-qr-msg" data-wa-qr-msg>Gerando QR Code...</span>
           <img class="wa-qr-img" data-wa-qr-img hidden alt="QR Code">
-          <div class="wa-pair-code" data-wa-pair-code hidden></div>
         </div>
-        <div class="wa-qr-foot"><span data-wa-expira></span><span data-wa-aguardando>⟳ Aguardando leitura...</span></div>
-        <div class="wa-pair-by-number">
-          <strong>Ou conecte pelo número</strong>
-          <div class="wa-pair-row">
-            <input class="input" data-wa-phone inputmode="numeric" placeholder="5531999999999">
-            <button class="btn btn-primary" type="button" data-wa-pair-btn>Gerar código</button>
-          </div>
-          <small class="muted">Digite com DDI + DDD (ex.: 55 31 9 9999-9999)</small>
-        </div>
+        <div class="wa-qr-foot" role="status" aria-live="polite"><span data-wa-expira></span><span data-wa-aguardando>⟳ Aguardando leitura...</span></div>
       </div>
       <div class="wa-steps-col">
-        <strong>Como conectar:</strong>
+        <span class="wa-connect-eyebrow">CONEXÃO DO DISPOSITIVO</span>
+        <h4>Conecte em poucos passos</h4>
+        <p class="muted wa-connect-description">Use o WhatsApp do número que deseja conectar ao painel.</p>
         <ol class="wa-steps">
-          <li>Abra o WhatsApp no celular</li>
-          <li>Toque em Menu ou Configurações</li>
-          <li>Selecione Dispositivos conectados</li>
-          <li>Toque em Conectar um dispositivo</li>
-          <li>Aponte a câmera para este QR Code</li>
+          <li><div><strong>Abra o WhatsApp</strong><p>No celular, entre em <b>Configurações</b> ou no menu <b>⋮</b>.</p></div></li>
+          <li><div><strong>Conecte um dispositivo</strong><p>Toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>.</p></div></li>
+          <li><div><strong>Leia o QR Code</strong><p>Aponte a câmera para o código ao lado e aguarde a confirmação.</p></div></li>
         </ol>
+        <p class="wa-connect-tip"><%- include('../partials/ui-icon', { name: 'phone' }) %> Abra este painel em outra tela para escanear com o celular.</p>
       </div>
     </div>
   </div>
@@ -89,7 +79,20 @@
 
 <script>
 (function () {
-  var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', pairing: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };
+  var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };
+
+  // Formata "5531999998888" -> "+55 (31) 99999-8888". Aceita só dígitos.
+  function formatarNumero(num) {
+    var d = String(num || '').replace(/\D+/g, '');
+    if (!d) return '';
+    if (d.indexOf('55') === 0 && (d.length === 13 || d.length === 12)) {
+      var ddd = d.substr(2, 2);
+      var resto = d.substr(4);
+      if (resto.length === 9) return '+55 (' + ddd + ') ' + resto.substr(0, 5) + '-' + resto.substr(5);
+      if (resto.length === 8) return '+55 (' + ddd + ') ' + resto.substr(0, 4) + '-' + resto.substr(4);
+    }
+    return '+' + d;
+  }
 
   function atualizarCard(card, st) {
     var pill = card.querySelector('[data-wa-status]');
@@ -102,7 +105,20 @@
       btn.innerHTML = conectado ? '⏻ Desconectar' : '⏻ Conectar';
       btn.dataset.connected = conectado ? '1' : '0';
     }
-    if (sub && conectado && st.session) sub.textContent = 'Sessão: ' + st.session;
+    if (sub) {
+      if (conectado && st.number) {
+        var label = formatarNumero(st.number);
+        if (st.pushName) label += ' · ' + st.pushName;
+        sub.textContent = label;
+        sub.classList.add('connected');
+      } else if (conectado) {
+        sub.textContent = 'Conectado';
+        sub.classList.add('connected');
+      } else {
+        sub.textContent = 'Sem número vinculado';
+        sub.classList.remove('connected');
+      }
+    }
     card.dataset.connected = conectado ? '1' : '0';
   }
   function recontarConectados() {
@@ -119,45 +135,50 @@
     });
   }
   pollCards();
-  setInterval(pollCards, 12000);
+  var cardsTimer = setInterval(pollCards, 12000);
+  var refreshTimer;
+  var disposed = false;
+  document.addEventListener('gestor:before-swap', function () {
+    disposed = true;
+    clearInterval(cardsTimer);
+    clearTimeout(refreshTimer);
+    pararConnect();
+  }, { once: true });
 
   // ----- Conectar / Desconectar -----
   var modal = document.getElementById('modal-wa-connect');
   var trigger = document.querySelector('[data-wa-connect-trigger]');
   var qrImg = modal && modal.querySelector('[data-wa-qr-img]');
   var qrMsg = modal && modal.querySelector('[data-wa-qr-msg]');
-  var pairCode = modal && modal.querySelector('[data-wa-pair-code]');
   var modalName = modal && modal.querySelector('[data-wa-modal-name]');
-  var phoneInput = modal && modal.querySelector('[data-wa-phone]');
-  var pairBtn = modal && modal.querySelector('[data-wa-pair-btn]');
   var aguardando = modal && modal.querySelector('[data-wa-aguardando]');
   var pollConnect = null;
   var deviceAtual = null;
 
   function mostrarEstado(st) {
-    if (!modal) return;
+    if (!modal || disposed || !modal.isConnected) return;
     if (st.connected || st.status === 'conectado') {
       if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = '✅ Conectado!'; }
       if (qrImg) qrImg.hidden = true;
-      if (pairCode) pairCode.hidden = true;
       pararConnect();
-      setTimeout(function () { window.location.reload(); }, 900);
-      return;
-    }
-    if (st.pairingCode) {
-      if (pairCode) { pairCode.hidden = false; pairCode.textContent = st.pairingCode; }
-      if (qrImg) qrImg.hidden = true;
-      if (qrMsg) qrMsg.hidden = true;
-      if (aguardando) aguardando.textContent = '⟳ Digite o código no celular...';
+      refreshTimer = setTimeout(function () { if (!disposed) window.gestorRefresh(); }, 900);
       return;
     }
     if (st.qrCode) {
       if (qrImg) { qrImg.hidden = false; qrImg.src = st.qrCode; }
       if (qrMsg) qrMsg.hidden = true;
-      if (pairCode) pairCode.hidden = true;
       return;
     }
-    if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = st.lastError || 'Gerando QR Code...'; }
+    // Status intermediarios: mostra mensagem clara em vez de QR generico
+    var msgPorStatus = {
+      'iniciando': '⏳ Iniciando sessão...',
+      'reconectando': '🔄 Reconectando ao WhatsApp...',
+      'qr': '⏳ Gerando QR Code...',
+      'pairing': '⏳ Gerando código de pareamento...',
+      'erro': st.lastError || 'Falha ao conectar.',
+      'desconectado': st.lastError || '⏳ Solicitando QR Code...',
+    };
+    if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = msgPorStatus[st.status] || 'Aguardando QR Code...'; }
     if (qrImg) qrImg.hidden = true;
   }
   function pararConnect() { if (pollConnect) { clearInterval(pollConnect); pollConnect = null; } }
@@ -174,35 +195,51 @@
       var id = card.getAttribute('data-device-id');
       if (btn.dataset.connected === '1') {
         if (!confirm('Desconectar este dispositivo?')) return;
-        fetch('/whatsapp/device/' + id + '/disconnect', { method: 'POST' }).then(function () { window.location.reload(); });
+        btn.disabled = true;
+        btn.dataset.loading = '1';
+        var oldText = btn.innerHTML;
+        btn.innerHTML = '⏳ Desconectando...';
+        window.csrfFetch('/whatsapp/device/' + id + '/disconnect', { method: 'POST' })
+          .then(function (r) { if (!r.ok) throw new Error("Falha ao desconectar"); if (!disposed) return window.gestorRefresh(); })
+          .catch(function () { btn.disabled = false; btn.innerHTML = oldText; delete btn.dataset.loading; });
         return;
       }
+      // Anti-clique-multiplo: se ja esta em progresso, so reabre o modal
+      // (que mostra o QR ou status atual). Nao chama /connect duas vezes seguidas.
+      if (btn.dataset.loading === '1') {
+        deviceAtual = id;
+        if (trigger) trigger.click();
+        pollStatusConnect();
+        return;
+      }
+      btn.disabled = true;
+      btn.dataset.loading = '1';
+      var originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Conectando...';
+
       // abre modal de conexão
       deviceAtual = id;
       if (modalName) modalName.textContent = card.getAttribute('data-nome') || '';
       if (qrImg) qrImg.hidden = true;
-      if (pairCode) pairCode.hidden = true;
-      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Gerando QR Code...'; }
-      if (phoneInput) phoneInput.value = '';
+      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Gerando QR Code... (pode levar 10s)'; }
       if (trigger) trigger.click();
-      fetch('/whatsapp/device/' + id + '/connect', { method: 'POST' })
+      window.csrfFetch('/whatsapp/device/' + id + '/connect', { method: 'POST' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (st) { if (st) mostrarEstado(st); }).catch(function () {});
+        .then(function (st) {
+          if (st) mostrarEstado(st);
+          btn.disabled = false;
+          delete btn.dataset.loading;
+          btn.innerHTML = originalText;
+        })
+        .catch(function () {
+          btn.disabled = false;
+          delete btn.dataset.loading;
+          btn.innerHTML = originalText;
+          if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Falha ao conectar. Tente novamente.'; }
+        });
       pararConnect();
       pollConnect = setInterval(pollStatusConnect, 3000);
     });
-  });
-
-  if (pairBtn) pairBtn.addEventListener('click', function () {
-    if (!deviceAtual) return;
-    var phone = (phoneInput && phoneInput.value || '').replace(/\D+/g, '');
-    if (!phone) { if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Informe o número com DDI+DDD.'; } return; }
-    pairBtn.disabled = true; pairBtn.textContent = 'Gerando...';
-    fetch('/whatsapp/device/' + deviceAtual + '/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone }) })
-      .then(function (r) { return r.json(); })
-      .then(function (st) { mostrarEstado(st); })
-      .catch(function () {})
-      .finally(function () { pairBtn.disabled = false; pairBtn.textContent = 'Gerar código'; });
   });
 
   // Para o polling ao fechar o modal

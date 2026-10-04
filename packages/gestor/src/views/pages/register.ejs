@@ -72,6 +72,7 @@
         </div>
       <% } %>
       <form class="login-form" action="/register" method="post">
+        <%- csrfInput %>
         <label class="login-field">
           <span>
             Nome
@@ -83,12 +84,6 @@
             Nome de usuário
           </span>
           <input type="text" name="username" placeholder="Seu usuário" autocomplete="username" required />
-        </label>
-        <label class="login-field">
-          <span>
-            Email
-          </span>
-          <input type="email" name="email" placeholder="email@exemplo.com" autocomplete="email" required />
         </label>
         <label class="login-field">
           <span>

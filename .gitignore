@@ -5,15 +5,9 @@ dist/
 .env.*
 !.env.example
 tokens/
-tokens-test/
-tmp-pup/
 sessions/
 *.zip
 *.tar
-*.deb
-.wwebjs_auth/
-.wwebjs_cache/
 npm-debug.log*
-
-# Cópia gerada do pacote compartilhado (fonte única em packages/shared)
-packages/*/src/shared/
+.tmp-ui/
+.claude/settings.local.json
