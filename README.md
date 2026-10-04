@@ -121,3 +121,12 @@ O `.env`, as dependências instaladas, os backups e os ZIPs gerados ficam fora d
 ## Autor
 
 Desenvolvido por [Italo](https://github.com/italoax).
+
+### Atualização automática pelo GitHub
+
+Na Hostinger, conecte o repositório `italoax/gestor` e selecione a branch `nodejs`.
+Use `npm run build` como comando de compilação e `dist/server.js` como arquivo de entrada.
+
+A configuração `.npmrc` inclui as dependências de desenvolvimento, pois a hospedagem precisa do TypeScript para compilar o código antes de iniciar o servidor.
+
+Depois de salvar as alterações, crie um commit e envie para a branch conectada. Cada push dispara uma nova implantação. Um commit apenas local não atualiza o site. As variáveis privadas continuam configuradas na Hostinger.
