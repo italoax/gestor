@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "../http.js";
 import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
 
 // PagBank / PagSeguro Connect — API REST, auth via Bearer token.
@@ -39,7 +40,7 @@ interface PagBankOrder {
 }
 
 async function authed<T>(token: string, url: string, init: RequestInit): Promise<T> {
-  const r = await fetch(url, {
+  const r = await fetchWithTimeout(url, {
     ...init,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -61,7 +62,7 @@ async function authed<T>(token: string, url: string, init: RequestInit): Promise
 // Baixa o PNG do QR (PagBank devolve um link) e converte pra base64 pra
 // alinhar com os outros provedores (front espera base64 inline).
 async function fetchPngAsBase64(url: string): Promise<string> {
-  const r = await fetch(url);
+  const r = await fetchWithTimeout(url);
   if (!r.ok) throw new Error(`Falha ao baixar QR PNG: HTTP ${r.status}`);
   return Buffer.from(await r.arrayBuffer()).toString("base64");
 }

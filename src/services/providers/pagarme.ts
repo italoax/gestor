@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "../http.js";
 import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
 
 // Pagar.me v5 (Stone Co). API com Basic auth — secret key como username, senha vazia.
@@ -31,7 +32,7 @@ interface PagarmeOrder {
 
 async function authed<T>(secretKey: string, url: string, init: RequestInit): Promise<T> {
   const basicAuth = Buffer.from(`${secretKey}:`).toString("base64");
-  const r = await fetch(url, {
+  const r = await fetchWithTimeout(url, {
     ...init,
     headers: {
       Authorization: `Basic ${basicAuth}`,
@@ -53,7 +54,7 @@ async function authed<T>(secretKey: string, url: string, init: RequestInit): Pro
 // Pagar.me devolve `qr_code_url` (link pro PNG) e `qr_code` (copia e cola).
 // Front quer base64, então baixamos o PNG.
 async function fetchPngAsBase64(url: string): Promise<string> {
-  const r = await fetch(url);
+  const r = await fetchWithTimeout(url);
   if (!r.ok) throw new Error(`Falha ao baixar QR PNG: HTTP ${r.status}`);
   return Buffer.from(await r.arrayBuffer()).toString("base64");
 }
@@ -104,7 +105,7 @@ export const pagarMeProvider: PaymentProvider = {
   async consultarPagamento(credenciais, paymentId): Promise<StatusResult> {
     const key = getKey(credenciais);
     // Pagar.me: paymentId é o charge_id (ch_xxx). GET /charges/:id devolve o status.
-    const r = await fetch(`${PAGARME_BASE}/charges/${encodeURIComponent(paymentId)}`, {
+    const r = await fetchWithTimeout(`${PAGARME_BASE}/charges/${encodeURIComponent(paymentId)}`, {
       headers: { Authorization: `Basic ${Buffer.from(`${key}:`).toString("base64")}`, Accept: "application/json" },
     });
     const j = await r.json() as { id?: string; status?: string; paid_at?: string; amount?: number; message?: string };

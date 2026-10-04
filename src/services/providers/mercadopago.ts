@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "../http.js";
 import crypto from "node:crypto";
 import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
 
@@ -75,7 +76,7 @@ export const mercadoPagoProvider: PaymentProvider = {
     };
     if (params.notificationUrl) body.notification_url = params.notificationUrl;
 
-    const r = await fetch(`${MP_BASE}/v1/orders`, {
+    const r = await fetchWithTimeout(`${MP_BASE}/v1/orders`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -103,7 +104,7 @@ export const mercadoPagoProvider: PaymentProvider = {
 
   async consultarPagamento(credenciais, orderId): Promise<StatusResult> {
     const token = getToken(credenciais);
-    const r = await fetch(`${MP_BASE}/v1/orders/${encodeURIComponent(orderId)}`, {
+    const r = await fetchWithTimeout(`${MP_BASE}/v1/orders/${encodeURIComponent(orderId)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const j = await r.json() as MpOrderResponse;

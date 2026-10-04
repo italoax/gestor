@@ -11,7 +11,7 @@ import compression from "compression";
 import expressLayouts from "express-ejs-layouts";
 import { env } from "./config/env.js";
 import { db } from "./db/mysql.js";
-import { createSessionStore } from "./db/sessionStore.js";
+import { createSessionStore, closeSessionStores } from "./db/sessionStore.js";
 import { ensureDatabaseSchema } from "./db/schema.js";
 import { exposeLocals, requireAuth } from "./middleware/auth.js";
 import { csrfMiddleware } from "./middleware/csrf.js";
@@ -37,8 +37,8 @@ import { pushRouter } from "./routes/push.js";
 import { notificacoesRouter } from "./routes/notificacoes.js";
 import { landingRouter } from "./routes/landing.js";
 import { areaClienteRouter } from "./routes/areaCliente.js";
-import { executarCobrancasAutomaticas, startCobrancasCron } from "./services/cobrancasCron.js";
-import { executarAgendados, startStatusCron } from "./services/statusCron.js";
+import { executarCobrancasAutomaticas, startCobrancasCron, stopCobrancasCron } from "./services/cobrancasCron.js";
+import { executarAgendados, startStatusCron, stopStatusCron } from "./services/statusCron.js";
 import { rodarBackupAgendado } from "./services/backup.js";
 import { badgeStatusByVencimento, formatDateBr, formatDateInput, formatMoney, statusByVencimento, statusUrgency } from "./services/format.js";
 
@@ -98,6 +98,26 @@ app.use(express.static(path.join(root, "public"), {
     res.setHeader("Cache-Control", "no-cache");
   },
 }));
+// Health check público pra monitor externo (UptimeRobot, etc). Inclui ping
+// rápido no DB pra distinguir "Node tá vivo" de "Node + banco tá vivo".
+app.get("/healthz", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  let dbOk = false;
+  try {
+    await db.query({ sql: "SELECT 1", timeout: 5_000 });
+    dbOk = true;
+  } catch {
+    dbOk = false;
+  }
+  const status = dbOk ? 200 : 503;
+  res.status(status).json({
+    ok: dbOk,
+    db: dbOk ? "ok" : "down",
+    uptimeSec: Math.round(process.uptime()),
+    version: process.env.npm_package_version || "0.1.0",
+  });
+});
+
 // Nome exclusivo: cookies connect.sid de versões antigas/outros apps não
 // podem substituir a sessão do painel durante o login.
 const painelSession = session({ name: "ixstreaming.painel.sid", store: createSessionStore(), secret: env.sessionSecret, resave: false, saveUninitialized: false, cookie: { path: "/", httpOnly: true, sameSite: "lax", secure: env.cookieSecure } });
@@ -129,25 +149,6 @@ app.use((_, res, next) => {
   res.locals.statusByVencimento = statusByVencimento;
   res.locals.statusUrgency = statusUrgency;
   next();
-});
-
-// Health check público pra monitor externo (UptimeRobot, etc). Inclui ping
-// rápido no DB pra distinguir "Node tá vivo" de "Node + banco tá vivo".
-app.get("/healthz", async (_req, res) => {
-  let dbOk = false;
-  try {
-    await db.query("SELECT 1");
-    dbOk = true;
-  } catch {
-    dbOk = false;
-  }
-  const status = dbOk ? 200 : 503;
-  res.status(status).json({
-    ok: dbOk,
-    db: dbOk ? "ok" : "down",
-    uptimeSec: Math.round(process.uptime()),
-    version: process.env.npm_package_version || "0.1.0",
-  });
 });
 
 // Endpoint público (protegido por token) para um cron externo (Hostinger Cron Job
@@ -198,12 +199,16 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   // O erro completo (com stack e mensagem crua do banco/integração) SEMPRE vai
   // pro log do servidor — é lá que se diagnostica.
   console.error(err);
+  if (res.headersSent) return _next(err);
   // Pro usuário: em produção, mensagem genérica. Mostrar a mensagem crua vazava
   // detalhes internos (nome de tabela/coluna num erro de MySQL, path de arquivo,
   // etc.). Em desenvolvimento, mostra tudo pra facilitar o debug local.
   const payload = env.nodeEnv === "development"
     ? err
     : { message: "Ocorreu um erro ao processar sua solicitação. Recarregue a página e tente de novo; se persistir, entre em contato com o suporte." };
+  if (_req.get("accept")?.includes("application/json")) {
+    return res.status(500).json({ ok: false, error: (payload as { message?: string })?.message || "Erro interno." });
+  }
   res.status(500).render("pages/error", { title: "Erro", error: payload });
 });
 
@@ -211,7 +216,7 @@ let httpServer: ReturnType<typeof app.listen> | null = null;
 let shuttingDown = false;
 
 // Encerra o servidor de forma limpa: para de aceitar conexões novas, deixa as
-// em curso terminarem (até 10s), fecha a pool do MySQL e sai. Sem isso, requests
+// em curso terminarem (até 30s), fecha a pool do MySQL e sai. Sem isso, requests
 // em curso eram abortadas a cada deploy/restart (cliente via "Erro de conexão").
 async function shutdownGracefully(signal: string) {
   if (shuttingDown) return;
@@ -220,11 +225,15 @@ async function shutdownGracefully(signal: string) {
   const timeout = setTimeout(() => {
     console.warn("[shutdown] timeout — forçando saída");
     process.exit(1);
-  }, 10_000);
+  }, 30_000);
   try {
+    stopDevReload();
+    const jobs = Promise.all([stopCobrancasCron(), stopStatusCron()]);
     if (httpServer) {
-      await new Promise<void>((resolve) => httpServer!.close(() => resolve()));
+      await new Promise<void>((resolve, reject) => httpServer!.close(error => error ? reject(error) : resolve()));
     }
+    await jobs;
+    await closeSessionStores();
     await db.end();
     clearTimeout(timeout);
     process.exit(0);
@@ -245,12 +254,17 @@ async function startServer() {
   } else {
     await ensureDatabaseSchema();
   }
+  if (shuttingDown) return;
   httpServer = app.listen({ port: env.port, host: env.host ?? (env.localMode ? "127.0.0.1" : undefined) }, () => {
     startCobrancasCron();
     startStatusCron();
     // Exibe a URL pública configurada, que pode diferir da porta do processo.
     const url = env.appUrl && env.appUrl.trim() ? env.appUrl : `http://localhost:${env.port}`;
     console.log(`Gestor Node rodando em ${url}`);
+  });
+  httpServer.on("error", error => {
+    console.error("Erro no servidor HTTP:", error);
+    void shutdownGracefully("HTTP error");
   });
 }
 

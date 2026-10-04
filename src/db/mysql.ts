@@ -11,6 +11,8 @@ export const db = mysql.createPool({
   port: env.db.port,
   waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 100,
+  connectTimeout: 10_000,
   namedPlaceholders: true,
   // dateStrings=true: o mysql2 devolve TIMESTAMP/DATETIME como string crua,
   // sem tentar converter pelo fuso do Node.js (que na Hostinger pode estar em

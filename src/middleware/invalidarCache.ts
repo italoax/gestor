@@ -12,10 +12,17 @@ const ROTAS_QUE_AFETAM_DASHBOARD = [
   "/aplicativos",
 ];
 
-export function invalidarCacheMiddleware(req: Request, _res: Response, next: NextFunction) {
+export function invalidarCacheMiddleware(req: Request, res: Response, next: NextFunction) {
   if (req.method !== "POST") return next();
   if (!req.session?.user) return next();
-  if (!ROTAS_QUE_AFETAM_DASHBOARD.includes(req.path)) return next();
-  invalidarDashboardCache(req.session.user.id);
+  const mudaDashboard = ROTAS_QUE_AFETAM_DASHBOARD.includes(req.path)
+    || /^\/pagamentos\/\d+\/confirmar-renovacao$/.test(req.path);
+  if (!mudaDashboard) return next();
+  const userId = req.session.user.id;
+  // Invalidate after writes finish so a parallel dashboard request cannot
+  // repopulate the cache with data from before the mutation.
+  res.once('finish', () => {
+    if (res.statusCode < 400) invalidarDashboardCache(userId);
+  });
   return next();
 }

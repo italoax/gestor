@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import { execute, queryRows } from "../db/mysql.js";
 import { env } from "../config/env.js";
 import { postarStatus } from "./whatsapp.js";
@@ -19,9 +20,17 @@ interface AgendadoRow extends RowDataPacket {
 
 let timer: NodeJS.Timeout | null = null;
 let rodando = false;
+let stopping = false;
+
+export async function stopStatusCron() {
+  stopping = true;
+  if (timer) clearInterval(timer);
+  timer = null;
+  while (rodando) await sleep(50);
+}
 
 export function startStatusCron() {
-  if (env.localMode || timer) return;
+  if (env.localMode || stopping || timer) return;
   // A cada 30s: barato e dá precisão suficiente. Não precisa ser ao segundo —
   // status agendado para 14:30 publica entre 14:30 e 14:30:30.
   timer = setInterval(() => {
@@ -30,7 +39,7 @@ export function startStatusCron() {
 }
 
 export async function executarAgendados(): Promise<{ skipped?: boolean; postados?: number }> {
-  if (env.localMode) return { skipped: true };
+  if (env.localMode || stopping) return { skipped: true };
   if (rodando) return { skipped: true };
   rodando = true;
   try {
@@ -49,6 +58,7 @@ export async function executarAgendados(): Promise<{ skipped?: boolean; postados
     );
     let postados = 0;
     for (const row of due) {
+      if (stopping) break;
       // Marca como "publicando" antes de tentar — proteção extra contra dupla
       // publicação se um tick atrasou e outro pegou a mesma linha.
       const reservado = await execute(

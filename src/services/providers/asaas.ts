@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "../http.js";
 import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
 
 // Integração Asaas: cria Customer + Payment(BILLING_TYPE=PIX) + busca QR.
@@ -27,7 +28,7 @@ interface AsaasPayment {
 interface AsaasPixQr { encodedImage?: string; payload?: string; expirationDate?: string; errors?: Array<{ description: string }>; }
 
 async function authedJson<T>(token: string, url: string, init: RequestInit): Promise<T> {
-  const r = await fetch(url, {
+  const r = await fetchWithTimeout(url, {
     ...init,
     headers: {
       access_token: token,

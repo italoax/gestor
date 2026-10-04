@@ -25,6 +25,19 @@ let timer: NodeJS.Timeout | null = null;
 // espaçados por delay), o próximo tick retorna {skipped} em vez de empilhar
 // execuções simultâneas que duplicariam mensagens.
 let cronRodando = false;
+const shutdownSignal = new AbortController();
+
+export async function stopCobrancasCron() {
+  shutdownSignal.abort();
+  if (timer) clearInterval(timer);
+  timer = null;
+  while (cronRodando) await sleep(50);
+}
+
+async function esperarEnvio(ms: number) {
+  try { await sleep(ms, undefined, { signal: shutdownSignal.signal }); }
+  catch (error) { if (!shutdownSignal.signal.aborted) throw error; }
+}
 let enviosTableReady: Promise<void> | null = null;
 
 export function cronEstaRodando() { return cronRodando; }
@@ -71,14 +84,14 @@ function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
 }
 
 export function startCobrancasCron() {
-  if (env.localMode || timer) return;
+  if (env.localMode || shutdownSignal.signal.aborted || timer) return;
   timer = setInterval(() => {
     void executarCobrancasAutomaticas().catch((error) => logger.error("erro no cron de cobranças", error));
   }, 60_000);
 }
 
 export async function executarCobrancasAutomaticas(): Promise<{ skipped?: boolean }> {
-  if (env.localMode) return { skipped: true };
+  if (env.localMode || shutdownSignal.signal.aborted) return { skipped: true };
   // Lock unificado: cron interno e endpoint /__cron/cobrancas chamam essa função;
   // sem o check aqui, os dois podiam rodar ao mesmo tempo e duplicar envios.
   if (cronRodando) return { skipped: true };
@@ -108,6 +121,7 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
     { today },
   );
   for (const cobranca of cobrancas) {
+    if (shutdownSignal.signal.aborted) return { skipped: true };
     // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
     if (cobranca.horaEnvio && hhmm < String(cobranca.horaEnvio).slice(0, 5)) continue;
     if (!deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
@@ -132,19 +146,21 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
     let falhasSeguidas = 0;
     let circuitBreaker = false;
     for (const cliente of clientes) {
-      const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
-      if (!reservaId) continue;
+      if (shutdownSignal.signal.aborted) return { skipped: true };
 
       // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
-      if (enviadosNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
+      if (enviadosNestaCobranca > 0) await esperarEnvio(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
       // Envio em lotes: a cada N mensagens, pausa o tempo configurado antes de continuar.
       if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
         const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
         if (enviadosNestaCobranca % tamanho === 0) {
           const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
-          if (pausaSec > 0) await sleep(pausaSec * 1_000);
+          if (pausaSec > 0) await esperarEnvio(pausaSec * 1_000);
         }
       }
+      if (shutdownSignal.signal.aborted) return { skipped: true };
+      const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
+      if (!reservaId) continue;
       enviadosNestaCobranca += 1;
 
       // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
@@ -175,6 +191,7 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
       );
       console.warn(`Regra ${cobranca.id} pausada por 5 falhas seguidas de envio.`);
     }
+    if (shutdownSignal.signal.aborted) return { skipped: true };
     await execute("UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id", { id: cobranca.id, ultimaExecucao: appNowSql(now) });
   }
   return {};

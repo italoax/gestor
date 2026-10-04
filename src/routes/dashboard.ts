@@ -50,10 +50,12 @@ dashboardRouter.get("/", (_, res) => res.redirect("/dashboard"));
 type DashboardPayload = Record<string, unknown>;
 const dashboardCache = new Map<string, { expiresAt: number; payload: DashboardPayload }>();
 const DASHBOARD_CACHE_TTL_MS = 60_000;
+let cacheRevision = 0;
 
 // Invalida cache do usuário — chame quando algo mudar (criar cliente, renovar, etc).
 // Por ora é usado só na sessão atual; rotas que escrevem podem chamar isso pra forçar refresh.
 export function invalidarDashboardCache(userId: number) {
+  cacheRevision += 1;
   for (const key of dashboardCache.keys()) {
     if (key.startsWith(`${userId}:`)) dashboardCache.delete(key);
   }
@@ -62,7 +64,9 @@ export function invalidarDashboardCache(userId: number) {
 dashboardRouter.get("/dashboard", async (req, res, next) => {
   try {
     const userId = req.session.user!.id;
-    const periodoRawCache = String(req.query.periodo ?? "todos");
+    const revisionAtStart = cacheRevision;
+    const periodoInput = String(req.query.periodo ?? "todos");
+    const periodoRawCache = ["mes", "anterior"].includes(periodoInput) ? periodoInput : "todos";
     const cacheKey = `${userId}:${periodoRawCache}`;
     const cached = dashboardCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -372,7 +376,14 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
       chart: JSON.stringify({ labels, receita: serieReceita, custo: serieCusto, lucro: serieLucro, novos: serieNovosClientes }),
       geo: JSON.stringify({ estados: estadosMap, paises: paisesMap }),
     };
-    dashboardCache.set(cacheKey, { expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS, payload });
+    for (const [key, entry] of dashboardCache) {
+      if (entry.expiresAt <= Date.now()) dashboardCache.delete(key);
+    }
+    if (dashboardCache.size >= 1000) dashboardCache.delete(dashboardCache.keys().next().value!);
+    // Queries started before a write must not restore stale cached data.
+    if (revisionAtStart === cacheRevision) {
+      dashboardCache.set(cacheKey, { expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS, payload });
+    }
     res.render("pages/dashboard", payload);
   } catch (error) { next(error); }
 });

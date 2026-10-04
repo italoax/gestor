@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "./http.js";
 import crypto from "node:crypto";
 import { execute, queryOne } from "../db/mysql.js";
 import { env } from "../config/env.js";
@@ -178,7 +179,7 @@ export async function criarPixAssinatura(
     },
   };
 
-  const r = await fetch(`${MP_BASE}/v1/orders`, {
+  const r = await fetchWithTimeout(`${MP_BASE}/v1/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${env.mpMaster.accessToken}`,
@@ -234,7 +235,7 @@ export async function processarWebhookAssinatura(orderId: string): Promise<void>
   );
   if (!pagamento) return;
 
-  const r = await fetch(`${MP_BASE}/v1/orders/${encodeURIComponent(orderId)}`, {
+  const r = await fetchWithTimeout(`${MP_BASE}/v1/orders/${encodeURIComponent(orderId)}`, {
     headers: { Authorization: `Bearer ${env.mpMaster.accessToken}` },
   });
   const j = await r.json() as MpOrderResponse;

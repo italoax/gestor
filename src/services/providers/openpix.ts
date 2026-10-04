@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from "../http.js";
 import crypto from "node:crypto";
 import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
 
@@ -27,7 +28,7 @@ interface OpenPixCharge {
 }
 
 async function authed<T>(token: string, url: string, init: RequestInit): Promise<T> {
-  const r = await fetch(url, {
+  const r = await fetchWithTimeout(url, {
     ...init,
     headers: { Authorization: token, "Content-Type": "application/json", ...(init.headers || {}) },
   });
@@ -39,7 +40,7 @@ async function authed<T>(token: string, url: string, init: RequestInit): Promise
 // Converte URL do QR PNG pra base64. O front espera base64 pra exibir
 // como data:image/png;base64,..., uniformizando com os outros provedores.
 async function fetchAsBase64(url: string): Promise<string> {
-  const r = await fetch(url);
+  const r = await fetchWithTimeout(url);
   if (!r.ok) throw new Error(`Falha ao baixar QR PNG: HTTP ${r.status}`);
   const buf = Buffer.from(await r.arrayBuffer());
   return buf.toString("base64");
