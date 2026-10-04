@@ -4,6 +4,9 @@
 
 ## Últimas atualizações — 04/10/2026
 
+- Scripts locais reunidos em um arquivo, com cache de compilação e recompilação incremental para iniciar mais rápido.
+- Removidos os scripts separados de ZIP, limpeza e desenvolvimento; deploy mantido pelo GitHub.
+
 - Integrações de pagamento com limite de espera, evitando requisições travadas.
 - Cache do dashboard atualizado após alterações e confirmações de renovação, com limite de memória.
 - Limites de conexões e filas do banco de dados ajustados.

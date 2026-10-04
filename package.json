@@ -6,14 +6,12 @@
   "description": "Painel Gestor em TypeScript e Node.js.",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "node scripts/start-dev.mjs",
-    "clean": "node scripts/clean.mjs",
-    "build": "npm run clean && tsc",
+    "dev": "node scripts/start-local.mjs --watch",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
     "test": "node --test test/*.test.mjs",
     "test:browser": "node test/navigation.browser.mjs",
     "start": "node dist/server.js",
-    "start:local": "npm run build && node scripts/start-local.mjs",
-    "deploy": "node scripts/deploy.mjs"
+    "start:local": "node scripts/start-local.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
