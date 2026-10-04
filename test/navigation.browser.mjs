@@ -7,8 +7,8 @@ import ejs from 'ejs';
 import * as format from '../src/services/format.ts';
 
 const root = process.cwd(), tmp = resolve(root, '.tmp-ui');
-const views = resolve(root, 'packages/gestor/src/views');
-const pub = resolve(root, 'packages/gestor/public');
+const views = resolve(root, 'src/views');
+const pub = resolve(root, 'public');
 const names = ['Android TV', 'Chromecast com Google TV', 'Dispositivo com nome muito longo para conferir a quebra de texto', 'Apple TV'];
 const devices = names.map((nome, i) => ({ id: i + 1, nome, descricao: i % 2 ? 'Descrição de exemplo para conferir o espaçamento do cartão.' : '', status: i === 3 ? 'Inativo' : 'Ativo' }));
 const apps = devices.map(x => ({ ...x, valorRenovacao: x.id === 1 ? 0 : 35 }));

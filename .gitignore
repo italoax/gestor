@@ -14,3 +14,6 @@ backups/
 sessions/
 *.zip
 *.tar
+
+.tmp-ui/
+*.tsbuildinfo

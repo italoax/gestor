@@ -7,23 +7,15 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "node scripts/start-dev.mjs",
-    "build": "tsc",
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "node test/navigation.browser.mjs",
     "start": "node dist/server.js",
     "start:local": "npm run build && node scripts/start-local.mjs",
     "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
-    "@types/bcryptjs": "^3.0.0",
-    "@types/compression": "^1.8.1",
-    "@types/connect-flash": "^0.0.40",
-    "@types/ejs": "^3.1.5",
-    "@types/express": "^5.0.6",
-    "@types/express-ejs-layouts": "^2.5.4",
-    "@types/express-session": "^1.19.0",
-    "@types/morgan": "^1.9.10",
-    "@types/multer": "^2.1.0",
-    "@types/node": "^25.9.1",
-    "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "connect-flash": "^0.1.1",
@@ -39,7 +31,20 @@
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
     "mysql2": "^3.22.3",
-    "typescript": "^6.0.3",
     "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/compression": "^1.8.1",
+    "@types/connect-flash": "^0.0.40",
+    "@types/ejs": "^3.1.5",
+    "@types/express": "^5.0.6",
+    "@types/express-ejs-layouts": "^2.5.4",
+    "@types/express-session": "^1.19.0",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.9.1",
+    "@types/web-push": "^3.6.4",
+    "typescript": "^6.0.3"
   }
 }
