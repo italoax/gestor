@@ -6,6 +6,8 @@ export const db = mysql.createPool({
   user: env.db.user,
   password: env.db.password,
   database: env.db.name,
+  // Compression is unnecessary here; keep the compressed protocol disabled.
+  compress: false,
   port: env.db.port,
   waitForConnections: true,
   connectionLimit: 10,
