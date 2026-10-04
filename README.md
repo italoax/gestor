@@ -4,6 +4,8 @@
 
 ## Últimas atualizações — 04/10/2026
 
+- Logo IX TV nos atalhos da tela inicial do iPhone e nos icones de instalacao.
+
 - Scripts locais reunidos em um arquivo, com cache de compilação e recompilação incremental para iniciar mais rápido.
 - Removidos os scripts separados de ZIP, limpeza e desenvolvimento; deploy mantido pelo GitHub.
 
