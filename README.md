@@ -1,4 +1,4 @@
-﻿# Gestor IXTV
+# Gestor IXTV
 
 **Versão atual: 0.1.0**
 
@@ -13,5 +13,3 @@
 - Dependência `mysql2` atualizada para corrigir vulnerabilidades, inclusive nas sessões.
 - Compressão MySQL desativada e testes de proteção contra descompressão excessiva.
 - Instalação do TypeScript corrigida para o deploy automático na Hostinger.
-
-**Validação:** build, 76 testes e navegação no navegador aprovados; nenhuma vulnerabilidade encontrada pelo `npm audit` na revisão.
