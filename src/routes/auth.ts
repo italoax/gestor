@@ -13,6 +13,7 @@ const loginRateLimit = rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.locals.loginSucceeded === true,
   message: "Muitas tentativas de login. Aguarde 15 minutos antes de tentar de novo.",
 });
 
@@ -70,6 +71,7 @@ authRouter.post("/login", loginRateLimit, async (req, res, next) => {
       req.session.cookie.maxAge = remember ? REMEMBER_ME_MAX_AGE_MS : undefined;
       req.session.save((saveErr) => {
         if (saveErr) return next(saveErr);
+        res.locals.loginSucceeded = true;
         res.redirect("/dashboard");
       });
     });

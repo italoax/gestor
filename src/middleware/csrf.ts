@@ -6,16 +6,16 @@ import type { Request, Response, NextFunction } from "express";
 // Mesmo com sameSite=lax já mitigando a maioria dos ataques, isso é defesa em
 // profundidade — protege contra subdomain takeover, browser bug, link especial, etc.
 
-// Caminhos que pulam validação: webhooks externos (WhatsApp Meta) e endpoints
+// Caminhos que pulam validação: webhooks de pagamento e endpoints
 // de cron protegidos por token próprio. Esses não são chamados pelo browser do
 // usuário, então CSRF não se aplica.
 const ROTAS_EXENTAS = [
-  /^\/webhook/,
+  /^\/webhook\//,
   /^\/__cron\//,
   // /pagar/<token>/criar é POST público da página de pagamento (cliente final
   // não logado). Não tem como ter CSRF token. O token na URL já dá pertinência
   // ao cliente certo, e não há estado autenticado pra um CSRF abusar.
-  /^\/pagar\/[^/]+\/(criar|status)/,
+  /^\/pagar\/[^/]+\/(criar|status)(?:\/|$)/,
 ];
 
 declare module "express-session" {

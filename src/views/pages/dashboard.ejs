@@ -327,7 +327,7 @@
 </div>
 
 <script data-nav-once src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>window.__dashData = <%- chart %>;</script>
+<script>window.__dashData = <%- chart.replace(/</g, '\\u003c') %>;</script>
 <script src="/assets/js/dashboard-charts.js?v=188"></script>
-<script>window.__geoData = <%- geo %>;</script>
+<script>window.__geoData = <%- geo.replace(/</g, '\\u003c') %>;</script>
 <script src="/assets/js/dashboard-maps.js?v=188"></script>

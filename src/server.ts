@@ -22,7 +22,6 @@ import { dashboardRouter } from "./routes/dashboard.js";
 import { clientesRouter } from "./routes/clientes.js";
 import { crudRouter } from "./routes/simpleCrud.js";
 import { accountRouter } from "./routes/account.js";
-import { webhookRouter } from "./routes/webhook.js";
 import { whatsappRouter } from "./routes/whatsapp.js";
 import { placeholderRouter } from "./routes/placeholder.js";
 import { dispositivosRouter } from "./routes/dispositivos.js";
@@ -83,9 +82,10 @@ app.use(helmet({
 // Comprime respostas com gzip — HTML/CSS/JS encolhem ~70%. Especialmente
 // importante em hospedagem compartilhada com largura de banda limitada.
 app.use(compression());
-app.use(morgan("dev"));
+// URLs de acesso e pagamento contêm credenciais; registre somente metadados.
+app.use(morgan(":method :status :response-time ms"));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ verify: (req, _res, buf) => { (req as express.Request & { rawBody?: Buffer }).rawBody = buf; } }));
+app.use(express.json());
 // Cache-busting via revalidação: o express.static manda ETag automaticamente.
 // `no-cache` no Cache-Control não significa "não cacheia" — significa "antes de
 // usar, pergunta ao servidor se mudou". Arquivo igual → 304 (zero bytes); arquivo
@@ -185,7 +185,6 @@ app.get("/__cron/cobrancas", async (req, res) => {
   }
 });
 
-app.use(webhookRouter);
 // pagamentoRouter contém rotas públicas (/pagar/:token e /webhook/mercadopago).
 // Tem que vir antes do requireAuth pra cliente final acessar sem login.
 app.use(pagamentoRouter);

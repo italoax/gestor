@@ -191,56 +191,32 @@ function sessionUrl(pathTemplate: string, sessao: string) {
   return `${env.whatsapp.sessionApiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-async function enviarCloud(to: string, payload: Record<string, unknown>) {
-  if (!env.whatsapp.accessToken || !env.whatsapp.phoneNumberId) {
-    return { ok: false, error: "Configuração WA_ACCESS_TOKEN/WA_PHONE_NUMBER_ID ausente." };
-  }
-  const url = `https://graph.facebook.com/${env.whatsapp.apiVersion}/${env.whatsapp.phoneNumberId}/messages`;
-  return jsonRequest(url, { messaging_product: "whatsapp", to, ...payload }, "POST", {
-    Authorization: `Bearer ${env.whatsapp.accessToken}`,
-  });
-}
-
 function sessionHeaders(token?: string): Record<string, string> {
   const resolvedToken = (token ?? env.whatsapp.sessionApiToken).trim();
   return resolvedToken ? { Authorization: `Bearer ${resolvedToken}`, token: resolvedToken } : {};
 }
 
-function isSessionApiDriver() {
-  return ["session", "session-api", "session_api", "csession-api", "csession_api"].includes(env.whatsapp.driver);
-}
-
 export async function enviarTexto(sessao: string, telefone: string, mensagem: string, token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
-  if (isSessionApiDriver()) {
-    const url = sessionUrl(env.whatsapp.sessionSendTextPath, sessao || env.whatsapp.sessionNameDefault);
-    if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
-    return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, body: mensagem }, "POST", sessionHeaders(token));
-  }
-  return enviarCloud(to, { type: "text", text: { body: mensagem } });
+  const url = sessionUrl(env.whatsapp.sessionSendTextPath, sessao || env.whatsapp.sessionNameDefault);
+  if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
+  return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, body: mensagem }, "POST", sessionHeaders(token));
 }
 
 export async function enviarMidia(sessao: string, telefone: string, urlMidia: string, tipo: string, caption = "", token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
   const urlPublica = resolverUrlMidia(urlMidia);
-  if (isSessionApiDriver()) {
-    const url = sessionUrl(env.whatsapp.sessionSendMediaPath, sessao || env.whatsapp.sessionNameDefault);
-    if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
-    return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, mediaUrl: urlPublica, caption, type: tipo }, "POST", sessionHeaders(token));
-  }
-  const mediaType = tipo === "video" ? "video" : tipo === "document" ? "document" : "image";
-  return enviarCloud(to, { type: mediaType, [mediaType]: { link: urlPublica, caption } });
+  const url = sessionUrl(env.whatsapp.sessionSendMediaPath, sessao || env.whatsapp.sessionNameDefault);
+  if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
+  return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, mediaUrl: urlPublica, caption, type: tipo }, "POST", sessionHeaders(token));
 }
 
 export async function enviarAudio(sessao: string, telefone: string, urlAudio: string, token?: string): Promise<WhatsappResult> {
   const to = normalizarTelefone(telefone);
   const urlPublica = resolverUrlMidia(urlAudio);
-  if (isSessionApiDriver()) {
-    const url = sessionUrl(env.whatsapp.sessionSendAudioPath, sessao || env.whatsapp.sessionNameDefault);
-    if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
-    return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, mediaUrl: urlPublica }, "POST", sessionHeaders(token));
-  }
-  return enviarCloud(to, { type: "audio", audio: { link: urlPublica } });
+  const url = sessionUrl(env.whatsapp.sessionSendAudioPath, sessao || env.whatsapp.sessionNameDefault);
+  if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
+  return jsonRequest(url, { session: sessao || env.whatsapp.sessionNameDefault, number: to, mediaUrl: urlPublica }, "POST", sessionHeaders(token));
 }
 
 export interface StatusPayload {
@@ -255,7 +231,6 @@ export interface StatusPayload {
 // Publica um Status (story) do WhatsApp via microserviço Baileys.
 // O endpoint /api/status/send aceita texto com cor de fundo OU mídia (imagem/vídeo).
 export async function postarStatus(sessao: string, payload: StatusPayload, token?: string): Promise<WhatsappResult> {
-  if (!isSessionApiDriver()) return { ok: false, error: "Driver WhatsApp não é session-api." };
   const url = sessionUrl("/api/status/send", sessao || env.whatsapp.sessionNameDefault);
   if (!url) return { ok: false, error: "WA_SESSION_API_URL ausente." };
 
@@ -342,12 +317,11 @@ export async function enviarMensagemModeloComRetry(
 }
 
 // Checa se a sessão está conectada antes de iniciar um disparo em lote.
-// Retorna { connected, error }. Em caso de driver não-session-api ou URL ausente,
+// Retorna { connected, error }. Em caso de URL ausente,
 // assume conectado pra não bloquear (o envio em si reporta erro se falhar).
 // Usa env.whatsapp.sessionStatusPath (default "/session/status/{session}") —
 // mesmo endpoint que o topbar polleia.
 export async function verificarConexaoSessao(sessao: string, token?: string): Promise<{ connected: boolean; error?: string }> {
-  if (!isSessionApiDriver()) return { connected: true };
   const url = sessionUrl(env.whatsapp.sessionStatusPath, sessao || env.whatsapp.sessionNameDefault);
   if (!url) return { connected: true };
   const result = await jsonRequest(url, undefined, "GET", sessionHeaders(token));

@@ -17,3 +17,6 @@ sessions/
 
 .tmp-ui/
 *.tsbuildinfo
+
+# Testes mantidos somente neste computador
+/test/

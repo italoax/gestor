@@ -128,10 +128,3 @@ CREATE TABLE IF NOT EXISTS cobrancas_envios (
   CONSTRAINT fk_cobrancas_envios_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobrancas(id) ON DELETE CASCADE,
   CONSTRAINT fk_cobrancas_envios_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  payload JSON NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_whatsapp_webhook_events_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

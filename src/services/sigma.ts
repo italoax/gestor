@@ -9,6 +9,8 @@
 // (whitelist) o IP do servidor. Detectamos esse caso e devolvemos erro claro,
 // em vez de um "falhou" genérico — pra você saber que é o Cloudflare, não a senha.
 
+import { publicHttpsText } from "./publicNetwork.js";
+
 export interface SigmaCreds {
   apiUrl: string;   // URL do painel (ex.: https://dashgen.net ou https://dashgen.net/#/customers)
   username: string;
@@ -54,14 +56,11 @@ function isCloudflareChallenge(contentType: string, body: string): boolean {
 }
 
 async function sigmaFetch(url: string, init: FetchInit): Promise<{ status: number; contentType: string; text: string }> {
-  const resp = await fetch(url, {
+  return publicHttpsText(url, {
     method: init.method,
     headers: { Accept: "application/json", "User-Agent": BROWSER_UA, ...(init.headers ?? {}) },
     body: init.body,
   });
-  const contentType = resp.headers.get("content-type") ?? "";
-  const text = await resp.text();
-  return { status: resp.status, contentType, text };
 }
 
 // Faz login e retorna o token Bearer.

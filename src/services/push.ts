@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { execute, queryRows } from "../db/mysql.js";
 import { env } from "../config/env.js";
 import type { RowDataPacket } from "mysql2";
+import { publicHttpsAgent, publicHttpsUrl } from "./publicNetwork.js";
 
 // Configura web-push uma vez no boot. Se as VAPID keys não estiverem setadas,
 // pushDisponivel() retorna false e os call sites pulam o envio em vez de quebrar.
@@ -63,10 +64,11 @@ export async function enviarPushParaUsuario(userId: number, payload: PushPayload
   let enviadas = 0, falhas = 0;
   await Promise.all(subs.map(async (s) => {
     try {
+      publicHttpsUrl(s.endpoint);
       await webpush.sendNotification({
         endpoint: s.endpoint,
         keys: { p256dh: s.p256dh, auth: s.auth },
-      }, data, { TTL: 60 * 60 * 24 }); // 24h — push expira se device offline
+      }, data, { TTL: 60 * 60 * 24, agent: publicHttpsAgent, timeout: 15_000 }); // 24h
       enviadas++;
     } catch (error) {
       falhas++;

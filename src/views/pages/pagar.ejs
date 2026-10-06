@@ -98,10 +98,10 @@
 
 <script>
 (function () {
-  const TOKEN = <%- JSON.stringify(cliente.pagamentoToken) %>;
+  const TOKEN = <%- JSON.stringify(cliente.pagamentoToken).replace(/</g, '\\u003c') %>;
   let pagamentoId = <%- pagamento ? pagamento.id : 'null' %>;
-  let qrTextInicial = <%- pagamento && pagamento.mpQrText ? JSON.stringify(pagamento.mpQrText) : 'null' %>;
-  let qrBase64Inicial = <%- pagamento && pagamento.mpQrBase64 ? JSON.stringify(pagamento.mpQrBase64) : 'null' %>;
+  let qrTextInicial = <%- pagamento && pagamento.mpQrText ? JSON.stringify(pagamento.mpQrText).replace(/</g, '\\u003c') : 'null' %>;
+  let qrBase64Inicial = <%- pagamento && pagamento.mpQrBase64 ? JSON.stringify(pagamento.mpQrBase64).replace(/</g, '\\u003c') : 'null' %>;
 
   const btn = document.getElementById('pay-btn');
   const periodos = document.getElementById('pay-periodos');

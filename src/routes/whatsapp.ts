@@ -17,10 +17,6 @@ type WhatsappState = {
   number?: string; pushName?: string;
 };
 
-function isSessionApiDriver() {
-  return ["session", "session-api", "session_api", "csession-api", "csession_api"].includes(env.whatsapp.driver);
-}
-
 function sessionApiUrl(pathTemplate: string, session: string) {
   if (!env.whatsapp.sessionApiUrl) return "";
   const s = encodeURIComponent(session);
@@ -141,7 +137,6 @@ async function syncBloqueioChamadas(session: string, enabled: boolean): Promise<
 }
 
 async function getDeviceState(session: string): Promise<WhatsappState> {
-  if (!isSessionApiDriver()) return { session, status: "erro", lastError: "WA_DRIVER deve ser session-api." };
   const state = await requestSessionApi(env.whatsapp.sessionStatusPath, "GET", session);
   if (state.connected || state.qrCode || state.pairingCode) return state;
   const qrState = await requestSessionApi(env.whatsapp.sessionQrPath, "GET", session);
@@ -205,7 +200,7 @@ whatsappRouter.get("/whatsapp", async (req, res, next) => {
     };
     res.render("pages/whatsapp", {
       title: "WhatsApp", subtitle: "Gerencie múltiplos dispositivos WhatsApp para envio de mensagens",
-      devices, stats, sessionApi: isSessionApiDriver(), driver: env.whatsapp.driver,
+      devices, stats,
     });
   } catch (error) { next(error); }
 });
@@ -229,7 +224,6 @@ whatsappRouter.post("/whatsapp", async (req, res, next) => {
       try {
         const device = await carregarDevice(userId, id);
         if (!device) throw new Error("Dispositivo não encontrado.");
-        if (!isSessionApiDriver()) throw new Error("O bloqueio de chamadas exige a API de sessões do WhatsApp.");
         // Envia o estado desejado: repetir o POST não deve inverter a opção.
         const enabled = req.body.bloqueio_chamadas === "1";
         await syncBloqueioChamadas(device.sessao, enabled);
@@ -262,7 +256,6 @@ whatsappRouter.post("/whatsapp/device/:id/:op", async (req, res, next) => {
     const device = await carregarDevice(userId, Number(req.params.id));
     if (!device) return res.status(404).json({ status: "erro", lastError: "Dispositivo não encontrado." });
     const op = String(req.params.op);
-    if (!isSessionApiDriver()) return res.json({ status: "erro", lastError: "Driver de WhatsApp não é session-api." });
 
     if (op === "connect") {
       await requestSessionApi(env.whatsapp.sessionStartPath, "POST", device.sessao);

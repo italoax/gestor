@@ -381,13 +381,6 @@ const statements = [
     CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
-  `CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    payload LONGTEXT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    KEY idx_whatsapp_webhook_events_created_at (created_at)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-
   // Configuração por provedor de pagamento. Credenciais em JSON pra não ter que
   // adicionar coluna nova cada vez que entrar provedor (cada um tem campos diferentes:
   // MP só tem access_token, Asaas tem token + ambiente, OpenPix tem app_id, etc).

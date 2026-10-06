@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { execute } from "../db/mysql.js";
 import { vapidPublicKey, pushDisponivel } from "../services/push.js";
+import { publicHttpsUrl } from "../services/publicNetwork.js";
 
 export const pushRouter = Router();
 
@@ -20,6 +21,8 @@ pushRouter.post("/push/subscribe", async (req, res, next) => {
     const p256dh = String(sub?.keys?.p256dh ?? "");
     const auth = String(sub?.keys?.auth ?? "");
     if (!endpoint || !p256dh || !auth) return res.status(400).json({ ok: false, error: "Inscrição inválida." });
+    try { publicHttpsUrl(endpoint); }
+    catch { return res.status(400).json({ ok: false, error: "Endpoint push inválido." }); }
 
     const ua = String(req.get("user-agent") ?? "").slice(0, 250);
     await execute(

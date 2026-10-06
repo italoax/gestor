@@ -40,13 +40,7 @@ export const env = {
     port: Number(process.env.DB_PORT ?? 3306),
   },
   whatsapp: {
-    driver: (process.env.WA_DRIVER ?? "cloud").toLowerCase(),
-    accessToken: process.env.WA_ACCESS_TOKEN ?? "",
-    phoneNumberId: process.env.WA_PHONE_NUMBER_ID ?? "",
-    apiVersion: process.env.WA_API_VERSION ?? "v20.0",
     defaultCountry: process.env.WA_DEFAULT_COUNTRY ?? "55",
-    verifyToken: process.env.WA_VERIFY_TOKEN ?? "",
-    appSecret: process.env.WA_APP_SECRET ?? "",
     sessionApiUrl: (process.env.WA_SESSION_API_URL ?? "").replace(/\/$/, ""),
     sessionApiToken: process.env.WA_SESSION_API_TOKEN ?? "",
     sessionNameDefault: process.env.WA_SESSION_NAME_DEFAULT || "default",

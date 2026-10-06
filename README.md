@@ -2,6 +2,13 @@
 
 **Versão atual: 0.1.0**
 
+## WhatsApp
+
+O gestor usa exclusivamente a API própria de sessões WhatsApp em `C:\Projetos\whatsapp-api`, com conexão por QR Code.
+Configure `WA_SESSION_API_URL` e `WA_SESSION_API_TOKEN` no ambiente do gestor.
+O token deve ser igual ao `API_TOKEN` configurado no ambiente da API.
+Os caminhos de envio, conexão e status podem ser ajustados pelas variáveis `WA_SESSION_*`.
+
 ## Últimas atualizações — 04/10/2026
 
 - Logo IX TV nos atalhos da tela inicial do iPhone e nos icones de instalacao.

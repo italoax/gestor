@@ -9,10 +9,6 @@
     <h3>WhatsApp</h3>
   </div>
 
-  <% if (!sessionApi) { %>
-    <div class="form-alert error">Para gerenciar dispositivos, configure no .env: <code>WA_DRIVER=session-api</code> e os endpoints <code>WA_SESSION_*</code>.</div>
-  <% } %>
-
 
   <% if (!devices.length) { %>
     <div class="cli-empty"><div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></div><h3>Conexão sendo preparada…</h3><p class="muted">Recarregue a página em alguns segundos.</p></div>
