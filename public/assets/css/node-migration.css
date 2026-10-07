@@ -1585,7 +1585,7 @@
 .sidebar-logo svg { width: 100%; height: 100%; display: block; }
 .sidebar-brand-custom { justify-content: center; }
 .sidebar-brand-image { display:block; position:relative; width:180px; max-width:100%; aspect-ratio:300/145; overflow:hidden; border-radius:8px; background:transparent; flex:none; mix-blend-mode:screen; }
-.sidebar-brand-image img { position:absolute; width:166.6667%; height:auto; max-width:none; left:50%; top:50%; transform:translate(-50%,-51%); }
+.sidebar-brand-image img { position:absolute; width:145%; height:auto; max-width:none; left:50%; top:50%; transform:translate(-50%,-50%); }
 :root[data-theme="light"] .sidebar-brand-image { mix-blend-mode:multiply; }
 :root[data-theme="light"] .sidebar-brand-image img { filter:invert(1) hue-rotate(180deg); }
 .sidebar-collapsed .sidebar-brand-image { width:52px; border-radius:4px; }

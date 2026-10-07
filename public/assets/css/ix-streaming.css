@@ -7,7 +7,7 @@
 
 /* Exibe a arte original sem as margens pretas do arquivo quadrado. */
 .site-header{height:auto;min-height:100px;flex-wrap:wrap;padding-block:12px}.brand-image{display:block;position:relative;width:180px;aspect-ratio:300/145;overflow:hidden;mix-blend-mode:screen}
-.brand-image img{position:absolute;width:166.6667%;height:auto;max-width:none;left:50%;top:50%;transform:translate(-50%,-51%)}
+.brand-image img{position:absolute;width:145%;height:auto;max-width:none;left:50%;top:50%;transform:translate(-50%,-50%)}
 @media(max-width:640px){.site-header .brand-image{width:128px}.site-footer .brand-image{width:160px}}
 
 .instagram-contact{display:flex;align-items:center;justify-content:center;gap:9px;width:fit-content;max-width:100%;margin:22px auto 0;padding:10px 4px;color:#21102c;font-size:13px;line-height:1.5;font-weight:600}.instagram-contact svg{flex-shrink:0}.instagram-contact:hover{text-decoration:underline}.contact-card .instagram-contact:focus-visible{outline-color:#21102c}.site-footer>a[href*="instagram.com"]{font-size:12px;color:var(--muted)}.site-footer>a[href*="instagram.com"]:hover{color:var(--purple)}

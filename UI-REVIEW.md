@@ -1,4 +1,4 @@
-# Revisão visual — 07/10/2026
+f6f4ffbd-632a-4617-a8db-6fced00ba10c# Revisão visual — 07/10/2026
 
 Revisão local das páginas EJS no Chrome, com dados fictícios, seguida de ajustes de desktop e celular. As alterações ainda precisam ser publicadas.
 
