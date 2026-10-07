@@ -1,6 +1,10 @@
 (() => {
   'use strict';
-  if (window.__gestorVisualEffects || !document.body.matches('.page-app, .site-effects')) return;
+  if (
+    window.__gestorVisualEffects ||
+    !document.body.matches('.page-app, .site-effects')
+  )
+    return;
   window.__gestorVisualEffects = true;
   const body = document.body;
   const landing = body.classList.contains('site-effects');
@@ -8,7 +12,11 @@
   const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
   const preferenceKey = 'gestor:pause-effects';
   let paused = false;
-  try { paused = localStorage.getItem(preferenceKey) === '1'; } catch { /* Storage is optional. */ }
+  try {
+    paused = localStorage.getItem(preferenceKey) === '1';
+  } catch {
+    /* Storage is optional. */
+  }
   const backdrop = document.createElement('div');
   backdrop.className = 'fx-backdrop';
   backdrop.setAttribute('aria-hidden', 'true');
@@ -19,35 +27,43 @@
     const stopped = paused || reduce.matches;
     document.documentElement.classList.toggle('fx-paused', stopped);
     if (stopped) {
-      document.querySelectorAll('.fx-pending').forEach(el => el.classList.remove('fx-pending'));
+      document
+        .querySelectorAll('.fx-pending')
+        .forEach((el) => el.classList.remove('fx-pending'));
       observer?.disconnect();
     }
   };
   updatePreference();
   reduce.addEventListener('change', updatePreference);
-  window.addEventListener('storage', event => {
+  window.addEventListener('storage', (event) => {
     if (event.key !== preferenceKey) return;
     paused = event.newValue === '1';
     updatePreference();
   });
 
-  const cards = '.hero-offer, .plan, .steps > article, .ui-summary > div, .disp-card, .plano-card, .srv-card, .msg-card, .int-pag-card';
+  const cards =
+    '.hero-offer, .plan, .steps > article, .ui-summary > div, .disp-card, .plano-card, .srv-card, .msg-card, .int-pag-card';
   const reveal = landing
     ? '.hero-copy, .hero-offer, .experience > div, .section-heading, .steps > article, .plan, .faq-section > div, .contact-card'
     : '.app-content > .container > .ui-summary > div, .ui-toolbar, .disp-card, .plano-card, .srv-card, .msg-card, .int-pag-card, .wa-device, .auto-rule';
   const seen = new WeakSet();
   if ('IntersectionObserver' in window) {
-    observer = new IntersectionObserver(entries => {
-      entries.forEach(({ target, isIntersecting }) => {
-        if (!isIntersecting) return;
-        target.classList.remove('fx-pending');
-        target.classList.add('fx-enter');
-        observer.unobserve(target);
-      });
-    }, { threshold: .05, rootMargin: '0px 0px 24px 0px' });
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(({ target, isIntersecting }) => {
+          if (!isIntersecting) return;
+          target.classList.remove('fx-pending');
+          target.classList.add('fx-enter');
+          observer.unobserve(target);
+        });
+      },
+      { threshold: 0.05, rootMargin: '0px 0px 24px 0px' },
+    );
   }
   const prepare = () => {
-    document.querySelectorAll(cards).forEach(el => el.classList.add('fx-spotlight'));
+    document
+      .querySelectorAll(cards)
+      .forEach((el) => el.classList.add('fx-spotlight'));
     // No painel, os dados e controles ficam visíveis imediatamente.
     // A revelação gradual é reservada à página pública.
     if (!landing || !observer || paused || reduce.matches) return;
@@ -64,12 +80,16 @@
   const content = document.querySelector('.app-content');
   if (content) {
     let queued = false;
-    new MutationObserver(records => {
-      records.forEach(record => record.removedNodes.forEach(node => {
-        if (node.nodeType !== 1) return;
-        observer?.unobserve(node);
-        node.querySelectorAll('.fx-pending').forEach(el => observer?.unobserve(el));
-      }));
+    new MutationObserver((records) => {
+      records.forEach((record) =>
+        record.removedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          observer?.unobserve(node);
+          node
+            .querySelectorAll('.fx-pending')
+            .forEach((el) => observer?.unobserve(el));
+        }),
+      );
       if (queued) return;
       queued = true;
       requestAnimationFrame(() => {
@@ -78,32 +98,47 @@
       });
     }).observe(content, { childList: true, subtree: true });
   }
-  document.addEventListener('animationend', event => {
-    if (event.animationName === 'fx-enter') event.target.classList.remove('fx-enter');
+  document.addEventListener('animationend', (event) => {
+    if (event.animationName === 'fx-enter')
+      event.target.classList.remove('fx-enter');
   });
-  document.addEventListener('focusin', event => {
+  document.addEventListener('focusin', (event) => {
     const card = event.target.closest('.fx-pending');
-    if (card) { card.classList.remove('fx-pending'); observer?.unobserve(card); }
+    if (card) {
+      card.classList.remove('fx-pending');
+      observer?.unobserve(card);
+    }
   });
 
-  let pointerFrame = 0, activeCard;
-  document.addEventListener('pointermove', event => {
-    if (!finePointer.matches || reduce.matches || paused || event.pointerType === 'touch') return;
-    const card = event.target.closest('.fx-spotlight');
-    if (card !== activeCard) {
+  let pointerFrame = 0,
+    activeCard;
+  document.addEventListener(
+    'pointermove',
+    (event) => {
+      if (
+        !finePointer.matches ||
+        reduce.matches ||
+        paused ||
+        event.pointerType === 'touch'
+      )
+        return;
+      const card = event.target.closest('.fx-spotlight');
+      if (card !== activeCard) {
+        cancelAnimationFrame(pointerFrame);
+        activeCard?.style.removeProperty('--fx-x');
+        activeCard?.style.removeProperty('--fx-y');
+        activeCard = card;
+      }
+      if (!card) return;
       cancelAnimationFrame(pointerFrame);
-      activeCard?.style.removeProperty('--fx-x');
-      activeCard?.style.removeProperty('--fx-y');
-      activeCard = card;
-    }
-    if (!card) return;
-    cancelAnimationFrame(pointerFrame);
-    pointerFrame = requestAnimationFrame(() => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty('--fx-x', `${event.clientX - rect.left}px`);
-      card.style.setProperty('--fx-y', `${event.clientY - rect.top}px`);
-    });
-  }, { passive: true });
+      pointerFrame = requestAnimationFrame(() => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--fx-x', `${event.clientX - rect.left}px`);
+        card.style.setProperty('--fx-y', `${event.clientY - rect.top}px`);
+      });
+    },
+    { passive: true },
+  );
 
   if (landing) {
     const progress = document.createElement('div');
@@ -116,7 +151,9 @@
       const length = document.documentElement.scrollHeight - innerHeight;
       progress.style.transform = `scaleX(${length > 0 ? Math.min(1, Math.max(0, scrollY / length)) : 0})`;
     };
-    const update = () => { if (!frame) frame = requestAnimationFrame(paint); };
+    const update = () => {
+      if (!frame) frame = requestAnimationFrame(paint);
+    };
     addEventListener('scroll', update, { passive: true });
     addEventListener('resize', update, { passive: true });
     paint();

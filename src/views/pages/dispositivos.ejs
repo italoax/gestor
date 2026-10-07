@@ -5,7 +5,6 @@
 
 %>
 <div class="container page-dispositivos ui-catalog" data-search-scope data-search-singular="dispositivo" data-search-plural="dispositivos" data-search-empty="Nenhum dispositivo encontrado. Tente outro nome ou status.">
-
   <div class="ui-summary ui-summary-3" aria-label="Resumo dos dispositivos">
     <div class="cli-stat accent-blue">
       <div><span>Total de dispositivos</span><strong><%= totalDisp %></strong></div>
@@ -20,53 +19,52 @@
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'pause' }) %></div>
     </div>
   </div>
-
   <div class="ui-toolbar">
     <input class="input" type="search" placeholder="Buscar dispositivo..." aria-label="Buscar dispositivo" autocomplete="off" data-search-input>
     <button class="btn btn-primary disp-new" type="button" data-open-modal="modal-add-dispositivo"><%- include('../partials/ui-icon', { name: 'plus' }) %> Novo dispositivo</button>
   </div>
-
   <section class="disp-catalog" aria-labelledby="disp-catalog-title">
-  <div class="disp-catalog-heading">
-    <h2 id="disp-catalog-title">Catálogo de dispositivos <span><%= totalDisp %></span></h2>
-    <p data-search-results role="status" aria-live="polite" hidden></p>
-  </div>
-  <% if (!dispositivos.length) { %>
-    <div class="cli-empty">
-      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
-      <h3>Nenhum dispositivo cadastrado</h3>
-      <p class="muted">Cadastre os dispositivos usados pelos seus clientes.</p>
-      <button class="btn btn-primary" type="button" data-open-modal="modal-add-dispositivo"><%- include('../partials/ui-icon', { name: 'plus' }) %> Novo dispositivo</button>
+    <div class="disp-catalog-heading">
+      <h2 id="disp-catalog-title">Catálogo de dispositivos <span><%= totalDisp %></span></h2>
+      <p data-search-results role="status" aria-live="polite" hidden></p>
     </div>
-  <% } else { %>
-  <div class="disp-grid">
-    <% dispositivos.forEach(d => { %>
-    <% const ativo = String(d.status) !== 'Inativo'; %>
-    <div class="disp-card device-card <%= ativo ? '' : 'device-inativo' %>" data-search-item data-search-text="<%= d.nome %> <%= d.descricao || '' %> <%= ativo ? 'status-ativo' : 'status-inativo' %>">
-      <div class="disp-card-top">
-        <span class="disp-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
-        <div class="disp-info">
-          <strong><%= d.nome %></strong>
-        </div>
-        <span class="disp-status <%= ativo ? 'is-active' : '' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+    <% if (!dispositivos.length) { %>
+      <div class="cli-empty">
+        <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
+        <h3>Nenhum dispositivo cadastrado</h3>
+        <p class="muted">Cadastre os dispositivos usados pelos seus clientes.</p>
+        <button class="btn btn-primary" type="button" data-open-modal="modal-add-dispositivo"><%- include('../partials/ui-icon', { name: 'plus' }) %> Novo dispositivo</button>
       </div>
-      <% if (d.descricao) { %><p class="device-desc"><%= d.descricao %></p><% } %>
-      <div class="disp-actions">
-        <button class="btn btn-muted disp-edit edit-dispositivo" type="button" aria-label="Editar <%= d.nome %>" data-id="<%= d.id %>" data-nome="<%= d.nome %>" data-descricao="<%= d.descricao || '' %>" data-status="<%= ativo ? 'Ativo' : 'Inativo' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
-        <form method="post" action="/dispositivos" class="action-form disp-del-form">
-          <%- csrfInput %>
-          <input type="hidden" name="action" value="delete_dispositivo">
-          <input type="hidden" name="id" value="<%= d.id %>">
-          <button class="cli-ico-btn danger" type="submit" title="Apagar <%= d.nome %>" aria-label="Apagar <%= d.nome %>"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
-        </form>
+    <% } else { %>
+      <div class="disp-grid">
+        <% dispositivos.forEach(d => { %>
+          <% const ativo = String(d.status) !== 'Inativo'; %>
+          <div class="disp-card device-card <%= ativo ? '' : 'device-inativo' %>" data-search-item data-search-text="<%= d.nome %> <%= d.descricao || '' %> <%= ativo ? 'status-ativo' : 'status-inativo' %>">
+            <div class="disp-card-top">
+              <span class="disp-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
+              <div class="disp-info">
+                <strong><%= d.nome %></strong>
+              </div>
+              <span class="disp-status <%= ativo ? 'is-active' : '' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+            </div>
+            <% if (d.descricao) { %>
+              <p class="device-desc"><%= d.descricao %></p>
+            <% } %>
+            <div class="disp-actions">
+              <button class="btn btn-muted disp-edit edit-dispositivo" type="button" aria-label="Editar <%= d.nome %>" data-id="<%= d.id %>" data-nome="<%= d.nome %>" data-descricao="<%= d.descricao || '' %>" data-status="<%= ativo ? 'Ativo' : 'Inativo' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
+              <form method="post" action="/dispositivos" class="action-form disp-del-form">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="delete_dispositivo">
+                <input type="hidden" name="id" value="<%= d.id %>">
+                <button class="cli-ico-btn danger" type="submit" title="Apagar <%= d.nome %>" aria-label="Apagar <%= d.nome %>"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
       </div>
-    </div>
-    <% }) %>
-  </div>
-  <% } %>
+    <% } %>
   </section>
 </div>
-
 <div class="modal-overlay" id="modal-add-dispositivo" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -82,7 +80,10 @@
         <label class="field full"><span>Descrição</span><textarea class="input" name="descricao" placeholder="Descrição opcional do dispositivo..."></textarea></label>
         <label class="field full">
           <span>Status</span>
-          <select class="input" name="status"><option>Ativo</option><option>Inativo</option></select>
+          <select class="input" name="status">
+            <option>Ativo</option>
+            <option>Inativo</option>
+          </select>
         </label>
       </div>
     </form>

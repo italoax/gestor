@@ -15,19 +15,28 @@
     opts = opts || {};
     var method = (opts.method || 'GET').toUpperCase();
     if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
-      opts.headers = Object.assign({}, opts.headers || {}, { 'x-csrf-token': window.getCsrfToken() });
+      opts.headers = Object.assign({}, opts.headers || {}, {
+        'x-csrf-token': window.getCsrfToken(),
+      });
     }
     return fetch(url, opts);
   };
 
   // Descarta a preferencia antiga de menu compacto.
-  try { localStorage.removeItem('gestor-sidebar'); } catch (e) {}
+  try {
+    localStorage.removeItem('gestor-sidebar');
+  } catch (e) {}
 
   // Menu lateral no mobile (overlay)
   var burger = document.querySelector('[data-sidebar-mobile]');
   var backdrop = document.querySelector('[data-sidebar-backdrop]');
-  function closeMobile() { if (shell) shell.classList.remove('sidebar-open'); }
-  if (burger && shell) burger.addEventListener('click', function () { shell.classList.toggle('sidebar-open'); });
+  function closeMobile() {
+    if (shell) shell.classList.remove('sidebar-open');
+  }
+  if (burger && shell)
+    burger.addEventListener('click', function () {
+      shell.classList.toggle('sidebar-open');
+    });
   if (backdrop) backdrop.addEventListener('click', closeMobile);
 
   var accountWrap = document.querySelector('[data-account-menu-wrap]');
@@ -46,11 +55,16 @@
       accountToggle.setAttribute('aria-expanded', String(open));
     });
     document.addEventListener('click', function (event) {
-      if (!accountWrap.contains(event.target) || event.target.closest('[data-account-menu] a')) closeAccountMenu();
+      if (
+        !accountWrap.contains(event.target) ||
+        event.target.closest('[data-account-menu] a')
+      )
+        closeAccountMenu();
     });
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && !accountMenu.hidden) {
-        closeAccountMenu(); accountToggle.focus();
+        closeAccountMenu();
+        accountToggle.focus();
       }
     });
     document.addEventListener('focusin', function (event) {
@@ -86,8 +100,14 @@
     if (d.indexOf('55') === 0 && (d.length === 13 || d.length === 12)) {
       var ddd = d.substr(2, 2);
       var resto = d.substr(4);
-      if (resto.length === 9) return '+55 (' + ddd + ') ' + resto.substr(0, 5) + '-' + resto.substr(5);
-      if (resto.length === 8) return '+55 (' + ddd + ') ' + resto.substr(0, 4) + '-' + resto.substr(4);
+      if (resto.length === 9)
+        return (
+          '+55 (' + ddd + ') ' + resto.substr(0, 5) + '-' + resto.substr(5)
+        );
+      if (resto.length === 8)
+        return (
+          '+55 (' + ddd + ') ' + resto.substr(0, 4) + '-' + resto.substr(4)
+        );
     }
     return '+' + d;
   }
@@ -102,21 +122,36 @@
   function atualizarWaChip() {
     if (!waChip || waFetchInflight) return Promise.resolve();
     waFetchInflight = true;
-    return fetch('/whatsapp/status', { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    return fetch('/whatsapp/status', {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
       .then(function (s) {
         if (!s) return; // resposta invalida — nao muda o estado
         // Erros e respostas incompletas não confirmam uma desconexão.
         var connected = s.connected === true || s.status === 'conectado';
-        if (!connected && ['desconectado', 'qr', 'iniciando'].indexOf(s.status) === -1) return;
+        if (
+          !connected &&
+          ['desconectado', 'qr', 'iniciando'].indexOf(s.status) === -1
+        )
+          return;
         waChip.classList.toggle('is-on', connected);
         waChip.classList.toggle('is-off', !connected);
         try {
-          sessionStorage.setItem(waChip.dataset.waStateKey, JSON.stringify({ connected: connected, at: Date.now() }));
+          sessionStorage.setItem(
+            waChip.dataset.waStateKey,
+            JSON.stringify({ connected: connected, at: Date.now() }),
+          );
         } catch (e) {}
         if (connected && s.number) {
           var fmt = formatarNumeroWa(s.number);
-          waChip.title = 'WhatsApp conectado: ' + fmt + (s.pushName ? ' · ' + s.pushName : '');
+          waChip.title =
+            'WhatsApp conectado: ' +
+            fmt +
+            (s.pushName ? ' · ' + s.pushName : '');
           waChip.setAttribute('aria-label', 'WhatsApp conectado em ' + fmt);
         } else if (connected) {
           waChip.title = 'WhatsApp conectado';
@@ -125,22 +160,31 @@
         }
         waChip.setAttribute('aria-label', waChip.title);
       })
-      .catch(function () { /* rede off — nao mexe no estado, evita falso "desconectado" */ })
-      .then(function () { waFetchInflight = false; });
+      .catch(function () {
+        /* rede off — nao mexe no estado, evita falso "desconectado" */
+      })
+      .then(function () {
+        waFetchInflight = false;
+      });
   }
   // Boot: fetch imediato + 1 retry apos 1.5s (cobre cold start no mobile).
   atualizarWaChip().then(function () {
-    if (waChip && !waChip.classList.contains('is-on') && !waChip.classList.contains('is-off')) {
+    if (
+      waChip &&
+      !waChip.classList.contains('is-on') &&
+      !waChip.classList.contains('is-off')
+    ) {
       setTimeout(atualizarWaChip, 1500);
     }
   });
   // Polling adaptativo: 5s no primeiro minuto, depois 30s.
   if (waChip) {
-    var waPolling = null;
     var waFastUntil = Date.now() + 60000;
     function waSchedule() {
       var delay = Date.now() < waFastUntil ? 5000 : 30000;
-      waPolling = setTimeout(function () { atualizarWaChip().finally(waSchedule); }, delay);
+      setTimeout(function () {
+        atualizarWaChip().finally(waSchedule);
+      }, delay);
     }
     waSchedule();
     // Refetch quando o user volta pra aba (mobile: troca de app).
@@ -157,17 +201,22 @@
     if (!btn) return;
     e.preventDefault();
     var val = btn.getAttribute('data-copy') || '';
-    if (navigator.clipboard) navigator.clipboard.writeText(val).catch(function () {});
+    if (navigator.clipboard)
+      navigator.clipboard.writeText(val).catch(function () {});
     var old = btn.textContent;
     btn.textContent = '✓';
-    setTimeout(function () { btn.textContent = old; }, 1000);
+    setTimeout(function () {
+      btn.textContent = old;
+    }, 1000);
   });
 
   // Selecionar todos os clientes (checkbox do cabeçalho)
   document.querySelectorAll('[data-check-all]').forEach(function (master) {
     master.addEventListener('change', function () {
       var scope = master.closest('table') || document;
-      scope.querySelectorAll('tbody .cli-check').forEach(function (cb) { cb.checked = master.checked; });
+      scope.querySelectorAll('tbody .cli-check').forEach(function (cb) {
+        cb.checked = master.checked;
+      });
     });
   });
 
@@ -177,7 +226,8 @@
       document.querySelectorAll('.cli-menu-pop.open').forEach(function (p) {
         p.classList.remove('open');
         p.hidden = true;
-        var b = p.parentElement && p.parentElement.querySelector('.cli-menu-btn');
+        var b =
+          p.parentElement && p.parentElement.querySelector('.cli-menu-btn');
         if (b) b.setAttribute('aria-expanded', 'false');
       });
     }
@@ -196,7 +246,7 @@
           trigger.setAttribute('aria-expanded', 'true');
           var r = trigger.getBoundingClientRect();
           pop.style.position = 'fixed';
-          pop.style.top = (r.bottom + 6) + 'px';
+          pop.style.top = r.bottom + 6 + 'px';
           var left = r.right - pop.offsetWidth;
           var maxLeft = window.innerWidth - pop.offsetWidth - 8;
           if (left > maxLeft) left = maxLeft;
@@ -225,28 +275,45 @@
             if (t) t.click();
           } else if (act === 'archive') {
             var fa = row.querySelector('form.archive-cliente');
-            if (fa) { fa.requestSubmit ? fa.requestSubmit() : fa.submit(); }
+            if (fa) {
+              fa.requestSubmit ? fa.requestSubmit() : fa.submit();
+            }
           } else if (act === 'unarchive') {
             var fu = row.querySelector('form.unarchive-cliente');
-            if (fu) { fu.requestSubmit ? fu.requestSubmit() : fu.submit(); }
+            if (fu) {
+              fu.requestSubmit ? fu.requestSubmit() : fu.submit();
+            }
           } else if (act === 'delete') {
-            var bd = row.querySelector('form.delete-cliente button[type="submit"]');
+            var bd = row.querySelector(
+              'form.delete-cliente button[type="submit"]',
+            );
             if (bd) bd.click();
           } else if (act === 'copy-payment') {
             var cid = item.getAttribute('data-cliente-id');
             if (cid) {
               fetch('/clientes/' + cid + '/link-pagamento')
-                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                  return r.json();
+                })
                 .then(function (j) {
                   if (j && j.ok && j.url) {
-                    if (navigator.clipboard) navigator.clipboard.writeText(j.url).catch(function () {});
-                    if (typeof window.toast === 'function') window.toast('✓ Link de pagamento copiado: ' + j.url, 'success');
+                    if (navigator.clipboard)
+                      navigator.clipboard
+                        .writeText(j.url)
+                        .catch(function () {});
+                    if (typeof window.toast === 'function')
+                      window.toast(
+                        '✓ Link de pagamento copiado: ' + j.url,
+                        'success',
+                      );
                     else alert('Link copiado:\n' + j.url);
                   } else {
                     alert((j && j.error) || 'Falha ao gerar link.');
                   }
                 })
-                .catch(function () { alert('Erro de rede ao gerar link.'); });
+                .catch(function () {
+                  alert('Erro de rede ao gerar link.');
+                });
             }
           }
         }
@@ -257,7 +324,9 @@
     });
     window.addEventListener('scroll', closeAllMenus, true);
     window.addEventListener('resize', closeAllMenus);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAllMenus(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeAllMenus();
+    });
   })();
 
   // -------- Sino de notificações --------
@@ -265,18 +334,33 @@
     var button = event.target.closest('[data-confirm-renovacao]');
     if (!button) return;
     event.preventDefault();
-    if (button.disabled || !confirm('Você já renovou o acesso no outro painel? Confirmar atualiza o vencimento e desconta os créditos no gestor.')) return;
+    if (
+      button.disabled ||
+      !confirm(
+        'Você já renovou o acesso no outro painel? Confirmar atualiza o vencimento e desconta os créditos no gestor.',
+      )
+    )
+      return;
     button.disabled = true;
     var originalText = button.textContent;
     button.textContent = 'Confirmando…';
     try {
-      var response = await window.csrfFetch('/pagamentos/' + encodeURIComponent(button.dataset.confirmRenovacao) + '/confirmar-renovacao', { method: 'POST' });
+      var response = await window.csrfFetch(
+        '/pagamentos/' +
+          encodeURIComponent(button.dataset.confirmRenovacao) +
+          '/confirmar-renovacao',
+        { method: 'POST' },
+      );
       var result = await response.json();
-      if (!response.ok || !result.ok) throw Error(result.error || 'Não foi possível confirmar a renovação.');
+      if (!response.ok || !result.ok)
+        throw Error(result.error || 'Não foi possível confirmar a renovação.');
       if (window.gestorNavigate) await window.gestorNavigate('/clientes');
       else location.assign('/clientes');
     } catch (error) {
-      alert(error.message || 'Falha ao confirmar. Confira o controle antes de tentar novamente.');
+      alert(
+        error.message ||
+          'Falha ao confirmar. Confira o controle antes de tentar novamente.',
+      );
       button.disabled = false;
       button.textContent = originalText;
     }
@@ -296,7 +380,9 @@
     function fmtRel(iso) {
       if (!iso) return '';
       var normalized = iso.replace(' ', 'T');
-      var d = new Date(/(?:Z|[+-]\d\d:\d\d)$/.test(normalized) ? normalized : normalized + 'Z');
+      var d = new Date(
+        /(?:Z|[+-]\d\d:\d\d)$/.test(normalized) ? normalized : normalized + 'Z',
+      );
       if (isNaN(d.getTime())) return '';
       var diff = (Date.now() - d.getTime()) / 1000;
       if (diff < 60) return 'agora';
@@ -307,7 +393,13 @@
     }
     function escapeHtml(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        }[c];
       });
     }
     function pintarBadge(n) {
@@ -329,37 +421,66 @@
       if (!state.items.length) {
         list.innerHTML =
           '<li class="notif-empty">' +
-            '<span class="notif-empty-ico" aria-hidden="true">' +
-              '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>' +
-                '<path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>' +
-              '</svg>' +
-            '</span>' +
-            '<span class="notif-empty-title">Tudo em dia</span>' +
-            '<span class="notif-empty-sub">Pagamentos recebidos e alertas de créditos aparecem aqui.</span>' +
+          '<span class="notif-empty-ico" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>' +
+          '<path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>' +
+          '</svg>' +
+          '</span>' +
+          '<span class="notif-empty-title">Tudo em dia</span>' +
+          '<span class="notif-empty-sub">Pagamentos recebidos e alertas de créditos aparecem aqui.</span>' +
           '</li>';
         return;
       }
-      list.innerHTML = state.items.map(function (n) {
-        var url = n.url || '#';
-        return (
-          '<li class="notif-item ' + (n.lida ? '' : 'is-unread') + (n.pagamentoId ? ' has-renewal' : '') + '" data-id="' + n.id + '">' +
-            '<a class="notif-item-link" href="' + escapeHtml(url) + '" data-notif-id="' + n.id + '">' +
-              '<span class="notif-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v4m0 4h.01"/></svg></span>' +
-              '<span class="notif-body">' +
-                '<span class="notif-title">' + escapeHtml(n.titulo) + '</span>' +
-                (n.mensagem ? '<span class="notif-msg">' + escapeHtml(n.mensagem) + '</span>' : '') +
-                '<span class="notif-time">' + fmtRel(n.createdAt) + '</span>' +
-              '</span>' +
+      list.innerHTML = state.items
+        .map(function (n) {
+          var url = n.url || '#';
+          return (
+            '<li class="notif-item ' +
+            (n.lida ? '' : 'is-unread') +
+            (n.pagamentoId ? ' has-renewal' : '') +
+            '" data-id="' +
+            n.id +
+            '">' +
+            '<a class="notif-item-link" href="' +
+            escapeHtml(url) +
+            '" data-notif-id="' +
+            n.id +
+            '">' +
+            '<span class="notif-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v4m0 4h.01"/></svg></span>' +
+            '<span class="notif-body">' +
+            '<span class="notif-title">' +
+            escapeHtml(n.titulo) +
+            '</span>' +
+            (n.mensagem
+              ? '<span class="notif-msg">' + escapeHtml(n.mensagem) + '</span>'
+              : '') +
+            '<span class="notif-time">' +
+            fmtRel(n.createdAt) +
+            '</span>' +
+            '</span>' +
             '</a>' +
-            (n.pagamentoId ? '<button type="button" class="notif-renew" data-confirm-renovacao="' + n.pagamentoId + '">Marcar como renovado</button>' : '<button type="button" class="notif-del" data-notif-del="' + n.id + '" title="Excluir" aria-label="Excluir">×</button>') +
-          '</li>'
-        );
-      }).join('');
+            (n.pagamentoId
+              ? '<button type="button" class="notif-renew" data-confirm-renovacao="' +
+                n.pagamentoId +
+                '">Marcar como renovado</button>'
+              : '<button type="button" class="notif-del" data-notif-del="' +
+                n.id +
+                '" title="Excluir" aria-label="Excluir">×</button>') +
+            '</li>'
+          );
+        })
+        .join('');
     }
     function carregar() {
-      return fetch('/notificacoes', { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
-        .then(function (r) { if (!r.ok) throw new Error('notifications'); return r.json(); })
+      return fetch('/notificacoes', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('notifications');
+          return r.json();
+        })
         .then(function (j) {
           if (!j || !j.ok) throw new Error('notifications');
           state.items = j.items || [];
@@ -368,7 +489,9 @@
           return true;
         })
         .catch(function () {
-          if (state.open) list.innerHTML = '<li class="notif-empty" role="status">Não foi possível carregar os alertas. Feche e abra o sino para tentar novamente.</li>';
+          if (state.open)
+            list.innerHTML =
+              '<li class="notif-empty" role="status">Não foi possível carregar os alertas. Feche e abra o sino para tentar novamente.</li>';
           return false;
         });
     }
@@ -380,10 +503,13 @@
       carregar().then(function (loaded) {
         if (!loaded || !state.open) return;
         if (state.naoLidas > 0) {
-          window.csrfFetch('/notificacoes/marcar-todas-lidas', { method: 'POST' })
+          window
+            .csrfFetch('/notificacoes/marcar-todas-lidas', { method: 'POST' })
             .then(function (r) {
               if (!r.ok) throw new Error('notifications');
-              state.items.forEach(function (n) { n.lida = 1; });
+              state.items.forEach(function (n) {
+                n.lida = 1;
+              });
               pintarBadge(0);
               pintarLista();
             })
@@ -398,12 +524,15 @@
     }
     toggle.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (state.open) fechar(); else abrir();
+      if (state.open) fechar();
+      else abrir();
     });
     document.addEventListener('click', function (e) {
       if (state.open && !wrap.contains(e.target)) fechar();
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && state.open) fechar(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && state.open) fechar();
+    });
     document.addEventListener('gestor:before-swap', fechar);
     document.addEventListener('gestor:navigated', carregar);
 
@@ -413,11 +542,18 @@
         e.preventDefault();
         e.stopPropagation();
         var id = del.getAttribute('data-notif-del');
-        window.csrfFetch('/notificacoes/' + id + '/excluir', { method: 'POST' })
+        window
+          .csrfFetch('/notificacoes/' + id + '/excluir', { method: 'POST' })
           .then(function (r) {
             if (!r.ok) throw new Error('notifications');
-            state.items = state.items.filter(function (n) { return String(n.id) !== String(id); });
-            pintarBadge(state.items.filter(function (n) { return !n.lida; }).length);
+            state.items = state.items.filter(function (n) {
+              return String(n.id) !== String(id);
+            });
+            pintarBadge(
+              state.items.filter(function (n) {
+                return !n.lida;
+              }).length,
+            );
             pintarLista();
           })
           .catch(function () {});
@@ -435,8 +571,10 @@
     });
     clearBtn.addEventListener('click', function () {
       if (!state.items.length) return;
-      if (!confirm('Limpar os avisos? As renovações pendentes serão mantidas.')) return;
-      window.csrfFetch('/notificacoes/limpar', { method: 'POST' })
+      if (!confirm('Limpar os avisos? As renovações pendentes serão mantidas.'))
+        return;
+      window
+        .csrfFetch('/notificacoes/limpar', { method: 'POST' })
         .then(function (r) {
           if (!r.ok) throw new Error('notifications');
           carregar();
@@ -458,11 +596,13 @@
   // notification não é registrado automaticamente — o user precisa pedir via
   // window.pushSubscribe() (botão na conta) pra abrir o popup de permissão.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(function () { /* ignora — site segue funcionando */ });
+    navigator.serviceWorker.register('/sw.js').catch(function () {
+      /* ignora — site segue funcionando */
+    });
   }
 
   function urlBase64ToUint8Array(base64) {
-    var padding = '='.repeat((4 - base64.length % 4) % 4);
+    var padding = '='.repeat((4 - (base64.length % 4)) % 4);
     var b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
     var raw = atob(b64);
     var arr = new Uint8Array(raw.length);
@@ -482,7 +622,9 @@
         alert('Permissão negada. Habilite nas configurações do navegador.');
         return false;
       }
-      var kr = await fetch('/push/public-key').then(function (r) { return r.json(); });
+      var kr = await fetch('/push/public-key').then(function (r) {
+        return r.json();
+      });
       if (!kr.ok || !kr.enabled || !kr.key) {
         alert('Push não está configurado no servidor.');
         return false;
@@ -498,7 +640,10 @@
         body: JSON.stringify(sub.toJSON()),
       });
       var j = await r.json();
-      if (!j.ok) { alert('Falha ao registrar: ' + (j.error || '?')); return false; }
+      if (!j.ok) {
+        alert('Falha ao registrar: ' + (j.error || '?'));
+        return false;
+      }
       return true;
     } catch (e) {
       alert('Erro ao ativar notificações: ' + (e && e.message ? e.message : e));
@@ -519,17 +664,22 @@
       });
       await sub.unsubscribe();
       return true;
-    } catch (e) { return false; }
+    } catch (e) {
+      return false;
+    }
   };
 
   // Status atual: subscrito ou não? Pra UI mostrar o botão certo.
   window.pushStatus = async function () {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+    if (!('serviceWorker' in navigator) || !('PushManager' in window))
+      return 'unsupported';
     if (Notification.permission === 'denied') return 'denied';
     try {
       var reg = await navigator.serviceWorker.ready;
       var sub = await reg.pushManager.getSubscription();
       return sub ? 'subscribed' : 'available';
-    } catch { return 'available'; }
+    } catch {
+      return 'available';
+    }
   };
 })();

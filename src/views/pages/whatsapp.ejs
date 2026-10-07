@@ -1,53 +1,66 @@
 <div class="container page-whatsapp" data-search-scope>
-
   <div class="ui-summary ui-summary-2">
-    <div class="tx-stat"><div><span>Mensagens Hoje</span><strong><%= stats.mensagensHoje %></strong></div><div class="tx-stat-ico accent-purple"><%- include('../partials/ui-icon', { name: '💬' }) %></div></div>
-    <div class="tx-stat"><div><span>Taxa de Entrega</span><strong><%= stats.entrega %>%</strong></div><div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📈' }) %></div></div>
+    <div class="tx-stat">
+      <div><span>Mensagens Hoje</span><strong><%= stats.mensagensHoje %></strong></div>
+      <div class="tx-stat-ico accent-purple"><%- include('../partials/ui-icon', { name: '💬' }) %></div>
+    </div>
+    <div class="tx-stat">
+      <div><span>Taxa de Entrega</span><strong><%= stats.entrega %>%</strong></div>
+      <div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📈' }) %></div>
+    </div>
   </div>
-
   <div class="wa-head">
     <h3>WhatsApp</h3>
   </div>
-
-
   <% if (!devices.length) { %>
-    <div class="cli-empty"><div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></div><h3>Conexão sendo preparada…</h3><p class="muted">Recarregue a página em alguns segundos.</p></div>
-  <% } else { %>
-  <div class="wa-list">
-    <% devices.forEach(d => { %>
-    <div class="wa-device" data-search-item data-device-id="<%= d.id %>" data-nome="<%= d.nome %>">
-      <div class="wa-device-head">
-        <span class="wa-device-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></span>
-        <div class="wa-device-info">
-          <strong><%= d.nome %><% if (d.principal) { %> <span class="wa-star" title="Principal">★</span><% } %></strong>
-          <small data-wa-sub>Verificando número...</small>
-        </div>
-        <span class="wa-status-pill" data-wa-status>Verificando...</span>
-      </div>
-      <button class="wa-connect-btn" type="button" data-wa-connect>⏻ Conectar</button>
-      <div class="wa-device-foot">
-        <span>📵 Bloqueio de chamadas</span>
-        <span class="wa-foot-right">
-          <span class="muted">Ajustar bloqueio</span>
-          <form method="post" action="/whatsapp" class="wa-bloq-form">
-            <%- csrfInput %>
-            <input type="hidden" name="action" value="toggle_bloqueio"><input type="hidden" name="id" value="<%= d.id %>">
-            <input type="checkbox" class="switch" name="bloqueio_chamadas" value="1" onchange="this.form.requestSubmit()" <%= d.bloqueioChamadas ? 'checked' : '' %> aria-label="Bloqueio de chamadas">
-          </form>
-        </span>
-      </div>
+    <div class="cli-empty">
+      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></div>
+      <h3>Conexão sendo preparada…</h3>
+      <p class="muted">Recarregue a página em alguns segundos.</p>
     </div>
-    <% }) %>
-  </div>
+  <% } else { %>
+    <div class="wa-list">
+      <% devices.forEach(d => { %>
+        <div class="wa-device" data-search-item data-device-id="<%= d.id %>" data-nome="<%= d.nome %>">
+          <div class="wa-device-head">
+            <span class="wa-device-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></span>
+            <div class="wa-device-info">
+              <strong>
+                <%= d.nome %>
+                <% if (d.principal) { %>
+                  <span class="wa-star" title="Principal">★</span>
+                <% } %>
+              </strong>
+              <small data-wa-sub>Verificando número...</small>
+            </div>
+            <span class="wa-status-pill" data-wa-status>Verificando...</span>
+          </div>
+          <button class="wa-connect-btn" type="button" data-wa-connect>⏻ Conectar</button>
+          <div class="wa-device-foot">
+            <span>📵 Bloqueio de chamadas</span>
+            <span class="wa-foot-right">
+              <span class="muted">Ajustar bloqueio</span>
+              <form method="post" action="/whatsapp" class="wa-bloq-form">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="toggle_bloqueio">
+                <input type="hidden" name="id" value="<%= d.id %>">
+                <input type="checkbox" class="switch" name="bloqueio_chamadas" value="1" onchange="this.form.requestSubmit()" <%= d.bloqueioChamadas ? 'checked' : '' %> aria-label="Bloqueio de chamadas">
+              </form>
+            </span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
   <% } %>
 </div>
-
 <button hidden data-open-modal="modal-wa-connect" data-wa-connect-trigger></button>
-
 <div class="modal-overlay" id="modal-wa-connect" aria-hidden="true" inert>
   <div class="modal wa-connect-modal">
     <div class="modal-header">
-      <div><h3><%- include('../partials/ui-icon', { name: 'phone' }) %> Conectar WhatsApp</h3><p class="wa-device-name" data-wa-modal-name></p></div>
+      <div>
+        <h3><%- include('../partials/ui-icon', { name: 'phone' }) %> Conectar WhatsApp</h3>
+        <p class="wa-device-name" data-wa-modal-name></p>
+      </div>
       <button class="modal-close" type="button" data-close-modal data-wa-close aria-label="Fechar">×</button>
     </div>
     <div class="modal-body wa-connect-body">
@@ -63,16 +76,30 @@
         <h4>Conecte em poucos passos</h4>
         <p class="muted wa-connect-description">Use o WhatsApp do número que deseja conectar ao painel.</p>
         <ol class="wa-steps">
-          <li><div><strong>Abra o WhatsApp</strong><p>No celular, entre em <b>Configurações</b> ou no menu <b>⋮</b>.</p></div></li>
-          <li><div><strong>Conecte um dispositivo</strong><p>Toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>.</p></div></li>
-          <li><div><strong>Leia o QR Code</strong><p>Aponte a câmera para o código ao lado e aguarde a confirmação.</p></div></li>
+          <li>
+            <div>
+              <strong>Abra o WhatsApp</strong>
+              <p>No celular, entre em <b>Configurações</b> ou no menu <b>⋮</b>.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Conecte um dispositivo</strong>
+              <p>Toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Leia o QR Code</strong>
+              <p>Aponte a câmera para o código ao lado e aguarde a confirmação.</p>
+            </div>
+          </li>
         </ol>
         <p class="wa-connect-tip"><%- include('../partials/ui-icon', { name: 'phone' }) %> Abra este painel em outra tela para escanear com o celular.</p>
       </div>
     </div>
   </div>
 </div>
-
 <script>
 (function () {
   var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };

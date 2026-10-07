@@ -1,12 +1,12 @@
 <div class="container page-mensagens ui-catalog" data-search-scope data-search-singular="template" data-search-plural="templates" data-search-empty="Nenhum template encontrado. Tente outra busca.">
-
   <div class="ui-toolbar">
     <input class="input" type="search" placeholder="Buscar template..." aria-label="Buscar template" autocomplete="off" data-search-input>
     <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
   </div>
-
-  <div class="ui-catalog-heading"><h2>Templates de mensagem <span><%= mensagens.length %></span></h2><p data-search-results role="status" aria-live="polite" hidden></p></div>
-
+  <div class="ui-catalog-heading">
+    <h2>Templates de mensagem <span><%= mensagens.length %></span></h2>
+    <p data-search-results role="status" aria-live="polite" hidden></p>
+  </div>
   <% if (!mensagens.length) { %>
     <div class="cli-empty">
       <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '💬' }) %></div>
@@ -15,29 +15,30 @@
       <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
     </div>
   <% } else { %>
-  <div class="msg-grid">
-    <% mensagens.forEach(m => { %>
-    <div class="msg-card" data-search-item data-search-text="<%= [m.titulo, m.descricao, m.mensagem].filter(Boolean).join(' ') %>">
-      <div class="msg-card-head">
-        <strong><%= m.titulo %></strong>
-        <div class="msg-actions">
-          <button class="cli-ico-btn edit-mensagem" type="button" title="Editar" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-descricao="<%= m.descricao || '' %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
-          <form method="post" action="/mensagens" class="action-form delete-mensagem msg-del-form">
-            <%- csrfInput %>
-            <input type="hidden" name="action" value="delete_mensagem">
-            <input type="hidden" name="id" value="<%= m.id %>">
-            <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
-          </form>
+    <div class="msg-grid">
+      <% mensagens.forEach(m => { %>
+        <div class="msg-card" data-search-item data-search-text="<%= [m.titulo, m.descricao, m.mensagem].filter(Boolean).join(' ') %>">
+          <div class="msg-card-head">
+            <strong><%= m.titulo %></strong>
+            <div class="msg-actions">
+              <button class="cli-ico-btn edit-mensagem" type="button" title="Editar" data-id="<%= m.id %>" data-titulo="<%= m.titulo %>" data-descricao="<%= m.descricao || '' %>" data-mensagem="<%= m.mensagem || '' %>" data-media-tipo="<%= m.mediaTipo || '' %>" data-media-path="<%= m.mediaPath || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
+              <form method="post" action="/mensagens" class="action-form delete-mensagem msg-del-form">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="delete_mensagem">
+                <input type="hidden" name="id" value="<%= m.id %>">
+                <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
+              </form>
+            </div>
+          </div>
+          <% if (m.descricao) { %>
+            <div class="msg-desc"><%= m.descricao %></div>
+          <% } %>
+          <div class="msg-preview"><%= (m.mensagem || '').replace(/\s+/g, ' ').slice(0, 110) %><%= (m.mensagem || '').length > 110 ? '…' : '' %></div>
         </div>
-      </div>
-      <% if (m.descricao) { %><div class="msg-desc"><%= m.descricao %></div><% } %>
-      <div class="msg-preview"><%= (m.mensagem || '').replace(/\s+/g, ' ').slice(0, 110) %><%= (m.mensagem || '').length > 110 ? '…' : '' %></div>
+      <% }) %>
     </div>
-    <% }) %>
-  </div>
   <% } %>
 </div>
-
 <div class="modal-overlay" id="modal-add-mensagem" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -93,7 +94,11 @@
           <label class="field">
             <span>Tipo mídia</span>
             <select class="input" name="media_tipo">
-              <option value="">Nenhuma</option><option>image</option><option>video</option><option>audio</option><option>document</option>
+              <option value="">Nenhuma</option>
+              <option>image</option>
+              <option>video</option>
+              <option>audio</option>
+              <option>document</option>
             </select>
           </label>
           <label class="field full"><span>Caminho/URL mídia</span><input class="input" name="media_path"></label>
@@ -106,7 +111,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="modal-mensagem-notice" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">

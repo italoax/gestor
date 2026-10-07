@@ -24,7 +24,6 @@
   }
 %>
 <div class="container page-meu-plano">
-
   <div class="meu-plano-hero <%= heroClass %>">
     <div class="meu-plano-hero-glow" aria-hidden="true"></div>
     <div class="meu-plano-hero-ico"><%= heroIco %></div>
@@ -34,79 +33,77 @@
       <p class="meu-plano-hero-sub"><%= heroSub %></p>
     </div>
     <% if (!status.bloqueado && venc) { %>
-    <div class="meu-plano-hero-stat">
-      <span>Próximo vencimento</span>
-      <strong><%= formatDateBr(venc) %></strong>
-    </div>
+      <div class="meu-plano-hero-stat">
+        <span>Próximo vencimento</span>
+        <strong><%= formatDateBr(venc) %></strong>
+      </div>
     <% } %>
   </div>
-
   <% if (!mpConfigurado) { %>
-  <div class="meu-plano-warn">
-    <span>⚠️</span>
-    <p>Pagamento ainda não foi configurado pelo administrador. Os botões abaixo ficam disponíveis assim que ele ativar.</p>
-  </div>
+    <div class="meu-plano-warn">
+      <span>⚠️</span>
+      <p>Pagamento ainda não foi configurado pelo administrador. Os botões abaixo ficam disponíveis assim que ele ativar.</p>
+    </div>
   <% } %>
-
   <% if (plano) { %>
-  <div class="meu-plano-single" data-plano-id="<%= plano.id %>" data-plano-nome="<%= plano.nome %>" data-preco-base="<%= Number(plano.preco) %>">
-    <div class="meu-plano-single-head">
-      <div>
-        <span class="meu-plano-single-kicker">PLANO</span>
-        <h3 class="meu-plano-single-nome"><%= plano.nome %></h3>
-        <% if (plano.descricao) { %><p class="meu-plano-single-desc"><%= plano.descricao %></p><% } %>
-      </div>
-      <div class="meu-plano-single-base">
-        <span>R$</span>
-        <strong><%= Number(plano.preco).toFixed(2).replace('.', ',') %></strong>
-        <small>/mês</small>
-      </div>
-    </div>
-
-    <div class="meu-plano-meses-label">Período <small>· quanto mais meses, maior o desconto</small></div>
-    <div class="meu-plano-meses" role="radiogroup" aria-label="Meses">
-      <% mesesOpcoes.forEach((opt) => { const sel = opt.meses === 1; %>
-        <button type="button" class="meu-plano-mes <%= sel ? 'is-on' : '' %>"
-                data-meses="<%= opt.meses %>"
-                data-desconto="<%= opt.desconto %>"
-                role="radio" aria-checked="<%= sel %>">
-          <% if (opt.descontoLabel > 0) { %><span class="meu-plano-mes-off"><%= opt.descontoLabel %>% OFF</span><% } %>
-          <span class="meu-plano-mes-n"><%= opt.meses %></span>
-          <span class="meu-plano-mes-l"><%= opt.meses === 1 ? 'mês' : 'meses' %></span>
-        </button>
-      <% }) %>
-    </div>
-
-    <div class="meu-plano-total">
-      <div class="meu-plano-total-info">
-        <span class="meu-plano-total-label">Total a pagar</span>
-        <div class="meu-plano-total-line">
-          <strong class="meu-plano-total-valor" data-total>R$ 29,99</strong>
-          <span class="meu-plano-total-strike" data-subtotal hidden></span>
+    <div class="meu-plano-single" data-plano-id="<%= plano.id %>" data-plano-nome="<%= plano.nome %>" data-preco-base="<%= Number(plano.preco) %>">
+      <div class="meu-plano-single-head">
+        <div>
+          <span class="meu-plano-single-kicker">PLANO</span>
+          <h3 class="meu-plano-single-nome"><%= plano.nome %></h3>
+          <% if (plano.descricao) { %>
+            <p class="meu-plano-single-desc"><%= plano.descricao %></p>
+          <% } %>
         </div>
-        <small class="meu-plano-total-detalhe" data-detalhe>Validade de 30 dias</small>
+        <div class="meu-plano-single-base">
+          <span>R$</span>
+          <strong><%= Number(plano.preco).toFixed(2).replace('.', ',') %></strong>
+          <small>/mês</small>
+        </div>
       </div>
-      <button class="btn btn-primary meu-plano-btn"
-              type="button"
-              data-renovar
-              <%= !mpConfigurado ? 'disabled' : '' %>>
-        <span>✈ Pagar com PIX</span>
-      </button>
+      <div class="meu-plano-meses-label">Período <small>· quanto mais meses, maior o desconto</small></div>
+      <div class="meu-plano-meses" role="radiogroup" aria-label="Meses">
+        <% mesesOpcoes.forEach((opt) => { const sel = opt.meses === 1; %>
+          <button type="button" class="meu-plano-mes <%= sel ? 'is-on' : '' %>"
+          data-meses="<%= opt.meses %>"
+          data-desconto="<%= opt.desconto %>"
+          role="radio" aria-checked="<%= sel %>">
+            <% if (opt.descontoLabel > 0) { %>
+              <span class="meu-plano-mes-off"><%= opt.descontoLabel %>% OFF</span>
+            <% } %>
+            <span class="meu-plano-mes-n"><%= opt.meses %></span>
+            <span class="meu-plano-mes-l"><%= opt.meses === 1 ? 'mês' : 'meses' %></span>
+          </button>
+        <% }) %>
+      </div>
+      <div class="meu-plano-total">
+        <div class="meu-plano-total-info">
+          <span class="meu-plano-total-label">Total a pagar</span>
+          <div class="meu-plano-total-line">
+            <strong class="meu-plano-total-valor" data-total>R$ 29,99</strong>
+            <span class="meu-plano-total-strike" data-subtotal hidden></span>
+          </div>
+          <small class="meu-plano-total-detalhe" data-detalhe>Validade de 30 dias</small>
+        </div>
+        <button class="btn btn-primary meu-plano-btn"
+        type="button"
+        data-renovar
+        <%= !mpConfigurado ? 'disabled' : '' %>>
+          <span>✈ Pagar com PIX</span>
+        </button>
+      </div>
     </div>
-  </div>
   <% } else { %>
-  <div class="meu-plano-warn">
-    <span>⚠️</span>
-    <p>Nenhum plano disponível no momento. Aguarde o administrador configurar.</p>
-  </div>
+    <div class="meu-plano-warn">
+      <span>⚠️</span>
+      <p>Nenhum plano disponível no momento. Aguarde o administrador configurar.</p>
+    </div>
   <% } %>
-
   <p class="meu-plano-foot muted">
     💡 Pagamento por PIX via Mercado Pago. Aprovação em segundos.
     Seu acesso é liberado automaticamente assim que cair o pagamento.
   </p>
 </div>
-
 <!-- Modal QR Code -->
 <div class="modal-overlay" id="modal-assinatura-qr" aria-hidden="true" inert>
   <div class="modal modal-sm">
@@ -116,7 +113,8 @@
     </div>
     <div class="modal-body assinatura-qr-body">
       <div class="assinatura-qr-loading" data-qr-loading>
-        <span class="btn-spinner"></span> Gerando QR Code...
+        <span class="btn-spinner"></span>
+        Gerando QR Code...
       </div>
       <div class="assinatura-qr-content" data-qr-content hidden>
         <div class="assinatura-qr-img-wrap">
@@ -131,7 +129,8 @@
         </button>
         <textarea data-qr-text class="assinatura-qr-text" readonly rows="3"></textarea>
         <div class="assinatura-qr-status" data-qr-status>
-          <span class="btn-spinner"></span> Aguardando pagamento...
+          <span class="btn-spinner"></span>
+          Aguardando pagamento...
         </div>
       </div>
       <div class="assinatura-qr-erro" data-qr-erro hidden></div>
@@ -143,7 +142,6 @@
     </div>
   </div>
 </div>
-
 <script>
 (function () {
   const modal = document.getElementById('modal-assinatura-qr');

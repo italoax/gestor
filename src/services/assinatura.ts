@@ -125,7 +125,7 @@ export async function criarPixAssinatura(
     throw new Error("Assinatura nao configurada. Defina MP_MASTER_ACCESS_TOKEN no .env do servidor.");
   }
 
-  const { total: valor, desconto, percentual } = calcularValorComDesconto(Number(plano.preco), meses);
+  const { total: valor, percentual } = calcularValorComDesconto(Number(plano.preco), meses);
   const dias = plano.diasValidade * meses;
 
   // Reusa pendente recente do mesmo periodo (valor identico = mesma intencao)

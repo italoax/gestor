@@ -34,13 +34,16 @@
       </div>
     </form>
   </div>
-
   <div class="card account-card">
     <h3 style="margin-top:0;">💠 Chave PIX</h3>
     <p class="muted">
-      Configure sua chave PIX pra inserir nas mensagens usando a tag <code>{pix}</code>.
+      Configure sua chave PIX pra inserir nas mensagens usando a tag
+      <code>{pix}</code>
+      .
       Ela vira texto que o cliente copia com um toque longo no WhatsApp.
-      Use <code>{pix_bloco}</code> pra inserir um bloco pronto (nome + chave formatados).
+      Use
+      <code>{pix_bloco}</code>
+      pra inserir um bloco pronto (nome + chave formatados).
     </p>
     <form method="post" action="/minha-conta/pix" class="form-grid" data-native-submit="1">
       <%- csrfInput %>
@@ -71,7 +74,6 @@
       </div>
     </form>
   </div>
-
   <div class="card account-card" style="margin-top:16px;">
     <h3 style="margin-top:0;">🔔 Notificações push</h3>
     <p class="muted">
@@ -104,5 +106,4 @@
     })();
     </script>
   </div>
-
 </div>

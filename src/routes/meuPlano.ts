@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { queryOne, queryRows } from "../db/mysql.js";
+import { queryOne } from "../db/mysql.js";
 import { formatMoney, formatDateBr } from "../services/format.js";
 import {
   criarPixAssinatura, getPlanoById, getStatusAssinatura,

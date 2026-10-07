@@ -1,3 +1,25 @@
-<div class="container"><h1>Acessos dos clientes</h1><p>O cliente entra com o mesmo usu&#225;rio e senha do IPTV. Edite o cadastro do cliente para alterar esses dados.</p><p><a href="/area-cliente">Abrir &#225;rea do cliente</a> &middot; <a href="/clientes">Voltar aos clientes</a></p>
-<% if(aviso) { %><p role="status"><%= aviso %></p><% } %>
-<% clientes.forEach(c => { %><section class="card" style="padding:20px"><h2><%= c.nome %></h2><p>Login IPTV: <%= c.user %> &middot; <%= c.portal_bloqueado ? 'Acesso desativado' : c.temSenha && c.user ? 'Acesso habilitado' : 'Preencha os dados IPTV no cadastro' %></p><form method="post" action="/acessos-clientes" data-native-submit="1"><%- csrfInput %><input type="hidden" name="id" value="<%= c.id %>"><button class="btn btn-secondary" name="action" value="<%= c.portal_bloqueado ? 'enable' : 'disable' %>"><%= c.portal_bloqueado ? 'Habilitar acesso' : 'Desativar acesso' %></button></form><p class="muted">O link de acesso tem 16 caracteres. Revogar invalida o link anterior e as sess&#245;es abertas. Ao copiar ou enviar novamente, um novo link ser&#225; gerado.</p><form method="post" action="/acessos-clientes" data-native-submit="1"><%- csrfInput %><input type="hidden" name="id" value="<%= c.id %>"><button class="btn btn-secondary" name="action" value="revoke-link" <%= c.pagamento_curto ? '' : 'disabled' %>>Revogar link de acesso</button></form></section><% }) %></div>
+<div class="container">
+  <h1>Acessos dos clientes</h1>
+  <p>O cliente entra com o mesmo usu&#225;rio e senha do IPTV. Edite o cadastro do cliente para alterar esses dados.</p>
+  <p><a href="/area-cliente">Abrir &#225;rea do cliente</a> &middot; <a href="/clientes">Voltar aos clientes</a></p>
+  <% if(aviso) { %>
+    <p role="status"><%= aviso %></p>
+  <% } %>
+  <% clientes.forEach(c => { %>
+    <section class="card" style="padding:20px">
+      <h2><%= c.nome %></h2>
+      <p>Login IPTV: <%= c.user %> &middot; <%= c.portal_bloqueado ? 'Acesso desativado' : c.temSenha && c.user ? 'Acesso habilitado' : 'Preencha os dados IPTV no cadastro' %></p>
+      <form method="post" action="/acessos-clientes" data-native-submit="1">
+        <%- csrfInput %>
+        <input type="hidden" name="id" value="<%= c.id %>">
+        <button class="btn btn-secondary" name="action" value="<%= c.portal_bloqueado ? 'enable' : 'disable' %>"><%= c.portal_bloqueado ? 'Habilitar acesso' : 'Desativar acesso' %></button>
+      </form>
+      <p class="muted">O link de acesso tem 16 caracteres. Revogar invalida o link anterior e as sess&#245;es abertas. Ao copiar ou enviar novamente, um novo link ser&#225; gerado.</p>
+      <form method="post" action="/acessos-clientes" data-native-submit="1">
+        <%- csrfInput %>
+        <input type="hidden" name="id" value="<%= c.id %>">
+        <button class="btn btn-secondary" name="action" value="revoke-link" <%= c.pagamento_curto ? '' : 'disabled' %>>Revogar link de acesso</button>
+      </form>
+    </section>
+  <% }) %>
+</div>

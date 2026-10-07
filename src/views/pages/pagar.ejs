@@ -1,223 +1,236 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=ixtv-1" />
-  <meta name="apple-mobile-web-app-title" content="IX TV" />
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex,nofollow" />
-  <title>Pagar — <%= cliente.nome %></title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-  <link rel="icon" href="/favicon.ico?v=2" />
-  <style>
-    :root {
-      --bg: #0b1220; --surface: #131a2b; --surface-2: #1b2238; --border: #232b46;
-      --text: #e6e9f4; --muted: #8b94b3; --primary: #6366f1; --green: #22c55e; --red: #ef4444;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
-    .pay-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 14px; }
-    .pay-card { width: 100%; max-width: 460px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.35); }
-    .pay-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .pay-head h1 { font-size: 18px; margin: 0; font-weight: 700; }
-    .pay-head .badge { background: rgba(34,197,94,.14); color: #b7f7d7; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; }
-    .pay-body { padding: 22px 20px; }
-    .pay-info { display: grid; gap: 6px; margin-bottom: 18px; }
-    .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14px; }
-    .pay-info-row:last-child { border-bottom: 0; }
-    .pay-info-row span { color: var(--muted); }
-    .pay-info-row strong { color: var(--text); overflow-wrap:anywhere; min-width:0; text-align:right; }
-    .pay-info-row { gap:16px; }
-    .pay-amount { font-size: 36px; font-weight: 800; color: var(--green); text-align: center; margin: 8px 0 18px; }
-    .pay-btn { width: 100%; padding: 14px; border-radius: 10px; border: 0; background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: filter .2s; }
-    .pay-btn:hover { filter: brightness(1.1); }
-    .pay-btn:disabled { opacity: .6; cursor: not-allowed; }
-    .pay-qr-box { display: none; text-align: center; padding: 8px 0; }
-    .pay-qr-box.on { display: block; }
-    .pay-qr-box img { width: 240px; max-width: 100%; background: #fff; padding: 10px; border-radius: 10px; }
-    .pay-pix-code { margin-top: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: monospace; font-size: 12px; word-break: break-all; user-select: all; max-height: 90px; overflow-y: auto; }
-    .pay-copy { margin-top: 10px; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; }
-    .pay-copy:hover { background: var(--border); }
-    .pay-foot { padding: 14px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); text-align: center; }
-    .pay-status-msg { margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted); }
-    .pay-status-msg.success { color: var(--green); font-weight: 700; font-size: 16px; }
-    .pay-status-msg.error { color: var(--red); }
-    .pay-confirmed { text-align:center; padding:24px 12px; border:1px solid #22c55e55; border-radius:14px; background:#22c55e0d; }
-    .pay-confirmed[hidden] { display:none; }
-    .pay-check { display:flex; align-items:center; justify-content:center; width:76px; height:76px; margin:0 auto 16px; border-radius:50%; background:#22c55e20; color:var(--green); }
-    .pay-confirmed h2 { margin:0 0 8px; color:var(--green); font-size:22px; }
-    .pay-confirmed p { margin:0; color:var(--muted); font-size:14px; line-height:1.6; }
-    .pay-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 6px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-</head>
-<body>
-<div class="pay-wrap">
-  <div class="pay-card">
-    <div class="pay-head">
-      <h1>💳 Renovar acesso</h1>
-      <span class="badge">PIX</span>
-    </div>
-
-    <div class="pay-body">
-      <div class="pay-info">
-        <div class="pay-info-row"><span>Cliente</span><strong><%= cliente.nome %></strong></div>
-        <div class="pay-info-row"><span>Usuário IPTV</span><strong><%= cliente.user || '—' %></strong></div>
-        <div class="pay-info-row"><span>Telas</span><strong><%= cliente.telas || 1 %></strong></div>
-        <div class="pay-info-row"><span>Plano</span><strong><%= cliente.plano || '—' %></strong></div>
-        <div class="pay-info-row"><span>Vencimento atual</span><strong><%= vencimentoFormatado %><% if (cliente.horaVencimento) { %> às <%= String(cliente.horaVencimento).slice(0,5) %><% } %></strong></div>
-      </div>
-
-      <% if (locals.escolhas?.length > 1) { %>
-      <label style="display:grid;gap:8px;margin:16px 0">Quais servidores deseja renovar?
-        <select id="pay-selecao" style="width:100%;min-height:48px;padding:12px;border-radius:10px">
-        <% escolhas.forEach(grupo => { %><option value="<%= grupo.selecao %>" data-opcoes="<%= JSON.stringify(grupo.opcoes) %>" <%= grupo.selecao === selecao ? 'selected' : '' %>><%= grupo.label %></option><% }) %>
-        </select>
-      </label>
-      <% } %>
-      <label style="display:grid;gap:8px;margin:16px 0">Por quanto tempo deseja renovar?
-        <select id="pay-periodos" style="width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:16px">
-          <% (locals.opcoesRenovacao || [{ periodos: 1, label: '1 período do plano', valor: Number(cliente.valor) || 0 }]).forEach(opcao => { %><option value="<%= opcao.periodos %>" data-valor="<%= opcao.valor %>" <%= opcao.periodos === (Number(locals.periodosSelecionados) || 1) ? 'selected' : '' %>><%= opcao.label %></option><% }) %>
-        </select>
-      </label>
-      <div class="pay-amount" id="pay-amount"><%= valorFormatado %></div>
-
-      <button class="pay-btn" id="pay-btn" type="button">
-        <% if (pagamento && pagamento.mpQrText) { %>📱 Ver código PIX<% } else { %>📱 Gerar código PIX<% } %>
-      </button>
-
-      <div class="pay-confirmed" id="pay-confirmed" role="status" aria-live="polite" hidden>
-        <span class="pay-check" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <h2>PIX pago!</h2>
-        <p>Pagamento confirmado. O responsável recebeu o aviso e fará a renovação do seu acesso.</p>
-      </div>
-      <div class="pay-qr-box" id="pay-qr-box">
-        <img id="pay-qr-img" alt="QR Code PIX">
-        <div class="pay-pix-code" id="pay-pix-code"></div>
-        <button class="pay-copy" type="button" id="pay-copy">📋 Copiar código PIX</button>
-        <div class="pay-status-msg" id="pay-status-msg"><span class="pay-spinner"></span>Aguardando pagamento...</div>
-      </div>
-    </div>
-
-    <div class="pay-foot">Confira seus dados e gere o PIX. Após a confirmação do pagamento, o responsável fará a renovação do seu acesso.</div>
-  </div>
-</div>
-
-<script>
-(function () {
-  const TOKEN = <%- JSON.stringify(cliente.pagamentoToken).replace(/</g, '\\u003c') %>;
-  let pagamentoId = <%- pagamento ? pagamento.id : 'null' %>;
-  let qrTextInicial = <%- pagamento && pagamento.mpQrText ? JSON.stringify(pagamento.mpQrText).replace(/</g, '\\u003c') : 'null' %>;
-  let qrBase64Inicial = <%- pagamento && pagamento.mpQrBase64 ? JSON.stringify(pagamento.mpQrBase64).replace(/</g, '\\u003c') : 'null' %>;
-
-  const btn = document.getElementById('pay-btn');
-  const periodos = document.getElementById('pay-periodos');
-  const selecao = document.getElementById('pay-selecao');
-  selecao?.addEventListener('change', () => {
-    const opcoes = JSON.parse(selecao.selectedOptions[0].dataset.opcoes);
-    periodos.replaceChildren(...opcoes.map(opcao => {
-      const option = new Option(opcao.label, opcao.periodos);
-      option.dataset.valor = opcao.valor;
-      return option;
-    }));
-    periodos.dispatchEvent(new Event('change'));
-  });
-  periodos.addEventListener('change', () => {
-    clearInterval(pollTimer); pollTimer = null;
-    pagamentoId = null; qrTextInicial = null; qrBase64Inicial = null;
-    box.classList.remove('on'); btn.style.display = ''; btn.disabled = false;
-    document.getElementById('pay-amount').textContent = Number(periodos.selectedOptions[0].dataset.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    btn.textContent = 'Gerar código PIX';
-  });
-  const box = document.getElementById('pay-qr-box');
-  const img = document.getElementById('pay-qr-img');
-  const code = document.getElementById('pay-pix-code');
-  const copyBtn = document.getElementById('pay-copy');
-  const statusMsg = document.getElementById('pay-status-msg');
-
-  let pollTimer = null;
-
-  function exibirQr(qrText, qrBase64) {
-    img.src = 'data:image/png;base64,' + qrBase64;
-    code.textContent = qrText;
-    box.classList.add('on');
-    btn.style.display = 'none';
-    periodos.disabled = true;
-    if (selecao) selecao.disabled = true;
-  }
-
-  function comecarPolling() {
-    if (pollTimer || !pagamentoId) return;
-    pollTimer = setInterval(async () => {
-      try {
-        const r = await fetch('/pagar/' + TOKEN + '/status/' + pagamentoId);
-        const j = await r.json();
-        if (j.ok && j.status === 'approved') {
-          clearInterval(pollTimer);
-          btn.style.display = 'none';
-          box.classList.remove('on');
-          document.getElementById('pay-confirmed').hidden = false;
-        } else if (j.ok && (j.status === 'rejected' || j.status === 'cancelled')) {
-          clearInterval(pollTimer);
-          statusMsg.className = 'pay-status-msg error';
-          statusMsg.textContent = '❌ Pagamento ' + j.status + '. Tente novamente.';
-        }
-      } catch (e) { /* segue tentando */ }
-    }, 5000);
-  }
-
-  btn.addEventListener('click', async () => {
-    if (qrTextInicial) {
-      exibirQr(qrTextInicial, qrBase64Inicial);
-      comecarPolling();
-      return;
-    }
-    btn.disabled = true;
-    periodos.disabled = true;
-    if (selecao) selecao.disabled = true;
-    btn.innerHTML = '<span class="pay-spinner"></span>Gerando...';
-    try {
-      const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value), selecao: selecao?.value }) });
-      const j = await r.json();
-      if (!j.ok) {
-        periodos.disabled = false;
-        if (selecao) selecao.disabled = false;
-        btn.disabled = false;
-        btn.textContent = '📱 Gerar código PIX';
-        alert(j.error || 'Falha ao gerar pagamento.');
-        return;
+  <head>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=ixtv-1" />
+    <meta name="apple-mobile-web-app-title" content="IX TV" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Pagar — <%= cliente.nome %></title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <link rel="icon" href="/favicon.ico?v=2" />
+    <style>
+      :root {
+        --bg: #0b1220; --surface: #131a2b; --surface-2: #1b2238; --border: #232b46;
+        --text: #e6e9f4; --muted: #8b94b3; --primary: #6366f1; --green: #22c55e; --red: #ef4444;
       }
-      pagamentoId = j.pagamentoId;
-      exibirQr(j.qrText, j.qrBase64);
-      comecarPolling();
-    } catch (e) {
-      periodos.disabled = false;
-        if (selecao) selecao.disabled = false;
-      btn.disabled = false;
-      btn.textContent = '📱 Gerar código PIX';
-      alert('Erro ao gerar pagamento. Tente novamente.');
-    }
-  });
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+      .pay-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 14px; }
+      .pay-card { width: 100%; max-width: 460px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,.35); }
+      .pay-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .pay-head h1 { font-size: 18px; margin: 0; font-weight: 700; }
+      .pay-head .badge { background: rgba(34,197,94,.14); color: #b7f7d7; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; }
+      .pay-body { padding: 22px 20px; }
+      .pay-info { display: grid; gap: 6px; margin-bottom: 18px; }
+      .pay-info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 14px; }
+      .pay-info-row:last-child { border-bottom: 0; }
+      .pay-info-row span { color: var(--muted); }
+      .pay-info-row strong { color: var(--text); overflow-wrap:anywhere; min-width:0; text-align:right; }
+      .pay-info-row { gap:16px; }
+      .pay-amount { font-size: 36px; font-weight: 800; color: var(--green); text-align: center; margin: 8px 0 18px; }
+      .pay-btn { width: 100%; padding: 14px; border-radius: 10px; border: 0; background: var(--primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: filter .2s; }
+      .pay-btn:hover { filter: brightness(1.1); }
+      .pay-btn:disabled { opacity: .6; cursor: not-allowed; }
+      .pay-qr-box { display: none; text-align: center; padding: 8px 0; }
+      .pay-qr-box.on { display: block; }
+      .pay-qr-box img { width: 240px; max-width: 100%; background: #fff; padding: 10px; border-radius: 10px; }
+      .pay-pix-code { margin-top: 14px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: monospace; font-size: 12px; word-break: break-all; user-select: all; max-height: 90px; overflow-y: auto; }
+      .pay-copy { margin-top: 10px; padding: 10px 14px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 13px; }
+      .pay-copy:hover { background: var(--border); }
+      .pay-foot { padding: 14px 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); text-align: center; }
+      .pay-status-msg { margin-top: 14px; text-align: center; font-size: 13.5px; color: var(--muted); }
+      .pay-status-msg.success { color: var(--green); font-weight: 700; font-size: 16px; }
+      .pay-status-msg.error { color: var(--red); }
+      .pay-confirmed { text-align:center; padding:24px 12px; border:1px solid #22c55e55; border-radius:14px; background:#22c55e0d; }
+      .pay-confirmed[hidden] { display:none; }
+      .pay-check { display:flex; align-items:center; justify-content:center; width:76px; height:76px; margin:0 auto 16px; border-radius:50%; background:#22c55e20; color:var(--green); }
+      .pay-confirmed h2 { margin:0 0 8px; color:var(--green); font-size:22px; }
+      .pay-confirmed p { margin:0; color:var(--muted); font-size:14px; line-height:1.6; }
+      .pay-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle; margin-right: 6px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div class="pay-wrap">
+      <div class="pay-card">
+        <div class="pay-head">
+          <h1>💳 Renovar acesso</h1>
+          <span class="badge">PIX</span>
+        </div>
+        <div class="pay-body">
+          <div class="pay-info">
+            <div class="pay-info-row"><span>Cliente</span><strong><%= cliente.nome %></strong></div>
+            <div class="pay-info-row"><span>Usuário IPTV</span><strong><%= cliente.user || '—' %></strong></div>
+            <div class="pay-info-row"><span>Telas</span><strong><%= cliente.telas || 1 %></strong></div>
+            <div class="pay-info-row"><span>Plano</span><strong><%= cliente.plano || '—' %></strong></div>
+            <div class="pay-info-row">
+              <span>Vencimento atual</span>
+              <strong>
+                <%= vencimentoFormatado %>
+                <% if (cliente.horaVencimento) { %>
+                  às
+                  <%= String(cliente.horaVencimento).slice(0,5) %>
+                <% } %>
+              </strong>
+            </div>
+          </div>
+          <% if (locals.escolhas?.length > 1) { %>
+            <label style="display:grid;gap:8px;margin:16px 0">
+              Quais servidores deseja renovar?
+              <select id="pay-selecao" style="width:100%;min-height:48px;padding:12px;border-radius:10px">
+                <% escolhas.forEach(grupo => { %>
+                  <option value="<%= grupo.selecao %>" data-opcoes="<%= JSON.stringify(grupo.opcoes) %>" <%= grupo.selecao === selecao ? 'selected' : '' %>><%= grupo.label %></option>
+                <% }) %>
+              </select>
+            </label>
+          <% } %>
+          <label style="display:grid;gap:8px;margin:16px 0">
+            Por quanto tempo deseja renovar?
+            <select id="pay-periodos" style="width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:16px">
+              <% (locals.opcoesRenovacao || [{ periodos: 1, label: '1 período do plano', valor: Number(cliente.valor) || 0 }]).forEach(opcao => { %>
+                <option value="<%= opcao.periodos %>" data-valor="<%= opcao.valor %>" <%= opcao.periodos === (Number(locals.periodosSelecionados) || 1) ? 'selected' : '' %>><%= opcao.label %></option>
+              <% }) %>
+            </select>
+          </label>
+          <div class="pay-amount" id="pay-amount"><%= valorFormatado %></div>
+          <button class="pay-btn" id="pay-btn" type="button">
+            <% if (pagamento && pagamento.mpQrText) { %>
+              📱 Ver código PIX
+            <% } else { %>
+              📱 Gerar código PIX
+            <% } %>
+          </button>
+          <div class="pay-confirmed" id="pay-confirmed" role="status" aria-live="polite" hidden>
+            <span class="pay-check" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h2>PIX pago!</h2>
+            <p>Pagamento confirmado. O responsável recebeu o aviso e fará a renovação do seu acesso.</p>
+          </div>
+          <div class="pay-qr-box" id="pay-qr-box">
+            <img id="pay-qr-img" alt="QR Code PIX">
+            <div class="pay-pix-code" id="pay-pix-code"></div>
+            <button class="pay-copy" type="button" id="pay-copy">📋 Copiar código PIX</button>
+            <div class="pay-status-msg" id="pay-status-msg"><span class="pay-spinner"></span>Aguardando pagamento...</div>
+          </div>
+        </div>
+        <div class="pay-foot">Confira seus dados e gere o PIX. Após a confirmação do pagamento, o responsável fará a renovação do seu acesso.</div>
+      </div>
+    </div>
+    <script>
+    (function () {
+      const TOKEN = <%- JSON.stringify(cliente.pagamentoToken).replace(/</g, '\\u003c') %>;
+      let pagamentoId = <%- pagamento ? pagamento.id : 'null' %>;
+      let qrTextInicial = <%- pagamento && pagamento.mpQrText ? JSON.stringify(pagamento.mpQrText).replace(/</g, '\\u003c') : 'null' %>;
+      let qrBase64Inicial = <%- pagamento && pagamento.mpQrBase64 ? JSON.stringify(pagamento.mpQrBase64).replace(/</g, '\\u003c') : 'null' %>;
 
-  copyBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(code.textContent);
-      copyBtn.textContent = '✓ Copiado!';
-      setTimeout(() => { copyBtn.textContent = '📋 Copiar código PIX'; }, 2000);
-    } catch (e) {
-      // fallback pra navegadores sem clipboard API
-      const range = document.createRange();
-      range.selectNode(code);
-      window.getSelection().removeAllRanges();
-      window.getSelection().addRange(range);
-      document.execCommand('copy');
-      copyBtn.textContent = '✓ Selecionado — Ctrl+C';
-    }
-  });
+      const btn = document.getElementById('pay-btn');
+      const periodos = document.getElementById('pay-periodos');
+      const selecao = document.getElementById('pay-selecao');
+      selecao?.addEventListener('change', () => {
+        const opcoes = JSON.parse(selecao.selectedOptions[0].dataset.opcoes);
+        periodos.replaceChildren(...opcoes.map(opcao => {
+          const option = new Option(opcao.label, opcao.periodos);
+          option.dataset.valor = opcao.valor;
+          return option;
+        }));
+        periodos.dispatchEvent(new Event('change'));
+      });
+      periodos.addEventListener('change', () => {
+        clearInterval(pollTimer); pollTimer = null;
+        pagamentoId = null; qrTextInicial = null; qrBase64Inicial = null;
+        box.classList.remove('on'); btn.style.display = ''; btn.disabled = false;
+        document.getElementById('pay-amount').textContent = Number(periodos.selectedOptions[0].dataset.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        btn.textContent = 'Gerar código PIX';
+      });
+      const box = document.getElementById('pay-qr-box');
+      const img = document.getElementById('pay-qr-img');
+      const code = document.getElementById('pay-pix-code');
+      const copyBtn = document.getElementById('pay-copy');
+      const statusMsg = document.getElementById('pay-status-msg');
 
-  // Se já chegou com pagamento pendente recente, começa o polling automaticamente.
-  if (pagamentoId && qrTextInicial) comecarPolling();
-})();
-</script>
-</body>
+      let pollTimer = null;
+
+      function exibirQr(qrText, qrBase64) {
+        img.src = 'data:image/png;base64,' + qrBase64;
+        code.textContent = qrText;
+        box.classList.add('on');
+        btn.style.display = 'none';
+        periodos.disabled = true;
+        if (selecao) selecao.disabled = true;
+      }
+
+      function comecarPolling() {
+        if (pollTimer || !pagamentoId) return;
+        pollTimer = setInterval(async () => {
+          try {
+            const r = await fetch('/pagar/' + TOKEN + '/status/' + pagamentoId);
+            const j = await r.json();
+            if (j.ok && j.status === 'approved') {
+              clearInterval(pollTimer);
+              btn.style.display = 'none';
+              box.classList.remove('on');
+              document.getElementById('pay-confirmed').hidden = false;
+            } else if (j.ok && (j.status === 'rejected' || j.status === 'cancelled')) {
+              clearInterval(pollTimer);
+              statusMsg.className = 'pay-status-msg error';
+              statusMsg.textContent = '❌ Pagamento ' + j.status + '. Tente novamente.';
+            }
+          } catch (e) { /* segue tentando */ }
+        }, 5000);
+      }
+
+      btn.addEventListener('click', async () => {
+        if (qrTextInicial) {
+          exibirQr(qrTextInicial, qrBase64Inicial);
+          comecarPolling();
+          return;
+        }
+        btn.disabled = true;
+        periodos.disabled = true;
+        if (selecao) selecao.disabled = true;
+        btn.innerHTML = '<span class="pay-spinner"></span>Gerando...';
+        try {
+          const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value), selecao: selecao?.value }) });
+          const j = await r.json();
+          if (!j.ok) {
+            periodos.disabled = false;
+            if (selecao) selecao.disabled = false;
+            btn.disabled = false;
+            btn.textContent = '📱 Gerar código PIX';
+            alert(j.error || 'Falha ao gerar pagamento.');
+            return;
+          }
+          pagamentoId = j.pagamentoId;
+          exibirQr(j.qrText, j.qrBase64);
+          comecarPolling();
+        } catch (e) {
+          periodos.disabled = false;
+            if (selecao) selecao.disabled = false;
+          btn.disabled = false;
+          btn.textContent = '📱 Gerar código PIX';
+          alert('Erro ao gerar pagamento. Tente novamente.');
+        }
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code.textContent);
+          copyBtn.textContent = '✓ Copiado!';
+          setTimeout(() => { copyBtn.textContent = '📋 Copiar código PIX'; }, 2000);
+        } catch (e) {
+          // fallback pra navegadores sem clipboard API
+          const range = document.createRange();
+          range.selectNode(code);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          copyBtn.textContent = '✓ Selecionado — Ctrl+C';
+        }
+      });
+
+      // Se já chegou com pagamento pendente recente, começa o polling automaticamente.
+      if (pagamentoId && qrTextInicial) comecarPolling();
+    })();
+    </script>
+  </body>
 </html>

@@ -1,6 +1,6 @@
 import { fetchWithTimeout } from "../http.js";
 import crypto from "node:crypto";
-import type { PaymentProvider, PixParams, PixResult, StatusResult } from "../paymentProvider.js";
+import type { PaymentProvider, PixResult, StatusResult } from "../paymentProvider.js";
 
 // Integração OpenPix / Woovi. PIX-only, simples.
 // Doc: https://developers.openpix.com.br/

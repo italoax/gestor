@@ -73,21 +73,6 @@ function normalizeSessionState(data: unknown, session: string): WhatsappState {
   };
 }
 
-// Formata um número internacional pra exibição: "+55 (31) 99919-8954".
-// Aceita só dígitos. Se não for brasileiro, devolve com "+ " na frente.
-export function formatarTelefoneWhatsApp(numero: string): string {
-  const d = String(numero || "").replace(/\D+/g, "");
-  if (!d) return "";
-  // Brasil com DDI 55: 13 dígitos (ex.: 5531999998888) ou 12 (fixo).
-  if (d.startsWith("55") && (d.length === 13 || d.length === 12)) {
-    const ddd = d.slice(2, 4);
-    const resto = d.slice(4);
-    if (resto.length === 9) return `+55 (${ddd}) ${resto.slice(0, 5)}-${resto.slice(5)}`;
-    if (resto.length === 8) return `+55 (${ddd}) ${resto.slice(0, 4)}-${resto.slice(4)}`;
-  }
-  return `+${d}`;
-}
-
 async function requestSessionApi(pathTemplate: string, method: "GET" | "POST", session: string, body?: Record<string, unknown>, timeoutMs = 9000): Promise<WhatsappState> {
   const url = sessionApiUrl(pathTemplate, session);
   if (!url) return { session, status: "erro", lastError: "WA_SESSION_API_URL ausente." };

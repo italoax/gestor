@@ -12,20 +12,21 @@
   const cliVencidos = clientes.filter(c => statusByVencimento(c.status, c.vencimento).type === 'vencido').length;
 %>
 <div class="container page-clientes" data-search-scope>
-
   <% if (locals.renovacoesPendentes && renovacoesPendentes.length) { %>
     <section class="card renewal-pending" id="renovacoes-pendentes" aria-labelledby="renewal-pending-title">
       <h2 id="renewal-pending-title">Pagamentos recebidos — renovar no painel</h2>
       <p class="muted">Renove o acesso no outro painel e confirme aqui para atualizar o controle.</p>
       <% renovacoesPendentes.forEach(p => { %>
         <div class="renewal-pending-row">
-          <div><strong><%= p.nome %></strong><p><%= formatMoney(p.valor) %> · <%= p.duracao %> · <%= p.plano %></p></div>
+          <div>
+            <strong><%= p.nome %></strong>
+            <p><%= formatMoney(p.valor) %> · <%= p.duracao %> · <%= p.plano %></p>
+          </div>
           <button class="btn btn-primary" type="button" data-confirm-renovacao="<%= p.id %>">Marcar como renovado</button>
         </div>
       <% }) %>
     </section>
   <% } %>
-
   <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '👥' }) %></div>
@@ -40,24 +41,22 @@
       <div><strong><%= cliVencidos %></strong><span>Vencidos</span></div>
     </div>
   </div>
-
   <div class="ui-toolbar">
-  <div class="cliente-search">
-    <div class="cli-search cliente-search-field" role="search" aria-label="Pesquisar clientes">
-      <svg class="cliente-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
-      <input id="cliente-search-input" class="input" type="search" placeholder="Buscar clientes..." aria-label="Buscar clientes" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" data-search-input>
-      <button class="cliente-search-clear" type="button" data-clear-search aria-label="Limpar busca" title="Limpar busca" hidden>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-      </button>
+    <div class="cliente-search">
+      <div class="cli-search cliente-search-field" role="search" aria-label="Pesquisar clientes">
+        <svg class="cliente-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input id="cliente-search-input" class="input" type="search" placeholder="Buscar clientes..." aria-label="Buscar clientes" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" data-search-input>
+        <button class="cliente-search-clear" type="button" data-clear-search aria-label="Limpar busca" title="Limpar busca" hidden>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="cliente-search-results" data-search-results role="status" aria-live="polite" aria-atomic="true" hidden></div>
     </div>
-    <div class="cliente-search-results" data-search-results role="status" aria-live="polite" aria-atomic="true" hidden></div>
+    <button class="btn btn-primary cli-new-btn" type="button" data-open-modal="modal-add-cliente">
+      <%- include('../partials/ui-icon', { name: 'plus' }) %>
+      Novo cliente
+    </button>
   </div>
-
-  <button class="btn btn-primary cli-new-btn" type="button" data-open-modal="modal-add-cliente">
-    <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo cliente
-  </button>
-  </div>
-
   <% if (!clientes.length) { %>
     <div class="cli-empty">
       <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '👥' }) %></div>
@@ -66,129 +65,158 @@
       <button class="btn btn-primary" type="button" data-open-modal="modal-add-cliente"><%- include('../partials/ui-icon', { name: 'users' }) %> Adicionar Primeiro Cliente</button>
     </div>
   <% } else { %>
-  <div class="cli-table-card">
-    <div class="table-wrapper">
-      <table class="cli-table table-clientes">
-        <thead>
-          <tr>
-            <th class="col-check"><input type="checkbox" class="cli-check" data-check-all aria-label="Selecionar todos"></th>
-            <th data-sort-col="nome">Cliente</th>
-            <th data-sort-col="whatsapp">WhatsApp</th>
-            <th data-sort-col="plano">Plano</th>
-            <th data-sort-col="valor" data-sort-type="num">Valor</th>
-            <th data-sort-col="servidor">Servidor</th>
-            <th data-sort-col="aplicativo">Aplicativo</th>
-            <th data-sort-col="vencimento">Vencimento</th>
-            <th data-sort-col="status" data-sort-type="num">Status</th>
-            <th class="col-acoes">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% clientesOrdenados.forEach(c => { const cStatus = statusByVencimento(c.status, c.vencimento); const servidorAtual = servidores.find(s => s.nome === c.servidor); const planoAtual = planos.find(p => p.nome === c.plano); %>
-          <tr data-search-item data-id="<%= c.id %>" data-vencimento-status="<%= cStatus.type %>"
+    <div class="cli-table-card">
+      <div class="table-wrapper">
+        <table class="cli-table table-clientes">
+          <thead>
+            <tr>
+              <th class="col-check"><input type="checkbox" class="cli-check" data-check-all aria-label="Selecionar todos"></th>
+              <th data-sort-col="nome">Cliente</th>
+              <th data-sort-col="whatsapp">WhatsApp</th>
+              <th data-sort-col="plano">Plano</th>
+              <th data-sort-col="valor" data-sort-type="num">Valor</th>
+              <th data-sort-col="servidor">Servidor</th>
+              <th data-sort-col="aplicativo">Aplicativo</th>
+              <th data-sort-col="vencimento">Vencimento</th>
+              <th data-sort-col="status" data-sort-type="num">Status</th>
+              <th class="col-acoes">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% clientesOrdenados.forEach(c => { const cStatus = statusByVencimento(c.status, c.vencimento); const servidorAtual = servidores.find(s => s.nome === c.servidor); const planoAtual = planos.find(p => p.nome === c.plano); %>
+              <tr data-search-item data-id="<%= c.id %>" data-vencimento-status="<%= cStatus.type %>"
               data-search-text="<%= [c.nome, c.user, c.telefone, c.email, c.plano, c.adicional?.plano, c.adicional?.servidor, c.servidor, c.aplicativo, c.adicional?.aplicativo, c.idPainel].filter(Boolean).join(' ') %>"
               data-sort-nome="<%= c.nome || '' %>" data-sort-whatsapp="<%= c.telefone || '' %>" data-sort-plano="<%= c.plano || '' %>" data-sort-valor="<%= Number(c.valor) + Number(c.adicional?.valor || 0) %>" data-sort-servidor="<%= c.servidor || '' %>" data-sort-aplicativo="<%= c.aplicativo || '' %>" data-sort-vencimento="<%= formatDateInput(c.vencimento) %>" data-sort-status="<%= statusUrgency(c.status, c.vencimento) %>">
-            <td class="col-check"><input type="checkbox" class="cli-check" aria-label="Selecionar"></td>
-            <td class="cli-c-nome">
-              <strong><%= c.nome %></strong>
-              <span class="hidden-search"><%= c.user || '' %> <%= c.email || '' %> <%= c.telefone %></span>
-              <% if (c.idPainel) { %>
-                <small class="cli-id"><%= c.idPainel %><button type="button" class="cli-copy" data-copy="<%= c.idPainel %>" title="Copiar ID">⧉</button></small>
-              <% } else if (c.user) { %>
-                <small><%= c.user %></small>
-              <% } %>
-              <%# ===== Bloco mobile compacto (escondido no desktop via CSS) ===== %>
-              <div class="cli-m" aria-hidden="true">
-                <div class="cli-m-head">
-                  <div class="cli-m-name">
-                    <strong><%= c.nome %></strong>
-                    <% if (c.user || c.idPainel) { %>
-                      <small><%= c.idPainel || c.user %></small>
+                <td class="col-check"><input type="checkbox" class="cli-check" aria-label="Selecionar"></td>
+                <td class="cli-c-nome">
+                  <strong><%= c.nome %></strong>
+                  <span class="hidden-search"><%= c.user || '' %> <%= c.email || '' %> <%= c.telefone %></span>
+                  <% if (c.idPainel) { %>
+                    <small class="cli-id">
+                      <%= c.idPainel %>
+                      <button type="button" class="cli-copy" data-copy="<%= c.idPainel %>" title="Copiar ID">⧉</button>
+                    </small>
+                  <% } else if (c.user) { %>
+                    <small><%= c.user %></small>
+                  <% } %>
+                  <%# ===== Bloco mobile compacto (escondido no desktop via CSS) ===== %>
+                  <div class="cli-m" aria-hidden="true">
+                    <div class="cli-m-head">
+                      <div class="cli-m-name">
+                        <strong><%= c.nome %></strong>
+                        <% if (c.user || c.idPainel) { %>
+                          <small><%= c.idPainel || c.user %></small>
+                        <% } %>
+                      </div>
+                      <div class="cli-m-price"><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></div>
+                    </div>
+                    <div class="cli-m-meta">
+                      <span class="cli-m-pill cli-m-status status-<%= cStatus.type %>"><%= cStatus.label || cStatus.type %></span>
+                      <span class="cli-m-dot">·</span>
+                      <span class="cli-m-venc"><%- include('../partials/ui-icon', { name: 'calendar' }) %> <%= formatDateBr(c.vencimento) %></span>
+                      <% if (c.telefone) { %>
+                        <span class="cli-m-dot">·</span>
+                        <span class="cli-m-tel"><%- include('../partials/ui-icon', { name: 'phone' }) %> <%= c.telefone %></span>
+                      <% } %>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="cli-wpp"><%= c.telefone %></span></td>
+                <td>
+                  <%= c.plano || '-' %>
+                  <% if (c.adicional) { %>
+                    <br>
+                    <small>+ <%= c.adicional.plano %></small>
+                  <% } %>
+                </td>
+                <td>
+                  <strong><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></strong>
+                  <% if (c.adicional) { %>
+                    <br>
+                    <small><%= formatMoney(c.valor) %> + <%= formatMoney(c.adicional.valor) %></small>
+                  <% } %>
+                </td>
+                <td>
+                  <%= c.servidor || '-' %>
+                  <% if (c.adicional) { %>
+                    <br>
+                    <small><%= c.adicional.servidor %></small>
+                  <% } %>
+                </td>
+                <td class="cli-app-cell">
+                  <%- include('../partials/ui-icon', { name: 'phone' }) %>
+                  <%= c.aplicativo || '-' %>
+                  <% if (c.adicional) { %>
+                    <br>
+                    <small><%= c.adicional.aplicativo || '-' %></small>
+                  <% } %>
+                </td>
+                <td class="cli-venc">
+                  <div class="cli-expiry-access">
+                    <% if (c.adicional) { %>
+                      <small class="cli-expiry-server"><%= c.servidor || 'Servidor principal' %></small>
+                    <% } %>
+                    <span class="cli-expiry-date"><%= formatDateBr(c.vencimento) %></span>
+                    <% if (c.horaVencimento) { %>
+                      <small class="cli-expiry-time">às <%= String(c.horaVencimento).slice(0,5) %></small>
                     <% } %>
                   </div>
-                  <div class="cli-m-price"><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></div>
-                </div>
-                <div class="cli-m-meta">
-                  <span class="cli-m-pill cli-m-status status-<%= cStatus.type %>"><%= cStatus.label || cStatus.type %></span>
-                  <span class="cli-m-dot">·</span>
-                  <span class="cli-m-venc"><%- include('../partials/ui-icon', { name: 'calendar' }) %> <%= formatDateBr(c.vencimento) %></span>
-                  <% if (c.telefone) { %>
-                    <span class="cli-m-dot">·</span>
-                    <span class="cli-m-tel"><%- include('../partials/ui-icon', { name: 'phone' }) %> <%= c.telefone %></span>
+                  <% if (c.adicional) { %>
+                    <div class="cli-expiry-access">
+                      <small class="cli-expiry-server"><%= c.adicional.servidor || 'Segundo servidor' %></small>
+                      <span class="cli-expiry-date"><%= formatDateBr(c.adicional.vencimento) %></span>
+                    </div>
                   <% } %>
-                </div>
-              </div>
-            </td>
-            <td><span class="cli-wpp"><%= c.telefone %></span></td>
-            <td><%= c.plano || '-' %><% if (c.adicional) { %><br><small>+ <%= c.adicional.plano %></small><% } %></td>
-            <td><strong><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></strong><% if (c.adicional) { %><br><small><%= formatMoney(c.valor) %> + <%= formatMoney(c.adicional.valor) %></small><% } %></td>
-            <td><%= c.servidor || '-' %><% if (c.adicional) { %><br><small><%= c.adicional.servidor %></small><% } %></td>
-            <td class="cli-app-cell"><%- include('../partials/ui-icon', { name: 'phone' }) %> <%= c.aplicativo || '-' %><% if (c.adicional) { %><br><small><%= c.adicional.aplicativo || '-' %></small><% } %></td>
-            <td class="cli-venc">
-              <div class="cli-expiry-access">
-                <% if (c.adicional) { %><small class="cli-expiry-server"><%= c.servidor || 'Servidor principal' %></small><% } %>
-                <span class="cli-expiry-date"><%= formatDateBr(c.vencimento) %></span>
-                <% if (c.horaVencimento) { %><small class="cli-expiry-time">às <%= String(c.horaVencimento).slice(0,5) %></small><% } %>
-              </div>
-              <% if (c.adicional) { %>
-                <div class="cli-expiry-access">
-                  <small class="cli-expiry-server"><%= c.adicional.servidor || 'Segundo servidor' %></small>
-                  <span class="cli-expiry-date"><%= formatDateBr(c.adicional.vencimento) %></span>
-                </div>
-              <% } %>
-            </td>
-            <td><%- badgeStatusByVencimento(c.status, c.vencimento) %></td>
-            <td class="col-acoes">
-              <div class="cli-acoes">
-                <button class="cli-ico-btn <%= c.adicional ? 'open-multi-payment' : 'open-payment' %>" type="button" title="Renovar"
-                  data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-creditos-plano="<%= planoAtual?.creditoGastos || 1 %>" data-periodo="<%= planoAtual?.periodo || 30 %>" data-tipo-periodo="<%= planoAtual?.tipo || 'Dias' %>" data-valor="<%= c.valor %>" data-servidor="<%= c.servidor || '' %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>" data-hora="<%= c.horaVencimento || '23:59' %>">↻</button>
-
-                <div class="cli-menu">
-                  <button class="cli-ico-btn cli-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Mais ações">⋯</button>
-                  <div class="cli-menu-pop" role="menu" hidden>
-                    <button class="cli-menu-item" type="button" data-act="msg"><%- include('../partials/ui-icon', { name: 'message' }) %> Enviar mensagem</button>
-                    <button class="cli-menu-item" type="button" data-act="edit"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
-                    <button class="cli-menu-item" type="button" data-client-access="<%= c.id %>">🔑 Acesso do cliente</button>
-                    <button class="cli-menu-item" type="button" data-act="archive">🗄 Arquivar</button>
-                    <div class="cli-menu-sep"></div>
-                    <button class="cli-menu-item danger" type="button" data-act="delete"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
+                </td>
+                <td><%- badgeStatusByVencimento(c.status, c.vencimento) %></td>
+                <td class="col-acoes">
+                  <div class="cli-acoes">
+                    <button class="cli-ico-btn <%= c.adicional ? 'open-multi-payment' : 'open-payment' %>" type="button" title="Renovar"
+                    data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-creditos-plano="<%= planoAtual?.creditoGastos || 1 %>" data-periodo="<%= planoAtual?.periodo || 30 %>" data-tipo-periodo="<%= planoAtual?.tipo || 'Dias' %>" data-valor="<%= c.valor %>" data-servidor="<%= c.servidor || '' %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>" data-valor-cred="<%= servidorAtual?.valorCred || 0 %>" data-hora="<%= c.horaVencimento || '23:59' %>">↻</button>
+                    <div class="cli-menu">
+                      <button class="cli-ico-btn cli-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" title="Mais ações">⋯</button>
+                      <div class="cli-menu-pop" role="menu" hidden>
+                        <button class="cli-menu-item" type="button" data-act="msg"><%- include('../partials/ui-icon', { name: 'message' }) %> Enviar mensagem</button>
+                        <button class="cli-menu-item" type="button" data-act="edit"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
+                        <button class="cli-menu-item" type="button" data-client-access="<%= c.id %>">🔑 Acesso do cliente</button>
+                        <button class="cli-menu-item" type="button" data-act="archive">🗄 Arquivar</button>
+                        <div class="cli-menu-sep"></div>
+                        <button class="cli-menu-item danger" type="button" data-act="delete"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
+                      </div>
+                    </div>
+                    <div class="cli-hidden-actions" hidden>
+                      <button class="open-whatsapp-message" type="button"
+                      data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-servidor="<%= c.servidor %>"></button>
+                      <button class="edit-cliente" type="button" data-adicional="<%= JSON.stringify(c.adicional || null) %>"
+                      data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateInput(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-status="<%= c.status %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>"
+                      data-forma-pagamento="<%= c.formaPagamento || '' %>"
+                      data-senha="<%= c.senha || '' %>" data-id-painel="<%= c.idPainel || '' %>" data-email="<%= c.email || '' %>" data-captacao="<%= c.captacao || '' %>" data-aniversario="<%= formatDateInput(c.aniversario) %>" data-link-m3u="<%= c.linkM3u || '' %>" data-time-cliente="<%= c.timeCliente || '' %>" data-telefone-secundario="<%= c.telefoneSecundario || '' %>" data-observacoes="<%= c.observacoes || '' %>" data-data-inicio="<%= formatDateInput(c.dataInicio) %>" data-hora-vencimento="<%= c.horaVencimento || '' %>" data-dispositivo="<%= c.dispositivo || '' %>" data-aplicativo="<%= c.aplicativo || '' %>" data-pontos="<%= c.pontosFidelidade || 0 %>" data-sigma-customer-id="<%= c.sigmaCustomerId || '' %>"></button>
+                      <form method="post" action="/clientes" class="delete-cliente" data-native-submit="1">
+                        <%- csrfInput %>
+                        <input type="hidden" name="action" value="delete_cliente">
+                        <input type="hidden" name="id" value="<%= c.id %>">
+                        <button type="submit"></button>
+                      </form>
+                      <form method="post" action="/clientes" class="archive-cliente">
+                        <%- csrfInput %>
+                        <input type="hidden" name="action" value="arquivar_cliente">
+                        <input type="hidden" name="id" value="<%= c.id %>">
+                        <button type="submit"></button>
+                      </form>
+                    </div>
                   </div>
-                </div>
-
-                <div class="cli-hidden-actions" hidden>
-                  <button class="open-whatsapp-message" type="button"
-                    data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateBr(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= formatMoney(c.valor) %>" data-servidor="<%= c.servidor %>"></button>
-                  <button class="edit-cliente" type="button" data-adicional="<%= JSON.stringify(c.adicional || null) %>"
-                    data-id="<%= c.id %>" data-nome="<%= c.nome %>" data-user="<%= c.user %>" data-telefone="<%= c.telefone %>" data-vencimento="<%= formatDateInput(c.vencimento) %>" data-plano="<%= c.plano %>" data-valor="<%= c.valor %>" data-status="<%= c.status %>" data-servidor="<%= c.servidor %>" data-telas="<%= c.telas %>" data-creditos="<%= c.creditosGastos || 0 %>"
-                    data-forma-pagamento="<%= c.formaPagamento || '' %>"
-                    data-senha="<%= c.senha || '' %>" data-id-painel="<%= c.idPainel || '' %>" data-email="<%= c.email || '' %>" data-captacao="<%= c.captacao || '' %>" data-aniversario="<%= formatDateInput(c.aniversario) %>" data-link-m3u="<%= c.linkM3u || '' %>" data-time-cliente="<%= c.timeCliente || '' %>" data-telefone-secundario="<%= c.telefoneSecundario || '' %>" data-observacoes="<%= c.observacoes || '' %>" data-data-inicio="<%= formatDateInput(c.dataInicio) %>" data-hora-vencimento="<%= c.horaVencimento || '' %>" data-dispositivo="<%= c.dispositivo || '' %>" data-aplicativo="<%= c.aplicativo || '' %>" data-pontos="<%= c.pontosFidelidade || 0 %>" data-sigma-customer-id="<%= c.sigmaCustomerId || '' %>"></button>
-                  <form method="post" action="/clientes" class="delete-cliente" data-native-submit="1">
-                    <%- csrfInput %>
-                    <input type="hidden" name="action" value="delete_cliente">
-                    <input type="hidden" name="id" value="<%= c.id %>">
-                    <button type="submit"></button>
-                  </form>
-                  <form method="post" action="/clientes" class="archive-cliente">
-                    <%- csrfInput %>
-                    <input type="hidden" name="action" value="arquivar_cliente">
-                    <input type="hidden" name="id" value="<%= c.id %>">
-                    <button type="submit"></button>
-                  </form>
-                </div>
-              </div>
-            </td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="cli-table-foot">
+        <span class="muted"><%= clientes.length %> cliente<%= clientes.length === 1 ? '' : 's' %></span>
+      </div>
     </div>
-    <div class="cli-table-foot">
-      <span class="muted"><%= clientes.length %> cliente<%= clientes.length === 1 ? '' : 's' %></span>
-    </div>
-  </div>
   <% } %>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-send-whatsapp" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -236,7 +264,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-add-cliente" aria-hidden="true" inert>
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -254,7 +281,6 @@
       <input type="hidden" name="id" value="">
       <input type="hidden" name="status" value="Ativo">
       <div class="modal-error" id="modal-add-cliente-error" aria-live="polite"></div>
-
       <div class="tab-panel active" data-tab-panel="dados">
         <div class="form-grid">
           <label class="field full">
@@ -263,17 +289,24 @@
             <small class="field-error" data-error-for="nome"></small>
           </label>
           <%# Estes campos são as credenciais DO CLIENTE (painel IPTV), não as do
-              usuário logado — o gerenciador de senhas do navegador não deve se
-              meter aqui. O Chrome anexa o gerenciador em QUALQUER input
-              type="password" (autocomplete não desliga), então o campo é type=text
-              e a máscara de bolinhas vem do CSS (.input-mask). Os data-*-ignore
-              cobrem 1Password / LastPass / Bitwarden. %>
+          usuário logado — o gerenciador de senhas do navegador não deve se
+          meter aqui. O Chrome anexa o gerenciador em QUALQUER input
+          type="password" (autocomplete não desliga), então o campo é type=text
+          e a máscara de bolinhas vem do CSS (.input-mask). Os data-*-ignore
+          cobrem 1Password / LastPass / Bitwarden. %>
           <label class="field"><span>Usuário</span><input class="input" name="user" placeholder="usuario123" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore></label>
-          <div class="field password-field" data-password-field><label for="cliente-senha">Senha</label><div class="password-control"><input id="cliente-senha" class="input" type="password" name="senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore><button type="button" data-password-toggle aria-label="Mostrar senha" title="Mostrar senha" aria-controls="cliente-senha" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span data-password-toggle-label>Mostrar</span></button></div><span data-password-feedback role="status" aria-live="polite"></span></div>
+          <div class="field password-field" data-password-field>
+            <label for="cliente-senha">Senha</label>
+            <div class="password-control">
+              <input id="cliente-senha" class="input" type="password" name="senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
+              <button type="button" data-password-toggle aria-label="Mostrar senha" title="Mostrar senha" aria-controls="cliente-senha" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span data-password-toggle-label>Mostrar</span></button>
+            </div>
+            <span data-password-feedback role="status" aria-live="polite"></span>
+          </div>
           <%# Campo único do ID do cliente no painel externo. O schema tem duas colunas
-              (id_painel e sigma_customer_id) por histórico, mas guardam a MESMA coisa —
-              a rota grava as duas em sincronia: id_painel alimenta a listagem e
-              sigma_customer_id é o que a renovação no Sigma consulta. %>
+          (id_painel e sigma_customer_id) por histórico, mas guardam a MESMA coisa —
+          a rota grava as duas em sincronia: id_painel alimenta a listagem e
+          sigma_customer_id é o que a renovação no Sigma consulta. %>
           <label class="field full">
             <span>WhatsApp *</span>
             <div class="input-icon phone-control">
@@ -298,12 +331,17 @@
             <span>Captação</span>
             <select class="input" name="captacao">
               <option value="">Origem do cliente</option>
-              <option>Indicação</option><option>Instagram</option><option>WhatsApp</option><option>Facebook</option><option>Google</option><option>Outro</option>
+              <option>Indicação</option>
+              <option>Instagram</option>
+              <option>WhatsApp</option>
+              <option>Facebook</option>
+              <option>Google</option>
+              <option>Outro</option>
             </select>
           </label>
           <label class="field full"><span>Observações</span><textarea class="input" name="observacoes" placeholder="Observações internas sobre o cliente..."></textarea></label>
           <%# data-only-new: só faz sentido ao CADASTRAR (mensagem de boas-vindas).
-              Na edição o JS esconde os dois, e a rota nem toca na coluna. %>
+          Na edição o JS esconde os dois, e a rota nem toca na coluna. %>
           <label class="switch-field full" data-only-new>
             <span><strong><%- include('../partials/ui-icon', { name: 'message' }) %> Enviar mensagem</strong><small>Dispara um template pelo WhatsApp logo após salvar o cliente.</small></span>
             <input type="checkbox" name="enviar_boas_vindas" value="1" class="switch" data-toggle-template>
@@ -312,103 +350,159 @@
             <span>Template a enviar *</span>
             <select class="input" name="template_boas_vindas">
               <option value="">Selecione um template</option>
-              <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
+              <% mensagens.forEach(m => { %>
+                <option value="<%= m.id %>"><%= m.titulo %></option>
+              <% }) %>
             </select>
           </label>
         </div>
       </div>
-
       <div class="tab-panel client-plan-panel" data-tab-panel="plano">
-          <div class="server-selection">
-            <span>Servidores *</span>
-            <details open class="server-picker" data-servidores-multiselect>
-              <summary data-servidores-resumo>Selecione os servidores</summary>
-              <div data-servidores-opcoes class="server-options"></div>
-            </details>
-            <small>Marque um ou dois servidores para este cliente.</small>
-            <select hidden name="servidor" data-valor-cred-select data-required="1" data-tab="plano" data-field-label="Servidor">
-              <option value="">Selecione o servidor</option>
-              <% servidores.forEach(s => { %><option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option><% }) %>
-            </select>
-            <small class="field-error" data-error-for="servidor"></small>
-          </div>
-
+        <div class="server-selection">
+          <span>Servidores *</span>
+          <details open class="server-picker" data-servidores-multiselect>
+            <summary data-servidores-resumo>Selecione os servidores</summary>
+            <div data-servidores-opcoes class="server-options"></div>
+          </details>
+          <small>Marque um ou dois servidores para este cliente.</small>
+          <select hidden name="servidor" data-valor-cred-select data-required="1" data-tab="plano" data-field-label="Servidor">
+            <option value="">Selecione o servidor</option>
+            <% servidores.forEach(s => { %>
+              <option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option>
+            <% }) %>
+          </select>
+          <small class="field-error" data-error-for="servidor"></small>
+        </div>
         <p class="muted">Campos com * são obrigatórios. Dados de acesso e integração são opcionais.</p>
         <p class="server-selection-help">Selecione acima os servidores. Ajuste abaixo o valor e a validade de cada acesso.</p>
         <section class="server-access-card" aria-labelledby="primary-server-title">
           <h4 id="primary-server-title" data-principal-titulo>Primeiro servidor</h4>
           <div class="form-grid">
-          <div class="field">
-            <span>Plano *</span>
-            <select class="input" name="plano" data-required="1" data-tab="plano" data-field-label="Plano">
-              <option value="">Selecione o plano</option>
-              <% planos.filter(p => p.ativo).forEach(p => { %><option value="<%= p.nome %>" data-creditos="<%= p.creditoGastos || 0 %>"><%= p.nome %></option><% }) %>
-            </select>
-            <small class="field-error" data-error-for="plano"></small>
-          </div>
-<label class="field">
-            <span>Valor (R$) *</span>
-            <input class="input" type="number" step="0.01" name="valor" min="0.01" placeholder="0,00" data-required="1" data-tab="plano" data-field-label="Valor">
-            <small class="field-error" data-error-for="valor"></small>
-          </label><label class="field"><span>Telas *</span><input class="input" type="number" name="telas" value="1" min="1" step="1" data-required="1" data-tab="plano" data-field-label="Telas" data-telas-input><small>Muda o valor na mesma proporção (2 telas = 2× o valor). Ajuste o valor à mão pra dar desconto.</small></label><label class="field">
-            <span>Vencimento *</span>
-            <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" required data-date-mask data-required="1" data-tab="plano" data-field-label="Vencimento">
-            <small class="field-error" data-error-for="vencimento"></small>
-          </label><label class="field"><span>Hora de Vencimento</span><input class="input" type="time" name="hora_vencimento" value="23:59"></label>
+            <div class="field">
+              <span>Plano *</span>
+              <select class="input" name="plano" data-required="1" data-tab="plano" data-field-label="Plano">
+                <option value="">Selecione o plano</option>
+                <% planos.filter(p => p.ativo).forEach(p => { %>
+                  <option value="<%= p.nome %>" data-creditos="<%= p.creditoGastos || 0 %>"><%= p.nome %></option>
+                <% }) %>
+              </select>
+              <small class="field-error" data-error-for="plano"></small>
+            </div>
+            <label class="field">
+              <span>Valor (R$) *</span>
+              <input class="input" type="number" step="0.01" name="valor" min="0.01" placeholder="0,00" data-required="1" data-tab="plano" data-field-label="Valor">
+              <small class="field-error" data-error-for="valor"></small>
+            </label>
+            <label class="field"><span>Telas *</span><input class="input" type="number" name="telas" value="1" min="1" step="1" data-required="1" data-tab="plano" data-field-label="Telas" data-telas-input><small>Muda o valor na mesma proporção (2 telas = 2× o valor). Ajuste o valor à mão pra dar desconto.</small></label>
+            <label class="field">
+              <span>Vencimento *</span>
+              <input class="input" type="text" name="vencimento" placeholder="dd/mm/aaaa" inputmode="numeric" autocomplete="off" maxlength="10" pattern="\d{2}/\d{2}/\d{4}" title="Use dd/mm/aaaa" required data-date-mask data-required="1" data-tab="plano" data-field-label="Vencimento">
+              <small class="field-error" data-error-for="vencimento"></small>
+            </label>
+            <label class="field"><span>Hora de Vencimento</span><input class="input" type="time" name="hora_vencimento" value="23:59"></label>
           </div>
         </section>
         <section class="server-access-card" data-plano-adicional hidden>
-          <label class="field full"><span data-adicional-titulo>Dados do segundo servidor</span><select hidden name="adicional_servidor"><option value="">Selecione</option><% servidores.forEach(s => { %><option value="<%= s.nome %>"><%= s.nome %></option><% }) %></select></label>
-          <div class="form-grid"><label class="field"><span>Plano *</span><select class="input" name="adicional_plano"><option value="">Selecione</option><% planos.filter(p => p.ativo).forEach(p => { %><option value="<%= p.nome %>"><%= p.nome %></option><% }) %></select></label>
-<label class="field"><span>Valor (R$) *</span><input class="input" type="number" min="0.01" step="0.01" name="adicional_valor" placeholder="0,00"></label>
-<label class="field"><span>Telas *</span><input class="input" type="number" min="1" step="1" name="adicional_telas" value="1"></label>
-<label class="field"><span>Vencimento *</span><input class="input" type="date" name="adicional_vencimento"></label></div>
-          <details class="server-extra"><summary>Dados de acesso e integração (opcional)</summary><div class="form-grid"><label class="field"><span>Usuário do segundo servidor</span><input class="input" name="adicional_user" maxlength="120"></label><label class="field full"><span>ID do segundo servidor no painel Sigma</span><input class="input" name="adicional_id_painel" maxlength="120"><small>Use o ID do acesso correspondente ao segundo servidor.</small></label></div></details>
+          <label class="field full">
+            <span data-adicional-titulo>Dados do segundo servidor</span>
+            <select hidden name="adicional_servidor">
+              <option value="">Selecione</option>
+              <% servidores.forEach(s => { %>
+                <option value="<%= s.nome %>"><%= s.nome %></option>
+              <% }) %>
+            </select>
+          </label>
+          <div class="form-grid">
+            <label class="field">
+              <span>Plano *</span>
+              <select class="input" name="adicional_plano">
+                <option value="">Selecione</option>
+                <% planos.filter(p => p.ativo).forEach(p => { %>
+                  <option value="<%= p.nome %>"><%= p.nome %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label class="field"><span>Valor (R$) *</span><input class="input" type="number" min="0.01" step="0.01" name="adicional_valor" placeholder="0,00"></label>
+            <label class="field"><span>Telas *</span><input class="input" type="number" min="1" step="1" name="adicional_telas" value="1"></label>
+            <label class="field"><span>Vencimento *</span><input class="input" type="date" name="adicional_vencimento"></label>
+          </div>
+          <details class="server-extra">
+            <summary>Dados de acesso e integração (opcional)</summary>
+            <div class="form-grid">
+              <label class="field"><span>Usuário do segundo servidor</span><input class="input" name="adicional_user" maxlength="120"></label>
+              <label class="field full"><span>ID do segundo servidor no painel Sigma</span><input class="input" name="adicional_id_painel" maxlength="120"><small>Use o ID do acesso correspondente ao segundo servidor.</small></label>
+            </div>
+          </details>
         </section>
         <div class="server-total"><span>Total por renovação</span><strong data-cadastro-total>R$ 0,00</strong></div>
-        <div class="form-grid server-payment"><label class="field">
+        <div class="form-grid server-payment">
+          <label class="field">
             <span>Pagamento *</span>
             <select class="input" name="forma_pagamento" data-required="1" data-tab="plano" data-field-label="Pagamento">
-              <option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
+              <option value="">Selecione</option>
+              <option>PIX</option>
+              <option>Dinheiro</option>
+              <option>Cartão</option>
             </select>
             <small class="field-error" data-error-for="forma_pagamento"></small>
-          </label><label class="switch-field full" data-only-new>
+          </label>
+          <label class="switch-field full" data-only-new>
             <span><strong>💲 Registrar pagamento ao salvar</strong><small>Conta como pago agora e baixa crédito do servidor. Desmarque para só cadastrar.</small></span>
             <input type="checkbox" name="registrar_pagamento" value="1" class="switch" checked>
-          </label></div>
+          </label>
+        </div>
         <input type="hidden" name="creditos_gastos" value="1" data-creditos-input>
         <input type="hidden" name="planos_form" value="1">
         <input type="checkbox" name="tem_plano_adicional" value="1" data-toggle-adicional hidden>
       </div>
-
       <div class="tab-panel" data-tab-panel="apps">
         <p class="muted">Escolha o aplicativo usado em cada servidor.</p>
-        <section class="cli-apps-card"><strong data-app-principal>Primeiro servidor</strong><div class="form-grid"><label class="field">
-            <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Dispositivo</span>
-            <select class="input" name="dispositivo">
-              <option value="">Selecione o dispositivo</option>
-              <% (typeof dispositivos !== 'undefined' ? dispositivos : []).forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
-            </select>
-          </label><label class="field">
-            <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Aplicativo *</span>
-            <select class="input" name="aplicativo" required data-required="1" data-tab="apps" data-field-label="Aplicativo do primeiro servidor">
-              <option value="">Selecione o aplicativo</option>
-              <% (typeof aplicativos !== 'undefined' ? aplicativos : []).forEach(a => { %><option value="<%= a %>"><%= a %></option><% }) %>
-            </select>
-          </label></div></section>
-        <section class="cli-apps-card" data-app-adicional hidden><strong data-app-segundo>Segundo servidor</strong><div class="form-grid"><label class="field">
-            <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Dispositivo</span>
-            <select class="input" name="adicional_dispositivo">
-              <option value="">Selecione o dispositivo</option>
-              <% (typeof dispositivos !== 'undefined' ? dispositivos : []).forEach(d => { %><option value="<%= d %>"><%= d %></option><% }) %>
-            </select>
-          </label><label class="field">
-            <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Aplicativo</span>
-            <select class="input" name="adicional_aplicativo" data-tab="apps" data-field-label="Aplicativo do segundo servidor">
-              <option value="">Selecione o aplicativo</option>
-              <% (typeof aplicativos !== 'undefined' ? aplicativos : []).forEach(a => { %><option value="<%= a %>"><%= a %></option><% }) %>
-            </select>
-          </label></div></section>
+        <section class="cli-apps-card">
+          <strong data-app-principal>Primeiro servidor</strong>
+          <div class="form-grid">
+            <label class="field">
+              <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Dispositivo</span>
+              <select class="input" name="dispositivo">
+                <option value="">Selecione o dispositivo</option>
+                <% (typeof dispositivos !== 'undefined' ? dispositivos : []).forEach(d => { %>
+                  <option value="<%= d %>"><%= d %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label class="field">
+              <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Aplicativo *</span>
+              <select class="input" name="aplicativo" required data-required="1" data-tab="apps" data-field-label="Aplicativo do primeiro servidor">
+                <option value="">Selecione o aplicativo</option>
+                <% (typeof aplicativos !== 'undefined' ? aplicativos : []).forEach(a => { %>
+                  <option value="<%= a %>"><%= a %></option>
+                <% }) %>
+              </select>
+            </label>
+          </div>
+        </section>
+        <section class="cli-apps-card" data-app-adicional hidden>
+          <strong data-app-segundo>Segundo servidor</strong>
+          <div class="form-grid">
+            <label class="field">
+              <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Dispositivo</span>
+              <select class="input" name="adicional_dispositivo">
+                <option value="">Selecione o dispositivo</option>
+                <% (typeof dispositivos !== 'undefined' ? dispositivos : []).forEach(d => { %>
+                  <option value="<%= d %>"><%= d %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label class="field">
+              <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Aplicativo</span>
+              <select class="input" name="adicional_aplicativo" data-tab="apps" data-field-label="Aplicativo do segundo servidor">
+                <option value="">Selecione o aplicativo</option>
+                <% (typeof aplicativos !== 'undefined' ? aplicativos : []).forEach(a => { %>
+                  <option value="<%= a %>"><%= a %></option>
+                <% }) %>
+              </select>
+            </label>
+          </div>
+        </section>
       </div>
     </form>
     <div class="modal-footer">
@@ -417,7 +511,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-required-fields" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -434,7 +527,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-cliente-info" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -459,7 +551,6 @@
     </div>
   </div>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-add-pagamento" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -493,7 +584,9 @@
           <span>Servidor *</span>
           <select class="input" name="servidor" data-renovacao-servidor data-required="1" data-field-label="Servidor">
             <option value="">Selecione</option>
-            <% servidores.forEach(s => { %><option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option><% }) %>
+            <% servidores.forEach(s => { %>
+              <option value="<%= s.nome %>" data-valor-cred="<%= s.valorCred || 0 %>"><%= s.nome %></option>
+            <% }) %>
           </select>
           <small>Os créditos serão descontados do servidor selecionado.</small>
           <small class="field-error" data-error-for="servidor"></small>
@@ -507,7 +600,10 @@
         <label class="field">
           <span>Forma pagamento *</span>
           <select class="input" name="forma_pagamento" data-required="1" data-field-label="Forma de pagamento">
-            <option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option>
+            <option value="">Selecione</option>
+            <option>PIX</option>
+            <option>Dinheiro</option>
+            <option>Cartão</option>
           </select>
           <small class="field-error" data-error-for="forma_pagamento"></small>
         </label>
@@ -520,7 +616,9 @@
           <span>Mensagem após salvar</span>
           <select class="input" name="mensagem_pagamento_id" data-last-message-select>
             <option value="">Não enviar WhatsApp</option>
-            <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
+            <% mensagens.forEach(m => { %>
+              <option value="<%= m.id %>"><%= m.titulo %></option>
+            <% }) %>
           </select>
           <small>Mensagem enviada automaticamente pelo WhatsApp após salvar. A última escolha vale para todos os dispositivos da sua conta.</small>
         </label>
@@ -532,7 +630,6 @@
     </div>
   </div>
 </div>
-
 <% const noticeMessages = [...noticeSuccess, ...noticeError]; %>
 <div class="modal-overlay client-modal" id="modal-notice" aria-hidden="true" inert <%= noticeMessages.length ? 'data-open-notice' : '' %>>
   <div class="modal">
@@ -542,7 +639,9 @@
     </div>
     <div class="modal-body">
       <div class="form-alert <%= noticeError.length ? 'error' : 'success' %>" id="modal-notice-message" role="status">
-        <% noticeMessages.forEach(message => { %><p><%= message %></p><% }) %>
+        <% noticeMessages.forEach(message => { %>
+          <p><%= message %></p>
+        <% }) %>
       </div>
     </div>
     <div class="modal-footer">
@@ -550,7 +649,6 @@
     </div>
   </div>
 </div>
-
 <style>
   /* Máscara de senha sem usar type="password" — assim o gerenciador de senhas do
      navegador não oferece o login do painel nem "Sugerir senha forte" num campo
@@ -565,7 +663,6 @@
   .table-clientes thead th.sorted-asc::after { content: '↑'; opacity: 1; }
   .table-clientes thead th.sorted-desc::after { content: '↓'; opacity: 1; }
 </style>
-
 <script>
 (function () {
   function initClientesSort() {
@@ -647,40 +744,81 @@
   }
 })();
 </script>
-
 <div class="modal-overlay client-modal" id="modal-client-access" aria-hidden="true" inert>
   <div class="modal modal-sm access-dialog">
-    <div class="modal-header"><h3>Acesso do cliente</h3><button class="modal-close" type="button" data-close-modal aria-label="Fechar">&times;</button></div>
+    <div class="modal-header">
+      <h3>Acesso do cliente</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">&times;</button>
+    </div>
     <div class="modal-body">
       <%- csrfInput %>
-      <div class="access-identity"><div><h3 data-access-name></h3><p data-access-user></p></div><span class="access-state" data-access-state></span></div>
+      <div class="access-identity">
+        <div>
+          <h3 data-access-name></h3>
+          <p data-access-user></p>
+        </div>
+        <span class="access-state" data-access-state></span>
+      </div>
       <p class="access-notice" data-access-notice role="status" aria-live="polite"></p>
       <div class="access-actions" data-access-actions hidden>
         <button type="button" class="btn btn-primary access-copy" data-access-copy>Copiar link de acesso</button>
         <input class="input access-link" data-access-link readonly hidden aria-label="Link de acesso do cliente">
         <p class="access-hint">Envie o link apenas a este cliente. Ele permite entrar sem senha.</p>
-        <div class="access-setting"><div><strong>Entrada na conta</strong><p>Controle o acesso do cliente.</p></div><button type="button" class="btn btn-secondary" data-access-toggle></button></div>
-        <div class="access-revoke"><strong>Substituir o link atual</strong><p>O link antigo e as sess&#245;es abertas deixam de funcionar. Um novo link ser&#225; gerado na pr&#243;xima c&#243;pia ou envio.</p><button type="button" class="btn btn-secondary" data-access-revoke>Revogar link</button></div>
+        <div class="access-setting">
+          <div>
+            <strong>Entrada na conta</strong>
+            <p>Controle o acesso do cliente.</p>
+          </div>
+          <button type="button" class="btn btn-secondary" data-access-toggle></button>
+        </div>
+        <div class="access-revoke">
+          <strong>Substituir o link atual</strong>
+          <p>O link antigo e as sess&#245;es abertas deixam de funcionar. Um novo link ser&#225; gerado na pr&#243;xima c&#243;pia ou envio.</p>
+          <button type="button" class="btn btn-secondary" data-access-revoke>Revogar link</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
-
 <div class="modal-overlay client-modal" id="modal-renovar-planos" aria-hidden="true" inert>
   <div class="modal">
-    <div class="modal-header"><h3>Renovar servidores</h3><button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button></div>
+    <div class="modal-header">
+      <h3>Renovar servidores</h3>
+      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    </div>
     <form method="post" action="/clientes" id="renovar-planos-form" class="modal-body" data-native-submit="1">
-      <%- csrfInput %><input type="hidden" name="action" value="renovar_planos"><input type="hidden" name="id"><input type="hidden" name="chave">
-      <p data-multi-nome></p><p data-multi-erro role="alert"></p>
+      <%- csrfInput %>
+      <input type="hidden" name="action" value="renovar_planos">
+      <input type="hidden" name="id">
+      <input type="hidden" name="chave">
+      <p data-multi-nome></p>
+      <p data-multi-erro role="alert"></p>
       <div class="form-grid">
-        <label class="field full"><span>Quais servidores deseja renovar?</span><select class="input" name="selecao" required></select></label>
-        <label class="field full"><span>Duração da renovação</span><select class="input" name="periodos" required></select></label>
+        <label class="field full">
+          <span>Quais servidores deseja renovar?</span>
+          <select class="input" name="selecao" required></select>
+        </label>
+        <label class="field full">
+          <span>Duração da renovação</span>
+          <select class="input" name="periodos" required></select>
+        </label>
         <div class="field full" data-multi-resumo></div>
-        <label class="field full"><span>Forma de pagamento</span><select class="input" name="forma_pagamento" required><option value="">Selecione</option><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select></label>
-        <label class="field full"><span>Enviar mensagem após renovar</span>
+        <label class="field full">
+          <span>Forma de pagamento</span>
+          <select class="input" name="forma_pagamento" required>
+            <option value="">Selecione</option>
+            <option>PIX</option>
+            <option>Dinheiro</option>
+            <option>Cartão</option>
+          </select>
+        </label>
+        <label class="field full">
+          <span>Enviar mensagem após renovar</span>
           <select class="input" name="mensagem_pagamento_id">
             <option value="">Não enviar WhatsApp</option>
-            <% mensagens.forEach(m => { %><option value="<%= m.id %>"><%= m.titulo %></option><% }) %>
+            <% mensagens.forEach(m => { %>
+              <option value="<%= m.id %>"><%= m.titulo %></option>
+            <% }) %>
           </select>
           <small>Envia uma mensagem com os servidores renovados e seus novos vencimentos.</small>
         </label>
@@ -688,6 +826,9 @@
       <p><strong>Total: <span data-multi-total>—</span></strong></p>
       <p class="muted">Cada plano mantém seu valor. O vencimento será contado a partir da validade atual ou de hoje, caso já esteja vencido.</p>
     </form>
-    <div class="modal-footer"><button class="btn btn-muted" type="button" data-close-modal>Cancelar</button><button class="btn btn-primary" type="submit" form="renovar-planos-form" disabled>Confirmar renovação</button></div>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
+      <button class="btn btn-primary" type="submit" form="renovar-planos-form" disabled>Confirmar renovação</button>
+    </div>
   </div>
 </div>

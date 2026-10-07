@@ -1,5 +1,4 @@
 <div class="container dash">
-
   <div class="ui-summary ui-summary-4">
     <div class="stat-box accent-green">
       <div>
@@ -34,29 +33,35 @@
       <div class="stat-icon"><%- include('../partials/ui-icon', { name: '🖥️' }) %></div>
     </div>
   </div>
-
   <% if (locals.acessos) { %>
-  <section class="dash-access">
-    <div class="dash-access-heading"><h3><%- include('../partials/ui-icon', { name: 'server' }) %> Acessos por servidor</h3><span>Clientes não arquivados</span></div>
-    <div class="dash-access-overview">
-      <div class="dash-access-main"><span>Clientes cadastrados</span><strong><%= acessos.clientes %></strong><small><b><%= acessos.comUm %></b> com 1 acesso <span>·</span> <b><%= acessos.comDois %></b> com 2 acessos</small></div>
-      <div class="dash-access-main"><span>Total de acessos</span><strong class="dash-access-total"><%= acessos.total %></strong><small><%= acessos.clientes %> principais + <%= acessos.comDois %> adicionais</small></div>
-    </div>
-    <div class="dash-access-status"><span class="is-active"><i></i><b><%= acessos.ativos %></b> ativos</span><span class="is-expired"><i></i><b><%= acessos.vencidos %></b> vencidos</span><span><i></i><b><%= acessos.inativos %></b> inativos</span></div>
-    <div class="dash-access-servers">
-      <div class="dash-access-row dash-access-labels"><span>Servidor</span><span>Acessos</span><span>Ativos</span><span>Vencidos</span><span>Inativos</span></div>
-      <% acessos.servidores.forEach(s => { %>
-        <div class="dash-access-row">
-          <strong class="dash-access-name"><%= s.nome %></strong>
-          <span data-label="Acessos"><b><%= s.total %></b></span><span data-label="Ativos" class="pos"><b><%= s.ativos %></b></span><span data-label="Vencidos" class="neg"><b><%= s.vencidos %></b></span><span data-label="Inativos"><b><%= s.inativos %></b></span>
-        </div>
-      <% }) %>
-      <% if (!acessos.servidores.length) { %><p class="muted dash-access-empty">Nenhum acesso cadastrado.</p><% } %>
-    </div>
-    <p class="dash-access-note">Cada cliente conta uma vez. Cada acesso tem seu próprio vencimento.</p>
-  </section>
+    <section class="dash-access">
+      <div class="dash-access-heading">
+        <h3><%- include('../partials/ui-icon', { name: 'server' }) %> Acessos por servidor</h3>
+        <span>Clientes não arquivados</span>
+      </div>
+      <div class="dash-access-overview">
+        <div class="dash-access-main"><span>Clientes cadastrados</span><strong><%= acessos.clientes %></strong><small><b><%= acessos.comUm %></b> com 1 acesso <span>·</span> <b><%= acessos.comDois %></b> com 2 acessos</small></div>
+        <div class="dash-access-main"><span>Total de acessos</span><strong class="dash-access-total"><%= acessos.total %></strong><small><%= acessos.clientes %> principais + <%= acessos.comDois %> adicionais</small></div>
+      </div>
+      <div class="dash-access-status"><span class="is-active"><i></i><b><%= acessos.ativos %></b> ativos</span><span class="is-expired"><i></i><b><%= acessos.vencidos %></b> vencidos</span><span><i></i><b><%= acessos.inativos %></b> inativos</span></div>
+      <div class="dash-access-servers">
+        <div class="dash-access-row dash-access-labels"><span>Servidor</span><span>Acessos</span><span>Ativos</span><span>Vencidos</span><span>Inativos</span></div>
+        <% acessos.servidores.forEach(s => { %>
+          <div class="dash-access-row">
+            <strong class="dash-access-name"><%= s.nome %></strong>
+            <span data-label="Acessos"><b><%= s.total %></b></span>
+            <span data-label="Ativos" class="pos"><b><%= s.ativos %></b></span>
+            <span data-label="Vencidos" class="neg"><b><%= s.vencidos %></b></span>
+            <span data-label="Inativos"><b><%= s.inativos %></b></span>
+          </div>
+        <% }) %>
+        <% if (!acessos.servidores.length) { %>
+          <p class="muted dash-access-empty">Nenhum acesso cadastrado.</p>
+        <% } %>
+      </div>
+      <p class="dash-access-note">Cada cliente conta uma vez. Cada acesso tem seu próprio vencimento.</p>
+    </section>
   <% } %>
-
   <div class="dash-section">
     <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'money' }) %> Receita x Custo</h3>
     <div class="rc-grid">
@@ -71,7 +76,6 @@
       <% }) %>
     </div>
   </div>
-
   <div class="dash-section">
     <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'clock' }) %> Vencimentos</h3>
     <div class="venc-grid">
@@ -92,7 +96,6 @@
       </div>
     </div>
   </div>
-
   <div class="dash-section">
     <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'money' }) %> Financeiro</h3>
     <div class="fin-grid">
@@ -104,7 +107,9 @@
         <span class="fin-label"><%- include('../partials/ui-icon', { name: 'calendar' }) %> Recebido no Mês</span>
         <strong class="fin-value"><%= formatMoney(stats.financeiro.recebidoMes) %></strong>
         <small class="<%= stats.financeiro.variacaoMes >= 0 ? 'pos' : 'neg' %>">
-          <%= stats.financeiro.variacaoMes >= 0 ? '↗' : '↘' %> <%= stats.financeiro.variacaoMes %>% vs mês anterior
+          <%= stats.financeiro.variacaoMes >= 0 ? '↗' : '↘' %>
+          <%= stats.financeiro.variacaoMes %>
+          % vs mês anterior
         </small>
       </div>
       <div class="fin-card">
@@ -118,7 +123,6 @@
       </div>
     </div>
   </div>
-
   <div class="dash-section">
     <div class="dash-section-row">
       <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'chart' }) %> Gráficos</h3>
@@ -139,7 +143,6 @@
       </div>
     </div>
   </div>
-
   <div class="dash-section dist-section">
     <div class="dist-section-head">
       <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'package' }) %> Distribuição</h3>
@@ -152,12 +155,13 @@
         </select>
       </form>
     </div>
-
     <div class="dist-grid">
       <div class="dist-card">
         <div class="dist-head spread">
           <span><%- include('../partials/ui-icon', { name: 'phone' }) %> Top Aplicativos</span>
-          <% if (topAplicativos.length) { %><span class="dist-total">Total: <strong><%= topAplicativos.reduce((a, x) => a + x.total, 0) %></strong></span><% } %>
+          <% if (topAplicativos.length) { %>
+            <span class="dist-total">Total: <strong><%= topAplicativos.reduce((a, x) => a + x.total, 0) %></strong></span>
+          <% } %>
         </div>
         <% if (topAplicativos.length) { %>
           <div class="bar-list">
@@ -169,14 +173,18 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'phone' }) %></div>Sem dados de aplicativos</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'phone' }) %></div>
+            Sem dados de aplicativos
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card">
         <div class="dist-head spread">
           <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Top Dispositivos</span>
-          <% if (topDispositivos.length) { %><span class="dist-total">Total: <strong><%= topDispositivos.reduce((a, d) => a + d.total, 0) %></strong></span><% } %>
+          <% if (topDispositivos.length) { %>
+            <span class="dist-total">Total: <strong><%= topDispositivos.reduce((a, d) => a + d.total, 0) %></strong></span>
+          <% } %>
         </div>
         <% if (topDispositivos.length) { %>
           <div class="bar-list">
@@ -188,10 +196,12 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>Sem dados de dispositivos</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
+            Sem dados de dispositivos
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card">
         <div class="dist-head spread">
           <span><%- include('../partials/ui-icon', { name: 'card' }) %> Formas de Pagamento</span>
@@ -207,10 +217,12 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'card' }) %></div>Sem transações registradas</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
+            Sem transações registradas
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card">
         <div class="dist-head spread">
           <span><%- include('../partials/ui-icon', { name: 'package' }) %> Distribuição de Planos</span>
@@ -226,10 +238,12 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'package' }) %></div>Sem dados de planos</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'package' }) %></div>
+            Sem dados de planos
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card">
         <div class="dist-head spread">
           <span><%- include('../partials/ui-icon', { name: 'monitor' }) %> Performance por Servidor</span>
@@ -247,9 +261,12 @@
                 <div class="perf-row-head">
                   <span class="perf-name"><%- include('../partials/ui-icon', { name: 'monitor' }) %> <%= s.servidor %> <em><%= s.total %> cli.</em></span>
                   <span class="perf-vals">
-                    <b>Fat.</b> <%= formatMoney(s.faturamento) %>
-                    <b>Custo</b> <%= formatMoney(s.custo) %>
-                    <b>Lucro</b> <%= formatMoney(s.lucro) %>
+                    <b>Fat.</b>
+                    <%= formatMoney(s.faturamento) %>
+                    <b>Custo</b>
+                    <%= formatMoney(s.custo) %>
+                    <b>Lucro</b>
+                    <%= formatMoney(s.lucro) %>
                     <span class="perf-margin <%= s.margem >= 0 ? 'pos' : 'neg' %>"><%= s.margem >= 0 ? '↗' : '↘' %> <%= s.margem %>%</span>
                   </span>
                 </div>
@@ -259,10 +276,12 @@
           </div>
           <div class="perf-legend"><span><i class="dot c-green"></i> Faturamento</span><span><i class="dot c-red"></i> Custo</span></div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>Sem dados de servidores</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
+            Sem dados de servidores
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card">
         <div class="dist-head"><%- include('../partials/ui-icon', { name: 'users' }) %> Top Indicações</div>
         <% if (indicacoes.length) { %>
@@ -275,10 +294,12 @@
             <% }) %>
           </div>
         <% } else { %>
-          <div class="dist-empty tall"><div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'users' }) %></div>Nenhuma indicação registrada</div>
+          <div class="dist-empty tall">
+            <div class="dist-empty-icon"><%- include('../partials/ui-icon', { name: 'users' }) %></div>
+            Nenhuma indicação registrada
+          </div>
         <% } %>
       </div>
-
       <div class="dist-card map-card">
         <div class="dist-head spread"><span>📍 Clientes por Estado</span><span class="dist-total">Total: <strong><%= estados.total %></strong></span></div>
         <div class="map-layout">
@@ -302,7 +323,6 @@
           </div>
         </div>
       </div>
-
       <div class="dist-card map-card">
         <div class="dist-head spread"><span>🌐 Clientes por País</span><span class="dist-total">Total: <strong><%= paises.total %></strong></span></div>
         <div class="map-layout">
@@ -326,7 +346,6 @@
           </div>
         </div>
       </div>
-
       <div class="dist-card span-2">
         <div class="dist-head"><%- include('../partials/ui-icon', { name: 'clock' }) %> Próximos vencimentos</div>
         <% if (proximos.length) { %>
@@ -347,7 +366,6 @@
     </div>
   </div>
 </div>
-
 <script data-nav-once src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>window.__dashData = <%- chart.replace(/</g, '\\u003c') %>;</script>
 <script src="/assets/js/dashboard-charts.js?v=188"></script>

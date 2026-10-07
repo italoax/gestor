@@ -1,6 +1,6 @@
 import { Router } from "express";
 import fs from "node:fs";
-import { execute, queryOne, queryRows } from "../db/mysql.js";
+import { execute, queryRows } from "../db/mysql.js";
 import { formatMoney, formatDateBr } from "../services/format.js";
 import { toNumber, toNullableString, boolField } from "../services/format.js";
 import { gerarDumpSql, listarBackups, caminhoBackup, rodarBackupAgendado } from "../services/backup.js";

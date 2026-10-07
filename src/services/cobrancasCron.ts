@@ -42,9 +42,6 @@ async function esperarEnvio(ms: number) {
   catch (error) { if (!shutdownSignal.signal.aborted) throw error; }
 }
 
-
-export function cronEstaRodando() { return cronRodando; }
-
 // Intervalo aleatório entre cada envio para reduzir o risco de bloqueio do WhatsApp.
 // Usa o min/max da própria regra (em segundos) se definidos; senão cai no padrão de WA_SEND_MIN/MAX_DELAY.
 function delayEntreEnvios(minOverride?: number | null, maxOverride?: number | null) {
@@ -355,15 +352,4 @@ function deveExecutarNoDia(dias: string | null, weekdayZeroBase: number) {
   const pareceOneBase = valores.every((dia) => dia >= 1 && dia <= 7);
   const weekdayOneBase = weekdayZeroBase === 0 ? 7 : weekdayZeroBase;
   return pareceOneBase ? valores.includes(weekdayOneBase) : valores.includes(weekdayZeroBase);
-}
-
-function periodoAlvoPorTipo(tipo: string, periodo: number) {
-  const tipoNormalizado = String(tipo ?? "").toLowerCase().trim();
-  const dias = Math.abs(Number(periodo) || 0);
-
-  if (tipoNormalizado === "vence hoje") return 0;
-  if (tipoNormalizado === "vencidos") return -dias;
-  if (tipoNormalizado === "vencimento") return dias;
-
-  return Number(periodo) || 0;
 }

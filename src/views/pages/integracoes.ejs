@@ -1,6 +1,5 @@
 <% const sigmas = integracoes.filter(i => i.tipo === 'sigma'); %>
 <div class="container page-integracoes" data-search-scope>
-
   <div class="integ-head">
     <div>
       <h2 class="section-title"><%- include('../partials/ui-icon', { name: 'link' }) %> Integrações</h2>
@@ -8,7 +7,6 @@
     </div>
     <button class="btn btn-primary open-integracao-modal" type="button"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração</button>
   </div>
-
   <div class="ui-summary ui-summary-2">
     <div class="cli-stat accent-green">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚙️' }) %></div>
@@ -19,10 +17,8 @@
       <div><strong><%= integracoes.length %></strong><span>Total</span></div>
     </div>
   </div>
-
   <div class="card integ-card">
     <h3 class="integ-card-title"><%- include('../partials/ui-icon', { name: 'settings' }) %> Integrações Sigma</h3>
-
     <% if (!sigmas.length) { %>
       <div class="integ-empty">
         <div class="integ-empty-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
@@ -48,8 +44,8 @@
                 <button class="btn btn-muted" type="submit" data-loading-text="Testando">🔌 Testar</button>
               </form>
               <button class="btn btn-muted edit-integracao" type="button"
-                data-id="<%= i.id %>" data-nome="<%= i.nome %>" data-api-url="<%= i.apiUrl %>"
-                data-username="<%= i.username %>" data-status="<%= i.status %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
+              data-id="<%= i.id %>" data-nome="<%= i.nome %>" data-api-url="<%= i.apiUrl %>"
+              data-username="<%= i.username %>" data-status="<%= i.status %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
               <form method="post" action="/integracoes" class="integ-inline delete-integracao" data-native-submit="1">
                 <%- csrfInput %>
                 <input type="hidden" name="action" value="delete_integracao">
@@ -63,7 +59,6 @@
     <% } %>
   </div>
 </div>
-
 <div class="modal-overlay" id="modal-add-integracao" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
@@ -76,18 +71,31 @@
       <input type="hidden" name="id" value="">
       <input type="hidden" name="tipo" value="sigma">
       <div class="form-grid">
-        <label class="field full"><span>Nome da integração *</span>
-          <input class="input" name="nome" placeholder="Ex: Sigma GENIAL" required></label>
-        <label class="field full"><span>URL do painel *</span>
+        <label class="field full">
+          <span>Nome da integração *</span>
+          <input class="input" name="nome" placeholder="Ex: Sigma GENIAL" required>
+        </label>
+        <label class="field full">
+          <span>URL do painel *</span>
           <input class="input" name="api_url" placeholder="https://dashgen.net" required>
-          <small>A URL do painel (ex.: https://dashgen.net). Uso a base dela pra chamar a API.</small></label>
-        <label class="field"><span>Usuário / e-mail *</span>
-          <input class="input" name="username" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required></label>
-        <label class="field"><span>Senha do painel</span>
+          <small>A URL do painel (ex.: https://dashgen.net). Uso a base dela pra chamar a API.</small>
+        </label>
+        <label class="field">
+          <span>Usuário / e-mail *</span>
+          <input class="input" name="username" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required>
+        </label>
+        <label class="field">
+          <span>Senha do painel</span>
           <input class="input" type="password" name="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
-          <small>No modo editar, deixe em branco para manter a senha atual.</small></label>
-        <label class="field full"><span>Status</span>
-          <select class="input" name="status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></label>
+          <small>No modo editar, deixe em branco para manter a senha atual.</small>
+        </label>
+        <label class="field full">
+          <span>Status</span>
+          <select class="input" name="status">
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+          </select>
+        </label>
       </div>
       <div class="form-alert integ-cf-note">⚠️ O painel fica atrás do Cloudflare. Se o teste retornar "bloqueado pelo Cloudflare", peça ao provedor para liberar (whitelist) o IP do seu servidor.</div>
     </form>
@@ -97,7 +105,6 @@
     </div>
   </div>
 </div>
-
 <style>
   .integ-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
   .integ-card { margin-top:16px; }
@@ -114,7 +121,6 @@
   .integ-danger { color:#ff6b6b; }
   .integ-cf-note { margin-top:10px; }
 </style>
-
 <script>
 (function () {
   var form = document.getElementById('modal-add-integracao-form');

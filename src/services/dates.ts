@@ -44,9 +44,3 @@ export function appWeekday(date = new Date()) {
   const parts = saoPauloParts(date);
   return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day))).getUTCDay();
 }
-
-// "YYYY-MM-DD HH:MM" no fuso de São Paulo, usado para deduplicar execuções no mesmo minuto.
-export function appMinuteKey(date = new Date()) {
-  const parts = saoPauloParts(date);
-  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
-}

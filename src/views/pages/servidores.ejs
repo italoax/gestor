@@ -5,7 +5,6 @@
   const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
 %>
 <div class="container page-servidores ui-catalog" data-search-scope data-search-singular="servidor" data-search-plural="servidores" data-search-empty="Nenhum servidor encontrado. Tente outra busca.">
-
   <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🗄️' }) %></div>
@@ -20,18 +19,17 @@
       <div><strong><%= totalClientes %></strong><span>Acessos nos servidores</span></div>
     </div>
   </div>
-
   <div class="ui-toolbar srv-toolbar">
     <input class="input srv-search" type="search" placeholder="Buscar servidor..." aria-label="Buscar servidor" autocomplete="off" data-search-input>
-
-  <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-servidor">
-    <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo servidor
-  </button>
-
+    <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-servidor">
+      <%- include('../partials/ui-icon', { name: 'plus' }) %>
+      Novo servidor
+    </button>
   </div>
-
-  <div class="ui-catalog-heading"><h2>Catálogo de servidores <span><%= servidores.length %></span></h2><p data-search-results role="status" aria-live="polite" hidden></p></div>
-
+  <div class="ui-catalog-heading">
+    <h2>Catálogo de servidores <span><%= servidores.length %></span></h2>
+    <p data-search-results role="status" aria-live="polite" hidden></p>
+  </div>
   <% if (!servidores.length) { %>
     <div class="cli-empty">
       <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '🗄️' }) %></div>
@@ -40,49 +38,52 @@
       <button class="btn btn-primary" type="button" data-open-modal="modal-add-servidor">+ Novo Servidor</button>
     </div>
   <% } else { %>
-  <div class="srv-grid">
-    <% servidores.forEach(s => {
-      // So renderizamos os campos que a UI realmente usa/edita. Campos legados
-      // (link_painel, cobranca_por_telas, integracao, renovacao_automatica,
-      // dispositivo_whatsapp, url_app_*, dns_*, url_api_*, epg, pix_*, url_renovacao)
-      // seguem existindo no schema — o backend simplesmente grava NULL/0 neles.
-      const editData = ` data-id="${s.id}" data-nome="${esc(s.nome)}"`
-        + ` data-creditos="${s.creditos}" data-valor="${s.valorCred}"`
-        + ` data-identificador="${esc(s.identificador)}" data-obs="${esc(s.observacaoServidor)}"`;
-    %>
-    <div class="srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>" id="servidor-<%= s.id %>" data-search-item data-search-text="<%= [s.nome, s.identificador, s.observacaoServidor].filter(Boolean).join(' ') %>">
-      <div class="srv-head">
-        <div class="srv-id">
-          <span class="srv-icon"><%- include('../partials/ui-icon', { name: '🗄️' }) %></span>
-          <div>
-            <strong><%= s.nome %></strong>
-            <% if (s.identificador) { %><small><%= s.identificador %></small><% } %>
+    <div class="srv-grid">
+      <% servidores.forEach(s => {
+        // So renderizamos os campos que a UI realmente usa/edita. Campos legados
+        // (link_painel, cobranca_por_telas, integracao, renovacao_automatica,
+        // dispositivo_whatsapp, url_app_*, dns_*, url_api_*, epg, pix_*, url_renovacao)
+        // seguem existindo no schema — o backend simplesmente grava NULL/0 neles.
+        const editData = ` data-id="${s.id}" data-nome="${esc(s.nome)}"`
+          + ` data-creditos="${s.creditos}" data-valor="${s.valorCred}"`
+          + ` data-identificador="${esc(s.identificador)}" data-obs="${esc(s.observacaoServidor)}"`;
+      %>
+        <div class="srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>" id="servidor-<%= s.id %>" data-search-item data-search-text="<%= [s.nome, s.identificador, s.observacaoServidor].filter(Boolean).join(' ') %>">
+          <div class="srv-head">
+            <div class="srv-id">
+              <span class="srv-icon"><%- include('../partials/ui-icon', { name: '🗄️' }) %></span>
+              <div>
+                <strong><%= s.nome %></strong>
+                <% if (s.identificador) { %>
+                  <small><%= s.identificador %></small>
+                <% } %>
+              </div>
+            </div>
+            <span class="srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
+          </div>
+          <div class="srv-stats">
+            <div class="srv-stat"><span>CRÉDITOS</span><strong class="srv-cred"><%= formatCredits(s.creditos) %></strong></div>
+            <div class="srv-stat"><span>CLIENTES</span><strong><%= s.clientesTotal %></strong></div>
+            <div class="srv-stat"><span>Custo por crédito</span><strong><%= formatMoney(s.valorCred) %></strong></div>
+          </div>
+          <% if (s.observacaoServidor) { %>
+            <p class="srv-note"><%= s.observacaoServidor %></p>
+          <% } %>
+          <div class="srv-actions">
+            <button class="srv-act edit-servidor srv-credit-action" type="button" data-credit-focus<%- editData %>><%- include('../partials/ui-icon', { name: 'money' }) %> Ajustar saldo</button>
+            <button class="srv-act edit-servidor" type="button"<%- editData %>><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
+            <form method="post" action="/servidores" class="action-form delete-servidor srv-act-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="delete_servidor">
+              <input type="hidden" name="id" value="<%= s.id %>">
+              <button class="srv-act danger" type="submit"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
+            </form>
           </div>
         </div>
-        <span class="srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
-      </div>
-      <div class="srv-stats">
-        <div class="srv-stat"><span>CRÉDITOS</span><strong class="srv-cred"><%= formatCredits(s.creditos) %></strong></div>
-        <div class="srv-stat"><span>CLIENTES</span><strong><%= s.clientesTotal %></strong></div>
-        <div class="srv-stat"><span>Custo por crédito</span><strong><%= formatMoney(s.valorCred) %></strong></div>
-      </div>
-      <% if (s.observacaoServidor) { %><p class="srv-note"><%= s.observacaoServidor %></p><% } %>
-      <div class="srv-actions">
-        <button class="srv-act edit-servidor srv-credit-action" type="button" data-credit-focus<%- editData %>><%- include('../partials/ui-icon', { name: 'money' }) %> Ajustar saldo</button>
-        <button class="srv-act edit-servidor" type="button"<%- editData %>><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
-        <form method="post" action="/servidores" class="action-form delete-servidor srv-act-form">
-          <%- csrfInput %>
-          <input type="hidden" name="action" value="delete_servidor">
-          <input type="hidden" name="id" value="<%= s.id %>">
-          <button class="srv-act danger" type="submit"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
-        </form>
-      </div>
+      <% }) %>
     </div>
-    <% }) %>
-  </div>
   <% } %>
 </div>
-
 <div class="modal-overlay" id="modal-add-servidor" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
