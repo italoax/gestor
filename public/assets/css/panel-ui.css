@@ -601,15 +601,15 @@
   .page-app .app-content { padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)); }
   .page-app .mobile-dock {
     position: fixed;
-    inset: auto 12px 0;
+    inset: auto 8px calc(6px + env(safe-area-inset-bottom, 0px));
     z-index: 120;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    gap: 2px;
     width: auto;
     max-width: 440px;
     margin-inline: auto;
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 4px;
     border: 1px solid var(--border);
     border-radius: 28px;
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
@@ -621,10 +621,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
-    min-height: 48px;
-    padding: 6px 2px;
+    min-height: 44px;
+    padding: 4px 2px;
     border: 0;
     border-radius: 22px;
     background: transparent;
@@ -635,9 +635,9 @@
     text-decoration: none;
     cursor: pointer;
   }
-  .mobile-dock > :is(a:hover, button:hover, .is-active, [aria-expanded="true"]) {
+  .mobile-dock > :is(.is-active, [aria-expanded="true"]) {
     color: var(--text);
-    background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    background: color-mix(in srgb, var(--text) 10%, var(--surface-2));
   }
-  .page-app .mobile-dock .ui-icon { width: 20px; height: 20px; }
+  .page-app .mobile-dock .ui-icon { width: 18px; height: 18px; }
 }
