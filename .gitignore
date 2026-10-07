@@ -1,5 +1,4 @@
 node_modules/
-dist/
 .env
 tokens/
 npm-debug.log*
@@ -16,7 +15,6 @@ sessions/
 *.tar
 
 .tmp-ui/
-*.tsbuildinfo
 
 # Testes mantidos somente neste computador
 /test/
