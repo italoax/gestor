@@ -5,7 +5,7 @@
 
 // Bump esse nome de cache sempre que mudar APP_SHELL ou os arquivos referenciados —
 // install dispara replace e velhos caches sao limpos no activate.
-const CACHE = 'gestor-v192';
+const CACHE = 'gestor-v193-logo-ixtv-2';
 // Página mostrada quando uma navegação acontece sem rede (app instalado offline).
 const OFFLINE_URL = '/offline.html';
 const APP_SHELL = [
@@ -17,14 +17,14 @@ const APP_SHELL = [
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
   '/assets/css/style.css?v=192',
-  '/assets/css/node-migration.css?v=192',
-  '/assets/css/modals.css?v=192',
-  '/assets/css/panel-ui.css?v=192',
+  '/assets/css/node-migration.css?v=194',
+  '/assets/css/modals.css?v=197',
+  '/assets/css/panel-ui.css?v=197',
   '/assets/css/visual-effects.css?v=192',
   '/assets/js/visual-effects.js?v=192',
-  '/assets/js/main.js?v=192',
+  '/assets/js/main.js?v=197',
   '/assets/js/navigation.js?v=192',
-  '/assets/js/app-shell.js?v=192',
+  '/assets/js/app-shell.js?v=194',
 ];
 
 self.addEventListener('install', (event) => {
