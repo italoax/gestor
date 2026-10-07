@@ -601,7 +601,7 @@
   .page-app .app-content { padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)); }
   .page-app .mobile-dock {
     position: fixed;
-    inset: auto 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    inset: auto 12px 0;
     z-index: 120;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -609,7 +609,7 @@
     width: auto;
     max-width: 440px;
     margin-inline: auto;
-    padding: 6px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     border: 1px solid var(--border);
     border-radius: 28px;
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);

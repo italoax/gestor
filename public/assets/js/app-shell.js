@@ -46,10 +46,11 @@
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') closeMobile();
   });
-  function updateDock() {
+  function updateDock(event) {
     closeMobile();
+    var path = event?.detail?.url ? new URL(event.detail.url, location.href).pathname : location.pathname;
     document.querySelectorAll('[data-dock-link]').forEach(function (link) {
-      var active = location.pathname === link.pathname || location.pathname.startsWith(link.pathname + '/');
+      var active = path === link.pathname || path.startsWith(link.pathname + '/');
       link.classList.toggle('is-active', active);
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
@@ -57,6 +58,8 @@
   }
   updateDock();
   document.addEventListener('gestor:navigated', updateDock);
+  document.addEventListener('gestor:navigation-start', updateDock);
+  document.addEventListener('gestor:navigation-finished', updateDock);
 
   var accountWrap = document.querySelector('[data-account-menu-wrap]');
   var accountToggle = document.querySelector('[data-account-menu-toggle]');
