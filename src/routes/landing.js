@@ -1,7 +1,7 @@
 import { Router } from 'express';
 export const landingRouter = Router();
 landingRouter.get('/ix-streaming', (_req, res) => {
-  res.redirect('/');
+  res.redirect(301, '/');
 });
 landingRouter.get('/', (_req, res) => {
   const phone = (process.env.IX_STREAMING_WHATSAPP ?? '5531982453768').replace(

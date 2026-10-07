@@ -105,6 +105,14 @@ app.use(compression());
 app.use(morgan(':method :status :response-time ms'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+// Apenas a pagina comercial deve aparecer nos resultados de busca.
+app.use((req, res, next) => {
+  if (!['/', '/ix-streaming', '/robots.txt', '/sitemap.xml'].includes(req.path) &&
+      !req.path.startsWith('/assets/') && !req.path.startsWith('/icons/')) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
+  next();
+});
 // Cache-busting via revalidação: o express.static manda ETag automaticamente.
 // `no-cache` no Cache-Control não significa "não cacheia" — significa "antes de
 // usar, pergunta ao servidor se mudou". Arquivo igual → 304 (zero bytes); arquivo
