@@ -24,9 +24,9 @@
       <meta name="csrf-token" content="<%= locals.csrfToken %>">
     <% } %>
     <link rel="stylesheet" href="/assets/css/style.css?v=192" />
-    <link rel="stylesheet" href="/assets/css/node-migration.css?v=193" />
+    <link rel="stylesheet" href="/assets/css/node-migration.css?v=194" />
     <link rel="stylesheet" href="/assets/css/modals.css?v=197" />
-    <link rel="stylesheet" href="/assets/css/panel-ui.css?v=193" />
+    <link rel="stylesheet" href="/assets/css/panel-ui.css?v=197" />
     <link rel="stylesheet" href="/assets/css/visual-effects.css?v=192" />
     <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
   </head>
@@ -43,6 +43,7 @@
       const menu = [
         { label: 'Dashboard', href: '/dashboard', icon: '📊' },
         { label: 'Clientes', href: '/clientes', icon: '👥' },
+        { label: 'Avisos', href: '/avisos', icon: 'alert' },
         { label: 'Transações', href: '/transacoes', icon: '🧾' },
         { label: 'Servidores', href: '/servidores', icon: '🖥️' },
         { label: 'Planos', href: '/planos', icon: '📦' },
@@ -86,7 +87,6 @@
         </aside>
         <div class="app-main">
           <header class="topbar2">
-            <button class="topbar-burger" type="button" data-sidebar-mobile aria-label="Abrir menu"><%- include('../partials/ui-icon', { name: 'menu' }) %></button>
             <div class="topbar2-title">
               <h1><%= title || 'Gestor' %></h1>
               <% if (typeof subtitle !== 'undefined' && subtitle) { %>
@@ -196,6 +196,12 @@
             <%- body %>
           </main>
         </div>
+        <nav class="mobile-dock" aria-label="Atalhos principais">
+          <a href="/dashboard" data-dock-link><%- include('../partials/ui-icon', { name: 'chart' }) %><span>Dashboard</span></a>
+          <a href="/clientes" data-dock-link><%- include('../partials/ui-icon', { name: 'users' }) %><span>Clientes</span></a>
+          <a href="/automacao" data-dock-link><%- include('../partials/ui-icon', { name: 'bolt' }) %><span>Automação</span></a>
+          <button type="button" data-sidebar-mobile aria-label="Abrir menu" aria-expanded="false"><%- include('../partials/ui-icon', { name: 'menu' }) %><span>Menu</span></button>
+        </nav>
         <div class="sidebar-backdrop" data-sidebar-backdrop></div>
       </div>
     <% } else { %>
@@ -205,7 +211,7 @@
       <template data-ui-icon="<%= name %>"><%- include('../partials/ui-icon', { name }) %></template>
     <% }) %>
     <script src="/assets/js/main.js?v=197"></script>
-    <script src="/assets/js/app-shell.js?v=193"></script>
+    <script src="/assets/js/app-shell.js?v=194"></script>
     <script src="/assets/js/navigation.js?v=192"></script>
     <script src="/assets/js/visual-effects.js?v=192"></script>
   </body>

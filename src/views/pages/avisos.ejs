@@ -1,0 +1,30 @@
+<%
+  const paineis = [
+    { nome: 'Painel Genial', url: 'https://dashgen.net/' },
+    { nome: 'Painel UniTV', url: 'https://panel-web.revenda.watch/' },
+    { nome: 'UniTV Web', url: 'https://www.unitvprime.vip/' },
+    { nome: 'Manager Apps', url: 'https://reseller.multi-player.app/' },
+  ];
+%>
+<div class="container page-avisos">
+  <div class="ui-catalog-heading">
+    <h2>Painéis e aplicativos <span><%= paineis.length %></span></h2>
+    <p class="muted">Acesse os painéis pelos atalhos abaixo.</p>
+  </div>
+  <div class="avisos-list avisos-paineis">
+    <% paineis.forEach(painel => { %>
+      <article class="aviso-card">
+        <div class="aviso-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
+        <div class="aviso-content">
+          <div class="aviso-heading"><h3><%= painel.nome %></h3></div>
+          <p><%= new URL(painel.url).hostname %></p>
+        </div>
+        <div class="aviso-actions">
+          <a class="btn btn-primary" href="<%= painel.url %>" target="_blank" rel="noopener noreferrer" aria-label="Abrir <%= painel.nome %> em nova aba">
+            <%- include('../partials/ui-icon', { name: 'link' }) %> Abrir painel
+          </a>
+        </div>
+      </article>
+    <% }) %>
+  </div>
+</div>

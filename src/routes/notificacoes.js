@@ -13,6 +13,12 @@ import {
   sincronizarAlertasCreditos,
 } from '../services/notificacoes.js';
 export const notificacoesRouter = Router();
+notificacoesRouter.get('/avisos', (_req, res) => {
+  res.render('pages/avisos', {
+    title: 'Avisos',
+    subtitle: 'Atalhos para seus painéis e aplicativos',
+  });
+});
 notificacoesRouter.post(
   '/pagamentos/:id/confirmar-renovacao',
   async (req, res, next) => {

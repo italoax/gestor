@@ -7,7 +7,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "node scripts/start-local.mjs --watch",
-    "build": "node scripts/check-js.mjs",
+    "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.mjs",
     "test:browser": "node test/navigation.browser.mjs",
     "start": "node src/server.js",

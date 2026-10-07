@@ -28,16 +28,35 @@
   } catch (e) {}
 
   // Menu lateral no mobile (overlay)
-  var burger = document.querySelector('[data-sidebar-mobile]');
+  var menuButtons = document.querySelectorAll('[data-sidebar-mobile]');
   var backdrop = document.querySelector('[data-sidebar-backdrop]');
-  function closeMobile() {
-    if (shell) shell.classList.remove('sidebar-open');
-  }
-  if (burger && shell)
-    burger.addEventListener('click', function () {
-      shell.classList.toggle('sidebar-open');
+  function setMobileMenu(open) {
+    if (shell) shell.classList.toggle('sidebar-open', open);
+    menuButtons.forEach(function (button) {
+      button.setAttribute('aria-expanded', String(open));
     });
+  }
+  function closeMobile() { setMobileMenu(false); }
+  menuButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (shell) setMobileMenu(!shell.classList.contains('sidebar-open'));
+    });
+  });
   if (backdrop) backdrop.addEventListener('click', closeMobile);
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeMobile();
+  });
+  function updateDock() {
+    closeMobile();
+    document.querySelectorAll('[data-dock-link]').forEach(function (link) {
+      var active = location.pathname === link.pathname || location.pathname.startsWith(link.pathname + '/');
+      link.classList.toggle('is-active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  updateDock();
+  document.addEventListener('gestor:navigated', updateDock);
 
   var accountWrap = document.querySelector('[data-account-menu-wrap]');
   var accountToggle = document.querySelector('[data-account-menu-toggle]');
