@@ -1588,7 +1588,6 @@
 .sidebar-brand-image img { position:absolute; width:145%; height:auto; max-width:none; left:50%; top:50%; transform:translate(-50%,-50%); }
 :root[data-theme="light"] .sidebar-brand-image { mix-blend-mode:multiply; }
 :root[data-theme="light"] .sidebar-brand-image img { filter:invert(1) hue-rotate(180deg); }
-.sidebar-collapsed .sidebar-brand-image { width:52px; border-radius:4px; }
 .sidebar-brand:hover .sidebar-logo {
   box-shadow: 0 6px 16px -4px color-mix(in srgb, #8843aa 60%, transparent),
               0 0 0 1px color-mix(in srgb, #8843aa 30%, transparent);
@@ -1633,13 +1632,6 @@
   background: var(--surface-2); text-decoration: none; color: var(--text);
 }
 .sidebar-telegram .sidebar-brand-text strong { font-size: 13px; }
-.sidebar-collapse {
-  display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 9px 12px; border-radius: 10px; cursor: pointer;
-  background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 13px;
-}
-.sidebar-collapse:hover { color: var(--text); }
-.sidebar-collapse .chev { transition: transform .2s; }
 .sidebar-logout-form { margin: 0; }
 .sidebar-logout {
   display: flex; align-items: center; gap: 10px; width: 100%;
@@ -1652,18 +1644,6 @@
   border-color: color-mix(in srgb, var(--red, #ef4444) 35%, var(--border));
 }
 .sidebar-logout .sidebar-ico { font-size: 15px; line-height: 1; }
-.sidebar-collapsed .sidebar-logout { justify-content: center; }
-
-.sidebar-collapsed { grid-template-columns: 76px 1fr; }
-.sidebar-collapsed .sidebar-label,
-.sidebar-collapsed .sidebar-badge,
-.sidebar-collapsed .sidebar-brand-text,
-.sidebar-collapsed .sidebar-telegram .sidebar-brand-text { display: none; }
-.sidebar-collapsed .sidebar-brand { justify-content: center; padding: 18px 0 16px; }
-.sidebar-collapsed .sidebar-link { justify-content: center; padding: 10px; }
-.sidebar-collapsed .sidebar-telegram { justify-content: center; }
-.sidebar-collapsed .sidebar-collapse { justify-content: center; }
-.sidebar-collapsed .sidebar-collapse .chev { transform: rotate(180deg); }
 
 .app-main { min-width: 0; display: flex; flex-direction: column; }
 .topbar2 {
@@ -1758,7 +1738,6 @@
   .sidebar-open .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 150; background: rgba(0,0,0,.5); }
   .topbar-burger { display: block; }
   .topbar-search { display: none; }
-  .sidebar-collapsed { grid-template-columns: 1fr; }
 }
 
 /* Topbar compacta no mobile — evita estouro horizontal (que desalinha modais) */
@@ -5297,10 +5276,9 @@ body { max-width: 100%; }
   }
 }
 
-/* Menu preso ao viewport; a coluna reservada acompanha o recolhimento. */
+/* Menu preso ao viewport; com largura completa no desktop. */
 @media (min-width:901px) {
   .app-shell > .sidebar { position:fixed; inset:0 auto 0 0; width:256px; height:100dvh; max-height:100dvh; z-index:100; }
-  .app-shell.sidebar-collapsed > .sidebar { width:76px; }
   .app-shell > .app-main { grid-column:2; }
   .app-shell > .sidebar .sidebar-nav { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 }

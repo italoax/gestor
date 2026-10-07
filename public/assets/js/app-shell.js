@@ -20,15 +20,8 @@
     return fetch(url, opts);
   };
 
-  // Recolher menu lateral (persistido)
-  try { if (localStorage.getItem('gestor-sidebar') === 'collapsed' && shell) shell.classList.add('sidebar-collapsed'); } catch (e) {}
-  var collapseBtn = document.querySelector('[data-sidebar-toggle]');
-  if (collapseBtn && shell) {
-    collapseBtn.addEventListener('click', function () {
-      var c = shell.classList.toggle('sidebar-collapsed');
-      try { localStorage.setItem('gestor-sidebar', c ? 'collapsed' : 'open'); } catch (e) {}
-    });
-  }
+  // Descarta a preferencia antiga de menu compacto.
+  try { localStorage.removeItem('gestor-sidebar'); } catch (e) {}
 
   // Menu lateral no mobile (overlay)
   var burger = document.querySelector('[data-sidebar-mobile]');

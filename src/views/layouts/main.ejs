@@ -22,9 +22,9 @@
   <meta name="apple-mobile-web-app-title" content="ixstreaming" />
   <% if (locals.csrfToken) { %><meta name="csrf-token" content="<%= locals.csrfToken %>"><% } %>
   <link rel="stylesheet" href="/assets/css/style.css?v=192" />
-  <link rel="stylesheet" href="/assets/css/node-migration.css?v=192" />
+  <link rel="stylesheet" href="/assets/css/node-migration.css?v=193" />
   <link rel="stylesheet" href="/assets/css/modals.css?v=197" />
-  <link rel="stylesheet" href="/assets/css/panel-ui.css?v=192" />
+  <link rel="stylesheet" href="/assets/css/panel-ui.css?v=193" />
   <link rel="stylesheet" href="/assets/css/visual-effects.css?v=192" />
   <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 </head>
@@ -41,7 +41,6 @@
   const menu = [
     { label: 'Dashboard', href: '/dashboard', icon: '📊' },
     { label: 'Clientes', href: '/clientes', icon: '👥' },
-    { label: 'Testes', href: '/em-breve/testes', icon: '🧪' },
     { label: 'Transações', href: '/transacoes', icon: '🧾' },
     { label: 'Servidores', href: '/servidores', icon: '🖥️' },
     { label: 'Planos', href: '/planos', icon: '📦' },
@@ -76,9 +75,6 @@
           <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: 'logout' }) %></span> <span class="sidebar-label">Sair</span>
         </button>
       </form>
-      <button class="sidebar-collapse" type="button" data-sidebar-toggle>
-        <span class="chev">‹</span> <span class="sidebar-label">Recolher</span>
-      </button>
     </div>
   </aside>
 
@@ -188,7 +184,7 @@
 <% } %>
 <% ['calendar', 'edit', 'plus'].forEach(name => { %><template data-ui-icon="<%= name %>"><%- include('../partials/ui-icon', { name }) %></template><% }) %>
 <script src="/assets/js/main.js?v=197"></script>
-<script src="/assets/js/app-shell.js?v=192"></script>
+<script src="/assets/js/app-shell.js?v=193"></script>
 <script src="/assets/js/navigation.js?v=192"></script>
 <script src="/assets/js/visual-effects.js?v=192"></script>
 </body>
