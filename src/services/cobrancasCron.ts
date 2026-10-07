@@ -1,8 +1,11 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import { queryRows, queryOne, execute } from "../db/mysql.js";
+import { queryRows, queryOne, execute, withTransaction } from "../db/mysql.js";
 import { env } from "../config/env.js";
 import { appHhmm, appNowSql, appTodayIso, appWeekday } from "./dates.js";
 import { enviarMensagemModeloComRetry, verificarConexaoSessao } from "./whatsapp.js";
+import { ensureCobrancasEnviosSchema } from '../db/cobrancasEnviosSchema.js';
+import { consultaDestinatariosCobranca, agruparAvisosCobranca, contextoAvisoCobranca, regraPorVencimento, mensagemCobrancaPorAcesso } from './cobrancaDestinatarios.js';
+import type { PoolConnection, ResultSetHeader } from 'mysql2/promise';
 import { getPixConfig } from "./pixConfig.js";
 import { createLogger } from "./logger.js";
 import type { RowDataPacket } from "mysql2";
@@ -16,7 +19,7 @@ interface CobrancaAutoRow extends RowDataPacket {
   filtroArquivados: string | null;
   rodapeAntiban: number; envioLotes: number; loteTamanho: number | null; lotePausa: number | null;
 }
-interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; user: string | null; senha: string | null; pagamentoToken: string | null; }
+interface ClienteRow extends RowDataPacket { id: number; nome: string; telefone: string; vencimento: Date | string; valor: number; plano: string; servidor: string; user: string | null; senha: string | null; pagamentoToken: string | null; acessoChave?: string; temMultiplosAcessos?: number; }
 interface EnvioIdRow extends RowDataPacket { id: number; }
 
 let timer: NodeJS.Timeout | null = null;
@@ -38,7 +41,7 @@ async function esperarEnvio(ms: number) {
   try { await sleep(ms, undefined, { signal: shutdownSignal.signal }); }
   catch (error) { if (!shutdownSignal.signal.aborted) throw error; }
 }
-let enviosTableReady: Promise<void> | null = null;
+
 
 export function cronEstaRodando() { return cronRodando; }
 
@@ -54,33 +57,6 @@ function delayEntreEnvios(minOverride?: number | null, maxOverride?: number | nu
   const minMs = minSec * 1_000;
   const maxMs = maxSec * 1_000;
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
-}
-
-// Monta a consulta de clientes-alvo conforme o tipo do gatilho + filtros opcionais da regra.
-function montarConsultaClientes(cobranca: CobrancaAutoRow, today: string) {
-  const tipo = String(cobranca.tipo ?? "").toLowerCase().trim();
-  const params: Record<string, unknown> = { userId: cobranca.userId, today };
-  // Arquivados são filtrados pelo filtroArquivados da regra (default: só não-arquivados).
-  let where = "user_id = :userId AND status = 'Ativo'";
-  const filtroArquivados = String(cobranca.filtroArquivados ?? "").trim().toLowerCase();
-  if (filtroArquivados === "arquivado") where += " AND arquivado = 1";
-  else if (filtroArquivados !== "todos") where += " AND arquivado = 0";
-  if (tipo === "todos") {
-    // Toda a base ativa (sem filtro de data).
-  } else if (tipo === "apos cadastro") {
-    // created_at é TIMESTAMP em UTC (sessão MySQL forçada para UTC). Converte para
-    // SP antes de extrair a data, senão clientes cadastrados depois das 21h SP eram
-    // contados no dia seguinte (UTC já virou).
-    where += " AND DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro";
-    params.periodoCadastro = Math.abs(Number(cobranca.periodo) || 0);
-  } else {
-    where += " AND DATEDIFF(vencimento, :today) = :periodoAlvo";
-    params.periodoAlvo = periodoAlvoPorTipo(cobranca.tipo, cobranca.periodo);
-  }
-  if (cobranca.filtroServidor) { where += " AND servidor = :filtroServidor"; params.filtroServidor = cobranca.filtroServidor; }
-  if (cobranca.filtroPlano) { where += " AND plano = :filtroPlano"; params.filtroPlano = cobranca.filtroPlano; }
-  // Inclui user/senha para que templates com {usuario}/{senha}/{user} não saiam em branco.
-  return { sql: `SELECT id, nome, telefone, vencimento, valor, plano, servidor, user, senha, pagamento_token AS pagamentoToken FROM clientes WHERE ${where}`, params };
 }
 
 export function startCobrancasCron() {
@@ -126,8 +102,8 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
     if (cobranca.horaEnvio && hhmm < String(cobranca.horaEnvio).slice(0, 5)) continue;
     if (!deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
     if (cobranca.jaRodouHoje) continue;
-    const { sql, params } = montarConsultaClientes(cobranca, appTodayIso(now));
-    const clientes = await queryRows<ClienteRow>(sql, params);
+    const { from, params } = consultaDestinatariosCobranca(cobranca.userId, cobranca, appTodayIso(now));
+    const clientes = agruparAvisosCobranca(await queryRows<ClienteRow>(`SELECT * ${from} ORDER BY id, acessoChave = 'principal' DESC`, params), cobranca);
     // Sessão do WhatsApp = dispositivo principal do usuário (não o servidor do cliente).
     const sessaoWa = (await queryRows<RowDataPacket & { sessao: string }>(
       "SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1",
@@ -145,7 +121,7 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
     let enviadosNestaCobranca = 0;
     let falhasSeguidas = 0;
     let circuitBreaker = false;
-    for (const cliente of clientes) {
+    for (const grupo of clientes) {
       if (shutdownSignal.signal.aborted) return { skipped: true };
 
       // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
@@ -159,8 +135,10 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
         }
       }
       if (shutdownSignal.signal.aborted) return { skipped: true };
-      const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
-      if (!reservaId) continue;
+      const reservados = await reservarGrupoCobranca(cobranca, grupo.acessosCobranca, now);
+      if (!reservados.length) continue;
+      const acessos = reservados.map(r => r.cliente);
+      const cliente = { ...contextoAvisoCobranca(acessos), acessosCobranca: acessos };
       enviadosNestaCobranca += 1;
 
       // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
@@ -168,11 +146,11 @@ async function executarCobrancasAutomaticasInterno(): Promise<{ skipped?: boolea
       const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
 
       const result = await enviarMensagemModeloComRetry(sessaoWa, cliente, {
-        mensagem: mensagemBase,
+        mensagem: regraPorVencimento(cobranca) ? mensagemCobrancaPorAcesso(mensagemBase, cliente) : mensagemBase,
         mediaTipo: cobranca.mediaTipo,
         mediaPath: cobranca.mediaPath,
       }, undefined, undefined, pixCfg);
-      await finalizarEnvioCobranca(reservaId, result.ok, result.error);
+      await finalizarGrupoCobranca(reservados.map(r => r.id), result.ok, result.error);
 
       // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
       // Pausa a regra (status 'Pausada' não bate no WHERE do cron) pra não
@@ -220,8 +198,8 @@ export async function dispararRegraManual(userId: number, regraId: number): Prom
   if (!cobranca) return { ok: false, error: "Regra não encontrada." };
 
   const now = new Date();
-  const { sql, params } = montarConsultaClientes(cobranca, appTodayIso(now));
-  const clientes = await queryRows<ClienteRow>(sql, params);
+  const { from, params } = consultaDestinatariosCobranca(userId, cobranca, appTodayIso(now));
+  const clientes = agruparAvisosCobranca(await queryRows<ClienteRow>(`SELECT * ${from} ORDER BY id, acessoChave = 'principal' DESC`, params), cobranca);
   const sessaoWa = (await queryRows<RowDataPacket & { sessao: string }>(
     "SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1",
     { userId },
@@ -241,9 +219,11 @@ export async function dispararRegraManual(userId: number, regraId: number): Prom
   let enviadosNestaCobranca = 0;
   let falhasSeguidas = 0;
   let circuitBreaker = false;
-  for (const cliente of clientes) {
-    const reservaId = await reservarEnvioCobranca(cobranca.id, cliente.id, now);
-    if (!reservaId) continue;
+  for (const grupo of clientes) {
+    const reservados = await reservarGrupoCobranca(cobranca, grupo.acessosCobranca, now);
+    if (!reservados.length) continue;
+    const acessos = reservados.map(r => r.cliente);
+    const cliente = { ...contextoAvisoCobranca(acessos), acessosCobranca: acessos };
 
     if (tentativasNestaCobranca > 0) await sleep(delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay));
     if (cobranca.envioLotes && tentativasNestaCobranca > 0) {
@@ -257,11 +237,11 @@ export async function dispararRegraManual(userId: number, regraId: number): Prom
 
     const mensagemBase = cobranca.mensagem || "Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.";
     const result = await enviarMensagemModeloComRetry(sessaoWa, cliente, {
-      mensagem: mensagemBase,
+      mensagem: regraPorVencimento(cobranca) ? mensagemCobrancaPorAcesso(mensagemBase, cliente) : mensagemBase,
       mediaTipo: cobranca.mediaTipo,
       mediaPath: cobranca.mediaPath,
     }, undefined, undefined, pixCfg);
-    await finalizarEnvioCobranca(reservaId, result.ok, result.error);
+    await finalizarGrupoCobranca(reservados.map(r => r.id), result.ok, result.error);
 
     if (result.ok) {
       enviadosNestaCobranca += 1;
@@ -283,51 +263,67 @@ export async function dispararRegraManual(userId: number, regraId: number): Prom
   };
 }
 
-export async function ensureCobrancasEnviosTable() {
-  if (!enviosTableReady) {
-    enviosTableReady = execute(`CREATE TABLE IF NOT EXISTS cobrancas_envios (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      cobranca_id INT NOT NULL,
-      cliente_id INT NOT NULL,
-      data_envio DATE NOT NULL,
-      status VARCHAR(20) NOT NULL DEFAULT 'pendente',
-      erro TEXT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_cobranca_cliente_data (cobranca_id, cliente_id, data_envio),
-      KEY idx_cobrancas_envios_cliente (cliente_id),
-      KEY idx_cobrancas_envios_status (status)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`).then(() => undefined);
-  }
-  return enviosTableReady;
+async function reservarGrupoCobranca(cobranca: CobrancaAutoRow, clientes: ClienteRow[], now: Date) {
+  const reservar = async (conn?: PoolConnection) => {
+    const reservas: { id: number; cliente: ClienteRow }[] = [];
+    for (const cliente of clientes) {
+      const chave = regraPorVencimento(cobranca) ? cliente.acessoChave || 'principal' : 'principal';
+      const id = await reservarEnvioCobranca(cobranca.id, cliente.id, now, chave, conn);
+      if (id) reservas.push({ id, cliente });
+    }
+    return reservas;
+  };
+  if (clientes.length === 1) return reservar();
+  // Reserva todos os acessos juntos antes do envio, inclusive em disparos simultâneos.
+  return withTransaction(async conn => {
+    const [rows] = await conn.query<RowDataPacket[]>('SELECT id FROM clientes WHERE id = :id AND user_id = :userId FOR UPDATE', { id: clientes[0].id, userId: cobranca.userId });
+    if (!rows.length) return [];
+    return reservar(conn);
+  });
 }
 
-export async function reservarEnvioCobranca(cobrancaId: number, clienteId: number, now = new Date()) {
+export async function ensureCobrancasEnviosTable() {
+  await ensureCobrancasEnviosSchema();
+}
+
+export async function reservarEnvioCobranca(cobrancaId: number, clienteId: number, now = new Date(), acessoChave = 'principal', conn?: PoolConnection) {
   await ensureCobrancasEnviosTable();
   const dataEnvio = appTodayIso(now);
-  const insert = await execute(
-    `INSERT IGNORE INTO cobrancas_envios (cobranca_id, cliente_id, data_envio, status)
-     VALUES (:cobrancaId, :clienteId, :dataEnvio, 'pendente')`,
-    { cobrancaId, clienteId, dataEnvio },
+  const executar = conn ? async (sql: string, params: Record<string, string | number>) => (await conn.execute<ResultSetHeader>(sql, params))[0] : execute;
+  const buscar = conn ? async (sql: string, params: Record<string, string | number>) => (await conn.query<EnvioIdRow[]>(sql, params))[0][0] : queryOne<EnvioIdRow>;
+  const insert = await executar(
+    `INSERT IGNORE INTO cobrancas_envios (cobranca_id, cliente_id, acesso_chave, data_envio, status)
+     VALUES (:cobrancaId, :clienteId, :acessoChave, :dataEnvio, 'pendente')`,
+    { cobrancaId, clienteId, acessoChave, dataEnvio },
   );
   if (insert.affectedRows > 0) return insert.insertId;
 
   // Já houve tentativa hoje: só re-tenta se a anterior falhou (status 'erro').
   // Nunca reenvia para quem já recebeu ('enviado').
-  const retry = await execute(
+  const retry = await executar(
     `UPDATE cobrancas_envios SET status = 'pendente', erro = NULL
-      WHERE cobranca_id = :cobrancaId AND cliente_id = :clienteId
+      WHERE cobranca_id = :cobrancaId AND cliente_id = :clienteId AND acesso_chave = :acessoChave
         AND data_envio = :dataEnvio AND status = 'erro'`,
-    { cobrancaId, clienteId, dataEnvio },
+    { cobrancaId, clienteId, acessoChave, dataEnvio },
   );
   if (retry.affectedRows === 0) return 0;
 
-  const row = await queryOne<EnvioIdRow>(
+  const row = await buscar(
     `SELECT id FROM cobrancas_envios
-      WHERE cobranca_id = :cobrancaId AND cliente_id = :clienteId AND data_envio = :dataEnvio LIMIT 1`,
-    { cobrancaId, clienteId, dataEnvio },
+      WHERE cobranca_id = :cobrancaId AND cliente_id = :clienteId AND acesso_chave = :acessoChave AND data_envio = :dataEnvio LIMIT 1`,
+    { cobrancaId, clienteId, acessoChave, dataEnvio },
   );
   return row?.id ?? 0;
+}
+
+async function finalizarGrupoCobranca(ids: number[], enviado: boolean, erro?: string) {
+  if (ids.length === 1) return finalizarEnvioCobranca(ids[0], enviado, erro);
+  const params: Record<string, string | number | null> = {
+    status: enviado ? 'enviado' : 'erro',
+    erro: enviado ? null : String(erro || 'Falha ao enviar mensagem').slice(0, 2000),
+  };
+  const placeholders = ids.map((id, i) => { params['id' + i] = id; return ':id' + i; });
+  await execute('UPDATE cobrancas_envios SET status = :status, erro = :erro WHERE id IN (' + placeholders.join(',') + ')', params);
 }
 
 export async function finalizarEnvioCobranca(reservaId: number, enviado: boolean, erro?: string) {
@@ -346,6 +342,7 @@ export async function finalizarEnvioCobranca(reservaId: number, enviado: boolean
 function valoresDiasSemana(dias: string | null) {
   return String(dias ?? "")
     .split(",")
+    .filter((item) => item.trim() !== '')
     .map((item) => Number(item.trim()))
     .filter((item) => Number.isInteger(item));
 }

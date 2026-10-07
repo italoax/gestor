@@ -20,7 +20,8 @@
     </div>
   </div>
 
-  <div class="ui-toolbar ui-toolbar-actions">
+  <div class="ui-toolbar plano-toolbar">
+    <input class="input" type="search" placeholder="Buscar plano..." aria-label="Buscar plano" autocomplete="off" data-search-input>
 
   <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-plano">
     <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo plano
@@ -40,24 +41,24 @@
   <% } else { %>
   <div class="plano-grid">
     <% planos.forEach(p => { %>
-    <div class="plano-card" data-search-item>
+    <div class="plano-card <%= p.ativo ? '' : 'plano-inativo' %>" data-search-item data-search-text="<%= [p.nome, p.observacao, p.ativo ? 'Ativo' : 'Inativo'].filter(Boolean).join(' ') %>">
       <div class="plano-head">
         <strong><%= p.nome %></strong>
         <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
-      <div class="plano-meta">
-        <span><%- include('../partials/ui-icon', { name: 'calendar' }) %> <%= p.periodo %> <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : p.tipo %></span>
-        <span class="plano-cred"><%- include('../partials/ui-icon', { name: 'money' }) %> <%= Number(p.creditos || 0) %> crédito(s)</span>
+      <div class="plano-metrics">
+        <div><span>Duração</span><strong><%= p.periodo %> <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : 'meses' %></strong></div>
+        <div><span>Créditos por renovação</span><strong class="plano-cred"><%= Number(p.creditos || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) %></strong></div>
+        <div><span>Clientes ativos</span><strong><%= p.clientes || 0 %></strong></div>
       </div>
-      <p class="plano-desc"><%= p.observacao || 'Sem descrição.' %></p>
-      <div class="plano-clients"><%- include('../partials/ui-icon', { name: 'users' }) %> <%= p.clientes || 0 %> clientes ativos</div>
+      <% if (p.observacao) { %><p class="plano-desc"><%= p.observacao %></p><% } %>
       <div class="plano-actions">
         <button class="btn btn-muted plano-edit edit-plano" type="button" data-id="<%= p.id %>" data-nome="<%= p.nome %>" data-tipo="<%= p.tipo %>" data-periodo="<%= p.periodo %>" data-observacao="<%= p.observacao || '' %>" data-creditos="<%= Number(p.creditos || 0) %>" data-ativo="<%= p.ativo ? 1 : 0 %>" data-sigma-package-id="<%= p.sigmaPackageId || '' %>" data-sigma-connections="<%= p.sigmaConnections || 1 %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
         <form method="post" action="/planos" class="action-form delete-plano plano-del-form">
           <%- csrfInput %>
           <input type="hidden" name="action" value="delete_plano">
           <input type="hidden" name="id" value="<%= p.id %>">
-          <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
+          <button class="cli-ico-btn danger" type="submit" title="Excluir plano"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
         </form>
       </div>
     </div>

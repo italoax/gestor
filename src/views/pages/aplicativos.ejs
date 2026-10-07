@@ -15,7 +15,8 @@
     </div>
   </div>
 
-  <div class="ui-toolbar ui-toolbar-actions">
+  <div class="ui-toolbar app-toolbar">
+    <input class="input" type="search" placeholder="Buscar aplicativo..." aria-label="Buscar aplicativo" autocomplete="off" data-search-input>
 
     <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-aplicativo">
       <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo aplicativo
@@ -35,24 +36,24 @@
   <div class="disp-grid">
     <% aplicativos.forEach(a => { %>
     <% const ativo = String(a.status) !== 'Inativo'; %>
-    <div class="disp-card app-card" data-search-item data-search-text="<%= a.nome %> <%= a.descricao || '' %>">
+    <div class="disp-card app-card <%= ativo ? '' : 'app-inativo' %>" data-search-item data-search-text="<%= a.nome %> <%= a.descricao || '' %> <%= ativo ? 'Ativo' : 'Inativo' %>">
       
       <div class="disp-card-top">
         <span class="disp-ico"><%- include('../partials/ui-icon', { name: '🗓️' }) %></span>
         <div class="disp-info">
           <strong><%= a.nome %></strong>
         </div>
-      </div>
-      <% if (a.descricao) { %><p class="app-desc"><%= a.descricao %></p><% } %>
-      <div class="app-valor"><%= Number(a.valorRenovacao) > 0 ? formatMoney(a.valorRenovacao) : 'Sem valor definido' %></div>
-      <div class="disp-actions">
         <span class="ui-status <%= ativo ? 'is-active' : '' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+      </div>
+      <div class="app-valor"><span>Valor de renovação</span><strong><%= Number(a.valorRenovacao) > 0 ? formatMoney(a.valorRenovacao) : 'Não definido' %></strong></div>
+      <% if (a.descricao) { %><p class="app-desc"><%= a.descricao %></p><% } %>
+      <div class="disp-actions">
         <button class="btn btn-muted disp-edit edit-aplicativo" type="button" data-id="<%= a.id %>" data-nome="<%= a.nome %>" data-descricao="<%= a.descricao || '' %>" data-valor="<%= Number(a.valorRenovacao) %>" data-status="<%= ativo ? 'Ativo' : 'Inativo' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
         <form method="post" action="/aplicativos" class="action-form disp-del-form">
           <%- csrfInput %>
           <input type="hidden" name="action" value="delete_aplicativo">
           <input type="hidden" name="id" value="<%= a.id %>">
-          <button class="cli-ico-btn danger" type="submit" title="Apagar"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
+          <button class="cli-ico-btn danger" type="submit" title="Excluir aplicativo"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
         </form>
       </div>
     </div>

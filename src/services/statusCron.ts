@@ -3,6 +3,7 @@ import { execute, queryRows } from "../db/mysql.js";
 import { env } from "../config/env.js";
 import { postarStatus } from "./whatsapp.js";
 import { notificar } from "./notificacoes.js";
+import { removerStatusExpirados } from "./statusRetention.js";
 import type { RowDataPacket } from "mysql2";
 
 interface AgendadoRow extends RowDataPacket {
@@ -43,6 +44,7 @@ export async function executarAgendados(): Promise<{ skipped?: boolean; postados
   if (rodando) return { skipped: true };
   rodando = true;
   try {
+    await removerStatusExpirados();
     // Pega todos os agendados vencidos (agendado_para <= NOW). Faz JOIN pra trazer
     // a sessão WhatsApp principal do dono junto, evitando 2 queries por linha.
     const due = await queryRows<AgendadoRow>(

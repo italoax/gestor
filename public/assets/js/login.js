@@ -1,6 +1,15 @@
 (() => {
   const form = document.querySelector('.login-form');
   if (!form) return;
+  const password = form.querySelector('[name="password"]');
+  const toggle = form.querySelector('[data-login-password-toggle]');
+  toggle?.addEventListener('click', () => {
+    const show = password.type === 'password';
+    password.type = show ? 'text' : 'password';
+    toggle.textContent = show ? 'Ocultar' : 'Mostrar';
+    toggle.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+    toggle.setAttribute('aria-pressed', String(show));
+  });
   let busy = false;
   const button = form.querySelector('button[type="submit"]');
   const original = button?.innerHTML;

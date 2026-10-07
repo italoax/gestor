@@ -2,9 +2,8 @@
   // Catálogo visual + textos de ajuda por provedor — fica num único objeto
   // pra manter os modais consistentes.
   const PROV_INFO = {
-    // O icone vem do favicon real do site de cada provedor, servido pelo
-    // proxy do Google (sem auth). Assim aparece o logo oficial que cada
-    // empresa coloca no proprio site, sem precisar embutir nada.
+    // Os ícones são locais, evitando imagens quebradas quando o provedor
+    // ou um serviço externo de favicons estiver indisponível.
     mercadopago: {
       cor: '#00b1ea',
       dominio: 'mercadopago.com.br',
@@ -58,7 +57,6 @@
       ],
     },
   };
-  const iconUrl = (dominio) => `https://www.google.com/s2/favicons?sz=64&domain=${dominio}`;
 %>
 <%
   const totalProvedores = providers.length;
@@ -66,6 +64,7 @@
   const configuradosCount = providers.filter(p => credPorProvider[p] && Object.keys(credPorProvider[p]).length > 0).length;
 %>
 <div class="container page-integracao-pag">
+  <div class="ui-settings-grid">
   <section class="card ui-settings-card">
     <h2>Receber pagamentos por QR Code PIX</h2>
     <p>Conecte sua conta de pagamento para gerar QR Code e PIX Copia e Cola nos links dos clientes.</p>
@@ -99,6 +98,7 @@
     </form>
   </section>
 
+  </div>
   <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '💳' }) %></div>
@@ -131,7 +131,7 @@
     %>
       <div class="int-pag-card <%= ativo ? 'is-active' : '' %>" style="--card-accent: <%= info.cor %>;">
         <div class="int-pag-card-head">
-          <div class="int-pag-ico"><img src="<%= iconUrl(info.dominio) %>" alt="<%= providerNomes[p] %>" loading="lazy" referrerpolicy="no-referrer"></div>
+          <div class="int-pag-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
           <div class="int-pag-card-info">
             <strong><%= providerNomes[p] %></strong>
             <% if (ativo) { %>
@@ -165,10 +165,10 @@
 <div class="modal-overlay" id="modal-prov-<%= p %>" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3><span class="int-pag-modal-ico"><img src="<%= iconUrl(info.dominio) %>" alt="<%= providerNomes[p] %>" referrerpolicy="no-referrer"></span> <%= providerNomes[p] %></h3>
+      <h3><span class="int-pag-modal-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></span> <%= providerNomes[p] %></h3>
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
-    <form method="post" action="/integracao-pagamento" class="modal-body">
+    <form method="post" action="/integracao-pagamento" class="modal-body" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       <%- csrfInput %>
       <input type="hidden" name="provider" value="<%= p %>">
       <p class="muted" style="margin-top:0; font-size:13px;"><%- info.ajuda %></p>
@@ -189,7 +189,7 @@
                 <% }) %>
               </select>
             <% } else { %>
-              <input class="input" type="password" name="creds_<%= p %>_<%= c.name %>" placeholder="<%= c.placeholder || '' %>" value="<%= (credPorProvider[p] || {})[c.name] || '' %>" autocomplete="new-password">
+              <input class="input" type="password" name="creds_<%= p %>_<%= c.name %>" placeholder="<%= c.placeholder || '' %>" value="<%= (credPorProvider[p] || {})[c.name] || '' %>" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
             <% } %>
           </label>
         <% }) %>

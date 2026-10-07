@@ -68,6 +68,13 @@
         <div class="pay-info-row"><span>Vencimento atual</span><strong><%= vencimentoFormatado %><% if (cliente.horaVencimento) { %> às <%= String(cliente.horaVencimento).slice(0,5) %><% } %></strong></div>
       </div>
 
+      <% if (locals.escolhas?.length > 1) { %>
+      <label style="display:grid;gap:8px;margin:16px 0">Quais servidores deseja renovar?
+        <select id="pay-selecao" style="width:100%;min-height:48px;padding:12px;border-radius:10px">
+        <% escolhas.forEach(grupo => { %><option value="<%= grupo.selecao %>" data-opcoes="<%= JSON.stringify(grupo.opcoes) %>" <%= grupo.selecao === selecao ? 'selected' : '' %>><%= grupo.label %></option><% }) %>
+        </select>
+      </label>
+      <% } %>
       <label style="display:grid;gap:8px;margin:16px 0">Por quanto tempo deseja renovar?
         <select id="pay-periodos" style="width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:16px">
           <% (locals.opcoesRenovacao || [{ periodos: 1, label: '1 período do plano', valor: Number(cliente.valor) || 0 }]).forEach(opcao => { %><option value="<%= opcao.periodos %>" data-valor="<%= opcao.valor %>" <%= opcao.periodos === (Number(locals.periodosSelecionados) || 1) ? 'selected' : '' %>><%= opcao.label %></option><% }) %>
@@ -105,6 +112,16 @@
 
   const btn = document.getElementById('pay-btn');
   const periodos = document.getElementById('pay-periodos');
+  const selecao = document.getElementById('pay-selecao');
+  selecao?.addEventListener('change', () => {
+    const opcoes = JSON.parse(selecao.selectedOptions[0].dataset.opcoes);
+    periodos.replaceChildren(...opcoes.map(opcao => {
+      const option = new Option(opcao.label, opcao.periodos);
+      option.dataset.valor = opcao.valor;
+      return option;
+    }));
+    periodos.dispatchEvent(new Event('change'));
+  });
   periodos.addEventListener('change', () => {
     clearInterval(pollTimer); pollTimer = null;
     pagamentoId = null; qrTextInicial = null; qrBase64Inicial = null;
@@ -126,6 +143,7 @@
     box.classList.add('on');
     btn.style.display = 'none';
     periodos.disabled = true;
+    if (selecao) selecao.disabled = true;
   }
 
   function comecarPolling() {
@@ -156,12 +174,14 @@
     }
     btn.disabled = true;
     periodos.disabled = true;
+    if (selecao) selecao.disabled = true;
     btn.innerHTML = '<span class="pay-spinner"></span>Gerando...';
     try {
-      const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value) }) });
+      const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value), selecao: selecao?.value }) });
       const j = await r.json();
       if (!j.ok) {
         periodos.disabled = false;
+        if (selecao) selecao.disabled = false;
         btn.disabled = false;
         btn.textContent = '📱 Gerar código PIX';
         alert(j.error || 'Falha ao gerar pagamento.');
@@ -172,6 +192,7 @@
       comecarPolling();
     } catch (e) {
       periodos.disabled = false;
+        if (selecao) selecao.disabled = false;
       btn.disabled = false;
       btn.textContent = '📱 Gerar código PIX';
       alert('Erro ao gerar pagamento. Tente novamente.');

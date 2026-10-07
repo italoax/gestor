@@ -14,7 +14,12 @@ async function propagarRenomeacao(
 ) {
   if (!nomeAntigo || !nomeNovo || nomeAntigo === nomeNovo) return;
   await execute(
-    `UPDATE clientes SET \`${campo}\` = :novo WHERE user_id = :userId AND \`${campo}\` = :antigo`,
+    campo === 'plano' || campo === 'servidor'
+      ? `UPDATE clientes SET \`${campo}\` = CASE WHEN \`${campo}\` = :antigo THEN :novo ELSE \`${campo}\` END,
+          plano_adicional = CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${campo}')) = :antigo
+            THEN JSON_SET(plano_adicional, '$.${campo}', :novo) ELSE plano_adicional END
+         WHERE user_id = :userId AND (\`${campo}\` = :antigo OR JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${campo}')) = :antigo)`
+      : `UPDATE clientes SET \`${campo}\` = :novo WHERE user_id = :userId AND \`${campo}\` = :antigo`,
     { userId, antigo: nomeAntigo, novo: nomeNovo },
   );
   if (campo === "plano" || campo === "servidor") {
@@ -140,7 +145,7 @@ crudRouter.post("/planos", async (req, res, next) => {
     }
     if (action === "delete_plano") {
       const vinculado = await queryOne<RowDataPacket>(
-        "SELECT id FROM clientes WHERE user_id = :userId AND TRIM(plano) = :nome LIMIT 1", { userId, nome: atual!.nome });
+        "SELECT id FROM clientes WHERE user_id = :userId AND (TRIM(plano) = :nome OR JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.plano')) = :nome) LIMIT 1", { userId, nome: atual!.nome });
       if (vinculado) return reject("Este plano possui clientes vinculados. Altere o plano desses clientes antes de apagar.");
       await execute("DELETE FROM planos WHERE id = :id AND user_id = :userId", { id, userId });
       req.flash("success", "Plano apagado.");

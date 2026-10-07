@@ -21,7 +21,8 @@
     </div>
   </div>
 
-  <div class="ui-toolbar ui-toolbar-actions">
+  <div class="ui-toolbar">
+    <input class="input" type="search" placeholder="Buscar dispositivo..." aria-label="Buscar dispositivo" autocomplete="off" data-search-input>
     <button class="btn btn-primary disp-new" type="button" data-open-modal="modal-add-dispositivo"><%- include('../partials/ui-icon', { name: 'plus' }) %> Novo dispositivo</button>
   </div>
 
@@ -41,21 +42,22 @@
   <div class="disp-grid">
     <% dispositivos.forEach(d => { %>
     <% const ativo = String(d.status) !== 'Inativo'; %>
-    <div class="disp-card" data-search-item data-search-text="<%= d.nome %> <%= ativo ? 'status-ativo' : 'status-inativo' %>">
+    <div class="disp-card device-card <%= ativo ? '' : 'device-inativo' %>" data-search-item data-search-text="<%= d.nome %> <%= d.descricao || '' %> <%= ativo ? 'status-ativo' : 'status-inativo' %>">
       <div class="disp-card-top">
         <span class="disp-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
         <div class="disp-info">
           <strong><%= d.nome %></strong>
         </div>
-      </div>
-      <div class="disp-actions">
         <span class="disp-status <%= ativo ? 'is-active' : '' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+      </div>
+      <% if (d.descricao) { %><p class="device-desc"><%= d.descricao %></p><% } %>
+      <div class="disp-actions">
         <button class="btn btn-muted disp-edit edit-dispositivo" type="button" aria-label="Editar <%= d.nome %>" data-id="<%= d.id %>" data-nome="<%= d.nome %>" data-descricao="<%= d.descricao || '' %>" data-status="<%= ativo ? 'Ativo' : 'Inativo' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
         <form method="post" action="/dispositivos" class="action-form disp-del-form">
           <%- csrfInput %>
           <input type="hidden" name="action" value="delete_dispositivo">
           <input type="hidden" name="id" value="<%= d.id %>">
-          <button class="cli-ico-btn danger" type="submit" title="Apagar <%= d.nome %>" aria-label="Apagar <%= d.nome %>"><%- include('../partials/ui-icon', { name: 'trash' }) %></button>
+          <button class="cli-ico-btn danger" type="submit" title="Apagar <%= d.nome %>" aria-label="Apagar <%= d.nome %>"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
         </form>
       </div>
     </div>

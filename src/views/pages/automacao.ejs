@@ -63,7 +63,7 @@
             <button class="cli-ico-btn" type="submit" title="Disparar agora">▶</button>
           </form>
           <button class="cli-ico-btn edit-regra" type="button" title="Editar"
-            data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-gatilho="<%= r.gatilho %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
+            data-id="<%= r.id %>" data-nome="<%= r.titulo %>" data-tipo="<%= r.tipo %>" data-periodo="<%= r.periodo %>" data-tipo-periodo="<%= r.tipoPeriodo %>" data-mensagem-id="<%= r.mensagemId || '' %>" data-ativa="<%= ativa ? 1 : 0 %>" data-hora="<%= r.horaEnvio || '09:00' %>" data-dias="<%= (r.diasSemanaLista||[]).join(',') %>" data-min="<%= r.minDelay || '' %>" data-max="<%= r.maxDelay || '' %>" data-lotes="<%= r.envioLotes ? 1 : 0 %>" data-lote-tam="<%= r.loteTamanho || 20 %>" data-lote-pausa="<%= r.lotePausa || 60 %>" data-antiban="<%= r.rodapeAntiban ? 1 : 0 %>" data-f-servidor="<%= r.filtroServidor || '' %>" data-f-plano="<%= r.filtroPlano || '' %>" data-f-arquivados="<%= r.filtroArquivados || '' %>"><%- include('../partials/ui-icon', { name: 'edit' }) %></button>
           <form method="post" action="/automacao" class="auto-del-form">
             <%- csrfInput %>
             <input type="hidden" name="action" value="delete_regra">
@@ -109,29 +109,17 @@
 <div class="modal-overlay" id="modal-nova-regra" aria-hidden="true" inert>
   <div class="modal modal-lg">
     <div class="modal-header">
-      <div><h3>Nova Regra</h3><p class="muted auto-step-sub" data-step-sub>Defina o nome e quando a mensagem será enviada</p></div>
+      <div><h3>Nova Regra</h3><p class="muted auto-step-sub" >Configure a mensagem, os filtros e o agendamento</p></div>
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
-    <div class="auto-steps">
-      <span class="auto-step active" data-step-dot="1">① Gatilho</span>
-      <i></i>
-      <span class="auto-step" data-step-dot="2">② Mensagem</span>
-      <i></i>
-      <span class="auto-step" data-step-dot="3">③ Configurar</span>
-    </div>
-    <form method="post" action="/automacao" id="modal-nova-regra-form" class="modal-body" data-native-submit="1" data-wizard>
+    <form method="post" action="/automacao" id="modal-nova-regra-form" class="modal-body" data-native-submit="1">
       <%- csrfInput %>
       <input type="hidden" name="action" value="create_regra">
       <input type="hidden" name="id" value="">
 
-      <div class="wizard-step active" data-step="1">
+      <section class="auto-form-section"><h4>Quando enviar</h4>
         <label class="field full"><span>Nome da regra *</span><input class="input" name="nome" placeholder="Ex: Lembrete 3 dias antes" required></label>
         <div class="field full"><span class="auto-label">Quando enviar? *</span>
-          <div class="auto-segments">
-            <label class="auto-seg"><input type="radio" name="gatilho" value="plano" checked><span>Plano</span></label>
-            <label class="auto-seg"><input type="radio" name="gatilho" value="aplicativo"><span>Aplicativo</span></label>
-            <label class="auto-seg"><input type="radio" name="gatilho" value="aniversario"><span>Aniversário</span></label>
-          </div>
         </div>
         <div class="auto-trigger-list">
           <label class="auto-trigger"><input type="radio" name="tipo" value="Todos"><div><strong><%- include('../partials/ui-icon', { name: 'users' }) %> Todos os clientes</strong><small>Envia para toda a base de clientes</small></div></label>
@@ -148,9 +136,9 @@
             <label class="auto-seg sm"><input type="radio" name="tipo_periodo" value="Minutos"><span>Minutos</span></label>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="wizard-step" data-step="2">
+      <section class="auto-form-section"><h4>Mensagem</h4>
         <label class="field full"><span>Template de mensagem *</span>
           <select class="input" name="mensagem_id" data-msg-select>
             <option value="">Selecione um template...</option>
@@ -160,9 +148,9 @@
         <span class="auto-label">Pré-visualização</span>
         <div class="auto-preview" data-msg-preview>Selecione um template para ver a prévia.</div>
         <small class="muted">As variáveis serão substituídas pelos dados reais no envio</small>
-      </div>
+      </section>
 
-      <div class="wizard-step" data-step="3">
+      <section class="auto-form-section"><h4>Configurações de envio</h4>
         <label class="switch-field full"><span><strong>Regra ativa</strong><small>Ativar ao salvar</small></span><input type="checkbox" name="ativa" value="1" class="switch" checked></label>
         <div class="auto-box">
           <div class="auto-box-title"><%- include('../partials/ui-icon', { name: 'clock' }) %> Agendamento</div>
@@ -199,13 +187,12 @@
             <label class="field"><span>Arquivados</span><select class="input" name="filtro_arquivados"><option value="">Não arquivado</option><option>Arquivado</option><option value="todos">Todos</option></select></label>
           </div>
         </div>
-      </div>
+      </section>
     </form>
     <div class="modal-footer auto-foot">
-      <button class="btn btn-muted" type="button" data-wizard-back hidden>‹ Voltar</button>
       <span class="auto-foot-spacer"></span>
       <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
-      <button class="btn btn-primary" type="button" data-wizard-next>Próximo ›</button>
+      <button class="btn btn-primary" type="submit" form="modal-nova-regra-form">Salvar regra</button>
     </div>
   </div>
 </div>
@@ -239,46 +226,6 @@
   var modal = document.getElementById('modal-nova-regra');
   if (!modal) return;
   var form = document.getElementById('modal-nova-regra-form');
-  var steps = modal.querySelectorAll('.wizard-step');
-  var dots = modal.querySelectorAll('[data-step-dot]');
-  var subs = { 1: 'Defina o nome e quando a mensagem será enviada', 2: 'Escolha o conteúdo da mensagem', 3: 'Ajuste filtros, horários e configurações avançadas' };
-  var current = 1;
-  var btnBack = modal.querySelector('[data-wizard-back]');
-  var btnNext = modal.querySelector('[data-wizard-next]');
-  var subEl = modal.querySelector('[data-step-sub]');
-  var actionInput = form.querySelector('[name="action"]');
-
-  function showStep(n) {
-    current = n;
-    steps.forEach(function (s) { s.classList.toggle('active', Number(s.getAttribute('data-step')) === n); });
-    dots.forEach(function (d) { d.classList.toggle('active', Number(d.getAttribute('data-step-dot')) <= n); });
-    btnBack.hidden = n === 1;
-    // Botão único morfa entre "Próximo" e "Salvar/Criar" no último passo.
-    // Lê o action atual pra distinguir edição (update_regra) de criação (create_regra).
-    if (n === 3) {
-      var editando = actionInput && actionInput.value === 'update_regra';
-      btnNext.textContent = editando ? '✓ Salvar regra' : '✓ Criar regra';
-    } else {
-      btnNext.textContent = 'Próximo ›';
-    }
-    if (subEl) subEl.textContent = subs[n];
-  }
-  btnNext.addEventListener('click', function () {
-    if (current === 1) {
-      var nome = form.querySelector('[name="nome"]');
-      if (nome && !nome.value.trim()) { nome.reportValidity(); return; }
-    }
-    if (current < 3) {
-      showStep(current + 1);
-    } else {
-      // Último passo: submete o form (cria ou atualiza conforme o action atual).
-      if (form.requestSubmit) form.requestSubmit();
-      else form.submit();
-    }
-  });
-  btnBack.addEventListener('click', function () { if (current > 1) showStep(current - 1); });
-
-  // Mostra/esconde o período conforme o gatilho
   var periodBox = modal.querySelector('[data-period-box]');
   var periodLabel = modal.querySelector('[data-period-label]');
   function syncPeriod() {
@@ -323,21 +270,21 @@
   function syncLotes() { if (lotesConfig) lotesConfig.hidden = !(lotesToggle && lotesToggle.checked); }
   if (lotesToggle) lotesToggle.addEventListener('change', syncLotes);
 
-  function resetWizard() {
+  function resetRuleForm() {
     form.reset();
     form.querySelector('[name="action"]').value = 'create_regra';
     form.querySelector('[name="id"]').value = '';
     modal.querySelector('.modal-header h3').textContent = 'Nova Regra';
-    showStep(1); syncPeriod(); syncTriggerCards(); syncPreview(); syncLotes();
+    syncPeriod(); syncTriggerCards(); syncPreview(); syncLotes();
   }
   document.querySelectorAll('[data-open-modal="modal-nova-regra"]').forEach(function (b) {
-    b.addEventListener('click', resetWizard);
+    b.addEventListener('click', resetRuleForm);
   });
 
-  // Editar regra -> popula o wizard
+  // Editar regra: preenche o formulario
   document.querySelectorAll('.edit-regra').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      resetWizard();
+      resetRuleForm();
       var set = function (name, val) { var el = form.querySelector('[name="' + name + '"]'); if (el) el.value = val; };
       var check = function (name, val) { var el = form.querySelector('[name="' + name + '"]'); if (el) el.checked = !!val; };
       form.querySelector('[name="action"]').value = 'update_regra';
@@ -345,7 +292,6 @@
       set('nome', btn.getAttribute('data-nome') || '');
       var tipo = btn.getAttribute('data-tipo') || 'Vencimento';
       var tr = form.querySelector('[name="tipo"][value="' + tipo + '"]'); if (tr) tr.checked = true;
-      var gat = form.querySelector('[name="gatilho"][value="' + (btn.getAttribute('data-gatilho') || 'plano') + '"]'); if (gat) gat.checked = true;
       set('periodo', btn.getAttribute('data-periodo') || '0');
       var tp = form.querySelector('[name="tipo_periodo"][value="' + (btn.getAttribute('data-tipo-periodo') || 'Dias') + '"]'); if (tp) tp.checked = true;
       set('mensagem_id', btn.getAttribute('data-mensagem-id') || '');
@@ -386,14 +332,16 @@
           var cs = (data && data.clientes) || [];
           if (!cs.length) { list.innerHTML = '<div class="receb-empty">Nenhum cliente atende a essa regra hoje.</div>'; return; }
           list.innerHTML = cs.map(function (c) {
-            var venc = c.vencimento ? new Date(c.vencimento).toLocaleDateString('pt-BR') : '';
-            return '<div class="receb-row"><div class="receb-info"><strong>' + escapeHtml(c.nome) + '</strong><span>' + escapeHtml(c.telefone || '') + '</span></div><span class="receb-venc">' + escapeHtml(venc) + '</span></div>';
+            var iso = String(c.vencimento || '').slice(0, 10).split('-');
+            var venc = iso.length === 3 ? iso.reverse().join('/') : '';
+            var valor = Number(c.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            return '<div class="receb-row"><div class="receb-info"><strong>' + escapeHtml(c.nome) + '</strong><span>' + escapeHtml(c.telefone || '') + '</span><span>' + escapeHtml(c.servidor || '') + ' · ' + escapeHtml(c.plano || '') + ' · ' + escapeHtml(valor) + '</span></div><span class="receb-venc">' + escapeHtml(venc) + '</span></div>';
           }).join('');
         })
         .catch(function () { list.innerHTML = '<div class="form-alert error">Não foi possível carregar os clientes.</div>'; });
     });
   });
 
-  showStep(1); syncPeriod(); syncTriggerCards(); syncLotes();
+  syncPeriod(); syncTriggerCards(); syncLotes();
 })();
 </script>

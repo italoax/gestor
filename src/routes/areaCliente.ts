@@ -6,12 +6,12 @@ import { execute, queryOne, queryRows } from "../db/mysql.js";
 import { requireAuth } from "../middleware/auth.js";
 import { escolherProvedor } from "../services/paymentProvider.js";
 import { caminhoPagamento } from "../services/linkPagamentoUrl.js";
-import { opcoesRenovacao, type PlanoRenovacao } from "../services/renovacaoOpcoes.js";
+import { escolhasRenovacao, lerPlanoAdicional, type PlanoRenovacao } from "../services/renovacaoOpcoes.js";
 
 export const areaClienteRouter = Router();
 const revision = (cliente: RowDataPacket) => crypto.createHash("sha256").update(JSON.stringify([cliente.user, cliente.senha, cliente.pagamento_curto || null])).digest("hex");
 const sameSecret = (a: string, b: string) => crypto.timingSafeEqual(crypto.createHash("sha256").update(a).digest(), crypto.createHash("sha256").update(b).digest());
-const fields = "id, user_id, nome, user, vencimento, hora_vencimento, plano, valor, telas, status, aplicativo, senha, pagamento_token, pagamento_curto";
+const fields = "id, user_id, nome, user, vencimento, hora_vencimento, plano, valor, telas, servidor, sigma_customer_id, plano_adicional, status, aplicativo, senha, pagamento_token, pagamento_curto";
 const limit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: "draft-7", legacyHeaders: false, message: "Muitas tentativas. Aguarde 15 minutos." });
 
 areaClienteRouter.use(["/area-cliente", "/acessos-clientes"], (_req, res, next) => {
@@ -46,14 +46,10 @@ areaClienteRouter.post("/area-cliente/login", limit, async (req, res, next) => {
     const candidates = login.length <= 120
       ? await queryRows<RowDataPacket>("SELECT id, user, senha, pagamento_curto, arquivado, portal_bloqueado FROM clientes WHERE user = :login", { login }) : [];
     const users = candidates.filter(c => c.user === login);
-    if (!users.length) return rejectLogin("Usuário não encontrado. Confira seu usuário IPTV.");
     const enabled = users.filter(c => !c.arquivado && !c.portal_bloqueado);
-    if (!enabled.length) return rejectLogin("Acesso desativado. Entre em contato com o responsável pelo cadastro.");
     if (!password) return rejectLogin("Informe sua senha IPTV.");
-    if (!enabled.some(c => c.senha)) return rejectLogin("Senha IPTV ainda não cadastrada. Entre em contato com o responsável.");
     const matches = password.length <= 190 ? enabled.filter(c => c.senha && sameSecret(String(c.senha), password)) : [];
-    if (!matches.length) return rejectLogin("Senha incorreta. Confira sua senha IPTV e tente novamente.");
-    if (matches.length !== 1) return rejectLogin("Cadastro duplicado. Entre em contato com o responsável para corrigir seu acesso.");
+    if (matches.length !== 1) return rejectLogin("Usuário ou senha inválidos, ou acesso indisponível. Confira seus dados ou entre em contato com o responsável.");
     const cliente = matches[0];
     await new Promise<void>((resolve, reject) => req.session.regenerate(err => err ? reject(err) : resolve()));
     req.session.cliente = { id: cliente.id, revision: revision(cliente) };
@@ -83,8 +79,8 @@ areaClienteRouter.get("/area-cliente", async (req, res, next) => {
   try {
     const cliente = res.locals.portalCliente;
     const pix = Boolean(await escolherProvedor(cliente.user_id));
-    const plano = await queryOne<RowDataPacket>("SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1", { userId: cliente.user_id, nome: cliente.plano });
-    res.render("pages/area-cliente", { layout: false, cliente, pix, opcoesRenovacao: opcoesRenovacao(plano as unknown as PlanoRenovacao, Number(cliente.valor)), erro: req.flash("portal-error").join(" ") });
+    const escolhas = await escolhasRenovacao(cliente, nome => queryOne<RowDataPacket & PlanoRenovacao>("SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1", { userId: cliente.user_id, nome }));
+    res.render("pages/area-cliente", { layout: false, cliente, adicional: lerPlanoAdicional(cliente.plano_adicional), pix, escolhas, opcoesRenovacao: escolhas[0].opcoes, erro: req.flash("portal-error").join(" ") });
   } catch (err) { next(err); }
 });
 areaClienteRouter.post("/area-cliente/renovar", async (req, res, next) => {
@@ -98,7 +94,11 @@ areaClienteRouter.post("/area-cliente/renovar", async (req, res, next) => {
     const row = await queryOne<RowDataPacket>("SELECT pagamento_token FROM clientes WHERE id = :id", { id: cliente.id });
     if (req.get("Accept") === "application/json") return res.json({ pagamentoUrl: `/pagar/${encodeURIComponent(row!.pagamento_token)}` });
     const periodos = Number(req.body.periodos ?? 1);
-    res.redirect(caminhoPagamento(row!.pagamento_token) + (periodos > 1 && Number.isSafeInteger(periodos) ? '?periodos=' + encodeURIComponent(String(periodos)) : ''));
+    const selecao = ['ambos', 'principal', 'adicional'].includes(req.body.selecao) ? req.body.selecao : '';
+    const params = new URLSearchParams();
+    if (Number.isSafeInteger(periodos) && periodos > 1) params.set('periodos', String(periodos));
+    if (selecao) params.set('selecao', selecao);
+    res.redirect(caminhoPagamento(row!.pagamento_token) + (params.size ? '?' + params.toString() : ''));
   } catch (err) { next(err); }
 });
 

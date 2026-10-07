@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import multer from "multer";
 import { execute, queryRows } from "../db/mysql.js";
 import { toNullableString } from "../services/format.js";
+import { removerStatusExpirados } from "../services/statusRetention.js";
 import type { RowDataPacket } from "mysql2";
 
 // Upload em memória — converte direto pra data URL e manda pra API.
@@ -56,6 +57,7 @@ export const statusRouter = Router();
 
 statusRouter.get("/status/historico", async (req, res, next) => {
   try {
+    await removerStatusExpirados(req.session.user!.id);
     const historico = await queryRows<StatusRow>(
       `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
               legenda, status, erro, destinatarios,
@@ -71,6 +73,7 @@ statusRouter.get("/status/historico", async (req, res, next) => {
 statusRouter.get("/status", async (req, res, next) => {
   try {
     const userId = req.session.user!.id;
+    await removerStatusExpirados(userId);
     const historico = await queryRows<StatusRow>(
       `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
               legenda, status, erro, destinatarios,

@@ -2,6 +2,8 @@ import { Router } from "express";
 import { queryOne } from "../db/mysql.js";
 import type { RowDataPacket } from "mysql2";
 import { renovarClienteAutomatico } from "../services/autoRenovacao.js";
+import { renovarPlanosDoCliente } from "../services/renovacaoConjunta.js";
+import { CreditosError } from "../services/creditos.js";
 import {
   contarNaoLidas, excluirNotificacao, limparTodas,
   listarNotificacoes, marcarLida, marcarTodasLidas, sincronizarAlertasCreditos,
@@ -15,8 +17,18 @@ notificacoesRouter.post('/pagamentos/:id/confirmar-renovacao', async (req, res, 
     const userId = req.session.user!.id;
     if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ ok: false, error: 'Pagamento inválido.' });
     const pagamento = await queryOne<RowDataPacket>(
-      "SELECT cliente_id AS clienteId FROM pagamentos WHERE id = :id AND user_id = :userId AND status = 'approved' AND renovado_em IS NULL", { id, userId });
+      "SELECT cliente_id AS clienteId, renovacao_dados AS dados FROM pagamentos WHERE id = :id AND user_id = :userId AND status = 'approved' AND renovado_em IS NULL", { id, userId });
     if (!pagamento) return res.status(404).json({ ok: false, error: 'Pagamento não encontrado ou renovação já confirmada.' });
+    if (pagamento.dados && JSON.parse(pagamento.dados).versao === 1) {
+      try {
+        const resultado = await renovarPlanosDoCliente(userId, Number(pagamento.clienteId), { pagamentoId: id });
+        await sincronizarAlertasCreditos(userId);
+        return res.json({ ok: true, vencimentos: resultado.itens.map(item => ({ plano: item.plano, vencimento: item.vencimento })) });
+      } catch (error) {
+        if (error instanceof CreditosError) return res.status(409).json({ ok: false, error: error.message });
+        throw error;
+      }
+    }
     const resultado = await renovarClienteAutomatico(userId, Number(pagamento.clienteId), 0, 1, undefined, id);
     if (!resultado.renovado) return res.status(409).json({ ok: false, error: resultado.motivo || 'Não foi possível confirmar a renovação.' });
     return res.json({ ok: true, novoVencimento: resultado.novoVencimento });

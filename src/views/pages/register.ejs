@@ -71,7 +71,7 @@
           <%= error[0] %>
         </div>
       <% } %>
-      <form class="login-form" action="/register" method="post">
+      <form class="login-form" action="/register" method="post" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
         <%- csrfInput %>
         <label class="login-field">
           <span>
@@ -83,19 +83,19 @@
           <span>
             Nome de usuário
           </span>
-          <input type="text" name="username" placeholder="Seu usuário" autocomplete="username" required />
+          <input type="text" name="username" placeholder="Seu usuário" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
         </label>
         <label class="login-field">
           <span>
             Senha
           </span>
-          <input type="password" name="password" placeholder="Crie uma senha" autocomplete="new-password" required />
+          <input type="password" name="password" placeholder="Crie uma senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
         </label>
         <label class="login-field">
           <span>
             Confirmar senha
           </span>
-          <input type="password" name="password_confirm" placeholder="Repita a senha" autocomplete="new-password" required />
+          <input type="password" name="password_confirm" placeholder="Repita a senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
         </label>
         <button class="login-btn" type="submit">
           Criar conta

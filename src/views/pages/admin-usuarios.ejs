@@ -21,13 +21,13 @@
           else { statusLabel = dias + ' dias'; statusCls = 'badge-green'; }
         %>
         <tr>
-          <td><%= u.id %></td>
-          <td><%= u.name %></td>
-          <td><span class="muted">@<%= u.username %></span></td>
-          <td><%= u.vencimento ? formatDateBr(u.vencimento) : '—' %></td>
-          <td><span class="badge <%= statusCls %>"><%= statusLabel %></span></td>
-          <td><%= u.isAdmin ? '⭐' : '—' %></td>
-          <td class="admin-user-actions">
+          <td data-label="ID"><%= u.id %></td>
+          <td data-label="Nome"><%= u.name %></td>
+          <td data-label="Usuário"><span class="muted">@<%= u.username %></span></td>
+          <td data-label="Vencimento"><%= u.vencimento ? formatDateBr(u.vencimento) : '—' %></td>
+          <td data-label="Status"><span class="badge <%= statusCls %>"><%= statusLabel %></span></td>
+          <td data-label="Admin"><%= u.isAdmin ? '⭐' : '—' %></td>
+          <td data-label="Ações" class="admin-user-actions">
             <form method="post" action="/admin/usuarios" class="inline-form">
               <%- csrfInput %>
               <input type="hidden" name="action" value="estender">

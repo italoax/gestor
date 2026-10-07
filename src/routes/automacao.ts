@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { execute, queryOne, queryRows } from "../db/mysql.js";
+import { consultaDestinatariosCobranca, agruparAvisosCobranca } from '../services/cobrancaDestinatarios.js';
 import { appTodayIso } from "../services/dates.js";
 import { boolField, toNullableString, toNumber } from "../services/format.js";
 import { dispararRegraManual, ensureCobrancasEnviosTable } from "../services/cobrancasCron.js";
@@ -31,46 +32,9 @@ function descricaoRegra(tipo: string, periodo: number) {
   return "Todos os clientes";
 }
 
-function periodoAlvoPorTipo(tipo: string, periodo: number) {
-  const t = String(tipo ?? "").toLowerCase().trim();
-  const dias = Math.abs(Number(periodo) || 0);
-  if (t === "vence hoje") return 0;
-  if (t === "vencidos") return -dias;
-  if (t === "vencimento") return dias;
-  return Number(periodo) || 0;
-}
-
-interface RegraFiltro { tipo: string; periodo: number; filtroServidor: string | null; filtroPlano: string | null; filtroArquivados: string | null; }
-
-// Monta o WHERE de quem recebe a regra (mesma lógica usada na contagem e na listagem).
-function montarWhereRecebedores(userId: number, regra: RegraFiltro, today: string) {
-  const t = String(regra.tipo).toLowerCase();
-  const params: Record<string, unknown> = { userId, today };
-  // Por padrão exclui arquivados — respeita o filtro_arquivados da regra
-  // ("Arquivado" => só arquivados; "todos" => ambos).
-  let where = "user_id = :userId AND status = 'Ativo'";
-  const arq = String(regra.filtroArquivados ?? "").trim().toLowerCase();
-  if (arq === "arquivado") where += " AND arquivado = 1";
-  else if (arq !== "todos") where += " AND arquivado = 0";
-  if (t === "todos") {
-    // toda a base ativa
-  } else if (t === "apos cadastro") {
-    // created_at é TIMESTAMP em UTC — converte para SP antes para o contador
-    // bater com o cron (que faz a mesma conversão antes de disparar).
-    where += " AND DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro";
-    params.periodoCadastro = Math.abs(Number(regra.periodo) || 0);
-  } else {
-    where += " AND DATEDIFF(vencimento, :today) = :periodoAlvo";
-    params.periodoAlvo = periodoAlvoPorTipo(regra.tipo, regra.periodo);
-  }
-  if (regra.filtroServidor) { where += " AND servidor = :filtroServidor"; params.filtroServidor = regra.filtroServidor; }
-  if (regra.filtroPlano) { where += " AND plano = :filtroPlano"; params.filtroPlano = regra.filtroPlano; }
-  return { where, params };
-}
-
 async function contarRecebedores(userId: number, regra: RegraRow, today: string) {
-  const { where, params } = montarWhereRecebedores(userId, regra, today);
-  const r = await queryRows<CountRow>(`SELECT COUNT(*) AS total FROM clientes WHERE ${where}`, params);
+  const { from, params } = consultaDestinatariosCobranca(userId, regra, today);
+  const r = await queryRows<CountRow>(`SELECT COUNT(DISTINCT id) AS total ${from}`, params);
   return Number(r[0]?.total ?? 0);
 }
 
@@ -140,7 +104,10 @@ automacaoRouter.get("/automacao", async (req, res, next) => {
                 ce.status,
                 ce.erro,
                 COUNT(*) AS clientesCount,
-                GROUP_CONCAT(cl.nome ORDER BY cl.nome SEPARATOR ', ') AS clientesNomes
+                GROUP_CONCAT(CONCAT(cl.nome, ' (', COALESCE(
+                  CASE WHEN ce.acesso_chave = 'principal' THEN cl.servidor
+                    ELSE JSON_UNQUOTE(JSON_EXTRACT(cl.plano_adicional, '$.servidor')) END, 'acesso removido'), ')')
+                  ORDER BY cl.nome SEPARATOR ', ') AS clientesNomes
            FROM cobrancas_envios ce JOIN cobrancas co ON co.id = ce.cobranca_id
            LEFT JOIN clientes cl ON cl.id = ce.cliente_id AND cl.user_id = co.user_id
           WHERE co.user_id = :userId
@@ -221,7 +188,7 @@ automacaoRouter.post("/automacao", async (req, res, next) => {
       titulo: String(req.body.nome ?? req.body.titulo ?? "").trim(),
       descricao: descricaoRegra(tipo, periodo),
       tipo,
-      gatilho: String(req.body.gatilho || "plano"),
+      gatilho: "plano",
       tipoPeriodo: String(req.body.tipo_periodo || "Dias"),
       periodo,
       status: ativa ? "Ativo" : "Inativo",
@@ -280,12 +247,12 @@ automacaoRouter.get("/automacao/regra/:id/recebedores", async (req, res, next) =
       { id, userId },
     );
     if (!regra) return res.json({ ok: false, clientes: [] });
-    const { where, params } = montarWhereRecebedores(userId, regra, appTodayIso());
+    const { from, params } = consultaDestinatariosCobranca(userId, regra, appTodayIso());
     const clientes = await queryRows<RecebedorRow>(
-      `SELECT id, nome, telefone, vencimento, plano FROM clientes WHERE ${where} ORDER BY nome ASC LIMIT 300`,
+      `SELECT id, nome, telefone, vencimento, plano, servidor, valor, acessoChave ${from} ORDER BY nome ASC, acessoChave = 'principal' DESC LIMIT 300`,
       params,
     );
-    res.json({ ok: true, clientes });
+    res.json({ ok: true, clientes: agruparAvisosCobranca(clientes, regra) });
   } catch (error) { next(error); }
 });
 

@@ -11,6 +11,8 @@ import { decryptSecret } from "../services/crypto.js";
 import { sigmaLoginAndRenew } from "../services/sigma.js";
 import { urlPagamentoDoCliente } from "./pagamento.js";
 import { listarRenovacoesPendentes } from "../services/renovacoesPendentes.js";
+import { escolhasRenovacao, lerPlanoAdicional } from "../services/renovacaoOpcoes.js";
+import { renovarPlanosDoCliente, validarPlanoAdicional } from "../services/renovacaoConjunta.js";
 import type { PoolConnection, RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
 interface ClienteRow extends RowDataPacket {
@@ -93,6 +95,16 @@ async function registrarTransacaoCliente(p: {
 
 export const clientesRouter = Router();
 
+clientesRouter.get('/clientes/:id/planos-renovacao', async (req, res, next) => {
+  try {
+    const userId = req.session.user!.id;
+    const cliente = await queryOne<RowDataPacket>('SELECT * FROM clientes WHERE id = :id AND user_id = :userId AND arquivado = 0', { id: Number(req.params.id), userId });
+    if (!cliente) return res.sendStatus(404);
+    const escolhas = await escolhasRenovacao(cliente, nome => queryOne<PlanoRow>('SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome', { userId, nome }));
+    res.set('Cache-Control', 'no-store').json({ escolhas, chave: crypto.randomUUID() });
+  } catch (error) { next(error); }
+});
+
 clientesRouter.get("/clientes/preferencias/mensagem-pagamento", async (req, res, next) => {
   try {
     const preferencia = await queryOne<RowDataPacket & { mensagemId: number | null }>(
@@ -157,7 +169,7 @@ clientesRouter.get("/clientes", async (req, res, next) => {
                 data_inicio AS dataInicio, hora_vencimento AS horaVencimento,
                 pontos_fidelidade AS pontosFidelidade,
                 enviar_boas_vindas AS enviarBoasVindas, dispositivo, aplicativo, arquivado,
-                sigma_customer_id AS sigmaCustomerId
+                sigma_customer_id AS sigmaCustomerId, plano_adicional
            FROM clientes WHERE user_id = :userId AND arquivado = :arq ORDER BY nome ASC`, { userId, arq: verArquivados ? 1 : 0 }),
       queryRows<PlanoRow>("SELECT id, nome, credito_gastos AS creditoGastos, periodo, tipo, ativo FROM planos WHERE user_id = :userId ORDER BY nome ASC", { userId }),
       queryRows<ServidorRow>("SELECT id, nome, valor_cred AS valorCred, sessao, url_renovacao AS urlRenovacao FROM servidores WHERE user_id = :userId ORDER BY nome ASC", { userId }),
@@ -174,7 +186,7 @@ clientesRouter.get("/clientes", async (req, res, next) => {
       title: verArquivados ? "Clientes arquivados" : "Clientes",
       renovacoesPendentes,
       subtitle: verArquivados ? "Clientes que você arquivou" : "Gerencie todos os seus clientes",
-      clientes, planos, servidores, mensagens, dispositivos, aplicativos, whatsappDevices, verArquivados,
+      clientes: clientes.map(c => ({ ...c, adicional: lerPlanoAdicional(c.plano_adicional) })), planos, servidores, mensagens, dispositivos, aplicativos, whatsappDevices, verArquivados,
       noticeSuccess: req.flash("modal-success"),
       noticeError: req.flash("modal-error"),
     });
@@ -203,6 +215,62 @@ clientesRouter.post("/clientes", async (req, res, next) => {
       await execute("UPDATE clientes SET arquivado = 0 WHERE id = :id AND user_id = :userId", { id, userId });
       req.flash("success", "Cliente desarquivado.");
       return res.redirect("/clientes?arquivados=1");
+    }
+
+    if (action === 'renovar_planos') {
+      const resultado = await renovarPlanosDoCliente(userId, id, {
+        selecao: String(req.body.selecao), periodos: Number(req.body.periodos), chave: String(req.body.chave), formaPagamento: String(req.body.forma_pagamento),
+      });
+      if (!resultado.duplicado) {
+        await verificarCreditosServidor(userId, '', 0, 0);
+        for (const item of resultado.itens) {
+          if (!item.idPainel) continue;
+          try {
+            const planoMap = await queryOne<RowDataPacket>('SELECT sigma_package_id AS packageId, sigma_connections AS connections FROM planos WHERE user_id = :userId AND nome = :nome', { userId, nome: item.plano });
+            const integ = await queryOne<RowDataPacket>("SELECT api_url AS apiUrl, username, senha_enc AS senhaEnc FROM integracoes WHERE user_id = :userId AND tipo = 'sigma' AND status = 'ativo' ORDER BY id LIMIT 1", { userId });
+            if (!planoMap?.packageId || !integ) throw new Error('Configure a integração Sigma e o ID do pacote do plano.');
+            for (let i = 0; i < Number(req.body.periodos); i++) {
+              const r = await sigmaLoginAndRenew({ apiUrl: integ.apiUrl, username: integ.username, password: decryptSecret(integ.senhaEnc || '') }, item.idPainel, planoMap.packageId, Number(planoMap.connections) || 1);
+              if (!r.ok) throw new Error(r.error || 'Falha no painel.');
+            }
+          } catch (error) {
+            req.flash('modal-error', `${item.plano}: salvo no gestor, mas confira a renovação no Sigma. ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
+      }
+      const mensagemId = Number(req.body.mensagem_pagamento_id);
+      if (!resultado.duplicado && mensagemId) {
+        // Envio ocorre após a transação; uma falha no WhatsApp não desfaz a renovação.
+        try {
+          const [cliente, mensagem, sessao] = await Promise.all([
+            queryOne<ClienteRow>('SELECT * FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1', { id, userId }),
+            queryOne<MensagemRow>('SELECT id, titulo, mensagem, media_tipo AS mediaTipo, media_path AS mediaPath FROM mensagens WHERE id = :mensagemId AND user_id = :userId LIMIT 1', { mensagemId, userId }),
+            sessaoWhatsappPrincipal(userId),
+          ]);
+          if (!cliente || !mensagem) throw new Error('Mensagem escolhida ou cliente não encontrado.');
+          if (!sessao) throw new Error('Cadastre um dispositivo em WhatsApp antes de enviar mensagens.');
+          const itens = resultado.itens;
+          const adicional = lerPlanoAdicional(cliente.plano_adicional);
+          const resumo = itens.map(item => {
+            const [ano, mes, dia] = item.vencimento.split('-');
+            return item.servidor + ' — renovado até ' + dia + '/' + mes + '/' + ano;
+          }).join('\n');
+          const contexto = { ...cliente, valor: resultado.total, resumo_acessos: resumo, acessosCobranca: itens,
+            servidor: itens.map(item => item.servidor).join(' + '),
+            plano: [...new Set(itens.map(item => item.plano))].join(' + '),
+            vencimento: itens[0].vencimento,
+            user: itens.map(item => item.chave === 'principal' ? cliente.user : adicional?.user).filter(Boolean).join(' / '),
+            senha: itens.length === 1 && itens[0].chave === 'principal' ? cliente.senha : null,
+          };
+          const envio = await enviarMensagemModelo(sessao, contexto, mensagem, undefined, await getPixConfig(userId));
+          if (!envio.ok) throw new Error(envio.error || 'Falha ao enviar mensagem.');
+          req.flash('modal-success', 'Mensagem de renovação enviada pelo WhatsApp.');
+        } catch (error) {
+          req.flash('modal-error', 'Renovação salva, mas não foi possível enviar a mensagem: ' + (error instanceof Error ? error.message : String(error)));
+        }
+      }
+      req.flash('modal-success', resultado.duplicado ? 'Renovação já registrada.' : `Renovação registrada. Total: R$ ${resultado.total.toFixed(2).replace('.', ',')}.`);
+      return res.redirect('/clientes');
     }
 
     if (action === "add_pagamento") {
@@ -487,6 +555,14 @@ clientesRouter.post("/clientes", async (req, res, next) => {
       return res.redirect("/clientes");
     }
 
+    if (req.body.planos_form === '1' && (!String(req.body.valor ?? '').trim() || !Number.isFinite(data.valor) || data.valor <= 0 || !String(req.body.telas ?? '').trim() || !Number.isSafeInteger(data.telas) || data.telas < 1)) throw new CreditosError('Informe um valor positivo e pelo menos uma tela para o primeiro servidor.');
+    if (req.body.planos_form === '1' && !data.aplicativo) throw new CreditosError('Selecione o aplicativo do primeiro servidor na aba Apps.');
+
+    const anterior = action === 'update_cliente' ? await queryOne<RowDataPacket>('SELECT plano_adicional FROM clientes WHERE id = :id AND user_id = :userId', { id, userId }) : null;
+    if (action === 'update_cliente' && !anterior) throw new CreditosError('Cliente não encontrado.');
+    const adicional = req.body.planos_form === '1' ? await validarPlanoAdicional(req.body, userId, anterior?.plano_adicional) : lerPlanoAdicional(anterior?.plano_adicional);
+    const planoAdicional = adicional ? JSON.stringify(adicional) : null;
+
     if (action === "update_cliente") {
       // Os campos de pagamento (pago_em, valor_pago, custo_pagamento, observacao_pagamento)
       // NÃO estão no formulário de edição — então só atualizamos se vierem no body, senão
@@ -503,15 +579,16 @@ clientesRouter.post("/clientes", async (req, res, next) => {
              forma_pagamento = COALESCE(:formaPagamento, forma_pagamento),
              custo_pagamento = COALESCE(:custoPagamentoOrNull, custo_pagamento),
              observacao_pagamento = COALESCE(:observacaoPagamento, observacao_pagamento),
-             senha = :senha, id_painel = :idPainel, email = :email, captacao = :captacao,
+             senha = :senha, id_painel = COALESCE(:idPainel, id_painel), email = COALESCE(:email, email), captacao = :captacao,
              telefone_secundario = :telefoneSecundario, observacoes = :observacoes, data_inicio = :dataInicio,
              hora_vencimento = :horaVencimento,
-             pontos_fidelidade = :pontosFidelidade,
+             pontos_fidelidade = COALESCE(:pontosFidelidadeOrNull, pontos_fidelidade),
              dispositivo = :dispositivo, aplicativo = :aplicativo,
-             sigma_customer_id = :sigmaCustomerId
+             sigma_customer_id = COALESCE(:sigmaCustomerId, sigma_customer_id), plano_adicional = :planoAdicional
           WHERE id = :id AND user_id = :userId`,
         {
-          ...data,
+          ...data, planoAdicional,
+          pontosFidelidadeOrNull: req.body.pontos_fidelidade === undefined ? null : data.pontosFidelidade,
           // toNumber() devolve 0 quando o campo não veio — converto para null aqui pra
           // que COALESCE preserve o valor antigo (em vez de sobrescrever com 0).
           valorPagoOrNull: req.body.valor_pago !== undefined && String(req.body.valor_pago).trim() ? data.valorPago : null,
@@ -570,16 +647,29 @@ clientesRouter.post("/clientes", async (req, res, next) => {
                creditos_gastos, pago_em, valor_pago, forma_pagamento, custo_pagamento, observacao_pagamento,
                senha, id_painel, email, captacao, aniversario, link_m3u, time_cliente, telefone_secundario,
                observacoes, data_inicio, hora_vencimento, pontos_fidelidade,
-               enviar_boas_vindas, dispositivo, aplicativo, sigma_customer_id, pagamento_token)
+               enviar_boas_vindas, dispositivo, aplicativo, sigma_customer_id, pagamento_token, plano_adicional)
            VALUES (:userId, :nome, :user, :telefone, :vencimento, :plano, :valor, :status, :servidor, :telas,
                :creditosGastos, :pagoEm, :valorPago, :formaPagamento, :custoPagamento, :observacaoPagamento,
                :senha, :idPainel, :email, :captacao, :aniversario, :linkM3u, :timeCliente, :telefoneSecundario,
                :observacoes, :dataInicio, :horaVencimento, :pontosFidelidade,
-               :enviarBoasVindas, :dispositivo, :aplicativo, :sigmaCustomerId, :pagamentoToken)`, data,
+               :enviarBoasVindas, :dispositivo, :aplicativo, :sigmaCustomerId, :pagamentoToken, :planoAdicional)`, { ...data, planoAdicional },
         );
+        if (registrarPagamento && adicional) {
+          const [planosAdicionais] = await conn.query<PlanoRow[]>('SELECT credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome', { userId, nome: adicional.plano });
+          const consumoAdicional = consumoRenovacao(adicional.telas, 1, Number(planosAdicionais[0]?.creditoGastos) || 1);
+          await debitarCreditos(conn, userId, adicional.servidor, consumoAdicional);
+          const [srvs] = await conn.query<RowDataPacket[]>('SELECT valor_cred FROM servidores WHERE user_id = :userId AND nome = :nome', { userId, nome: adicional.servidor });
+          const custoAdicional = Number((Number(srvs[0]?.valor_cred || 0) * consumoAdicional).toFixed(2));
+          await registrarTransacaoCliente({ userId, clienteId: Number(novo.insertId), clienteNome: data.nome, descricao: 'Cadastro', data: appTodayIso(), formaPagamento: data.formaPagamento,
+            plano: adicional.plano, servidor: adicional.servidor, telas: adicional.telas, creditos: consumoAdicional, custo: custoAdicional, valorVenda: adicional.valor }, conn);
+          await conn.execute('UPDATE clientes SET valor_pago = :valor, custo_pagamento = :custo WHERE id = :id AND user_id = :userId', {
+            id: novo.insertId, userId, valor: Number(data.valorPago || 0) + adicional.valor, custo: Number(data.custoPagamento || 0) + custoAdicional,
+          });
+        }
         // Consome os créditos (nº de telas) do saldo do servidor escolhido.
         if (registrarPagamento && consumo > 0 && data.servidor) {
-          await conn.execute(
+          if (adicional) await debitarCreditos(conn, userId, data.servidor, consumo);
+          else await conn.execute(
             "UPDATE servidores SET creditos = creditos - :consumido WHERE user_id = :userId AND nome = :servidor",
             { consumido: consumo, userId, servidor: data.servidor },
           );

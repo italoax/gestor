@@ -1,4 +1,13 @@
-# Revisão de segurança — 05/10/2026
+# Revisão de segurança — 06/10/2026
+
+## Complemento de 06/10/2026
+
+- O login IPTV agora retorna a mesma mensagem para usuário inexistente, senha incorreta, conta arquivada, bloqueada ou sem senha, evitando revelar o estado do cadastro.
+- Alterar usuário ou senha em Minha Conta exige a senha atual. O endpoint aceita até 10 solicitações por conta em 15 minutos. Novas senhas exigem pelo menos 8 caracteres e no máximo 72 bytes, evitando truncamento pelo bcrypt.
+- O nome do download de backup utiliza o ID numérico da conta, sem inserir o nome de usuário no cabeçalho HTTP.
+- Falhas do cron retornam mensagem genérica; detalhes ficam no log do servidor.
+- Validação local: compilação aprovada, 105 testes aprovados e `npm.cmd audit --json` sem vulnerabilidades conhecidas. Os testes cobrem reautenticação, limite de tentativas, senha multibyte, cabeçalho de download e respostas uniformes do portal.
+- As mudanças estão somente no projeto local. Esta revisão não valida a infraestrutura de produção nem comprova ausência de outras falhas.
 
 Revisão local do código, configuração e dependências. Não foi executado teste de invasão na hospedagem, nem acesso ao banco de produção. Nenhuma credencial foi alterada ou incluída neste relatório.
 

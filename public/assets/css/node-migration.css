@@ -2059,6 +2059,8 @@
 
 /* aba Apps (fase 2 / visual) */
 .cli-apps-card { border: 1px solid var(--border); border-radius: 14px; padding: 16px; background: var(--surface-2); display: flex; flex-direction: column; gap: 12px; }
+.cli-apps-card[hidden] { display: none; }
+.cli-apps-card + .cli-apps-card { margin-top: 14px; }
 .cli-apps-card > strong { color: var(--text); }
 .cli-apps-empty { text-align: center; margin-top: 14px; }
 
@@ -2098,6 +2100,11 @@
 [data-theme="light"] .cli-wpp { color: #0e7490; }
 .cli-app-cell { color: var(--muted); }
 .cli-venc span { display: block; }
+.cli-expiry-access { display: grid; gap: 3px; line-height: 1.3; }
+.cli-expiry-access + .cli-expiry-access { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border, rgba(128,128,128,.2)); }
+.cli-expiry-server { display: block; max-width: 150px; overflow-wrap: anywhere; }
+.cli-expiry-date { font-weight: 600; white-space: nowrap; }
+.cli-expiry-time { display: block; white-space: nowrap; }
 .cli-venc small { color: var(--muted); font-size: 11.5px; }
 
 .cli-acoes { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }

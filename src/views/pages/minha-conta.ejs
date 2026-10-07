@@ -5,7 +5,7 @@
     </h2>
   </div>
   <div class="card account-card">
-    <form method="post" class="form-grid account-form-grid">
+    <form method="post" class="form-grid account-form-grid" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       <%- csrfInput %>
       <label class="field">
         Nome
@@ -13,15 +13,19 @@
       </label>
       <label class="field">
         Usuário
-        <input class="input" name="username" value="<%= account?.username || '' %>" required>
+        <input class="input" name="username" value="<%= account?.username || '' %>" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required>
+      </label>
+      <label class="field">
+        Senha atual (para alterar usuário ou senha)
+        <input class="input" type="password" name="current_password" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       </label>
       <label class="field">
         Nova senha
-        <input class="input" type="password" name="password" autocomplete="new-password">
+        <input class="input" type="password" name="password" minlength="8" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       </label>
       <label class="field">
         Confirmar senha
-        <input class="input" type="password" name="password_confirm" autocomplete="new-password">
+        <input class="input" type="password" name="password_confirm" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       </label>
       <div class="modal-actions account-actions">
         <button class="btn btn-primary">

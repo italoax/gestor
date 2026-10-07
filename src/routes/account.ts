@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 import { execute, queryOne, queryRows } from "../db/mysql.js";
 import { invalidarPixConfig } from "../services/pixConfig.js";
 import { toNullableString } from "../services/format.js";
@@ -11,6 +12,12 @@ interface UserRow extends RowDataPacket {
 }
 
 export const accountRouter = Router();
+const accountRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, limit: 10,
+  keyGenerator: req => String(req.session.user!.id),
+  standardHeaders: "draft-7", legacyHeaders: false,
+  message: "Muitas tentativas de alteração da conta. Aguarde 15 minutos.",
+});
 
 accountRouter.get("/minha-conta", async (req, res, next) => {
   try {
@@ -42,13 +49,22 @@ accountRouter.post("/minha-conta/pix", async (req, res, next) => {
   } catch (error) { next(error); }
 });
 
-accountRouter.post("/minha-conta", async (req, res, next) => {
+accountRouter.post("/minha-conta", accountRateLimit, async (req, res, next) => {
   try {
     const id = req.session.user!.id;
     const name = String(req.body.name ?? "").trim();
     const username = String(req.body.username ?? "").trim();
     const password = String(req.body.password ?? "");
     const passwordConfirm = String(req.body.password_confirm ?? "");
+    const account = await queryOne<UserRow>("SELECT username, password_hash AS passwordHash FROM users WHERE id = :id LIMIT 1", { id });
+    if (!account) return res.sendStatus(401);
+    if (password || username !== account.username) {
+      const currentPassword = req.body.current_password;
+      if (typeof currentPassword !== "string" || !currentPassword || Buffer.byteLength(currentPassword, "utf8") > 72 || !(await bcrypt.compare(currentPassword, account.passwordHash))) {
+        req.flash("error", "Informe a senha atual correta para alterar o usuário ou a senha.");
+        return res.redirect("/minha-conta");
+      }
+    }
     if (!name || !username) {
       req.flash("error", "Nome e usuário são obrigatórios.");
       return res.redirect("/minha-conta");
@@ -59,8 +75,8 @@ accountRouter.post("/minha-conta", async (req, res, next) => {
       return res.redirect("/minha-conta");
     }
     if (password) {
-      if (password.length < 6 || password !== passwordConfirm) {
-        req.flash("error", "Senha inválida ou confirmação diferente.");
+      if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72 || password !== passwordConfirm) {
+        req.flash("error", "A nova senha deve ter pelo menos 8 caracteres, no máximo 72 bytes e confirmação igual.");
         return res.redirect("/minha-conta");
       }
       const passwordHash = await bcrypt.hash(password, 12);
@@ -94,7 +110,7 @@ accountRouter.get("/minha-conta/backup", async (req, res, next) => {
       queryRows<RowDataPacket>("SELECT * FROM cobrancas WHERE user_id = :userId ORDER BY id", { userId }),
     ]);
     const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const filename = `gestor-backup-${user?.username ?? userId}-${stamp}.json`;
+    const filename = `gestor-backup-${userId}-${stamp}.json`;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(JSON.stringify({

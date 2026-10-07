@@ -10,6 +10,10 @@ export interface PagamentoPendente extends RowDataPacket {
 }
 
 function duracaoPagamento(row: PagamentoPendente) {
+  const dados = row.dados ? JSON.parse(row.dados) : null;
+  if (dados?.versao === 1 && Array.isArray(dados.itens)) {
+    return dados.itens.map((item: PlanoRenovacao & { plano: string }) => `${item.plano}: ${opcoesRenovacao(item, 0).find(opcao => opcao.periodos === Number(row.periodos))?.label || `${row.periodos} período(s)`}`).join(' + ');
+  }
   const plano: PlanoRenovacao | null = row.dados ? JSON.parse(row.dados) : null;
   return opcoesRenovacao(plano, Number(row.valor)).find(opcao => opcao.periodos === Number(row.periodos))?.label
     || `${Number(row.periodos) || 1} período(s) do plano`;

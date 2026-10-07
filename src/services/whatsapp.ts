@@ -142,7 +142,17 @@ export function montarMensagem(template: string, cliente: ClienteMensagem) {
     pixBloco = linhas.join("\n");
   }
 
+  const acessos = Array.isArray(c.acessosCobranca) ? c.acessosCobranca as Record<string, unknown>[] : [];
+  const dataAcesso = (value: unknown) => {
+    if (value instanceof Date) return value.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    const raw = String(value ?? '');
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return iso ? iso[3] + '/' + iso[2] + '/' + iso[1] : raw;
+  };
   const tags: Record<string, string> = {
+    resumo_acessos: String(c.resumo_acessos ?? ''),
+    vencimento_1: dataAcesso(acessos[0]?.vencimento ?? cliente.vencimento),
+    vencimento_2: dataAcesso(acessos[1]?.vencimento),
     nome: nomeCompleto,
     nome_completo: nomeCompleto,
     primeiro_nome: nomeCompleto.split(/\s+/)[0] ?? "",

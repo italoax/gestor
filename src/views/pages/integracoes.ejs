@@ -70,7 +70,7 @@
       <h3 id="integracao-title"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração Sigma</h3>
       <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
     </div>
-    <form method="post" action="/integracoes" id="modal-add-integracao-form" class="modal-body" data-native-submit="1">
+    <form method="post" action="/integracoes" id="modal-add-integracao-form" class="modal-body" data-native-submit="1" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
       <%- csrfInput %>
       <input type="hidden" name="action" value="create_integracao">
       <input type="hidden" name="id" value="">
@@ -82,9 +82,9 @@
           <input class="input" name="api_url" placeholder="https://dashgen.net" required>
           <small>A URL do painel (ex.: https://dashgen.net). Uso a base dela pra chamar a API.</small></label>
         <label class="field"><span>Usuário / e-mail *</span>
-          <input class="input" name="username" autocomplete="off" required></label>
+          <input class="input" name="username" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required></label>
         <label class="field"><span>Senha do painel</span>
-          <input class="input" type="password" name="password" autocomplete="new-password">
+          <input class="input" type="password" name="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
           <small>No modo editar, deixe em branco para manter a senha atual.</small></label>
         <label class="field full"><span>Status</span>
           <select class="input" name="status"><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></label>

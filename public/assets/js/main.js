@@ -36,6 +36,8 @@ function initGestor() {
       toggle.setAttribute('aria-label', 'Mostrar senha');
       toggle.title = 'Mostrar senha';
       toggle.setAttribute('aria-pressed', 'false');
+      const label = toggle.querySelector('[data-password-toggle-label]');
+      if (label) label.textContent = 'Mostrar';
       feedback.textContent = '';
     };
     toggle.onclick = () => {
@@ -44,6 +46,8 @@ function initGestor() {
       toggle.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
       toggle.title = toggle.getAttribute('aria-label');
       toggle.setAttribute('aria-pressed', String(show));
+      const label = toggle.querySelector('[data-password-toggle-label]');
+      if (label) label.textContent = show ? 'Ocultar' : 'Mostrar';
     };
     if (input.form) input.form.addEventListener('reset', reset);
     reset();
@@ -1119,6 +1123,11 @@ function initGestor() {
       const stitulo = modal.querySelector('.modal-header h3'); if (stitulo) setIconLabel(stitulo, 'edit', 'Editar Servidor');
       const sBtnEd = document.querySelector('button[type="submit"][form="modal-add-servidor-form"]'); if (sBtnEd) sBtnEd.textContent = 'Salvar';
       setModalState(modal, true);
+      if (btn.hasAttribute('data-credit-focus')) {
+        if (stitulo) setIconLabel(stitulo, 'money', 'Ajustar saldo');
+        const creditos = form.querySelector('[name="creditos"]');
+        creditos.focus({ preventScroll: true }); creditos.select();
+      }
     });
   });
 
@@ -1340,6 +1349,182 @@ function initGestor() {
     }
   });
 
+  const cadastroPlanos = document.getElementById('modal-add-cliente-form');
+  function prepararErrosCadastro() {
+    if (!cadastroPlanos) return;
+    cadastroPlanos.querySelectorAll('[data-required="1"]').forEach(field => {
+      if (field.disabled) return;
+      const container = field.closest('label, .field');
+      if (!container) return;
+      let error = cadastroPlanos.querySelector('[data-error-for="' + field.name + '"]');
+      if (!error) {
+        error = document.createElement('small');
+        error.className = 'field-error'; error.dataset.errorFor = field.name;
+        error.id = 'cliente-error-' + field.name; error.setAttribute('aria-live', 'polite');
+        container.append(error);
+      }
+      if (!error.id) error.id = 'cliente-error-' + field.name;
+      field.setAttribute('aria-describedby', error.id);
+    });
+  }
+  function atualizarTotalCadastro() {
+    if (!cadastroPlanos) return;
+    const total = Number(cadastroPlanos.elements.valor.value || 0) + (cadastroPlanos.elements.tem_plano_adicional.checked ? Number(cadastroPlanos.elements.adicional_valor.value || 0) : 0);
+    cadastroPlanos.querySelector('[data-cadastro-total]').textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+  cadastroPlanos?.addEventListener('input', atualizarTotalCadastro);
+  cadastroPlanos?.addEventListener('change', atualizarTotalCadastro);
+  function renderSelecaoServidores() {
+    if (!cadastroPlanos) return;
+    const principal = cadastroPlanos.elements.servidor;
+    const adicional = cadastroPlanos.elements.adicional_servidor;
+    const ativo = cadastroPlanos.elements.tem_plano_adicional.checked;
+    const selecionados = [principal.value, ativo ? adicional.value : ''].filter(Boolean);
+    const lista = cadastroPlanos.querySelector('[data-servidores-opcoes]');
+    if (!lista) return;
+    cadastroPlanos.querySelector('[data-servidores-resumo]').textContent = selecionados.join(' + ') || 'Selecione os servidores';
+    cadastroPlanos.querySelector('[data-adicional-titulo]').textContent = adicional.value || 'Segundo servidor';
+    cadastroPlanos.querySelector('[data-principal-titulo]').textContent = principal.value || 'Primeiro servidor';
+    cadastroPlanos.querySelector('[data-app-principal]').textContent = principal.value || 'Primeiro servidor';
+    cadastroPlanos.querySelector('[data-app-segundo]').textContent = adicional.value || 'Segundo servidor';
+    atualizarTotalCadastro();
+    const nomes = [...new Set([...principal.options, ...adicional.options].map(o => o.value).filter(Boolean))];
+    lista.replaceChildren(...nomes.map(nome => {
+      const label = document.createElement('label');
+      label.className = 'server-option';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox'; checkbox.value = nome;
+      checkbox.checked = selecionados.includes(nome);
+      checkbox.disabled = selecionados.length >= 2 && !checkbox.checked;
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          if (!principal.value) principal.value = nome;
+          else {
+            adicional.value = nome;
+            cadastroPlanos.elements.tem_plano_adicional.checked = true;
+            if (!cadastroPlanos.elements.adicional_plano.value) cadastroPlanos.elements.adicional_plano.value = cadastroPlanos.elements.plano.value;
+          }
+        } else if (principal.value === nome) {
+          if (ativo && adicional.value) {
+            principal.value = adicional.value;
+            for (const campo of ['plano', 'valor', 'telas', 'user', 'id_painel', 'aplicativo', 'dispositivo']) {
+              cadastroPlanos.elements[campo].value = cadastroPlanos.elements['adicional_' + campo].value;
+            }
+            setDateInputValue(cadastroPlanos.elements.vencimento, cadastroPlanos.elements.adicional_vencimento.value);
+          } else principal.value = '';
+          syncPlanoAdicional(null);
+        } else syncPlanoAdicional(null);
+        principal.dispatchEvent(new Event('change', { bubbles: true }));
+        syncPlanoAdicional();
+        renderSelecaoServidores();
+        Array.from(lista.querySelectorAll('input')).find(input => input.value === nome)?.focus();
+      });
+      label.append(checkbox, document.createTextNode(nome));
+      return label;
+    }));
+  }
+  function syncPlanoAdicional(adicional) {
+    if (!cadastroPlanos) return;
+    const toggle = cadastroPlanos.querySelector('[data-toggle-adicional]');
+    const fields = cadastroPlanos.querySelector('[data-plano-adicional]');
+    if (!toggle || !fields) return;
+    if (adicional !== undefined) {
+      toggle.checked = Boolean(adicional);
+      ['plano', 'servidor', 'valor', 'telas', 'vencimento', 'user', 'id_painel'].forEach(key => {
+        const input = fields.querySelector('[name="adicional_' + key + '"]');
+        const value = adicional?.[key === 'id_painel' ? 'idPainel' : key] ?? (key === 'telas' ? 1 : '');
+        if (input.tagName === 'SELECT' && value && !Array.from(input.options).some(o => o.value === value)) input.add(new Option(value + ' (atual)', value));
+        input.value = value;
+      });
+    }
+    const apps = cadastroPlanos.querySelector('[data-app-adicional]');
+    apps.hidden = !toggle.checked;
+    apps.querySelectorAll('select').forEach(input => {
+      input.disabled = !toggle.checked;
+      input.required = toggle.checked && input.name === 'adicional_aplicativo';
+      if (input.required) input.dataset.required = '1'; else delete input.dataset.required;
+      if (adicional !== undefined) {
+        const key = input.name.replace('adicional_', '');
+        const value = adicional?.[key] || '';
+        if (value && !Array.from(input.options).some(o => o.value === value)) input.add(new Option(value + ' (atual)', value));
+        input.value = value;
+      }
+    });
+    fields.hidden = !toggle.checked;
+    fields.querySelectorAll('input, select').forEach(input => {
+      input.disabled = !toggle.checked;
+      const obrigatorio = !['adicional_user', 'adicional_id_painel'].includes(input.name);
+      input.required = toggle.checked && obrigatorio;
+      if (input.required) {
+        input.dataset.required = '1'; input.dataset.tab = 'plano';
+        input.dataset.fieldLabel = input.closest('label').querySelector('span').textContent;
+      } else delete input.dataset.required;
+    });
+    prepararErrosCadastro();
+  }
+  cadastroPlanos?.querySelector('[data-toggle-adicional]')?.addEventListener('change', () => syncPlanoAdicional());
+  cadastroPlanos?.elements.plano.addEventListener('change', () => {
+    if (cadastroPlanos.elements.tem_plano_adicional.checked && !cadastroPlanos.elements.adicional_plano.value) {
+      cadastroPlanos.elements.adicional_plano.value = cadastroPlanos.elements.plano.value;
+    }
+  });
+  cadastroPlanos?.addEventListener('reset', () => setTimeout(() => { syncPlanoAdicional(null); renderSelecaoServidores(); }, 0));
+  syncPlanoAdicional();
+  renderSelecaoServidores();
+  const multiModal = document.getElementById('modal-renovar-planos');
+  const multiForm = document.getElementById('renovar-planos-form');
+  let multiEscolhas = [];
+  let multiRequest = 0;
+  function atualizarResumoPlanos(rebuild) {
+    const grupo = multiEscolhas.find(g => g.selecao === multiForm.elements.selecao.value);
+    if (!grupo) return;
+    const periodos = multiForm.elements.periodos;
+    if (rebuild) {
+      periodos.replaceChildren(...grupo.opcoes.map(o => new Option(o.label, o.periodos)));
+    }
+    const opcao = grupo.opcoes.find(o => o.periodos === Number(periodos.value));
+    multiForm.querySelector('[data-multi-total]').textContent = Number(opcao.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const resumo = multiForm.querySelector('[data-multi-resumo]');
+    resumo.replaceChildren(...grupo.dados.itens.map(item => {
+      const linha = document.createElement('p');
+      const [ano, mes, dia] = item.vencimento.split('-').map(Number);
+      const atual = new Date(ano, mes - 1, dia);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const novo = somarPeriodo(atual > hoje ? atual : hoje, item.periodo, item.tipo, opcao.periodos);
+      linha.textContent = item.plano + ' — ' + item.servidor + ' — ' + (item.valor * opcao.periodos).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + ' — novo vencimento: ' + novo.toLocaleDateString('pt-BR');
+      return linha;
+    }));
+  }
+  multiForm?.elements.selecao.addEventListener('change', () => atualizarResumoPlanos(true));
+  multiForm?.elements.periodos.addEventListener('change', () => atualizarResumoPlanos(false));
+  document.querySelectorAll('.open-multi-payment').forEach(btn => btn.addEventListener('click', async () => {
+    const request = ++multiRequest;
+    multiForm.reset();
+    multiForm.elements.id.value = btn.dataset.id;
+    multiForm.elements.selecao.replaceChildren();
+    multiForm.elements.periodos.replaceChildren();
+    multiForm.querySelector('[data-multi-resumo]').replaceChildren();
+    multiForm.querySelector('[data-multi-total]').textContent = '—';
+    multiForm.querySelector('[data-multi-nome]').textContent = btn.dataset.nome;
+    const erro = multiForm.querySelector('[data-multi-erro]');
+    const submit = multiModal.querySelector('[type="submit"]');
+    submit.disabled = true; erro.textContent = 'Carregando planos…';
+    setModalState(multiModal, true);
+    try {
+      const response = await fetch('/clientes/' + encodeURIComponent(btn.dataset.id) + '/planos-renovacao', { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw Error('Não foi possível carregar os planos. Reabra a renovação.');
+      const data = await response.json();
+      if (request !== multiRequest) return;
+      multiEscolhas = data.escolhas;
+      multiForm.elements.chave.value = data.chave;
+      multiForm.elements.selecao.replaceChildren(...multiEscolhas.map(g => new Option(g.label, g.selecao)));
+      atualizarResumoPlanos(true);
+      await syncPaymentMessagePreference('GET', multiForm.elements.mensagem_pagamento_id);
+      if (request !== multiRequest) return;
+      erro.textContent = ''; submit.disabled = false;
+    } catch (error) { if (request === multiRequest) erro.textContent = error.message; }
+  }));
+
   document.querySelectorAll('.edit-cliente').forEach(btn => {
     btn.addEventListener('click', () => {
       const modal = document.getElementById('modal-add-cliente');
@@ -1347,7 +1532,9 @@ function initGestor() {
       const form = modal.querySelector('#modal-add-cliente-form');
       if (!form) return;
       form.querySelector('[name="action"]').value = 'update_cliente';
+
       form.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+      syncPlanoAdicional(JSON.parse(btn.dataset.adicional || 'null'));
       form.querySelector('[name="status"]').value = btn.getAttribute('data-status') || 'Ativo';
       form.querySelector('[name="nome"]').value = btn.getAttribute('data-nome') || '';
       form.querySelector('[name="user"]').value = btn.getAttribute('data-user') || '';
@@ -1384,6 +1571,7 @@ function initGestor() {
       if (planoFallback) planoFallback.dataset.creditos = btn.getAttribute('data-creditos') || '0';
       form.querySelector('[name="valor"]').value = btn.getAttribute('data-valor') || '';
       setSelectWithFallback('servidor', btn.getAttribute('data-servidor') || '');
+      renderSelecaoServidores();
       setSelectWithFallback('forma_pagamento', btn.getAttribute('data-forma-pagamento') || '');
       form.querySelector('[name="telas"]').value = btn.getAttribute('data-telas') || '1';
       // Semeia o "valor por tela" com o estado atual do cliente (valor / telas),
@@ -1420,6 +1608,8 @@ function initGestor() {
       const tituloEd = modal.querySelector('.modal-header h3'); if (tituloEd) setIconLabel(tituloEd, 'edit', 'Editar Cliente');
       const btnEd = document.querySelector('button[type="submit"][form="modal-add-cliente-form"]'); if (btnEd) btnEd.textContent = 'Salvar Cliente';
       syncClienteUsageFields(form);
+      atualizarTotalCadastro();
+      cadastroPlanos.querySelector('[data-servidores-multiselect]').open = true;
       setModalState(modal, true);
     });
   });
@@ -1431,6 +1621,7 @@ function initGestor() {
       if (!modal) return;
       const form = modal.querySelector('#modal-add-cliente-form');
       // Reseta o form antes — senão valores de uma edição anterior viajam pro novo cliente.
+
       if (form) {
         form.reset();
         form.querySelectorAll('option[data-fallback="1"]').forEach(option => option.remove());
@@ -1661,13 +1852,17 @@ function initGestor() {
     });
   }
 
-  let paymentMessagePending = false;
-  let paymentMessageReady = false;
-  async function syncPaymentMessagePreference(method = 'GET') {
-    const select = document.querySelector('#modal-add-pagamento-form [name="mensagem_pagamento_id"]');
-    if (!select || paymentMessagePending) return;
-    paymentMessagePending = true;
-    paymentMessageReady = false;
+  const paymentMessageStates = new WeakMap();
+  function paymentMessageState(select) {
+    if (!paymentMessageStates.has(select)) paymentMessageStates.set(select, { pending: false, ready: false });
+    return paymentMessageStates.get(select);
+  }
+  async function syncPaymentMessagePreference(method = 'GET', select = document.querySelector('#modal-add-pagamento-form [name="mensagem_pagamento_id"]')) {
+    if (!select) return;
+    const state = paymentMessageState(select);
+    if (state.pending) return;
+    state.pending = true;
+    state.ready = false;
     select.disabled = true;
     try {
       const options = { method, cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } };
@@ -1685,19 +1880,32 @@ function initGestor() {
       if (select.value !== value) {
         throw new Error('A lista de mensagens mudou. Recarregue a página.');
       }
-      paymentMessageReady = true;
+      state.ready = true;
     } catch (error) {
       showToast('Não foi possível sincronizar a mensagem após salvar. Reabra a renovação ou recarregue a página para tentar novamente.', 'error');
     } finally {
       select.disabled = false;
-      paymentMessagePending = false;
+      state.pending = false;
     }
   }
 
   window.addEventListener('focus', () => {
     const modal = document.getElementById('modal-add-pagamento');
     if (modal && modal.getAttribute('aria-hidden') === 'false') syncPaymentMessagePreference();
+    if (multiModal && multiModal.getAttribute('aria-hidden') === 'false') syncPaymentMessagePreference('GET', multiForm.elements.mensagem_pagamento_id);
   });
+
+  if (multiForm) {
+    const select = multiForm.elements.mensagem_pagamento_id;
+    select.addEventListener('change', () => syncPaymentMessagePreference('POST', select));
+    multiForm.addEventListener('submit', event => {
+      const state = paymentMessageState(select);
+      if (state.pending || !state.ready) {
+        event.preventDefault();
+        showToast('Aguarde a sincronização da mensagem. Se houve uma falha, reabra a renovação para tentar novamente.', 'error');
+      }
+    });
+  }
 
   document.querySelectorAll('.open-payment').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1845,7 +2053,8 @@ function initGestor() {
     }
     pagamentoForm.addEventListener('submit', async (e) => {
       if (e.defaultPrevented) return;
-      if (paymentMessagePending || !paymentMessageReady) {
+      const state = paymentMessageState(mensagemPagamento);
+      if (state.pending || !state.ready) {
         e.preventDefault();
         showToast('Aguarde a sincronização da mensagem. Se houve uma falha, reabra a renovação para tentar novamente.', 'error');
         return;
@@ -2123,7 +2332,7 @@ function initGestor() {
       items.forEach(it => {
         const div = document.createElement('div');
         div.className = 'item';
-        const tabLabel = it.tab === 'pagamento' ? 'Aba Pagamento' : 'Aba Dados';
+        const tabLabel = ({ pagamento: 'Aba Pagamento', plano: 'Aba Plano', apps: 'Aba Apps', dados: 'Aba Dados' })[it.tab] || 'Aba Dados';
         div.innerHTML = '<span>' + it.label + ' — ' + tabLabel + '</span>';
         requiredList.appendChild(div);
       });
@@ -2146,12 +2355,13 @@ function initGestor() {
       if (modalError) modalError.textContent = '';
       const missing = [];
       form.querySelectorAll('[data-required="1"]').forEach(field => {
+        if (field.disabled) return;
         const name = field.getAttribute('name');
         const value = (field.value || '').trim();
-        if (!value) {
+        if (!value || !field.checkValidity()) {
           field.classList.add('input-error');
           const msg = form.querySelector('[data-error-for="' + name + '"]');
-          if (msg && !msg.textContent) msg.textContent = 'Campo obrigatório.';
+          if (msg && !msg.textContent) msg.textContent = !value ? 'Campo obrigatório.' : (field.type === 'number' ? 'Informe um valor válido, maior ou igual a ' + (field.min || '0') + '.' : 'Informe um valor válido.');
           missing.push({
             label: field.getAttribute('data-field-label') || name,
             tab: field.getAttribute('data-tab') || 'dados'
@@ -2160,8 +2370,11 @@ function initGestor() {
       });
       if (missing.length) {
         const otherTab = missing.find(m => m.tab !== (document.querySelector('.tab-btn.active')?.getAttribute('data-tab') || 'dados'));
-        if (otherTab) openRequiredModal(missing);
-        else if (modalError) modalError.textContent = 'Revise os campos obrigatórios destacados.';
+        const first = missing[0];
+        document.querySelector('.tab-btn[data-tab="' + first.tab + '"]')?.click();
+        if (modalError) modalError.textContent = 'Revise os campos obrigatórios destacados.';
+        const invalid = form.querySelector('.input-error:not([hidden])');
+        invalid?.focus();
         return false;
       }
       return true;
@@ -2188,12 +2401,13 @@ function initGestor() {
 
       const missing = [];
       form.querySelectorAll('[data-required="1"]').forEach(field => {
+        if (field.disabled) return;
         const name = field.getAttribute('name');
         const value = (field.value || '').trim();
-        if (!value) {
+        if (!value || !field.checkValidity()) {
           field.classList.add('input-error');
           const msg = form.querySelector('[data-error-for="' + name + '"]');
-          if (msg && !msg.textContent) msg.textContent = 'Campo obrigatório.';
+          if (msg && !msg.textContent) msg.textContent = !value ? 'Campo obrigatório.' : (field.type === 'number' ? 'Informe um valor válido, maior ou igual a ' + (field.min || '0') + '.' : 'Informe um valor válido.');
           missing.push({
             label: field.getAttribute('data-field-label') || name,
             tab: field.getAttribute('data-tab') || 'dados'

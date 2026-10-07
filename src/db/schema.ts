@@ -1,4 +1,5 @@
 import { execute, queryRows } from "./mysql.js";
+import { ensureCobrancasEnviosSchema } from './cobrancasEnviosSchema.js';
 import type { RowDataPacket } from "mysql2";
 
 let schemaReady: Promise<void> | null = null;
@@ -45,6 +46,7 @@ const usersNovasColunas: Array<[string, string]> = [
 ];
 
 const clientesNovasColunas: Array<[string, string]> = [
+  ["plano_adicional", "TEXT NULL"],
   ["pagamento_curto", "VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NULL UNIQUE"],
   ["portal_bloqueado", "TINYINT(1) NOT NULL DEFAULT 0"],
   ["portal_login", "VARCHAR(120) NULL UNIQUE"],
@@ -240,6 +242,16 @@ const statements = [
     CONSTRAINT fk_clientes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+  `CREATE TABLE IF NOT EXISTS renovacoes_conjuntas (
+    user_id INT NOT NULL,
+    chave VARCHAR(64) NOT NULL,
+    cliente_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, chave),
+    CONSTRAINT fk_renovacoes_conjuntas_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_renovacoes_conjuntas_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
   `CREATE TABLE IF NOT EXISTS cobrancas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -285,12 +297,13 @@ const statements = [
     id INT AUTO_INCREMENT PRIMARY KEY,
     cobranca_id INT NOT NULL,
     cliente_id INT NOT NULL,
+    acesso_chave VARCHAR(64) NOT NULL DEFAULT 'principal',
     data_envio DATE NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pendente',
     erro TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_cobranca_cliente_data (cobranca_id, cliente_id, data_envio),
+    UNIQUE KEY uq_cobranca_acesso_data (cobranca_id, cliente_id, acesso_chave, data_envio),
     KEY idx_cobrancas_envios_cliente (cliente_id),
     KEY idx_cobrancas_envios_status (status),
     CONSTRAINT fk_cobrancas_envios_cobranca FOREIGN KEY (cobranca_id) REFERENCES cobrancas(id) ON DELETE CASCADE,
@@ -530,6 +543,7 @@ export function ensureDatabaseSchema() {
       await migrarColunas("users", usersNovasColunas);
       await migrarColunas("pagamentos", pagamentosNovasColunas);
       await migrarColunas("notificacoes", [["pagamento_id", "INT NULL UNIQUE"]]);
+      await ensureCobrancasEnviosSchema();
 
       // Migração: se o usuário tinha mp_access_token na tabela users (esquema antigo)
       // e ainda não tem config em payment_provider_configs, copia pra lá.

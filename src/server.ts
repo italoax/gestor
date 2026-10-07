@@ -181,7 +181,8 @@ app.get("/__cron/cobrancas", async (req, res) => {
       statusPostados: statusResult.postados ?? 0,
     });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error instanceof Error ? error.message : String(error) });
+    console.error("[cron] Falha na execução:", error);
+    res.status(500).json({ ok: false, error: "Erro ao executar as automações." });
   }
 });
 

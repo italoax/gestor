@@ -1,21 +1,28 @@
 <%
   const totalCreditos = servidores.reduce((a, s) => a + Number(s.creditos || 0), 0);
+  const totalClientes = servidores.reduce((a, s) => a + Number(s.clientesTotal || 0), 0);
+  const formatCredits = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
   const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
 %>
 <div class="container page-servidores ui-catalog" data-search-scope data-search-singular="servidor" data-search-plural="servidores" data-search-empty="Nenhum servidor encontrado. Tente outra busca.">
 
-  <div class="ui-summary ui-summary-2">
+  <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🗄️' }) %></div>
       <div><strong><%= servidores.length %></strong><span>Servidores</span></div>
     </div>
     <div class="cli-stat accent-green">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '💳' }) %></div>
-      <div><strong><%= totalCreditos %></strong><span>Total Créditos</span></div>
+      <div><strong><%= formatCredits(totalCreditos) %></strong><span>Créditos disponíveis</span></div>
+    </div>
+    <div class="cli-stat accent-blue">
+      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'users' }) %></div>
+      <div><strong><%= totalClientes %></strong><span>Acessos nos servidores</span></div>
     </div>
   </div>
 
-  <div class="ui-toolbar ui-toolbar-actions">
+  <div class="ui-toolbar srv-toolbar">
+    <input class="input srv-search" type="search" placeholder="Buscar servidor..." aria-label="Buscar servidor" autocomplete="off" data-search-input>
 
   <button class="btn btn-primary ui-new" type="button" data-open-modal="modal-add-servidor">
     <%- include('../partials/ui-icon', { name: 'plus' }) %> Novo servidor
@@ -43,7 +50,7 @@
         + ` data-creditos="${s.creditos}" data-valor="${s.valorCred}"`
         + ` data-identificador="${esc(s.identificador)}" data-obs="${esc(s.observacaoServidor)}"`;
     %>
-    <div class="srv-card" id="servidor-<%= s.id %>" data-search-item>
+    <div class="srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>" id="servidor-<%= s.id %>" data-search-item data-search-text="<%= [s.nome, s.identificador, s.observacaoServidor].filter(Boolean).join(' ') %>">
       <div class="srv-head">
         <div class="srv-id">
           <span class="srv-icon"><%- include('../partials/ui-icon', { name: '🗄️' }) %></span>
@@ -52,15 +59,16 @@
             <% if (s.identificador) { %><small><%= s.identificador %></small><% } %>
           </div>
         </div>
-        <input type="checkbox" class="switch" checked aria-label="Servidor ativo">
+        <span class="srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
       </div>
       <div class="srv-stats">
-        <div class="srv-stat"><span>CRÉDITOS</span><strong class="srv-cred"><%= s.creditos %></strong></div>
+        <div class="srv-stat"><span>CRÉDITOS</span><strong class="srv-cred"><%= formatCredits(s.creditos) %></strong></div>
         <div class="srv-stat"><span>CLIENTES</span><strong><%= s.clientesTotal %></strong></div>
-        <div class="srv-stat"><span>CUSTO/CRÉD.</span><strong><%= formatMoney(s.valorCred) %></strong></div>
+        <div class="srv-stat"><span>Custo por crédito</span><strong><%= formatMoney(s.valorCred) %></strong></div>
       </div>
+      <% if (s.observacaoServidor) { %><p class="srv-note"><%= s.observacaoServidor %></p><% } %>
       <div class="srv-actions">
-        <button class="srv-act edit-servidor" type="button"<%- editData %>><%- include('../partials/ui-icon', { name: 'refresh' }) %> Recarregar</button>
+        <button class="srv-act edit-servidor srv-credit-action" type="button" data-credit-focus<%- editData %>><%- include('../partials/ui-icon', { name: 'money' }) %> Ajustar saldo</button>
         <button class="srv-act edit-servidor" type="button"<%- editData %>><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
         <form method="post" action="/servidores" class="action-form delete-servidor srv-act-form">
           <%- csrfInput %>
@@ -89,7 +97,7 @@
       <input type="hidden" name="sessao" value="Não definido">
       <div class="form-grid">
         <label class="field full"><span>Nome do Servidor *</span><input class="input" name="nome" placeholder="Ex: Alpha, Beta..." required data-required="1" data-field-label="Nome do Servidor"></label>
-        <label class="field"><span>Créditos Iniciais</span><input class="input" type="number" step="0.01" name="creditos" value="0"><small class="muted">Use "Recarregar" para controle detalhado</small></label>
+        <label class="field"><span>Saldo de créditos</span><input class="input" type="number" step="0.01" name="creditos" value="0"><small class="muted">Informe o saldo total disponível no servidor.</small></label>
         <label class="field"><span>Custo por Crédito (R$)</span><input class="input" type="number" step="0.01" name="valor_cred" value="2"><small class="muted">Custo médio padrão por crédito</small></label>
         <label class="field full"><span>Observações</span><textarea class="input" name="observacao_servidor" placeholder="Observações sobre o servidor..."></textarea></label>
       </div>

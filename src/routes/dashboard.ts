@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { queryRows } from "../db/mysql.js";
 import { appTodayIso } from "../services/dates.js";
+import { resumirAcessos } from "../services/dashboardAcessos.js";
 import { PAIS_NOME, UF_NOME, paisFromTelefone, ufFromTelefone } from "../services/geo.js";
 import type { RowDataPacket } from "mysql2";
 
@@ -77,6 +78,11 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
     const month = Number(today.slice(5, 7));
     const dayOfMonth = Number(today.slice(8, 10));
     const daysInMonth = new Date(year, month, 0).getDate();
+    const clientesAcessos = await queryRows<RowDataPacket & { servidor: string; vencimento: string; status: string; plano_adicional: string | null }>(
+      `SELECT servidor, vencimento, status, plano_adicional FROM clientes
+        WHERE user_id = :userId AND arquivado = 0`, { userId },
+    );
+    const acessos = resumirAcessos(clientesAcessos, today);
 
     const [totalsRows, financeirasRows, planosCount, servidoresCount, proximos, atrasados, serieFinanceira, serieNovos] = await Promise.all([
       // Contagens de clientes/vencimentos — vêm da tabela de clientes.
@@ -359,6 +365,7 @@ dashboardRouter.get("/dashboard", async (req, res, next) => {
     const payload: DashboardPayload = {
       title: "Dashboard",
       stats,
+      acessos,
       ativosPercent,
       vencidosPercent,
       proximos,

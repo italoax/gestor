@@ -1,6 +1,7 @@
 <div class="container page-mensagens ui-catalog" data-search-scope data-search-singular="template" data-search-plural="templates" data-search-empty="Nenhum template encontrado. Tente outra busca.">
 
-  <div class="ui-toolbar ui-toolbar-actions">
+  <div class="ui-toolbar">
+    <input class="input" type="search" placeholder="Buscar template..." aria-label="Buscar template" autocomplete="off" data-search-input>
     <button class="btn btn-primary" type="button" data-open-modal="modal-add-mensagem">+ Novo Template</button>
   </div>
 
@@ -16,7 +17,7 @@
   <% } else { %>
   <div class="msg-grid">
     <% mensagens.forEach(m => { %>
-    <div class="msg-card" data-search-item>
+    <div class="msg-card" data-search-item data-search-text="<%= [m.titulo, m.descricao, m.mensagem].filter(Boolean).join(' ') %>">
       <div class="msg-card-head">
         <strong><%= m.titulo %></strong>
         <div class="msg-actions">
@@ -77,6 +78,9 @@
                 <option value="{vencimento}">{vencimento}</option>
                 <option value="{valor}">{valor}</option>
                 <option value="{servidor}">{servidor}</option>
+                <option value="{vencimento_1}">{vencimento_1}</option>
+                <option value="{vencimento_2}">{vencimento_2}</option>
+                <option value="{resumo_acessos}">{resumo_acessos}</option>
                 <option value="{link_cliente}">{link_cliente} — Renovar com PIX</option>
               </select>
             </div>

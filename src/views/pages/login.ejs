@@ -68,7 +68,7 @@
           <%= error[0] %>
         </div>
       <% } %>
-      <form class="login-form" action="/login" method="post">
+      <form class="login-form" action="/login" method="post" autocomplete="on">
         <%- csrfInput %>
         <label class="login-field">
           <span>
@@ -80,7 +80,7 @@
           <span>
             Senha
           </span>
-          <input type="password" name="password" placeholder="Sua senha" autocomplete="current-password" required />
+          <div class="login-password-control"><input id="login-password" type="password" name="password" placeholder="Sua senha" autocomplete="current-password" required /><button type="button" data-login-password-toggle aria-controls="login-password" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button></div>
         </label>
         <div class="login-row">
           <label class="login-check">
@@ -101,4 +101,4 @@
     </div>
   </section>
 </main>
-<script src="/assets/js/login.js?v=199" defer></script>
+<script src="/assets/js/login.js?v=200" defer></script>

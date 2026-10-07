@@ -1583,3 +1583,8 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
   -webkit-appearance: none;
   appearance: none;
 }
+
+.login-password-control { position: relative; min-width: 0; }
+.login-password-control input { width: 100%; box-sizing: border-box; padding-right: 88px; }
+.login-password-control button { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; padding: 10px 8px; font: inherit; font-size: 13px; font-weight: 600; }
+.login-password-control button:focus-visible { outline: 2px solid var(--primary, #a46aca); }

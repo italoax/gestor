@@ -29,10 +29,10 @@
       <tbody>
         <% backups.forEach(b => { %>
         <tr>
-          <td><code><%= b.nome %></code></td>
-          <td><%= b.data %></td>
-          <td><%= b.tamanhoKb %> KB</td>
-          <td class="admin-user-actions">
+          <td data-label="Arquivo"><code><%= b.nome %></code></td>
+          <td data-label="Data"><%= b.data %></td>
+          <td data-label="Tamanho"><%= b.tamanhoKb %> KB</td>
+          <td data-label="Ações" class="admin-user-actions">
             <a class="btn btn-sm btn-green" href="/admin/backups/download/<%= b.nome %>">⬇ Baixar</a>
             <form method="post" action="/admin/backups/excluir" class="inline-form">
               <%- csrfInput %>

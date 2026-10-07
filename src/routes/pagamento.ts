@@ -12,7 +12,7 @@ import { formatMoney, formatDateBr } from "../services/format.js";
 import { registrarPagamentoPendente } from "../services/renovacoesPendentes.js";
 import { enviarConfirmacaoPix } from "../services/mensagemPix.js";
 import { tokenPagamentoOriginal } from "../services/linkPagamentoUrl.js";
-import { opcoesRenovacao, type PlanoRenovacao } from "../services/renovacaoOpcoes.js";
+import { escolhasRenovacao, type PlanoRenovacao } from "../services/renovacaoOpcoes.js";
 
 interface ClienteRow extends RowDataPacket {
   id: number;
@@ -58,7 +58,7 @@ pagamentoRouter.use(["/pagar", "/p"], (_req, res, next) => {
 async function clienteByToken(token: string): Promise<ClienteRow | null> {
   if (!token || token.length < 16) return null;
   return queryOne<ClienteRow>(
-    `SELECT id, user_id AS userId, nome, user, telas, hora_vencimento AS horaVencimento, telefone, plano, valor, vencimento,
+    `SELECT id, user_id AS userId, nome, user, telas, servidor, sigma_customer_id, plano_adicional, hora_vencimento AS horaVencimento, telefone, plano, valor, vencimento,
             pagamento_token AS pagamentoToken
        FROM clientes
       WHERE pagamento_token = :token AND arquivado = 0
@@ -67,11 +67,11 @@ async function clienteByToken(token: string): Promise<ClienteRow | null> {
   );
 }
 
-async function planoDoCliente(cliente: ClienteRow) {
-  return queryOne<RowDataPacket & PlanoRenovacao>(
+async function planosDoCliente(cliente: ClienteRow) {
+  return escolhasRenovacao(cliente, nome => queryOne<RowDataPacket & PlanoRenovacao>(
     "SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1",
-    { userId: cliente.userId, nome: cliente.plano },
-  );
+    { userId: cliente.userId, nome },
+  ));
 }
 
 // Página pública: mostra dados do cliente + valor + botão pra gerar PIX.
@@ -86,9 +86,10 @@ pagamentoRouter.get(["/pagar/:token", "/p/:token"], async (req, res, next) => {
       return res.status(503).render("pages/pagar-erro", { layout: false, title: "Indisponível", motivo: "Pagamento online ainda não foi configurado pelo seu provedor." });
     }
 
-    const plano = await planoDoCliente(cliente);
-    const renovacaoDados = JSON.stringify(plano || { periodo: 30, tipo: 'Dias', creditoGastos: 1 });
-    const opcoes = opcoesRenovacao(plano, Number(cliente.valor));
+    const escolhas = await planosDoCliente(cliente);
+    const grupo = escolhas.find(g => g.selecao === req.query.selecao) || escolhas[0];
+    const renovacaoDados = JSON.stringify(grupo.dados);
+    const opcoes = grupo.opcoes;
     const periodos = Number(req.query.periodos ?? 1);
     const selecionada = opcoes.find(opcao => opcao.periodos === periodos) || opcoes[0];
     const pendente = await queryOne<PagamentoRow>(
@@ -107,7 +108,7 @@ pagamentoRouter.get(["/pagar/:token", "/p/:token"], async (req, res, next) => {
     res.render("pages/pagar", {
       layout: false,
       title: "Pagamento",
-      cliente,
+      cliente, escolhas, selecao: grupo.selecao,
       pagamento: pendente,
       valorFormatado: formatMoney(selecionada.valor),
       opcoesRenovacao: opcoes, periodosSelecionados: selecionada.periodos,
@@ -142,12 +143,14 @@ pagamentoRouter.post("/pagar/:token/criar", criarPixRateLimit, async (req, res) 
     if (!cliente.valor || cliente.valor <= 0) {
       return res.status(400).json({ ok: false, error: "Valor do plano não definido." });
     }
-    const plano = await planoDoCliente(cliente);
+    const escolhas = await planosDoCliente(cliente);
+    const grupo = req.body?.selecao === undefined ? escolhas[0] : escolhas.find(g => g.selecao === req.body.selecao);
+    if (!grupo) return res.status(400).json({ ok: false, error: 'Selecione os planos que deseja renovar.' });
     const periodos = Number(req.body?.periodos ?? 1);
-    const opcao = opcoesRenovacao(plano, Number(cliente.valor)).find(opcao => opcao.periodos === periodos);
+    const opcao = grupo.opcoes.find(opcao => opcao.periodos === periodos);
     if (!opcao) return res.status(400).json({ ok: false, error: "Escolha uma duração de renovação válida." });
     const valor = opcao.valor;
-    const renovacaoDados = JSON.stringify(plano || { periodo: 30, tipo: 'Dias', creditoGastos: 1 });
+    const renovacaoDados = JSON.stringify(grupo.dados);
 
     // Reusa pagamento pendente da mesma sessão+provedor.
     const existente = await queryOne<PagamentoRow>(
@@ -173,7 +176,7 @@ pagamentoRouter.post("/pagar/:token/criar", criarPixRateLimit, async (req, res) 
 
     const pix = await provider.criarPix(providerCfg.credenciais, {
       valor,
-      descricao: `${cliente.plano || "Plano"} — ${cliente.nome} — ${opcao.label}`.slice(0, 250),
+      descricao: `${grupo.label} — ${cliente.nome} — ${opcao.label}`.slice(0, 250),
       payerNome: cliente.nome,
       notificationUrl,
       externalReference,
@@ -187,7 +190,7 @@ pagamentoRouter.post("/pagar/:token/criar", criarPixRateLimit, async (req, res) 
         userId: cliente.userId,
         clienteId: cliente.id,
         valor, periodos, renovacaoDados,
-        descricao: `Renovação — ${cliente.plano || "plano"} — ${opcao.label}`,
+        descricao: `Renovação — ${grupo.label} — ${opcao.label}`.slice(0, 250),
         provider: providerCfg.provider,
         mpId: pix.id,
         qrText: pix.qrText,

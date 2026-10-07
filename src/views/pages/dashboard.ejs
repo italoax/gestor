@@ -21,7 +21,7 @@
       <div>
         <span class="stat-label">Total de Clientes</span>
         <strong class="stat-value"><%= stats.clientesTotal %></strong>
-        <small class="stat-foot"><%= stats.planosCount %> plano(s)</small>
+        <small class="stat-foot">Cada cadastro conta uma vez</small>
       </div>
       <div class="stat-icon"><%- include('../partials/ui-icon', { name: '🧑‍🤝‍🧑' }) %></div>
     </div>
@@ -34,6 +34,28 @@
       <div class="stat-icon"><%- include('../partials/ui-icon', { name: '🖥️' }) %></div>
     </div>
   </div>
+
+  <% if (locals.acessos) { %>
+  <section class="dash-access">
+    <div class="dash-access-heading"><h3><%- include('../partials/ui-icon', { name: 'server' }) %> Acessos por servidor</h3><span>Clientes não arquivados</span></div>
+    <div class="dash-access-overview">
+      <div class="dash-access-main"><span>Clientes cadastrados</span><strong><%= acessos.clientes %></strong><small><b><%= acessos.comUm %></b> com 1 acesso <span>·</span> <b><%= acessos.comDois %></b> com 2 acessos</small></div>
+      <div class="dash-access-main"><span>Total de acessos</span><strong class="dash-access-total"><%= acessos.total %></strong><small><%= acessos.clientes %> principais + <%= acessos.comDois %> adicionais</small></div>
+    </div>
+    <div class="dash-access-status"><span class="is-active"><i></i><b><%= acessos.ativos %></b> ativos</span><span class="is-expired"><i></i><b><%= acessos.vencidos %></b> vencidos</span><span><i></i><b><%= acessos.inativos %></b> inativos</span></div>
+    <div class="dash-access-servers">
+      <div class="dash-access-row dash-access-labels"><span>Servidor</span><span>Acessos</span><span>Ativos</span><span>Vencidos</span><span>Inativos</span></div>
+      <% acessos.servidores.forEach(s => { %>
+        <div class="dash-access-row">
+          <strong class="dash-access-name"><%= s.nome %></strong>
+          <span data-label="Acessos"><b><%= s.total %></b></span><span data-label="Ativos" class="pos"><b><%= s.ativos %></b></span><span data-label="Vencidos" class="neg"><b><%= s.vencidos %></b></span><span data-label="Inativos"><b><%= s.inativos %></b></span>
+        </div>
+      <% }) %>
+      <% if (!acessos.servidores.length) { %><p class="muted dash-access-empty">Nenhum acesso cadastrado.</p><% } %>
+    </div>
+    <p class="dash-access-note">Cada cliente conta uma vez. Cada acesso tem seu próprio vencimento.</p>
+  </section>
+  <% } %>
 
   <div class="dash-section">
     <h3 class="dash-section-title"><%- include('../partials/ui-icon', { name: 'money' }) %> Receita x Custo</h3>

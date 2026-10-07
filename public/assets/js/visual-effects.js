@@ -48,7 +48,9 @@
   }
   const prepare = () => {
     document.querySelectorAll(cards).forEach(el => el.classList.add('fx-spotlight'));
-    if (!observer || paused || reduce.matches) return;
+    // No painel, os dados e controles ficam visíveis imediatamente.
+    // A revelação gradual é reservada à página pública.
+    if (!landing || !observer || paused || reduce.matches) return;
     document.querySelectorAll(reveal).forEach((el, index) => {
       if (seen.has(el)) return;
       seen.add(el);
