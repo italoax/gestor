@@ -73,6 +73,15 @@ if (process.argv.includes('--serve')) {
         process.exitCode = code ?? 1;
         return;
       }
+      if (code === 78) {
+        console.error('[local] Limite do MySQL atingido. Reinicio automatico pausado. Aguarde a liberacao do banco e execute npm run dev novamente.');
+        stopping = true;
+        clearTimeout(debounce);
+        clearTimeout(retry);
+        watchers.forEach((watcher) => watcher.close());
+        process.exitCode = code;
+        return;
+      }
       failures = Date.now() - started > 60000 ? 1 : failures + 1;
       const delay = Math.min(30000, failures * 5000);
       console.error(

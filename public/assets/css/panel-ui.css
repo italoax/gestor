@@ -581,6 +581,7 @@
   .page-app .admin-user-actions .inline-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; min-width: 0; box-sizing: border-box; }
   .page-app .admin-user-actions :is(.input,.btn) { min-height: 44px; }
 }
+.page-app .topbar2-title h1[tabindex="-1"]:focus { outline: none; }
 .mobile-dock { display: none; }
 .avisos-list { display: grid; gap: 12px; }
 .aviso-card { display: flex; align-items: flex-start; gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }

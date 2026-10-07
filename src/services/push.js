@@ -39,7 +39,7 @@ export async function enviarPushParaUsuario(userId, payload) {
     url: payload.url || '/dashboard',
     tag: payload.tag,
     icon: payload.icon || '/icons/icon-192.png',
-    badge: payload.badge || '/icons/badge-72.png',
+    badge: payload.badge || '/icons/icon-192.png',
   });
   let enviadas = 0,
     falhas = 0;

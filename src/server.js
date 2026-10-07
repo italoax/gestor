@@ -357,5 +357,9 @@ async function startServer() {
 }
 startServer().catch((error) => {
   console.error('Erro ao iniciar o Gestor Node:', error);
+  if (error?.code === 'ER_USER_LIMIT_REACHED') {
+    console.error('Limite de recursos do MySQL atingido. Aguarde a liberacao pelo provedor antes de reiniciar.');
+    process.exit(78);
+  }
   process.exit(1);
 });

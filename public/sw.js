@@ -5,7 +5,7 @@
 
 // Bump esse nome de cache sempre que mudar APP_SHELL ou os arquivos referenciados —
 // install dispara replace e velhos caches sao limpos no activate.
-const CACHE = 'gestor-v196-dock-spacing';
+const CACHE = 'gestor-v197-heading-focus';
 // Página mostrada quando uma navegação acontece sem rede (app instalado offline).
 const OFFLINE_URL = '/offline.html';
 const APP_SHELL = [
@@ -19,7 +19,7 @@ const APP_SHELL = [
   '/assets/css/style.css?v=192',
   '/assets/css/node-migration.css?v=194',
   '/assets/css/modals.css?v=197',
-  '/assets/css/panel-ui.css?v=199',
+  '/assets/css/panel-ui.css?v=200',
   '/assets/css/visual-effects.css?v=192',
   '/assets/js/visual-effects.js?v=192',
   '/assets/js/main.js?v=197',
