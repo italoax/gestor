@@ -5,7 +5,10 @@
 
 // Configuração injetada pelo servidor a partir dos hashes dos arquivos.
 // Alterações nos assets ou neste worker renovam o cache automaticamente.
-const { cacheName: CACHE, appShell: APP_SHELL } = self.__GESTOR_ASSETS__;
+// Se a hospedagem servir o arquivo estático sem passar pelo Node, mantém
+// notificações e deixa as requisições com o navegador, sem cache sem versão.
+const { cacheName: CACHE, appShell: APP_SHELL = [] } =
+  self.__GESTOR_ASSETS__ || {};
 // Página mostrada quando uma navegação acontece sem rede (app instalado offline).
 const OFFLINE_URL = '/offline.html';
 const OFFLINE_ASSET = APP_SHELL.find(
@@ -15,6 +18,10 @@ const OFFLINE_ASSET = APP_SHELL.find(
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
+      if (!CACHE) {
+        self.skipWaiting();
+        return;
+      }
       const cache = await caches.open(CACHE);
       // addAll falha se algum item 404 — fazemos individual com try pra não quebrar tudo.
       await Promise.all(
@@ -34,10 +41,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
-      );
+      if (CACHE) {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+        );
+      }
       await self.clients.claim();
     })(),
   );
@@ -45,6 +54,7 @@ self.addEventListener('activate', (event) => {
 
 // Stale-while-revalidate só pros assets estáticos. HTML/POST sempre vão pra rede.
 self.addEventListener('fetch', (event) => {
+  if (!CACHE) return;
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
