@@ -1,23 +1,36 @@
 <div class="container page-transacoes" data-search-scope>
   <div class="ui-summary ui-summary-5">
     <div class="tx-stat">
-      <div><span>Transações</span><strong><%= stats.total %></strong></div>
+      <div
+        ><span>Transações</span><strong><%= stats.total %></strong></div
+      >
       <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '🔁' }) %></div>
     </div>
     <div class="tx-stat">
-      <div><span>Telas</span><strong><%= stats.telas %></strong></div>
+      <div
+        ><span>Telas</span><strong><%= stats.telas %></strong></div
+      >
       <div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '👁' }) %></div>
     </div>
     <div class="tx-stat">
-      <div><span>Créditos</span><strong class="<%= stats.creditos < 0 ? 'neg' : '' %>"><%= stats.creditos %></strong></div>
+      <div
+        ><span>Créditos</span
+        ><strong class="<%= stats.creditos < 0 ? 'neg' : '' %>"><%= stats.creditos %></strong></div
+      >
       <div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📉' }) %></div>
     </div>
     <div class="tx-stat">
-      <div><span>Receita</span><strong class="pos"><%= formatMoney(stats.receita) %></strong></div>
+      <div
+        ><span>Receita</span
+        ><strong class="pos"><%= formatMoney(stats.receita) %></strong></div
+      >
       <div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '💲' }) %></div>
     </div>
     <div class="tx-stat">
-      <div><span>Lucro</span><strong class="<%= stats.lucro < 0 ? 'neg' : 'pos' %>"><%= formatMoney(stats.lucro) %></strong></div>
+      <div
+        ><span>Lucro</span
+        ><strong class="<%= stats.lucro < 0 ? 'neg' : 'pos' %>"><%= formatMoney(stats.lucro) %></strong></div
+      >
       <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '📈' }) %></div>
     </div>
   </div>
@@ -29,7 +42,12 @@
       <table class="cli-table tx-table">
         <thead>
           <tr>
-            <th class="col-check" hidden style="display:none" aria-hidden="true"></th>
+            <th
+              class="col-check"
+              hidden
+              style="display:none"
+              aria-hidden="true"
+            ></th>
             <th>Data</th>
             <th>Cliente</th>
             <th>Pagamento</th>
@@ -46,40 +64,58 @@
         </thead>
         <tbody>
           <% if (!transacoes.length) { %>
-            <tr>
-              <td colspan="12">
-                <div class="dist-empty">Nenhuma transação registrada.</div>
-              </td>
-            </tr>
+          <tr>
+            <td colspan="12">
+              <div class="dist-empty">Nenhuma transação registrada.</div>
+            </td>
+          </tr>
           <% } %>
           <% transacoes.forEach(t => { %>
-            <tr data-search-item data-id="<%= t.id %>" class="tx-row" tabindex="0">
-              <td class="col-check" hidden style="display:none" aria-hidden="true"></td>
-              <td><%- include('../partials/ui-icon', { name: 'calendar' }) %> <%= formatDateBr(t.data) %></td>
-              <td><%= t.clienteNome || '-' %></td>
-              <td>
-                <% if (t.formaPagamento) { %>
-                  <span class="badge badge-blue"><%= t.formaPagamento %></span>
-                <% } else { %>
-                  -
-                <% } %>
-              </td>
-              <td><%= t.descricao || '-' %></td>
-              <td><%= t.servidor || '-' %></td>
-              <td>
-                <% if (t.plano) { %>
-                  <span class="badge badge-muted"><%= t.plano %></span>
-                <% } else { %>
-                  -
-                <% } %>
-              </td>
-              <td><%= t.telas %></td>
-              <td class="<%= Number(t.creditos) < 0 ? 'tx-neg' : '' %>"><%= Number(t.creditos) %></td>
-              <td class="tx-neg"><%= formatMoney(t.custo) %></td>
-              <td class="tx-pos">+<%= formatMoney(t.valorVenda) %></td>
-              <td class="tx-profit <%= Number(t.lucro) < 0 ? 'tx-neg' : 'tx-pos' %>"><%= Number(t.lucro) < 0 ? '' : '+' %><%= formatMoney(t.lucro) %></td>
-              <td class="col-acoes">
-                <button class="cli-ico-btn view-transacao" type="button" title="Detalhes"
+          <tr
+            data-search-item
+            data-id="<%= t.id %>"
+            class="tx-row"
+            tabindex="0"
+          >
+            <td
+              class="col-check"
+              hidden
+              style="display:none"
+              aria-hidden="true"
+            ></td>
+            <td
+              ><%- include('../partials/ui-icon', { name: 'calendar' }) %>
+              <%= formatDateBr(t.data) %></td
+            >
+            <td><%= t.clienteNome || '-' %></td>
+            <td>
+              <% if (t.formaPagamento) { %>
+              <span class="badge badge-blue"><%= t.formaPagamento %></span>
+              <% } else { %>
+              -
+              <% } %>
+            </td>
+            <td><%= t.descricao || '-' %></td>
+            <td><%= t.servidor || '-' %></td>
+            <td>
+              <% if (t.plano) { %>
+              <span class="badge badge-muted"><%= t.plano %></span>
+              <% } else { %>
+              -
+              <% } %>
+            </td>
+            <td><%= t.telas %></td>
+            <td class="<%= Number(t.creditos) < 0 ? 'tx-neg' : '' %>"><%= Number(t.creditos) %></td>
+            <td class="tx-neg"><%= formatMoney(t.custo) %></td>
+            <td class="tx-pos">+<%= formatMoney(t.valorVenda) %></td>
+            <td class="tx-profit <%= Number(t.lucro) < 0 ? 'tx-neg' : 'tx-pos' %>"
+              ><%= Number(t.lucro) < 0 ? '' : '+' %><%= formatMoney(t.lucro) %></td
+            >
+            <td class="col-acoes">
+              <button
+                class="cli-ico-btn view-transacao"
+                type="button"
+                title="Detalhes"
                 data-data="<%= formatDateBr(t.data) %>"
                 data-cliente="<%= t.clienteNome || '-' %>"
                 data-pagamento="<%= t.formaPagamento || '-' %>"
@@ -91,15 +127,20 @@
                 data-custo="<%= formatMoney(t.custo) %>"
                 data-total="<%= formatMoney(t.valorVenda) %>"
                 data-lucro="<%= formatMoney(t.lucro) %>"
-                data-lucro-neg="<%= Number(t.lucro) < 0 ? '1' : '0' %>"><%- include('../partials/ui-icon', { name: 'eye' }) %></button>
-              </td>
-            </tr>
+                data-lucro-neg="<%= Number(t.lucro) < 0 ? '1' : '0' %>"
+                ><%- include('../partials/ui-icon', { name: 'eye' }) %></button
+              >
+            </td>
+          </tr>
           <% }) %>
         </tbody>
       </table>
     </div>
     <div class="cli-table-foot">
-      <span class="muted"><%= transacoes.length %> transação<%= transacoes.length === 1 ? '' : 'ões' %></span>
+      <span class="muted"
+        ><%= transacoes.length %>
+        transação<%= transacoes.length === 1 ? '' : 'ões' %></span
+      >
     </div>
   </div>
 </div>
@@ -107,57 +148,148 @@
   <div class="modal" style="max-width:460px;">
     <div class="modal-header">
       <h3>Detalhes da Transação</h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+      <button
+        class="modal-close"
+        type="button"
+        data-close-modal
+        aria-label="Fechar"
+        >×</button
+      >
     </div>
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;">
-      <div style="display:flex;flex-direction:column;gap:2px;padding:2px 2px 12px;border-bottom:1px solid var(--border);">
-        <div style="font-size:12px;color:var(--muted);font-weight:500;"><%- include('../partials/ui-icon', { name: 'calendar' }) %> <span id="tx-info-data">—</span></div>
-        <div id="tx-info-cliente" style="font-size:18px;font-weight:700;color:var(--text);line-height:1.25;">—</div>
+    <div
+      class="modal-body"
+      style="display:flex;flex-direction:column;gap:16px;"
+    >
+      <div
+        style="display:flex;flex-direction:column;gap:2px;padding:2px 2px 12px;border-bottom:1px solid var(--border);"
+      >
+        <div style="font-size:12px;color:var(--muted);font-weight:500;"
+          ><%- include('../partials/ui-icon', { name: 'calendar' }) %>
+          <span id="tx-info-data">—</span></div
+        >
+        <div
+          id="tx-info-cliente"
+          style="font-size:18px;font-weight:700;color:var(--text);line-height:1.25;"
+          >—</div
+        >
       </div>
-      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
-          <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Total recebido</span>
-          <strong id="tx-info-total" style="font-size:15px;font-weight:700;color:#22c55e;">—</strong>
+      <div
+        style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;"
+      >
+        <div
+          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
+        >
+          <span
+            style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Total recebido</span
+          >
+          <strong
+            id="tx-info-total"
+            style="font-size:15px;font-weight:700;color:#22c55e;"
+            >—</strong
+          >
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
-          <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Custo</span>
-          <strong id="tx-info-custo" style="font-size:15px;font-weight:700;color:#ef4444;">—</strong>
+        <div
+          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
+        >
+          <span
+            style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Custo</span
+          >
+          <strong
+            id="tx-info-custo"
+            style="font-size:15px;font-weight:700;color:#ef4444;"
+            >—</strong
+          >
         </div>
         <div style="height:1px;background:var(--border);margin:2px 0;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
-          <span style="font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.06em;font-weight:800;">Lucro</span>
-          <strong id="tx-info-lucro" style="font-size:22px;font-weight:800;color:#22c55e;letter-spacing:-.01em;">—</strong>
+        <div
+          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
+        >
+          <span
+            style="font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.06em;font-weight:800;"
+            >Lucro</span
+          >
+          <strong
+            id="tx-info-lucro"
+            style="font-size:22px;font-weight:800;color:#22c55e;letter-spacing:-.01em;"
+            >—</strong
+          >
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;">
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Pagamento</span>
-          <span id="tx-info-pagamento" style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Pagamento</span
+          >
+          <span
+            id="tx-info-pagamento"
+            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            >—</span
+          >
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Plano</span>
-          <span id="tx-info-plano" style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Plano</span
+          >
+          <span
+            id="tx-info-plano"
+            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            >—</span
+          >
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Servidor</span>
-          <span id="tx-info-servidor" style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Servidor</span
+          >
+          <span
+            id="tx-info-servidor"
+            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            >—</span
+          >
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Descrição</span>
-          <span id="tx-info-descricao" style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Descrição</span
+          >
+          <span
+            id="tx-info-descricao"
+            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+            >—</span
+          >
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Telas</span>
-          <span id="tx-info-telas" style="font-size:13.5px;color:var(--text);font-weight:500;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Telas</span
+          >
+          <span
+            id="tx-info-telas"
+            style="font-size:13.5px;color:var(--text);font-weight:500;"
+            >—</span
+          >
         </div>
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;">Créditos</span>
-          <span id="tx-info-creditos" style="font-size:13.5px;color:var(--text);font-weight:500;">—</span>
+          <span
+            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            >Créditos</span
+          >
+          <span
+            id="tx-info-creditos"
+            style="font-size:13.5px;color:var(--text);font-weight:500;"
+            >—</span
+          >
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" type="button" data-close-modal>Fechar</button>
+      <button class="btn btn-primary" type="button" data-close-modal
+        >Fechar</button
+      >
     </div>
   </div>
 </div>

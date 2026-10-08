@@ -67,44 +67,70 @@
   <div class="ui-settings-grid">
     <section class="card ui-settings-card">
       <h2>Receber pagamentos por QR Code PIX</h2>
-      <p>Conecte sua conta de pagamento para gerar QR Code e PIX Copia e Cola nos links dos clientes.</p>
+      <p
+        >Conecte sua conta de pagamento para gerar QR Code e PIX Copia e Cola
+        nos links dos clientes.</p
+      >
       <ol>
-        <li>Escolha um provedor abaixo, informe a credencial e ative a integração.</li>
+        <li
+          >Escolha um provedor abaixo, informe a credencial e ative a
+          integração.</li
+        >
         <li>Selecione a conta que receberá os pagamentos.</li>
-        <li>Envie <code>{link_cliente}</code> na mensagem. O cliente abre o link e gera o PIX.</li>
+        <li
+          >Envie <code>{link_cliente}</code> na mensagem. O cliente abre o link
+          e gera o PIX.</li
+        >
       </ol>
       <form method="post" action="/integracao-pagamento" data-native-submit="1">
         <%- csrfInput %>
-        <input type="hidden" name="action" value="provedor-padrao">
+        <input type="hidden" name="action" value="provedor-padrao" />
         <label class="field">
           Receber PIX por
           <select class="input" name="provider" required>
             <option value="">Escolha uma conta ativa</option>
             <% providers.filter(p => ativoPorProvider[p]).forEach(p => { %>
-              <option value="<%= p %>" <%= providerPadrao === p ? 'selected' : '' %>><%= providerNomes[p] %></option>
+            <option value="<%= p %>" <%= providerPadrao === p ? 'selected' : '' %>
+              ><%= providerNomes[p] %></option
+            >
             <% }) %>
           </select>
         </label>
-        <p class="muted">Uma chave PIX simples não habilita a confirmação automática. Informe a credencial da integração. Salvar a configuração não gera cobrança nem valida a credencial junto ao provedor.</p>
-        <button class="btn btn-primary" type="submit" <%= ativosCount ? '' : 'disabled' %>>Salvar conta de recebimento</button>
+        <p class="muted"
+          >Uma chave PIX simples não habilita a confirmação automática. Informe
+          a credencial da integração. Salvar a configuração não gera cobrança
+          nem valida a credencial junto ao provedor.</p
+        >
+        <button class="btn btn-primary" type="submit" <%= ativosCount ? '' : 'disabled' %>
+          >Salvar conta de recebimento</button
+        >
       </form>
     </section>
     <section class="card ui-settings-card">
       <h2>Mensagem após confirmação do PIX</h2>
-      <p>Escolha a mensagem enviada ao WhatsApp do cliente quando o provedor confirmar o pagamento, inclusive quando a renovação for manual.</p>
+      <p
+        >Escolha a mensagem enviada ao WhatsApp do cliente quando o provedor
+        confirmar o pagamento, inclusive quando a renovação for manual.</p
+      >
       <form method="post" action="/integracao-pagamento" data-native-submit="1">
         <%- csrfInput %>
-        <input type="hidden" name="action" value="mensagem-confirmacao">
+        <input type="hidden" name="action" value="mensagem-confirmacao" />
         <label class="field">
           Mensagem
           <select class="input" name="mensagem_id">
             <option value="">Não enviar mensagem</option>
             <% mensagens.forEach(m => { %>
-              <option value="<%= m.id %>" <%= Number(mensagemConfirmacaoId) === Number(m.id) ? 'selected' : '' %>><%= m.titulo %></option>
+            <option value="<%= m.id %>" <%= Number(mensagemConfirmacaoId) === Number(m.id) ? 'selected' : '' %>
+              ><%= m.titulo %></option
+            >
             <% }) %>
           </select>
         </label>
-        <p class="muted">Cadastre seus modelos em <a href="/mensagens">Mensagens</a>. O WhatsApp precisa estar conectado. Use um texto de confirmação de pagamento; a renovação pode ainda estar em processamento.</p>
+        <p class="muted"
+          >Cadastre seus modelos em <a href="/mensagens">Mensagens</a>. O
+          WhatsApp precisa estar conectado. Use um texto de confirmação de
+          pagamento; a renovação pode ainda estar em processamento.</p
+        >
         <button class="btn btn-primary" type="submit">Salvar mensagem</button>
       </form>
     </section>
@@ -112,22 +138,34 @@
   <div class="ui-summary ui-summary-3">
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '💳' }) %></div>
-      <div><strong><%= totalProvedores %></strong><span>Provedores PIX</span></div>
+      <div
+        ><strong><%= totalProvedores %></strong
+        ><span>Provedores PIX</span></div
+      >
     </div>
     <div class="cli-stat accent-green">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚡' }) %></div>
-      <div><strong class="pos"><%= ativosCount %></strong><span>Ativos</span></div>
+      <div
+        ><strong class="pos"><%= ativosCount %></strong
+        ><span>Ativos</span></div
+      >
     </div>
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
-      <div><strong><%= configuradosCount %></strong><span>Configurados</span></div>
+      <div
+        ><strong><%= configuradosCount %></strong><span>Configurados</span></div
+      >
     </div>
   </div>
   <div class="int-pag-intro">
     <span class="int-pag-intro-ico">💡</span>
     <div>
       <strong>Como usar</strong>
-      <p>Ative pelo menos um provedor PIX abaixo. Depois, insira a tag <code>{link_cliente}</code> em qualquer template de mensagem — o gestor troca pelo link de pagamento do cliente automaticamente ao enviar.</p>
+      <p
+        >Ative pelo menos um provedor PIX abaixo. Depois, insira a tag
+        <code>{link_cliente}</code> em qualquer template de mensagem — o gestor
+        troca pelo link de pagamento do cliente automaticamente ao enviar.</p
+      >
     </div>
   </div>
   <h3 class="int-pag-titulo">Formas de pagamento</h3>
@@ -137,31 +175,44 @@
       const ativo = ativoPorProvider[p];
       const configurado = !!credPorProvider[p] && Object.keys(credPorProvider[p]).length > 0;
     %>
-      <div class="int-pag-card <%= ativo ? 'is-active' : '' %>" style="--card-accent: <%= info.cor %>;">
-        <div class="int-pag-card-head">
-          <div class="int-pag-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
-          <div class="int-pag-card-info">
-            <strong><%= providerNomes[p] %></strong>
-            <% if (ativo) { %>
-              <span class="badge badge-green">Ativo</span>
-            <% } else if (configurado) { %>
-              <span class="badge badge-muted">Configurado</span>
-            <% } else { %>
-              <span class="badge badge-muted">Inativo</span>
-            <% } %>
-          </div>
-          <a class="int-pag-suporte" href="<%= info.suporteUrl %>" target="_blank" rel="noopener" title="Página do provedor">
-            <span>↗</span>
-            Suporte
-          </a>
+    <div
+      class="int-pag-card <%= ativo ? 'is-active' : '' %>"
+      style="--card-accent: <%= info.cor %>;"
+    >
+      <div class="int-pag-card-head">
+        <div class="int-pag-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
+        <div class="int-pag-card-info">
+          <strong><%= providerNomes[p] %></strong>
+          <% if (ativo) { %>
+          <span class="badge badge-green">Ativo</span>
+          <% } else if (configurado) { %>
+          <span class="badge badge-muted">Configurado</span>
+          <% } else { %>
+          <span class="badge badge-muted">Inativo</span>
+          <% } %>
         </div>
-        <div class="int-pag-card-foot">
-          <span class="muted">PIX</span>
-          <button class="btn <%= ativo ? 'btn-muted' : 'btn-primary' %>" type="button" data-open-modal="modal-prov-<%= p %>">
-            <%= ativo ? 'Editar' : 'Ativar' %>
-          </button>
-        </div>
+        <a
+          class="int-pag-suporte"
+          href="<%= info.suporteUrl %>"
+          target="_blank"
+          rel="noopener"
+          title="Página do provedor"
+        >
+          <span>↗</span>
+          Suporte
+        </a>
       </div>
+      <div class="int-pag-card-foot">
+        <span class="muted">PIX</span>
+        <button
+          class="btn <%= ativo ? 'btn-muted' : 'btn-primary' %>"
+          type="button"
+          data-open-modal="modal-prov-<%= p %>"
+        >
+          <%= ativo ? 'Editar' : 'Ativar' %>
+        </button>
+      </div>
+    </div>
     <% }) %>
   </div>
 </div>
@@ -170,47 +221,100 @@
   const info = PROV_INFO[p];
   const ativo = ativoPorProvider[p];
 %>
-  <div class="modal-overlay" id="modal-prov-<%= p %>" aria-hidden="true" inert>
-    <div class="modal">
-      <div class="modal-header">
-        <h3><span class="int-pag-modal-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></span> <%= providerNomes[p] %></h3>
-        <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
-      </div>
-      <form method="post" action="/integracao-pagamento" class="modal-body" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
-        <%- csrfInput %>
-        <input type="hidden" name="provider" value="<%= p %>">
-        <p class="muted" style="margin-top:0; font-size:13px;"><%- info.ajuda %></p>
-        <p class="muted" style="font-size:12.5px;">
-          Webhook a configurar no painel do provedor:
-          <code style="overflow-wrap:anywhere"><%= appUrl + info.webhook %></code>
-        </p>
-        <div class="form-grid">
-          <% info.campos.forEach(c => { %>
-            <label class="field full">
-              <span><%= c.label %></span>
-              <% if (c.tipo === 'select') { %>
-                <select class="input" name="creds_<%= p %>_<%= c.name %>">
-                  <% c.opcoes.forEach(([v, l]) => {
+<div
+  class="modal-overlay"
+  id="modal-prov-<%= p %>"
+  aria-hidden="true"
+  inert
+>
+  <div class="modal">
+    <div class="modal-header">
+      <h3
+        ><span class="int-pag-modal-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></span>
+        <%= providerNomes[p] %></h3
+      >
+      <button
+        class="modal-close"
+        type="button"
+        data-close-modal
+        aria-label="Fechar"
+        >×</button
+      >
+    </div>
+    <form
+      method="post"
+      action="/integracao-pagamento"
+      class="modal-body"
+      autocomplete="off"
+      data-1p-ignore
+      data-lpignore="true"
+      data-bwignore
+    >
+      <%- csrfInput %>
+      <input type="hidden" name="provider" value="<%= p %>" />
+      <p class="muted" style="margin-top:0; font-size:13px;"
+        ><%- info.ajuda %></p
+      >
+      <p class="muted" style="font-size:12.5px;">
+        Webhook a configurar no painel do provedor:
+        <code style="overflow-wrap:anywhere"><%= appUrl + info.webhook %></code>
+      </p>
+      <div class="form-grid">
+        <% info.campos.forEach(c => { %>
+        <label class="field full">
+          <span><%= c.label %></span>
+          <% if (c.tipo === 'select') { %>
+          <select
+            class="input"
+            name="creds_<%= p %>_<%= c.name %>"
+          >
+            <% c.opcoes.forEach(([v, l]) => {
                     const curr = (credPorProvider[p] || {})[c.name] || c.opcoes[0][0];
                   %>
-                    <option value="<%= v %>" <%= curr === v ? 'selected' : '' %>><%= l %></option>
-                  <% }) %>
-                </select>
-              <% } else { %>
-                <input class="input" type="password" name="creds_<%= p %>_<%= c.name %>" placeholder="<%= c.placeholder || '' %>" value="<%= (credPorProvider[p] || {})[c.name] || '' %>" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
-              <% } %>
-            </label>
-          <% }) %>
-          <label class="switch-field full">
-            <span><strong>Ativar este provedor</strong><small>Quando ativo, vira opção pra ser usado nos links de pagamento.</small></span>
-            <input type="checkbox" name="ativo_<%= p %>" value="1" class="switch" <%= ativo ? 'checked' : '' %>>
-          </label>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
-          <button class="btn btn-primary" type="submit">Salvar</button>
-        </div>
-      </form>
-    </div>
+            <option value="<%= v %>" <%= curr === v ? 'selected' : '' %>
+              ><%= l %></option
+            >
+            <% }) %>
+          </select>
+          <% } else { %>
+          <input
+            class="input"
+            type="password"
+            name="creds_<%= p %>_<%= c.name %>"
+            placeholder="<%= c.placeholder || '' %>"
+            value="<%= (credPorProvider[p] || {})[c.name] || '' %>"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+          />
+          <% } %>
+        </label>
+        <% }) %>
+        <label class="switch-field full">
+          <span
+            ><strong>Ativar este provedor</strong
+            ><small
+              >Quando ativo, vira opção pra ser usado nos links de
+              pagamento.</small
+            ></span
+          >
+          <input
+            type="checkbox"
+            name="ativo_<%= p %>"
+            value="1"
+            class="switch"
+            <%= ativo ? 'checked' : '' %>
+          />
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-muted" type="button" data-close-modal
+          >Cancelar</button
+        >
+        <button class="btn btn-primary" type="submit">Salvar</button>
+      </div>
+    </form>
   </div>
+</div>
 <% }) %>

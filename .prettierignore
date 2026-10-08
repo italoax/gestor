@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.deploy/
+.tmp-ui/
+.vscode/
+.env*
+.deploy-version.json
+sessions/
+tokens/
+backups/
+public/uploads/
+public/icons/bootstrap-icons-LICENSE.txt
+package-lock.json
+test/

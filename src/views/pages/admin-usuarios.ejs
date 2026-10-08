@@ -27,40 +27,61 @@
           else if (dias <= 3) { statusLabel = dias + ' dia(s)'; statusCls = 'badge-yellow'; }
           else { statusLabel = dias + ' dias'; statusCls = 'badge-green'; }
         %>
-          <tr>
-            <td data-label="ID"><%= u.id %></td>
-            <td data-label="Nome"><%= u.name %></td>
-            <td data-label="Usuário"><span class="muted">@<%= u.username %></span></td>
-            <td data-label="Vencimento"><%= u.vencimento ? formatDateBr(u.vencimento) : '—' %></td>
-            <td data-label="Status"><span class="badge <%= statusCls %>"><%= statusLabel %></span></td>
-            <td data-label="Admin"><%= u.isAdmin ? '⭐' : '—' %></td>
-            <td data-label="Ações" class="admin-user-actions">
-              <form method="post" action="/admin/usuarios" class="inline-form">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="estender">
-                <input type="hidden" name="id" value="<%= u.id %>">
-                <select name="dias" class="input input-sm">
-                  <option value="30">+30d</option>
-                  <option value="90">+90d</option>
-                  <option value="180">+180d</option>
-                  <option value="365">+365d</option>
-                </select>
-                <button class="btn btn-sm btn-green" type="submit" data-loading-text="...">Estender</button>
-              </form>
-              <form method="post" action="/admin/usuarios" class="inline-form">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="bloquear">
-                <input type="hidden" name="id" value="<%= u.id %>">
-                <button class="btn btn-sm btn-muted" type="submit" onclick="return confirm('Bloquear a assinatura deste usuário?')">Bloquear</button>
-              </form>
-              <form method="post" action="/admin/usuarios" class="inline-form">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="toggle_admin">
-                <input type="hidden" name="id" value="<%= u.id %>">
-                <button class="btn btn-sm btn-muted" type="submit" onclick="return confirm('Alterar status de admin?')"><%= u.isAdmin ? 'Remover admin' : 'Tornar admin' %></button>
-              </form>
-            </td>
-          </tr>
+        <tr>
+          <td data-label="ID"><%= u.id %></td>
+          <td data-label="Nome"><%= u.name %></td>
+          <td data-label="Usuário"
+            ><span class="muted">@<%= u.username %></span></td
+          >
+          <td data-label="Vencimento"><%= u.vencimento ? formatDateBr(u.vencimento) : '—' %></td>
+          <td data-label="Status"
+            ><span class="badge <%= statusCls %>"
+              ><%= statusLabel %></span
+            ></td
+          >
+          <td data-label="Admin"><%= u.isAdmin ? '⭐' : '—' %></td>
+          <td data-label="Ações" class="admin-user-actions">
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="estender" />
+              <input type="hidden" name="id" value="<%= u.id %>" />
+              <select name="dias" class="input input-sm">
+                <option value="30">+30d</option>
+                <option value="90">+90d</option>
+                <option value="180">+180d</option>
+                <option value="365">+365d</option>
+              </select>
+              <button
+                class="btn btn-sm btn-green"
+                type="submit"
+                data-loading-text="..."
+                >Estender</button
+              >
+            </form>
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="bloquear" />
+              <input type="hidden" name="id" value="<%= u.id %>" />
+              <button
+                class="btn btn-sm btn-muted"
+                type="submit"
+                onclick="return confirm('Bloquear a assinatura deste usuário?')"
+                >Bloquear</button
+              >
+            </form>
+            <form method="post" action="/admin/usuarios" class="inline-form">
+              <%- csrfInput %>
+              <input type="hidden" name="action" value="toggle_admin" />
+              <input type="hidden" name="id" value="<%= u.id %>" />
+              <button
+                class="btn btn-sm btn-muted"
+                type="submit"
+                onclick="return confirm('Alterar status de admin?')"
+                ><%= u.isAdmin ? 'Remover admin' : 'Tornar admin' %></button
+              >
+            </form>
+          </td>
+        </tr>
         <% }) %>
       </tbody>
     </table>

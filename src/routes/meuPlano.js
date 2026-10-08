@@ -62,22 +62,18 @@ meuPlanoRouter.post('/meu-plano/renovar/:planoId/:meses', async (req, res) => {
   try {
     const userId = req.session.user.id;
     if (!isAssinaturaConfigurada()) {
-      return res
-        .status(503)
-        .json({
-          ok: false,
-          error:
-            'Sistema de assinatura ainda nao configurado pelo administrador.',
-        });
+      return res.status(503).json({
+        ok: false,
+        error:
+          'Sistema de assinatura ainda nao configurado pelo administrador.',
+      });
     }
     const meses = Number(req.params.meses);
     if (!isMesesValido(meses)) {
-      return res
-        .status(400)
-        .json({
-          ok: false,
-          error: 'Periodo invalido. Use 1, 3, 6 ou 12 meses.',
-        });
+      return res.status(400).json({
+        ok: false,
+        error: 'Periodo invalido. Use 1, 3, 6 ou 12 meses.',
+      });
     }
     const plano = await getPlanoById(Number(req.params.planoId));
     if (!plano)
@@ -118,11 +114,9 @@ meuPlanoRouter.get('/meu-plano/status/:pagamentoId', async (req, res) => {
         .json({ ok: false, error: 'Pagamento nao encontrado.' });
     res.json({ ok: true, status: row.status, aplicado: Boolean(row.aplicado) });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    res.status(500).json({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });

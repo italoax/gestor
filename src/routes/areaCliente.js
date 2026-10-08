@@ -68,14 +68,12 @@ areaClienteRouter.get('/area-cliente/login', limit, async (req, res, next) => {
       return res.redirect('/area-cliente');
     }
     if (alias)
-      return res
-        .status(401)
-        .render('pages/area-cliente', {
-          layout: false,
-          cliente: null,
-          pix: false,
-          erro: 'Link de acesso inválido ou indisponível. Entre com seus dados IPTV ou solicite um novo link.',
-        });
+      return res.status(401).render('pages/area-cliente', {
+        layout: false,
+        cliente: null,
+        pix: false,
+        erro: 'Link de acesso inválido ou indisponível. Entre com seus dados IPTV ou solicite um novo link.',
+      });
     res.render('pages/area-cliente', {
       layout: false,
       cliente: null,

@@ -369,12 +369,10 @@ whatsappRouter.post('/whatsapp/device/:id/:op', async (req, res, next) => {
           Boolean(device.bloqueioChamadas),
         );
       } catch (error) {
-        return res
-          .status(502)
-          .json({
-            status: 'erro',
-            lastError: `Não foi possível confirmar o bloqueio de chamadas: ${traduzirErroWhatsapp(error)}`,
-          });
+        return res.status(502).json({
+          status: 'erro',
+          lastError: `Não foi possível confirmar o bloqueio de chamadas: ${traduzirErroWhatsapp(error)}`,
+        });
       }
       return res.json(await getDeviceState(device.sessao));
     }

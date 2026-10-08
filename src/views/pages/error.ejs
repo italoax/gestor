@@ -1,10 +1,8 @@
 <div class="container">
   <div class="form-alert error">
-    <strong>
-      Erro interno.
-    </strong>
+    <strong> Erro interno. </strong>
     <% if (error) { %>
-      <pre><%= error && error.stack ? error.stack : (error && error.message ? error.message : String(error)) %></pre>
+    <pre><%= error && error.stack ? error.stack : (error && error.message ? error.message : String(error)) %></pre>
     <% } %>
   </div>
 </div>

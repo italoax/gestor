@@ -6,46 +6,131 @@
   </div>
   <div class="admin-grid">
     <% planos.forEach(p => { %>
-      <form method="post" action="/admin/planos" class="admin-card">
-        <%- csrfInput %>
-        <input type="hidden" name="action" value="update_plano">
-        <input type="hidden" name="id" value="<%= p.id %>">
-        <div class="admin-card-head">
-          <strong>#<%= p.id %></strong>
-          <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
-        </div>
-        <label class="field"><span>Nome</span><input class="input" name="nome" value="<%= p.nome %>" required></label>
-        <div class="admin-row2">
-          <label class="field"><span>Preço base (R$)</span><input class="input" type="number" step="0.01" name="preco" value="<%= p.preco %>"></label>
-          <label class="field"><span>Validade (dias)</span><input class="input" type="number" name="dias_validade" value="<%= p.diasValidade %>"></label>
-        </div>
-        <label class="field"><span>Descrição</span><textarea class="input" name="descricao"><%= p.descricao || '' %></textarea></label>
-        <div class="admin-row2">
-          <label class="field"><span>Ordem</span><input class="input" type="number" name="ordem" value="<%= p.ordem %>"></label>
-          <label class="switch-field"><span>Ativo</span><input type="checkbox" name="ativo" value="1" class="switch" <%= p.ativo ? 'checked' : '' %>></label>
-        </div>
-        <div class="admin-card-actions">
-          <button class="btn btn-primary" type="submit" data-loading-text="Salvando">Salvar</button>
-          <button class="btn btn-danger" type="submit" formaction="/admin/planos" name="action" value="delete_plano" onclick="return confirm('Excluir este plano?')">Excluir</button>
-        </div>
-      </form>
-    <% }) %>
-    <form method="post" action="/admin/planos" class="admin-card admin-card-new">
+    <form method="post" action="/admin/planos" class="admin-card">
       <%- csrfInput %>
-      <input type="hidden" name="action" value="create_plano">
-      <div class="admin-card-head"><strong>➕ Novo plano</strong></div>
-      <label class="field"><span>Nome</span><input class="input" name="nome" placeholder="Ex: Acesso completo" required></label>
-      <div class="admin-row2">
-        <label class="field"><span>Preço base (R$)</span><input class="input" type="number" step="0.01" name="preco" value="29.99"></label>
-        <label class="field"><span>Validade (dias)</span><input class="input" type="number" name="dias_validade" value="30"></label>
+      <input type="hidden" name="action" value="update_plano" />
+      <input type="hidden" name="id" value="<%= p.id %>" />
+      <div class="admin-card-head">
+        <strong>#<%= p.id %></strong>
+        <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
-      <label class="field"><span>Descrição</span><textarea class="input" name="descricao" placeholder="Opcional"></textarea></label>
+      <label class="field"
+        ><span>Nome</span
+        ><input class="input" name="nome" value="<%= p.nome %>" required
+      /></label>
       <div class="admin-row2">
-        <label class="field"><span>Ordem</span><input class="input" type="number" name="ordem" value="0"></label>
-        <label class="switch-field"><span>Ativo</span><input type="checkbox" name="ativo" value="1" class="switch" checked></label>
+        <label class="field"
+          ><span>Preço base (R$)</span
+          ><input
+            class="input"
+            type="number"
+            step="0.01"
+            name="preco"
+            value="<%= p.preco %>"
+        /></label>
+        <label class="field"
+          ><span>Validade (dias)</span
+          ><input
+            class="input"
+            type="number"
+            name="dias_validade"
+            value="<%= p.diasValidade %>"
+        /></label>
+      </div>
+      <label class="field"
+        ><span>Descrição</span
+        ><textarea class="input" name="descricao"><%= p.descricao || '' %></textarea>
+      </label>
+      <div class="admin-row2">
+        <label class="field"
+          ><span>Ordem</span
+          ><input
+            class="input"
+            type="number"
+            name="ordem"
+            value="<%= p.ordem %>"
+        /></label>
+        <label class="switch-field"
+          ><span>Ativo</span
+          ><input
+            type="checkbox"
+            name="ativo"
+            value="1"
+            class="switch"
+            <%= p.ativo ? 'checked' : '' %>
+        /></label>
       </div>
       <div class="admin-card-actions">
-        <button class="btn btn-primary" type="submit" data-loading-text="Criando">Criar plano</button>
+        <button
+          class="btn btn-primary"
+          type="submit"
+          data-loading-text="Salvando"
+          >Salvar</button
+        >
+        <button
+          class="btn btn-danger"
+          type="submit"
+          formaction="/admin/planos"
+          name="action"
+          value="delete_plano"
+          onclick="return confirm('Excluir este plano?')"
+          >Excluir</button
+        >
+      </div>
+    </form>
+    <% }) %>
+    <form
+      method="post"
+      action="/admin/planos"
+      class="admin-card admin-card-new"
+    >
+      <%- csrfInput %>
+      <input type="hidden" name="action" value="create_plano" />
+      <div class="admin-card-head"><strong>➕ Novo plano</strong></div>
+      <label class="field"
+        ><span>Nome</span
+        ><input
+          class="input"
+          name="nome"
+          placeholder="Ex: Acesso completo"
+          required
+      /></label>
+      <div class="admin-row2">
+        <label class="field"
+          ><span>Preço base (R$)</span
+          ><input
+            class="input"
+            type="number"
+            step="0.01"
+            name="preco"
+            value="29.99"
+        /></label>
+        <label class="field"
+          ><span>Validade (dias)</span
+          ><input class="input" type="number" name="dias_validade" value="30"
+        /></label>
+      </div>
+      <label class="field"
+        ><span>Descrição</span
+        ><textarea class="input" name="descricao" placeholder="Opcional"></textarea>
+      </label>
+      <div class="admin-row2">
+        <label class="field"
+          ><span>Ordem</span
+          ><input class="input" type="number" name="ordem" value="0"
+        /></label>
+        <label class="switch-field"
+          ><span>Ativo</span
+          ><input type="checkbox" name="ativo" value="1" class="switch" checked
+        /></label>
+      </div>
+      <div class="admin-card-actions">
+        <button
+          class="btn btn-primary"
+          type="submit"
+          data-loading-text="Criando"
+          >Criar plano</button
+        >
       </div>
     </form>
   </div>

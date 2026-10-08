@@ -74,7 +74,9 @@ if (process.argv.includes('--serve')) {
         return;
       }
       if (code === 78) {
-        console.error('[local] Limite do MySQL atingido. Reinicio automatico pausado. Aguarde a liberacao do banco e execute npm run dev novamente.');
+        console.error(
+          '[local] Limite do MySQL atingido. Reinicio automatico pausado. Aguarde a liberacao do banco e execute npm run dev novamente.',
+        );
         stopping = true;
         clearTimeout(debounce);
         clearTimeout(retry);

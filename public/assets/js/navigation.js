@@ -21,12 +21,19 @@
     if (existing && Date.now() - existing.at < 5000) return;
     const page = { at: Date.now() };
     page.result = fetch(url.href, {
-      cache: 'no-store', headers: { Accept: 'text/html' },
+      cache: 'no-store',
+      headers: { Accept: 'text/html' },
       signal: AbortSignal.timeout(8000),
-    }).then(async response => {
-      if (!response.ok || !response.headers.get('Content-Type')?.includes('text/html')) return null;
-      return { response, html: await response.text() };
-    }).catch(() => null);
+    })
+      .then(async (response) => {
+        if (
+          !response.ok ||
+          !response.headers.get('Content-Type')?.includes('text/html')
+        )
+          return null;
+        return { response, html: await response.text() };
+      })
+      .catch(() => null);
     dockPages.set(url.href, page);
   }
   function warmDock() {
@@ -35,12 +42,17 @@
     }
   }
   for (const eventName of ['pointerover', 'pointerdown', 'focusin']) {
-    document.addEventListener(eventName, event => {
-      const link = event.target.closest('[data-dock-link]');
-      if (link) prefetchDock(link);
-    }, { passive: true });
+    document.addEventListener(
+      eventName,
+      (event) => {
+        const link = event.target.closest('[data-dock-link]');
+        if (link) prefetchDock(link);
+      },
+      { passive: true },
+    );
   }
-  if (window.requestIdleCallback) requestIdleCallback(warmDock, { timeout: 1500 });
+  if (window.requestIdleCallback)
+    requestIdleCallback(warmDock, { timeout: 1500 });
   else setTimeout(warmDock, 300);
   const notice = document.createElement('div');
   notice.className = 'navigation-notice';
@@ -158,30 +170,51 @@
     content.setAttribute('aria-busy', 'true');
     document.documentElement.classList.add('is-navigating');
     notice.hidden = true;
-    document.dispatchEvent(new CustomEvent('gestor:navigation-start', { detail: { url: destination.href } }));
+    document.dispatchEvent(
+      new CustomEvent('gestor:navigation-start', {
+        detail: { url: destination.href },
+      }),
+    );
+    let pageApplied = false;
+    let responseStatus;
     try {
-      const prepared = dock && !mutation ? dockPages.get(destination.href) : null;
+      const prepared =
+        dock && !mutation ? dockPages.get(destination.href) : null;
       dockPages.delete(destination.href);
-      const cached = prepared && Date.now() - prepared.at < 5000 ? await prepared.result : null;
+      const cached =
+        prepared && Date.now() - prepared.at < 5000
+          ? await prepared.result
+          : null;
       if (token !== sequence) return false;
-      const response = cached?.response || await fetch(destination.href, {
-        method,
-        body,
-        signal: controller.signal,
-        redirect: 'follow',
-        cache: 'no-store',
-        headers: {
-          Accept: 'text/html',
-          ...(mutation
-            ? {
-                'x-csrf-token': String(
-                  body?.get('_csrf') || window.getCsrfToken?.() || '',
-                ),
-              }
-            : {}),
-        },
-      });
-      const html = cached?.html ?? await response.text();
+      const response =
+        cached?.response ||
+        (await fetch(destination.href, {
+          method,
+          body,
+          signal: controller.signal,
+          redirect: 'follow',
+          cache: 'no-store',
+          headers: {
+            Accept: 'text/html',
+            ...(mutation
+              ? {
+                  'x-csrf-token': String(
+                    body?.get('_csrf') || window.getCsrfToken?.() || '',
+                  ),
+                }
+              : {}),
+          },
+        }));
+      responseStatus = response.status;
+      if (response.status === 429)
+        throw new Error(
+          'Muitas solicitações ao servidor. Aguarde um momento e tente novamente.',
+        );
+      if (response.status >= 500)
+        throw new Error(
+          'O servidor não conseguiu carregar a página. Tente novamente em instantes.',
+        );
+      const html = cached?.html ?? (await response.text());
       if (token !== sequence) return false;
       if (!response.headers.get('Content-Type')?.includes('text/html'))
         throw new Error('Resposta inesperada');
@@ -198,8 +231,7 @@
         location.assign(finalUrl.href);
         return false;
       }
-      if (!next || response.status >= 500)
-        throw new Error('Resposta indisponível');
+      if (!next) throw new Error('Resposta indisponível');
       cleanup();
       content.innerHTML = next.innerHTML;
       if (doc.title) document.title = doc.title;
@@ -234,6 +266,7 @@
           finalUrl.href,
         );
       currentUrl = finalUrl.href;
+      pageApplied = true;
       try {
         sessionStorage.removeItem('gestor:scroll:' + finalUrl.pathname);
       } catch (_) {}
@@ -257,11 +290,29 @@
       return true;
     } catch (error) {
       if (error.name === 'AbortError' || token !== sequence) return false;
+      console.error('Falha na navegação do painel:', error);
+      // Uma falha no fetch ou na inicialização não significa falta de internet.
+      // GET pode ser recuperado pela navegação nativa; nunca reenvia um POST.
+      if (
+        !mutation &&
+        (pageApplied ||
+          ((responseStatus === undefined || responseStatus < 400) &&
+            navigator.onLine !== false))
+      ) {
+        location.assign(pageApplied ? currentUrl : destination.href);
+        return false;
+      }
       if (pop) history.replaceState({ ...history.state }, '', currentUrl);
       message(
         mutation
-          ? 'Não foi possível confirmar o salvamento. Confira os dados antes de enviar novamente.'
-          : 'Não foi possível carregar a página. Verifique sua conexão e tente novamente.',
+          ? pageApplied
+            ? 'O servidor respondeu ao envio, mas ocorreu um erro ao atualizar a tela. Recarregue a página para conferir os dados.'
+            : 'Não foi possível confirmar o salvamento. Confira os dados antes de enviar novamente.'
+          : responseStatus === 429 || responseStatus >= 500
+            ? error.message
+            : navigator.onLine === false
+              ? 'Você está sem conexão. Verifique sua internet e tente novamente.'
+              : 'Não foi possível carregar a página. Tente novamente.',
       );
       return false;
     } finally {

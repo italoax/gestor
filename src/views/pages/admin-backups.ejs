@@ -5,50 +5,81 @@
     <a class="admin-tab active" href="/admin/backups">💾 Backups</a>
   </div>
   <div class="admin-backup-bar">
-    <p class="muted">Backup automático diário do banco (mantém os últimos 7). Você também pode gerar ou baixar sob demanda.</p>
+    <p class="muted"
+      >Backup automático diário do banco (mantém os últimos 7). Você também pode
+      gerar ou baixar sob demanda.</p
+    >
     <div class="admin-backup-actions">
       <form method="post" action="/admin/backups/gerar" class="inline-form">
         <%- csrfInput %>
-        <button class="btn btn-primary" type="submit" data-loading-text="Gerando">💾 Gerar backup de hoje</button>
+        <button
+          class="btn btn-primary"
+          type="submit"
+          data-loading-text="Gerando"
+          >💾 Gerar backup de hoje</button
+        >
       </form>
-      <a class="btn btn-green" href="/admin/backups/download-agora">⬇ Baixar agora (dump fresco)</a>
+      <a class="btn btn-green" href="/admin/backups/download-agora"
+        >⬇ Baixar agora (dump fresco)</a
+      >
     </div>
   </div>
   <% if (!backups.length) { %>
-    <div class="cli-empty">
-      <div class="cli-empty-ico">💾</div>
-      <h3>Nenhum backup salvo ainda</h3>
-      <p class="muted">O primeiro backup diário será criado no próximo ciclo do cron, ou clique em "Gerar backup de hoje".</p>
-    </div>
+  <div class="cli-empty">
+    <div class="cli-empty-ico">💾</div>
+    <h3>Nenhum backup salvo ainda</h3>
+    <p class="muted"
+      >O primeiro backup diário será criado no próximo ciclo do cron, ou clique
+      em "Gerar backup de hoje".</p
+    >
+  </div>
   <% } else { %>
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Arquivo</th>
-            <th>Data</th>
-            <th>Tamanho</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% backups.forEach(b => { %>
-            <tr>
-              <td data-label="Arquivo"><code><%= b.nome %></code></td>
-              <td data-label="Data"><%= b.data %></td>
-              <td data-label="Tamanho"><%= b.tamanhoKb %> KB</td>
-              <td data-label="Ações" class="admin-user-actions">
-                <a class="btn btn-sm btn-green" href="/admin/backups/download/<%= b.nome %>">⬇ Baixar</a>
-                <form method="post" action="/admin/backups/excluir" class="inline-form">
-                  <%- csrfInput %>
-                  <input type="hidden" name="nome" value="<%= b.nome %>">
-                  <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Excluir este backup?')">Excluir</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Arquivo</th>
+          <th>Data</th>
+          <th>Tamanho</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% backups.forEach(b => { %>
+        <tr>
+          <td data-label="Arquivo"
+            ><code><%= b.nome %></code></td
+          >
+          <td data-label="Data"><%= b.data %></td>
+          <td data-label="Tamanho"
+            ><%= b.tamanhoKb %>
+            KB</td
+          >
+          <td data-label="Ações" class="admin-user-actions">
+            <a
+              class="btn btn-sm btn-green"
+              href="/admin/backups/download/<%= b.nome %>"
+              >⬇ Baixar</a
+            >
+            <form
+              method="post"
+              action="/admin/backups/excluir"
+              class="inline-form"
+            >
+              <%- csrfInput %>
+              <input type="hidden" name="nome" value="<%= b.nome %>" />
+              <button
+                class="btn btn-sm btn-danger"
+                type="submit"
+                onclick="return confirm('Excluir este backup?')"
+                >Excluir</button
+              >
+            </form>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
   <% } %>
 </div>

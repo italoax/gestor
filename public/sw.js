@@ -3,29 +3,14 @@
 // Não faço offline-first do conteúdo dinâmico — o gestor precisa de banco/WhatsApp
 // pra fazer qualquer coisa, então cachear formulários seria enganoso.
 
-// Bump esse nome de cache sempre que mudar APP_SHELL ou os arquivos referenciados —
-// install dispara replace e velhos caches sao limpos no activate.
-const CACHE = 'gestor-v197-heading-focus';
+// Configuração injetada pelo servidor a partir dos hashes dos arquivos.
+// Alterações nos assets ou neste worker renovam o cache automaticamente.
+const { cacheName: CACHE, appShell: APP_SHELL } = self.__GESTOR_ASSETS__;
 // Página mostrada quando uma navegação acontece sem rede (app instalado offline).
 const OFFLINE_URL = '/offline.html';
-const APP_SHELL = [
-  OFFLINE_URL,
-  '/favicon.svg',
-  '/favicon.ico',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/apple-touch-icon.png',
-  '/assets/css/style.css?v=192',
-  '/assets/css/node-migration.css?v=194',
-  '/assets/css/modals.css?v=197',
-  '/assets/css/panel-ui.css?v=200',
-  '/assets/css/visual-effects.css?v=192',
-  '/assets/js/visual-effects.js?v=192',
-  '/assets/js/main.js?v=197',
-  '/assets/js/navigation.js?v=193',
-  '/assets/js/app-shell.js?v=195',
-];
+const OFFLINE_ASSET = APP_SHELL.find(
+  (url) => url.split('?')[0] === OFFLINE_URL,
+);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -78,7 +63,7 @@ self.addEventListener('fetch', (event) => {
           return await fetch(req);
         } catch {
           const cache = await caches.open(CACHE);
-          return (await cache.match(OFFLINE_URL)) || Response.error();
+          return (await cache.match(OFFLINE_ASSET)) || Response.error();
         }
       })(),
     );

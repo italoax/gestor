@@ -34,13 +34,11 @@ pagamentoRouter.get(
           )
         : null;
       if (!row)
-        return res
-          .status(404)
-          .render('pages/pagar-erro', {
-            layout: false,
-            title: 'Link inválido',
-            motivo: 'Link de pagamento inválido ou indisponível.',
-          });
+        return res.status(404).render('pages/pagar-erro', {
+          layout: false,
+          title: 'Link inválido',
+          motivo: 'Link de pagamento inválido ou indisponível.',
+        });
       return res.redirect(
         302,
         `/area-cliente/login?acesso=${encodeURIComponent(alias)}`,
@@ -82,23 +80,18 @@ pagamentoRouter.get(['/pagar/:token', '/p/:token'], async (req, res, next) => {
       req.path.startsWith('/p/') ? tokenPagamentoOriginal(token) : token,
     );
     if (!cliente)
-      return res
-        .status(404)
-        .render('pages/pagar-erro', {
-          layout: false,
-          title: 'Link inválido',
-          motivo: 'Link de pagamento inválido ou expirado.',
-        });
+      return res.status(404).render('pages/pagar-erro', {
+        layout: false,
+        title: 'Link inválido',
+        motivo: 'Link de pagamento inválido ou expirado.',
+      });
     const provider = await escolherProvedor(cliente.userId);
     if (!provider) {
-      return res
-        .status(503)
-        .render('pages/pagar-erro', {
-          layout: false,
-          title: 'Indisponível',
-          motivo:
-            'Pagamento online ainda não foi configurado pelo seu provedor.',
-        });
+      return res.status(503).render('pages/pagar-erro', {
+        layout: false,
+        title: 'Indisponível',
+        motivo: 'Pagamento online ainda não foi configurado pelo seu provedor.',
+      });
     }
     const escolhas = await planosDoCliente(cliente);
     const grupo =
@@ -186,21 +179,17 @@ pagamentoRouter.post(
           ? escolhas[0]
           : escolhas.find((g) => g.selecao === req.body.selecao);
       if (!grupo)
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            error: 'Selecione os planos que deseja renovar.',
-          });
+        return res.status(400).json({
+          ok: false,
+          error: 'Selecione os planos que deseja renovar.',
+        });
       const periodos = Number(req.body?.periodos ?? 1);
       const opcao = grupo.opcoes.find((opcao) => opcao.periodos === periodos);
       if (!opcao)
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            error: 'Escolha uma duração de renovação válida.',
-          });
+        return res.status(400).json({
+          ok: false,
+          error: 'Escolha uma duração de renovação válida.',
+        });
       const valor = opcao.valor;
       const renovacaoDados = JSON.stringify(grupo.dados);
       // Reusa pagamento pendente da mesma sessão+provedor.
@@ -302,12 +291,10 @@ pagamentoRouter.get('/pagar/:token/status/:pagamentoId', async (req, res) => {
         .json({ ok: false, error: 'Pagamento não encontrado.' });
     res.json({ ok: true, status: row.status });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    res.status(500).json({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 // ============================================================

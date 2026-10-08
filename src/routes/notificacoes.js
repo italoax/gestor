@@ -34,12 +34,10 @@ notificacoesRouter.post(
         { id, userId },
       );
       if (!pagamento)
-        return res
-          .status(404)
-          .json({
-            ok: false,
-            error: 'Pagamento não encontrado ou renovação já confirmada.',
-          });
+        return res.status(404).json({
+          ok: false,
+          error: 'Pagamento não encontrado ou renovação já confirmada.',
+        });
       if (pagamento.dados && JSON.parse(pagamento.dados).versao === 1) {
         try {
           const resultado = await renovarPlanosDoCliente(
@@ -70,13 +68,10 @@ notificacoesRouter.post(
         id,
       );
       if (!resultado.renovado)
-        return res
-          .status(409)
-          .json({
-            ok: false,
-            error:
-              resultado.motivo || 'Não foi possível confirmar a renovação.',
-          });
+        return res.status(409).json({
+          ok: false,
+          error: resultado.motivo || 'Não foi possível confirmar a renovação.',
+        });
       return res.json({ ok: true, novoVencimento: resultado.novoVencimento });
     } catch (error) {
       next(error);

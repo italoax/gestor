@@ -1,0 +1,24 @@
+<%
+  const pageModules = [
+    'ui/modals',
+    'ui/phone-fields',
+    'ui/date-fields',
+    'ui/tables',
+    'pages/catalogs',
+    'pages/client-access',
+    'pages/client-usage',
+    'pages/clientes',
+    'pages/client-payments',
+    'pages/transacoes',
+    'pages/whatsapp-messages',
+    'pages/automacao',
+    'pages/mensagens',
+  ];
+%>
+<% pageModules.forEach(name => { %>
+<script src="<%= assetUrl('/assets/js/' + name + '.js') %>"></script>
+<% }) %>
+<script src="<%= assetUrl('/assets/js/main.js') %>"></script>
+<script src="<%= assetUrl('/assets/js/app-shell.js') %>"></script>
+<script src="<%= assetUrl('/assets/js/navigation.js') %>"></script>
+<script src="<%= assetUrl('/assets/js/visual-effects.js') %>"></script>

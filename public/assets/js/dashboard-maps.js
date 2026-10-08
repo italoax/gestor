@@ -124,9 +124,8 @@
 
     if (elBR) {
       try {
-        const mod = await import(
-          'https://cdn.jsdelivr.net/npm/@svg-maps/brazil/+esm'
-        );
+        const mod =
+          await import('https://cdn.jsdelivr.net/npm/@svg-maps/brazil/+esm');
         renderMap(elBR, mod.default, geo.estados || {}, codeUF);
       } catch (e) {
         fallback(elBR);
@@ -134,9 +133,8 @@
     }
     if (elW) {
       try {
-        const mod = await import(
-          'https://cdn.jsdelivr.net/npm/@svg-maps/world/+esm'
-        );
+        const mod =
+          await import('https://cdn.jsdelivr.net/npm/@svg-maps/world/+esm');
         renderMap(elW, mod.default, geo.paises || {}, codePais);
       } catch (e) {
         fallback(elW);

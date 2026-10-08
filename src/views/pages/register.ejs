@@ -1,110 +1,117 @@
 <main class="login-shell">
   <section class="login-grid" aria-labelledby="register-title">
     <div class="login-brand">
-      <div class="login-chip">
-        Novo acesso
-      </div>
-      <h1 id="register-title">
-        Criar conta
-      </h1>
+      <div class="login-chip"> Novo acesso </div>
+      <h1 id="register-title"> Criar conta </h1>
       <p class="login-subtitle">
-        Cadastre um novo acesso para entrar no painel com nome de usuário e senha.
+        Cadastre um novo acesso para entrar no painel com nome de usuário e
+        senha.
       </p>
       <div class="login-highlights">
         <div class="login-highlight">
-          <span class="dot dot-green">
-          </span>
+          <span class="dot dot-green"> </span>
           <div>
-            <strong>
-              Acesso imediato
-            </strong>
+            <strong> Acesso imediato </strong>
             <span>
               A conta entra no painel assim que o cadastro for concluído.
             </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-blue">
-          </span>
+          <span class="dot dot-blue"> </span>
           <div>
-            <strong>
-              Usuário exclusivo
-            </strong>
-            <span>
-              Escolha um identificador único para usar no login.
-            </span>
+            <strong> Usuário exclusivo </strong>
+            <span> Escolha um identificador único para usar no login. </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-gold">
-          </span>
+          <span class="dot dot-gold"> </span>
           <div>
-            <strong>
-              Senha protegida
-            </strong>
-            <span>
-              As senhas são armazenadas com hash seguro no banco.
-            </span>
+            <strong> Senha protegida </strong>
+            <span> As senhas são armazenadas com hash seguro no banco. </span>
           </div>
         </div>
       </div>
       <div class="login-footer-note">
         <span>
           Já tem conta?
-          <a class="login-link" href="/login">
-            Entrar no painel
-          </a>
+          <a class="login-link" href="/login"> Entrar no painel </a>
         </span>
       </div>
     </div>
     <div class="login-card">
       <div class="login-card-header">
-        <h2>
-          Criar conta
-        </h2>
-        <p>
-          Preencha os dados para registrar um novo acesso.
-        </p>
+        <h2> Criar conta </h2>
+        <p> Preencha os dados para registrar um novo acesso. </p>
       </div>
       <% if (error && error.length) { %>
-        <div class="form-alert error">
-          <%= error[0] %>
-        </div>
+      <div class="form-alert error">
+        <%= error[0] %>
+      </div>
       <% } %>
-      <form class="login-form" action="/register" method="post" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
+      <form
+        class="login-form"
+        action="/register"
+        method="post"
+        autocomplete="off"
+        data-1p-ignore
+        data-lpignore="true"
+        data-bwignore
+      >
         <%- csrfInput %>
         <label class="login-field">
-          <span>
-            Nome
-          </span>
-          <input type="text" name="name" placeholder="Seu nome" autocomplete="name" required />
+          <span> Nome </span>
+          <input
+            type="text"
+            name="name"
+            placeholder="Seu nome"
+            autocomplete="name"
+            required
+          />
         </label>
         <label class="login-field">
-          <span>
-            Nome de usuário
-          </span>
-          <input type="text" name="username" placeholder="Seu usuário" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
+          <span> Nome de usuário </span>
+          <input
+            type="text"
+            name="username"
+            placeholder="Seu usuário"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            required
+          />
         </label>
         <label class="login-field">
-          <span>
-            Senha
-          </span>
-          <input type="password" name="password" placeholder="Crie uma senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
+          <span> Senha </span>
+          <input
+            type="password"
+            name="password"
+            placeholder="Crie uma senha"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            required
+          />
         </label>
         <label class="login-field">
-          <span>
-            Confirmar senha
-          </span>
-          <input type="password" name="password_confirm" placeholder="Repita a senha" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required />
+          <span> Confirmar senha </span>
+          <input
+            type="password"
+            name="password_confirm"
+            placeholder="Repita a senha"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            required
+          />
         </label>
-        <button class="login-btn" type="submit">
-          Criar conta
-        </button>
+        <button class="login-btn" type="submit"> Criar conta </button>
       </form>
       <div class="login-divider">
-        <span>
-          ou
-        </span>
+        <span> ou </span>
       </div>
       <div class="login-actions">
         <a class="login-btn outline login-btn-link" href="/login">

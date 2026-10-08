@@ -2,32 +2,38 @@
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title><%= title || 'Gestor' %></title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=ixtv-2" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=ixtv-2" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png?v=ixtv-2" />
-    <link rel="icon" href="/favicon.ico?v=ixtv-2" sizes="any" />
-    <link rel="shortcut icon" href="/favicon.ico?v=ixtv-2" />
+    <link rel="icon" type="image/svg+xml" href="<%= assetUrl('/favicon.svg') %>" />
+    <link rel="icon" type="image/png" sizes="32x32" href="<%= assetUrl('/icons/favicon-32.png') %>" />
+    <link rel="icon" type="image/png" sizes="16x16" href="<%= assetUrl('/icons/favicon-16.png') %>" />
+    <link rel="icon" href="<%= assetUrl('/favicon.ico') %>" sizes="any" />
+    <link rel="shortcut icon" href="<%= assetUrl('/favicon.ico') %>" />
     <!-- iOS Safari "Adicionar à tela inicial" -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=ixtv-2" />
-    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png?v=ixtv-2" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png?v=ixtv-2" />
-    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120.png?v=ixtv-2" />
-    <link rel="manifest" href="/manifest.json?v=ixtv-2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= assetUrl('/icons/apple-touch-icon.png') %>" />
+    <link rel="apple-touch-icon" sizes="167x167" href="<%= assetUrl('/icons/apple-touch-icon-167.png') %>" />
+    <link rel="apple-touch-icon" sizes="152x152" href="<%= assetUrl('/icons/apple-touch-icon-152.png') %>" />
+    <link rel="apple-touch-icon" sizes="120x120" href="<%= assetUrl('/icons/apple-touch-icon-120.png') %>" />
+    <link rel="manifest" href="<%= assetUrl('/manifest.json') %>" />
     <meta name="theme-color" content="#6366f1" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <meta name="apple-mobile-web-app-title" content="ixstreaming" />
     <% if (locals.csrfToken) { %>
-      <meta name="csrf-token" content="<%= locals.csrfToken %>">
+    <meta name="csrf-token" content="<%= locals.csrfToken %>" />
     <% } %>
-    <link rel="stylesheet" href="/assets/css/style.css?v=192" />
-    <link rel="stylesheet" href="/assets/css/node-migration.css?v=194" />
-    <link rel="stylesheet" href="/assets/css/modals.css?v=197" />
-    <link rel="stylesheet" href="/assets/css/panel-ui.css?v=200" />
-    <link rel="stylesheet" href="/assets/css/visual-effects.css?v=192" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/style.css') %>" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/node-migration.css') %>" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/modals.css') %>" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-ui.css') %>" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/visual-effects.css') %>" />
     <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
   </head>
   <%
@@ -57,50 +63,67 @@
       // Item Admin so aparece pro dono do sistema (is_admin na sessao).
       function isActive(href) { return currentPath === href || currentPath.startsWith(href + '/'); }
     %>
-      <div class="app-shell" data-shell>
-        <aside class="sidebar" data-sidebar>
-          <a class="sidebar-brand sidebar-brand-custom" href="/dashboard" title="ixstreaming - Dashboard" aria-label="ixstreaming - Dashboard">
-            <span class="sidebar-brand-image"><img src="/assets/images/ixlogo.png" alt="ixstreaming" width="1280" height="1280"></span>
+    <div class="app-shell" data-shell>
+      <aside class="sidebar" data-sidebar>
+        <a
+          class="sidebar-brand sidebar-brand-custom"
+          href="/dashboard"
+          title="ixstreaming - Dashboard"
+          aria-label="ixstreaming - Dashboard"
+        >
+          <span class="sidebar-brand-image"
+            ><img
+              src="<%= assetUrl('/assets/images/ixlogo.png') %>"
+              alt="ixstreaming"
+              width="1280"
+              height="1280"
+          /></span>
+        </a>
+        <nav class="sidebar-nav">
+          <% menu.forEach(item => { %>
+          <a class="sidebar-link <%= isActive(item.href) ? 'active' : '' %>" href="<%= item.href %>">
+            <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: item.icon }) %></span>
+            <span class="sidebar-label"><%= item.label %></span>
+            <% if (item.badge) { %>
+            <span class="sidebar-badge"><%= item.badge %></span>
+            <% } %>
           </a>
-          <nav class="sidebar-nav">
-            <% menu.forEach(item => { %>
-              <a class="sidebar-link <%= isActive(item.href) ? 'active' : '' %>" href="<%= item.href %>">
-                <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: item.icon }) %></span>
-                <span class="sidebar-label"><%= item.label %></span>
-                <% if (item.badge) { %>
-                  <span class="sidebar-badge"><%= item.badge %></span>
-                <% } %>
-              </a>
-            <% }) %>
-          </nav>
-          <div class="sidebar-foot">
-            <form method="post" action="/logout" class="sidebar-logout-form">
-              <% if (locals.csrfToken) { %>
-                <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>">
-              <% } %>
-              <button class="sidebar-logout" type="submit" title="Sair">
-                <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: 'logout' }) %></span>
-                <span class="sidebar-label">Sair</span>
-              </button>
-            </form>
+          <% }) %>
+        </nav>
+        <div class="sidebar-foot">
+          <form method="post" action="/logout" class="sidebar-logout-form">
+            <% if (locals.csrfToken) { %>
+            <input type="hidden" name="_csrf" value="<%= locals.csrfToken %>" />
+            <% } %>
+            <button class="sidebar-logout" type="submit" title="Sair">
+              <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: 'logout' }) %></span>
+              <span class="sidebar-label">Sair</span>
+            </button>
+          </form>
+        </div>
+      </aside>
+      <div class="app-main">
+        <header class="topbar2">
+          <div class="topbar2-title">
+            <h1><%= title || 'Gestor' %></h1>
+            <% if (typeof subtitle !== 'undefined' && subtitle) { %>
+            <span><%= subtitle %></span>
+            <% } else if (currentPath === '/dashboard') { %>
+            <span>Visão geral do sistema</span>
+            <% } %>
           </div>
-        </aside>
-        <div class="app-main">
-          <header class="topbar2">
-            <div class="topbar2-title">
-              <h1><%= title || 'Gestor' %></h1>
-              <% if (typeof subtitle !== 'undefined' && subtitle) { %>
-                <span><%= subtitle %></span>
-              <% } else if (currentPath === '/dashboard') { %>
-                <span>Visão geral do sistema</span>
-              <% } %>
-            </div>
-            <div class="topbar2-actions">
-              <a class="topbar-chip" href="/whatsapp" data-wa-chip data-wa-state-key="gestor:wa-state:<%= user.id %>" title="Status do WhatsApp">
-                <span class="wa-dot"></span>
-                <span class="wa-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></span>
-              </a>
-              <script>
+          <div class="topbar2-actions">
+            <a
+              class="topbar-chip"
+              href="/whatsapp"
+              data-wa-chip
+              data-wa-state-key="gestor:wa-state:<%= user.id %>"
+              title="Status do WhatsApp"
+            >
+              <span class="wa-dot"></span>
+              <span class="wa-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></span>
+            </a>
+            <script>
                 // Restaura antes da primeira pintura para não piscar ao navegar.
                 (function () {
                   try {
@@ -113,106 +136,227 @@
                   } catch (e) {}
                 })();
               </script>
-              <button class="theme-toggle" type="button" data-theme-toggle aria-label="Alternar tema claro/escuro" title="Alternar tema"><span class="ui-theme-sun"><%- include('../partials/ui-icon', { name: 'sun' }) %></span><span class="ui-theme-moon"><%- include('../partials/ui-icon', { name: 'moon' }) %></span></button>
-              <div class="notif-wrap" data-notif-wrap>
-                <button class="topbar-icon notif-bell-btn" type="button" title="Notificações" data-notif-toggle aria-haspopup="true" aria-expanded="false" aria-label="Notificações">
-                  <svg class="notif-bell-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-                  </svg>
-                  <span class="topbar-badge" data-notif-count style="display:none;"></span>
-                </button>
-                <div class="notif-panel" data-notif-panel hidden>
-                  <div class="notif-panel-head">
-                    <div class="notif-head-title">
-                      <svg class="notif-head-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-                      </svg>
-                      <strong>Notificações</strong>
-                    </div>
-                    <button type="button" class="notif-clear-all" data-notif-clear title="Limpar todas">Limpar tudo</button>
+            <button
+              class="theme-toggle"
+              type="button"
+              data-theme-toggle
+              aria-label="Alternar tema claro/escuro"
+              title="Alternar tema"
+              ><span class="ui-theme-sun"><%- include('../partials/ui-icon', { name: 'sun' }) %></span
+              ><span class="ui-theme-moon"
+                ><%- include('../partials/ui-icon', { name: 'moon' }) %></span
+              ></button
+            >
+            <div class="notif-wrap" data-notif-wrap>
+              <button
+                class="topbar-icon notif-bell-btn"
+                type="button"
+                title="Notificações"
+                data-notif-toggle
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Notificações"
+              >
+                <svg
+                  class="notif-bell-svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                <span
+                  class="topbar-badge"
+                  data-notif-count
+                  style="display:none;"
+                ></span>
+              </button>
+              <div class="notif-panel" data-notif-panel hidden>
+                <div class="notif-panel-head">
+                  <div class="notif-head-title">
+                    <svg
+                      class="notif-head-ico"
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                    <strong>Notificações</strong>
                   </div>
-                  <ul class="notif-list" data-notif-list>
-                    <li class="notif-empty">
-                      <span class="notif-empty-ico" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-                        </svg>
-                      </span>
-                      <span class="notif-empty-title">Tudo em dia</span>
-                      <span class="notif-empty-sub">Pagamentos recebidos e alertas de créditos aparecem aqui.</span>
-                    </li>
-                  </ul>
-                  <div class="notif-panel-foot">
-                    <a href="/minha-conta">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                      </svg>
-                      Ajustar notificações
-                    </a>
-                  </div>
+                  <button
+                    type="button"
+                    class="notif-clear-all"
+                    data-notif-clear
+                    title="Limpar todas"
+                    >Limpar tudo</button
+                  >
                 </div>
-              </div>
-              <div class="account-menu-wrap" data-account-menu-wrap>
-                <button class="topbar-avatar" type="button" title="Menu da conta" aria-label="Abrir menu da conta" aria-expanded="false" aria-controls="account-menu" data-account-menu-toggle><%= user.name.substring(0,1).toUpperCase() %></button>
-                <nav class="account-menu" id="account-menu" aria-label="Conta" data-account-menu hidden>
-                  <a href="/minha-conta"><%- include('../partials/ui-icon', { name: 'settings' }) %><span>Configurações</span></a>
-                  <a href="/integracao-pagamento"><%- include('../partials/ui-icon', { name: 'card' }) %><span>Integração de pagamento</span></a>
-                </nav>
+                <ul class="notif-list" data-notif-list>
+                  <li class="notif-empty">
+                    <span class="notif-empty-ico" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="34"
+                        height="34"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                      </svg>
+                    </span>
+                    <span class="notif-empty-title">Tudo em dia</span>
+                    <span class="notif-empty-sub"
+                      >Pagamentos recebidos e alertas de créditos aparecem
+                      aqui.</span
+                    >
+                  </li>
+                </ul>
+                <div class="notif-panel-foot">
+                  <a href="/minha-conta">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="13"
+                      height="13"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                      style="vertical-align:-2px;margin-right:5px;"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                      />
+                    </svg>
+                    Ajustar notificações
+                  </a>
+                </div>
               </div>
             </div>
-          </header>
-          <main class="app-content">
-            <% if ((success && success.length) || (error && error.length)) { %>
-              <div class="modal-overlay" id="modal-site-notice" data-auto-notice aria-hidden="true" inert>
-                <div class="modal site-notice-modal">
-                  <div class="modal-header">
-                    <h3><%= error && error.length ? 'Confira este aviso' : 'Tudo certo!' %></h3>
-                    <button type="button" class="modal-close" data-close-modal aria-label="Fechar">&times;</button>
-                  </div>
-                  <div class="modal-body">
-                    <% (success || []).forEach(message => { %>
-                      <div class="site-notice-message is-success">
-                        <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'check'}) %></span>
-                        <p><%= message %></p>
-                      </div>
-                    <% }) %>
-                    <% (error || []).forEach(message => { %>
-                      <div class="site-notice-message is-error">
-                        <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'info'}) %></span>
-                        <p><%= message %></p>
-                      </div>
-                    <% }) %>
-                    <div class="modal-actions">
-                      <button class="btn btn-primary" type="button" data-close-modal>Entendi</button>
-                    </div>
-                  </div>
+            <div class="account-menu-wrap" data-account-menu-wrap>
+              <button
+                class="topbar-avatar"
+                type="button"
+                title="Menu da conta"
+                aria-label="Abrir menu da conta"
+                aria-expanded="false"
+                aria-controls="account-menu"
+                data-account-menu-toggle
+                ><%= user.name.substring(0,1).toUpperCase() %></button
+              >
+              <nav
+                class="account-menu"
+                id="account-menu"
+                aria-label="Conta"
+                data-account-menu
+                hidden
+              >
+                <a href="/minha-conta"
+                  ><%- include('../partials/ui-icon', { name: 'settings' }) %><span>Configurações</span></a
+                >
+                <a href="/integracao-pagamento"
+                  ><%- include('../partials/ui-icon', { name: 'card' }) %><span
+                    >Integração de pagamento</span
+                  ></a
+                >
+              </nav>
+            </div>
+          </div>
+        </header>
+        <main class="app-content">
+          <% if ((success && success.length) || (error && error.length)) { %>
+          <div
+            class="modal-overlay"
+            id="modal-site-notice"
+            data-auto-notice
+            aria-hidden="true"
+            inert
+          >
+            <div class="modal site-notice-modal">
+              <div class="modal-header">
+                <h3><%= error && error.length ? 'Confira este aviso' : 'Tudo certo!' %></h3>
+                <button
+                  type="button"
+                  class="modal-close"
+                  data-close-modal
+                  aria-label="Fechar"
+                  >&times;</button
+                >
+              </div>
+              <div class="modal-body">
+                <% (success || []).forEach(message => { %>
+                <div class="site-notice-message is-success">
+                  <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'check'}) %></span>
+                  <p><%= message %></p>
+                </div>
+                <% }) %>
+                <% (error || []).forEach(message => { %>
+                <div class="site-notice-message is-error">
+                  <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'info'}) %></span>
+                  <p><%= message %></p>
+                </div>
+                <% }) %>
+                <div class="modal-actions">
+                  <button class="btn btn-primary" type="button" data-close-modal
+                    >Entendi</button
+                  >
                 </div>
               </div>
-            <% } %>
-            <%- body %>
-          </main>
-        </div>
-        <nav class="mobile-dock" aria-label="Atalhos principais">
-          <a href="/dashboard" data-dock-link><%- include('../partials/ui-icon', { name: 'chart' }) %><span>Dashboard</span></a>
-          <a href="/clientes" data-dock-link><%- include('../partials/ui-icon', { name: 'users' }) %><span>Clientes</span></a>
-          <a href="/automacao" data-dock-link><%- include('../partials/ui-icon', { name: 'bolt' }) %><span>Automação</span></a>
-          <button type="button" data-sidebar-mobile aria-label="Abrir menu" aria-expanded="false"><%- include('../partials/ui-icon', { name: 'menu' }) %><span>Menu</span></button>
-        </nav>
-        <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+            </div>
+          </div>
+          <% } %>
+          <%- body %>
+        </main>
       </div>
+      <nav class="mobile-dock" aria-label="Atalhos principais">
+        <a href="/dashboard" data-dock-link
+          ><%- include('../partials/ui-icon', { name: 'chart' }) %><span>Dashboard</span></a
+        >
+        <a href="/clientes" data-dock-link
+          ><%- include('../partials/ui-icon', { name: 'users' }) %><span>Clientes</span></a
+        >
+        <a href="/automacao" data-dock-link
+          ><%- include('../partials/ui-icon', { name: 'bolt' }) %><span>Automação</span></a
+        >
+        <button
+          type="button"
+          data-sidebar-mobile
+          aria-label="Abrir menu"
+          aria-expanded="false"
+          ><%- include('../partials/ui-icon', { name: 'menu' }) %><span>Menu</span></button
+        >
+      </nav>
+      <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+    </div>
     <% } else { %>
-      <%- body %>
+    <%- body %>
     <% } %>
     <% ['calendar', 'edit', 'plus'].forEach(name => { %>
-      <template data-ui-icon="<%= name %>"><%- include('../partials/ui-icon', { name }) %></template>
+    <template data-ui-icon="<%= name %>"
+      ><%- include('../partials/ui-icon', { name }) %></template
+    >
     <% }) %>
-    <script src="/assets/js/main.js?v=197"></script>
-    <script src="/assets/js/app-shell.js?v=195"></script>
-    <script src="/assets/js/navigation.js?v=193"></script>
-    <script src="/assets/js/visual-effects.js?v=192"></script>
+    <%- include('../partials/app-scripts') %>
   </body>
 </html>

@@ -185,12 +185,10 @@ adminRouter.get('/backups/download/:nome', (req, res, next) => {
   try {
     const p = caminhoBackup(String(req.params.nome));
     if (!p)
-      return res
-        .status(404)
-        .render('pages/error', {
-          title: 'Não encontrado',
-          error: { message: 'Backup não encontrado.' },
-        });
+      return res.status(404).render('pages/error', {
+        title: 'Não encontrado',
+        error: { message: 'Backup não encontrado.' },
+      });
     res.download(p);
   } catch (error) {
     next(error);

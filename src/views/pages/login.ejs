@@ -1,106 +1,91 @@
 <main class="login-shell">
   <section class="login-grid" aria-labelledby="login-title">
     <div class="login-brand">
-      <div class="login-chip">
-        Acesso Restrito
-      </div>
-      <h1 id="login-title">
-        Painel Gerencial
-      </h1>
+      <div class="login-chip"> Acesso Restrito </div>
+      <h1 id="login-title"> Painel Gerencial </h1>
       <p class="login-subtitle">
         Controle clientes, cobranças e mensagens em um ambiente seguro e rápido.
       </p>
       <div class="login-highlights">
         <div class="login-highlight">
-          <span class="dot dot-green">
-          </span>
+          <span class="dot dot-green"> </span>
           <div>
-            <strong>
-              Monitoramento em tempo real
-            </strong>
-            <span>
-              Indicadores atualizados a cada acesso.
-            </span>
+            <strong> Monitoramento em tempo real </strong>
+            <span> Indicadores atualizados a cada acesso. </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-blue">
-          </span>
+          <span class="dot dot-blue"> </span>
           <div>
-            <strong>
-              Fluxo de pagamentos
-            </strong>
-            <span>
-              Histórico de cobranças com filtros inteligentes.
-            </span>
+            <strong> Fluxo de pagamentos </strong>
+            <span> Histórico de cobranças com filtros inteligentes. </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-gold">
-          </span>
+          <span class="dot dot-gold"> </span>
           <div>
-            <strong>
-              Mensagens automatizadas
-            </strong>
-            <span>
-              Templates prontos para comunicação rápida.
-            </span>
+            <strong> Mensagens automatizadas </strong>
+            <span> Templates prontos para comunicação rápida. </span>
           </div>
         </div>
       </div>
       <div class="login-footer-note">
-        <span>
-          Precisa de acesso? Fale com o administrador.
-        </span>
+        <span> Precisa de acesso? Fale com o administrador. </span>
       </div>
     </div>
     <div class="login-card">
       <div class="login-card-header">
-        <h2>
-          Entrar
-        </h2>
-        <p>
-          Use suas credenciais para continuar.
-        </p>
+        <h2> Entrar </h2>
+        <p> Use suas credenciais para continuar. </p>
       </div>
       <% if (error && error.length) { %>
-        <div class="form-alert error">
-          <%= error[0] %>
-        </div>
+      <div class="form-alert error">
+        <%= error[0] %>
+      </div>
       <% } %>
       <form class="login-form" action="/login" method="post" autocomplete="on">
         <%- csrfInput %>
         <label class="login-field">
-          <span>
-            Nome de usuário
-          </span>
-          <input type="text" name="username" placeholder="Seu usuário" autocomplete="username" required />
+          <span> Nome de usuário </span>
+          <input
+            type="text"
+            name="username"
+            placeholder="Seu usuário"
+            autocomplete="username"
+            required
+          />
         </label>
         <label class="login-field">
-          <span>
-            Senha
-          </span>
+          <span> Senha </span>
           <div class="login-password-control">
-            <input id="login-password" type="password" name="password" placeholder="Sua senha" autocomplete="current-password" required />
-            <button type="button" data-login-password-toggle aria-controls="login-password" aria-label="Mostrar senha" aria-pressed="false">Mostrar</button>
+            <input
+              id="login-password"
+              type="password"
+              name="password"
+              placeholder="Sua senha"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              data-login-password-toggle
+              aria-controls="login-password"
+              aria-label="Mostrar senha"
+              aria-pressed="false"
+              >Mostrar</button
+            >
           </div>
         </label>
         <div class="login-row">
           <label class="login-check">
             <input type="checkbox" name="remember" />
-            <span>
-              Manter conectado
-            </span>
+            <span> Manter conectado </span>
           </label>
-          <a class="login-link" href="#">
-            Esqueceu a senha?
-          </a>
+          <a class="login-link" href="#"> Esqueceu a senha? </a>
         </div>
-        <button class="login-btn" type="submit">
-          Acessar painel
-        </button>
+        <button class="login-btn" type="submit"> Acessar painel </button>
       </form>
     </div>
   </section>
 </main>
-<script src="/assets/js/login.js?v=200" defer></script>
+<script src="<%= assetUrl('/assets/js/login.js') %>" defer></script>

@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=ixtv-2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= assetUrl('/apple-touch-icon.png') %>" />
     <meta name="apple-mobile-web-app-title" content="IX TV" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex,nofollow" />
     <title>Pagar — <%= cliente.nome %></title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=ixtv-2" />
-    <link rel="icon" href="/favicon.ico?v=ixtv-2" />
+    <link rel="icon" type="image/svg+xml" href="<%= assetUrl('/favicon.svg') %>" />
+    <link rel="icon" href="<%= assetUrl('/favicon.ico') %>" />
     <style>
       :root {
         --bg: #0b1220; --surface: #131a2b; --surface-2: #1b2238; --border: #232b46;
@@ -60,60 +60,110 @@
         </div>
         <div class="pay-body">
           <div class="pay-info">
-            <div class="pay-info-row"><span>Cliente</span><strong><%= cliente.nome %></strong></div>
-            <div class="pay-info-row"><span>Usuário IPTV</span><strong><%= cliente.user || '—' %></strong></div>
-            <div class="pay-info-row"><span>Telas</span><strong><%= cliente.telas || 1 %></strong></div>
-            <div class="pay-info-row"><span>Plano</span><strong><%= cliente.plano || '—' %></strong></div>
+            <div class="pay-info-row"
+              ><span>Cliente</span><strong><%= cliente.nome %></strong></div
+            >
+            <div class="pay-info-row"
+              ><span>Usuário IPTV</span
+              ><strong><%= cliente.user || '—' %></strong></div
+            >
+            <div class="pay-info-row"
+              ><span>Telas</span><strong><%= cliente.telas || 1 %></strong></div
+            >
+            <div class="pay-info-row"
+              ><span>Plano</span><strong><%= cliente.plano || '—' %></strong></div
+            >
             <div class="pay-info-row">
               <span>Vencimento atual</span>
               <strong>
                 <%= vencimentoFormatado %>
                 <% if (cliente.horaVencimento) { %>
-                  às
-                  <%= String(cliente.horaVencimento).slice(0,5) %>
+                às
+                <%= String(cliente.horaVencimento).slice(0,5) %>
                 <% } %>
               </strong>
             </div>
           </div>
           <% if (locals.escolhas?.length > 1) { %>
-            <label style="display:grid;gap:8px;margin:16px 0">
-              Quais servidores deseja renovar?
-              <select id="pay-selecao" style="width:100%;min-height:48px;padding:12px;border-radius:10px">
-                <% escolhas.forEach(grupo => { %>
-                  <option value="<%= grupo.selecao %>" data-opcoes="<%= JSON.stringify(grupo.opcoes) %>" <%= grupo.selecao === selecao ? 'selected' : '' %>><%= grupo.label %></option>
-                <% }) %>
-              </select>
-            </label>
+          <label style="display:grid;gap:8px;margin:16px 0">
+            Quais servidores deseja renovar?
+            <select
+              id="pay-selecao"
+              style="width:100%;min-height:48px;padding:12px;border-radius:10px"
+            >
+              <% escolhas.forEach(grupo => { %>
+              <option
+                value="<%= grupo.selecao %>"
+                data-opcoes="<%= JSON.stringify(grupo.opcoes) %>"
+                <%= grupo.selecao === selecao ? 'selected' : '' %>
+                ><%= grupo.label %></option
+              >
+              <% }) %>
+            </select>
+          </label>
           <% } %>
           <label style="display:grid;gap:8px;margin:16px 0">
             Por quanto tempo deseja renovar?
-            <select id="pay-periodos" style="width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:16px">
+            <select
+              id="pay-periodos"
+              style="width:100%;min-height:48px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:16px"
+            >
               <% (locals.opcoesRenovacao || [{ periodos: 1, label: '1 período do plano', valor: Number(cliente.valor) || 0 }]).forEach(opcao => { %>
-                <option value="<%= opcao.periodos %>" data-valor="<%= opcao.valor %>" <%= opcao.periodos === (Number(locals.periodosSelecionados) || 1) ? 'selected' : '' %>><%= opcao.label %></option>
+              <option
+                value="<%= opcao.periodos %>"
+                data-valor="<%= opcao.valor %>"
+                <%= opcao.periodos === (Number(locals.periodosSelecionados) || 1) ? 'selected' : '' %>
+                ><%= opcao.label %></option
+              >
               <% }) %>
             </select>
           </label>
           <div class="pay-amount" id="pay-amount"><%= valorFormatado %></div>
           <button class="pay-btn" id="pay-btn" type="button">
             <% if (pagamento && pagamento.mpQrText) { %>
-              📱 Ver código PIX
+            📱 Ver código PIX
             <% } else { %>
-              📱 Gerar código PIX
+            📱 Gerar código PIX
             <% } %>
           </button>
-          <div class="pay-confirmed" id="pay-confirmed" role="status" aria-live="polite" hidden>
-            <span class="pay-check" aria-hidden="true"><svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div
+            class="pay-confirmed"
+            id="pay-confirmed"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <span class="pay-check" aria-hidden="true"
+              ><svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="m5 12 4 4L19 6"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+            ></span>
             <h2>PIX pago!</h2>
-            <p>Pagamento confirmado. O responsável recebeu o aviso e fará a renovação do seu acesso.</p>
+            <p
+              >Pagamento confirmado. O responsável recebeu o aviso e fará a
+              renovação do seu acesso.</p
+            >
           </div>
           <div class="pay-qr-box" id="pay-qr-box">
-            <img id="pay-qr-img" alt="QR Code PIX">
+            <img id="pay-qr-img" alt="QR Code PIX" />
             <div class="pay-pix-code" id="pay-pix-code"></div>
-            <button class="pay-copy" type="button" id="pay-copy">📋 Copiar código PIX</button>
-            <div class="pay-status-msg" id="pay-status-msg"><span class="pay-spinner"></span>Aguardando pagamento...</div>
+            <button class="pay-copy" type="button" id="pay-copy"
+              >📋 Copiar código PIX</button
+            >
+            <div class="pay-status-msg" id="pay-status-msg"
+              ><span class="pay-spinner"></span>Aguardando pagamento...</div
+            >
           </div>
         </div>
-        <div class="pay-foot">Confira seus dados e gere o PIX. Após a confirmação do pagamento, o responsável fará a renovação do seu acesso.</div>
+        <div class="pay-foot"
+          >Confira seus dados e gere o PIX. Após a confirmação do pagamento, o
+          responsável fará a renovação do seu acesso.</div
+        >
       </div>
     </div>
     <script>

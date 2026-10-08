@@ -6,6 +6,9 @@
   "description": "Painel Gestor em JavaScript e Node.js.",
   "main": "src/server.js",
   "scripts": {
+    "format": "node scripts/format.mjs",
+    "format:check": "node scripts/format.mjs --check",
+    "check": "node scripts/check-js.mjs && node scripts/check-views.mjs",
     "dev": "node scripts/start-local.mjs --watch",
     "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.mjs",
@@ -35,5 +38,8 @@
     "express-mysql-session": {
       "mysql2": "$mysql2"
     }
+  },
+  "devDependencies": {
+    "prettier": "3.9.9"
   }
 }

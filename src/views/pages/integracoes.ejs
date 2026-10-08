@@ -2,92 +2,193 @@
 <div class="container page-integracoes" data-search-scope>
   <div class="integ-head">
     <div>
-      <h2 class="section-title"><%- include('../partials/ui-icon', { name: 'link' }) %> Integrações</h2>
-      <p class="muted">Conecte um painel IPTV para renovar seus clientes lá automaticamente ao renovar aqui.</p>
+      <h2 class="section-title"
+        ><%- include('../partials/ui-icon', { name: 'link' }) %>
+        Integrações</h2
+      >
+      <p class="muted"
+        >Conecte um painel IPTV para renovar seus clientes lá automaticamente ao
+        renovar aqui.</p
+      >
     </div>
-    <button class="btn btn-primary open-integracao-modal" type="button"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração</button>
+    <button class="btn btn-primary open-integracao-modal" type="button"
+      ><%- include('../partials/ui-icon', { name: 'plus' }) %>
+      Adicionar Integração</button
+    >
   </div>
   <div class="ui-summary ui-summary-2">
     <div class="cli-stat accent-green">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚙️' }) %></div>
-      <div><strong><%= sigmas.length %></strong><span>Sigma</span></div>
+      <div
+        ><strong><%= sigmas.length %></strong><span>Sigma</span></div
+      >
     </div>
     <div class="cli-stat accent-blue">
       <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🔗' }) %></div>
-      <div><strong><%= integracoes.length %></strong><span>Total</span></div>
+      <div
+        ><strong><%= integracoes.length %></strong><span>Total</span></div
+      >
     </div>
   </div>
   <div class="card integ-card">
-    <h3 class="integ-card-title"><%- include('../partials/ui-icon', { name: 'settings' }) %> Integrações Sigma</h3>
+    <h3 class="integ-card-title"
+      ><%- include('../partials/ui-icon', { name: 'settings' }) %>
+      Integrações Sigma</h3
+    >
     <% if (!sigmas.length) { %>
-      <div class="integ-empty">
-        <div class="integ-empty-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
-        <p class="muted">Nenhuma integração Sigma configurada.</p>
-        <button class="btn btn-primary open-integracao-modal" type="button"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Primeira Integração</button>
-      </div>
+    <div class="integ-empty">
+      <div class="integ-empty-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
+      <p class="muted">Nenhuma integração Sigma configurada.</p>
+      <button class="btn btn-primary open-integracao-modal" type="button"
+        ><%- include('../partials/ui-icon', { name: 'plus' }) %>
+        Adicionar Primeira Integração</button
+      >
+    </div>
     <% } else { %>
-      <div class="integ-list">
-        <% sigmas.forEach(i => { %>
-          <div class="integ-item">
-            <div class="integ-info">
-              <div class="integ-info-top">
-                <strong><%= i.nome %></strong>
-                <span class="badge <%= i.status === 'ativo' ? 'badge-green' : 'badge-muted' %>"><%= i.status === 'ativo' ? 'Ativo' : 'Inativo' %></span>
-              </div>
-              <small class="muted"><%= i.apiUrl %> · 👤 <%= i.username %></small>
-            </div>
-            <div class="integ-acoes">
-              <form method="post" action="/integracoes" class="integ-inline" data-native-submit="1">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="test_integracao">
-                <input type="hidden" name="id" value="<%= i.id %>">
-                <button class="btn btn-muted" type="submit" data-loading-text="Testando">🔌 Testar</button>
-              </form>
-              <button class="btn btn-muted edit-integracao" type="button"
-              data-id="<%= i.id %>" data-nome="<%= i.nome %>" data-api-url="<%= i.apiUrl %>"
-              data-username="<%= i.username %>" data-status="<%= i.status %>"><%- include('../partials/ui-icon', { name: 'edit' }) %> Editar</button>
-              <form method="post" action="/integracoes" class="integ-inline delete-integracao" data-native-submit="1">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="delete_integracao">
-                <input type="hidden" name="id" value="<%= i.id %>">
-                <button class="btn btn-muted integ-danger" type="submit"><%- include('../partials/ui-icon', { name: 'trash' }) %> Excluir</button>
-              </form>
-            </div>
+    <div class="integ-list">
+      <% sigmas.forEach(i => { %>
+      <div class="integ-item">
+        <div class="integ-info">
+          <div class="integ-info-top">
+            <strong><%= i.nome %></strong>
+            <span class="badge <%= i.status === 'ativo' ? 'badge-green' : 'badge-muted' %>"
+              ><%= i.status === 'ativo' ? 'Ativo' : 'Inativo' %></span
+            >
           </div>
-        <% }) %>
+          <small class="muted"
+            ><%= i.apiUrl %>
+            · 👤
+            <%= i.username %></small
+          >
+        </div>
+        <div class="integ-acoes">
+          <form
+            method="post"
+            action="/integracoes"
+            class="integ-inline"
+            data-native-submit="1"
+          >
+            <%- csrfInput %>
+            <input type="hidden" name="action" value="test_integracao" />
+            <input type="hidden" name="id" value="<%= i.id %>" />
+            <button
+              class="btn btn-muted"
+              type="submit"
+              data-loading-text="Testando"
+              >🔌 Testar</button
+            >
+          </form>
+          <button
+            class="btn btn-muted edit-integracao"
+            type="button"
+            data-id="<%= i.id %>"
+            data-nome="<%= i.nome %>"
+            data-api-url="<%= i.apiUrl %>"
+            data-username="<%= i.username %>"
+            data-status="<%= i.status %>"
+            ><%- include('../partials/ui-icon', { name: 'edit' }) %>
+            Editar</button
+          >
+          <form
+            method="post"
+            action="/integracoes"
+            class="integ-inline delete-integracao"
+            data-native-submit="1"
+          >
+            <%- csrfInput %>
+            <input type="hidden" name="action" value="delete_integracao" />
+            <input type="hidden" name="id" value="<%= i.id %>" />
+            <button class="btn btn-muted integ-danger" type="submit"
+              ><%- include('../partials/ui-icon', { name: 'trash' }) %>
+              Excluir</button
+            >
+          </form>
+        </div>
       </div>
+      <% }) %>
+    </div>
     <% } %>
   </div>
 </div>
 <div class="modal-overlay" id="modal-add-integracao" aria-hidden="true" inert>
   <div class="modal">
     <div class="modal-header">
-      <h3 id="integracao-title"><%- include('../partials/ui-icon', { name: 'plus' }) %> Adicionar Integração Sigma</h3>
-      <button class="modal-close" type="button" data-close-modal aria-label="Fechar">×</button>
+      <h3 id="integracao-title"
+        ><%- include('../partials/ui-icon', { name: 'plus' }) %>
+        Adicionar Integração Sigma</h3
+      >
+      <button
+        class="modal-close"
+        type="button"
+        data-close-modal
+        aria-label="Fechar"
+        >×</button
+      >
     </div>
-    <form method="post" action="/integracoes" id="modal-add-integracao-form" class="modal-body" data-native-submit="1" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
+    <form
+      method="post"
+      action="/integracoes"
+      id="modal-add-integracao-form"
+      class="modal-body"
+      data-native-submit="1"
+      autocomplete="off"
+      data-1p-ignore
+      data-lpignore="true"
+      data-bwignore
+    >
       <%- csrfInput %>
-      <input type="hidden" name="action" value="create_integracao">
-      <input type="hidden" name="id" value="">
-      <input type="hidden" name="tipo" value="sigma">
+      <input type="hidden" name="action" value="create_integracao" />
+      <input type="hidden" name="id" value="" />
+      <input type="hidden" name="tipo" value="sigma" />
       <div class="form-grid">
         <label class="field full">
           <span>Nome da integração *</span>
-          <input class="input" name="nome" placeholder="Ex: Sigma GENIAL" required>
+          <input
+            class="input"
+            name="nome"
+            placeholder="Ex: Sigma GENIAL"
+            required
+          />
         </label>
         <label class="field full">
           <span>URL do painel *</span>
-          <input class="input" name="api_url" placeholder="https://dashgen.net" required>
-          <small>A URL do painel (ex.: https://dashgen.net). Uso a base dela pra chamar a API.</small>
+          <input
+            class="input"
+            name="api_url"
+            placeholder="https://dashgen.net"
+            required
+          />
+          <small
+            >A URL do painel (ex.: https://dashgen.net). Uso a base dela pra
+            chamar a API.</small
+          >
         </label>
         <label class="field">
           <span>Usuário / e-mail *</span>
-          <input class="input" name="username" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore required>
+          <input
+            class="input"
+            name="username"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            required
+          />
         </label>
         <label class="field">
           <span>Senha do painel</span>
-          <input class="input" type="password" name="password" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore>
-          <small>No modo editar, deixe em branco para manter a senha atual.</small>
+          <input
+            class="input"
+            type="password"
+            name="password"
+            autocomplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+          />
+          <small
+            >No modo editar, deixe em branco para manter a senha atual.</small
+          >
         </label>
         <label class="field full">
           <span>Status</span>
@@ -97,11 +198,23 @@
           </select>
         </label>
       </div>
-      <div class="form-alert integ-cf-note">⚠️ O painel fica atrás do Cloudflare. Se o teste retornar "bloqueado pelo Cloudflare", peça ao provedor para liberar (whitelist) o IP do seu servidor.</div>
+      <div class="form-alert integ-cf-note"
+        >⚠️ O painel fica atrás do Cloudflare. Se o teste retornar "bloqueado
+        pelo Cloudflare", peça ao provedor para liberar (whitelist) o IP do seu
+        servidor.</div
+      >
     </form>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>Cancelar</button>
-      <button class="btn btn-primary" type="submit" form="modal-add-integracao-form" data-loading-text="Salvando">Salvar</button>
+      <button class="btn btn-muted" type="button" data-close-modal
+        >Cancelar</button
+      >
+      <button
+        class="btn btn-primary"
+        type="submit"
+        form="modal-add-integracao-form"
+        data-loading-text="Salvando"
+        >Salvar</button
+      >
     </div>
   </div>
 </div>

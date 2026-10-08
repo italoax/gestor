@@ -1,159 +1,226 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=ixtv-2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="<%= assetUrl('/apple-touch-icon.png') %>" />
     <meta name="apple-mobile-web-app-title" content="IX TV" />
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="robots" content="noindex,nofollow">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
     <title>Área do cliente | ixstreaming</title>
-    <link rel="stylesheet" href="/assets/css/area-cliente.css?v=4">
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/area-cliente.css') %>" />
   </head>
   <body>
     <div class="portal-wrap">
       <header class="portal-header">
         <a class="portal-brand" href="/">ix<span>streaming</span></a>
         <% if (cliente) { %>
-          <form method="post" action="/area-cliente/sair">
-            <%- csrfInput %>
-            <button class="portal-button portal-button-secondary">Sair</button>
-          </form>
+        <form method="post" action="/area-cliente/sair">
+          <%- csrfInput %>
+          <button class="portal-button portal-button-secondary">Sair</button>
+        </form>
         <% } %>
       </header>
       <main class="portal-main">
         <% if (erro && cliente) { %>
-          <div class="portal-alert" role="alert"><%= erro %></div>
+        <div class="portal-alert" role="alert"><%= erro %></div>
         <% } %>
         <% if (!cliente) { %>
-          <section class="portal-card portal-login">
-            <p class="portal-eyebrow">ixstreaming</p>
-            <h1>Área do cliente</h1>
-            <p class="portal-lead">Sua assinatura, em um só lugar.</p>
-            <div class="portal-login-error" id="login-error" role="alert" <%= erro ? '' : 'hidden' %>><%= erro %></div>
-            <form class="portal-form" method="post" action="/area-cliente/login" autocomplete="on">
-              <%- csrfInput %>
-              <label class="portal-field">
-                Usuário IPTV
-                <input class="portal-input" name="login" value="<%= typeof loginValue === 'string' ? loginValue : '' %>" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="120" required>
-              </label>
-              <label class="portal-field">
-                Senha do IPTV
-                <input class="portal-input" type="password" name="password" autocomplete="current-password" required>
-              </label>
-              <button class="portal-button">Entrar</button>
-            </form>
-            <p class="portal-help">Use o mesmo usuário e senha do IPTV fornecidos no seu cadastro. Se esqueceu a senha, peça uma nova ao responsável pela sua assinatura.</p>
-          </section>
+        <section class="portal-card portal-login">
+          <p class="portal-eyebrow">ixstreaming</p>
+          <h1>Área do cliente</h1>
+          <p class="portal-lead">Sua assinatura, em um só lugar.</p>
+          <div
+            class="portal-login-error"
+            id="login-error"
+            role="alert"
+            <%= erro ? '' : 'hidden' %>
+            ><%= erro %></div
+          >
+          <form
+            class="portal-form"
+            method="post"
+            action="/area-cliente/login"
+            autocomplete="on"
+          >
+            <%- csrfInput %>
+            <label class="portal-field">
+              Usuário IPTV
+              <input
+                class="portal-input"
+                name="login"
+                value="<%= typeof loginValue === 'string' ? loginValue : '' %>"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="120"
+                required
+              />
+            </label>
+            <label class="portal-field">
+              Senha do IPTV
+              <input
+                class="portal-input"
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+              />
+            </label>
+            <button class="portal-button">Entrar</button>
+          </form>
+          <p class="portal-help"
+            >Use o mesmo usuário e senha do IPTV fornecidos no seu cadastro. Se
+            esqueceu a senha, peça uma nova ao responsável pela sua
+            assinatura.</p
+          >
+        </section>
         <% } else { %>
-          <p class="portal-eyebrow">Área do cliente</p>
-          <h1 class="portal-welcome">Olá, <%= cliente.nome %>.</h1>
-          <p class="portal-lead">Acompanhe sua assinatura e mantenha tudo em dia.</p>
-          <div class="portal-grid">
-            <section class="portal-card">
-              <h2>Minha assinatura</h2>
-              <span class="portal-badge"><%= statusByVencimento(cliente.status, cliente.vencimento).label %></span>
-              <p class="portal-validity"><%= formatDateBr(cliente.vencimento) %></p>
-              <p class="portal-lead">
-                Vencimento
-                <% if (cliente.hora_vencimento) { %>
-                  às
-                  <%= String(cliente.hora_vencimento).slice(0,5) %>
-                <% } %>
-              </p>
-              <dl class="portal-details">
-                <div>
-                  <dt>Usuário IPTV</dt>
-                  <dd><%= cliente.user %></dd>
-                </div>
-                <div>
-                  <dt>Plano</dt>
-                  <dd><%= cliente.plano %></dd>
-                </div>
-                <div>
-                  <dt>Telas</dt>
-                  <dd><%= cliente.telas %></dd>
-                </div>
-                <% if (cliente.aplicativo) { %>
-                  <div>
-                    <dt>Aplicativo</dt>
-                    <dd><%= cliente.aplicativo %></dd>
-                  </div>
-                <% } %>
-              </dl>
-              <% if (locals.adicional) { %>
-                <h3>Segundo servidor: <%= adicional.servidor %></h3>
-                <dl class="portal-details">
-                  <div>
-                    <dt>Plano</dt>
-                    <dd><%= adicional.plano %></dd>
-                  </div>
-                  <div>
-                    <dt>Valor</dt>
-                    <dd><%= formatMoney(adicional.valor) %></dd>
-                  </div>
-                  <div>
-                    <dt>Vencimento</dt>
-                    <dd><%= formatDateBr(adicional.vencimento) %></dd>
-                  </div>
-                  <div>
-                    <dt>Telas</dt>
-                    <dd><%= adicional.telas %></dd>
-                  </div>
-                  <% if (adicional.user) { %>
-                    <div>
-                      <dt>Usuário IPTV</dt>
-                      <dd><%= adicional.user %></dd>
-                    </div>
-                  <% } %>
-                </dl>
+        <p class="portal-eyebrow">Área do cliente</p>
+        <h1 class="portal-welcome"
+          >Olá,
+          <%= cliente.nome %>.</h1
+        >
+        <p class="portal-lead"
+          >Acompanhe sua assinatura e mantenha tudo em dia.</p
+        >
+        <div class="portal-grid">
+          <section class="portal-card">
+            <h2>Minha assinatura</h2>
+            <span class="portal-badge"><%= statusByVencimento(cliente.status, cliente.vencimento).label %></span>
+            <p class="portal-validity"><%= formatDateBr(cliente.vencimento) %></p>
+            <p class="portal-lead">
+              Vencimento
+              <% if (cliente.hora_vencimento) { %>
+              às
+              <%= String(cliente.hora_vencimento).slice(0,5) %>
               <% } %>
-            </section>
-            <section class="portal-card">
-              <h2>Renovar assinatura</h2>
-              <p class="portal-renew-price"><%= formatMoney(locals.opcoesRenovacao?.[0]?.valor ?? cliente.valor) %></p>
-              <p class="portal-lead">Escolha a duração da renovação e confira o total antes de gerar o PIX.</p>
-              <% if (pix) { %>
-                <form method="post" action="/area-cliente/renovar" data-pix-form>
-                  <%- csrfInput %>
-                  <% if (locals.escolhas?.length > 1) { %>
-                    <label class="portal-field" style="margin-bottom:16px">
-                      Quais servidores deseja renovar?
-                      <select class="portal-input" name="selecao">
-                        <% escolhas.forEach(grupo => { %>
-                          <option value="<%= grupo.selecao %>" data-opcoes="<%= JSON.stringify(grupo.opcoes) %>"><%= grupo.label %></option>
-                        <% }) %>
-                      </select>
-                    </label>
-                  <% } %>
-                  <label class="portal-field" style="margin-bottom:16px">
-                    Por quanto tempo deseja renovar?
-                    <select class="portal-input" name="periodos">
-                      <% (locals.opcoesRenovacao || [{periodos:1,label:'1 período do plano',valor:cliente.valor}]).forEach(opcao => { %>
-                        <option value="<%= opcao.periodos %>" data-valor="<%= opcao.valor %>"><%= opcao.label %></option>
-                      <% }) %>
-                    </select>
-                  </label>
-                  <button class="portal-button">Renovar com PIX</button>
-                </form>
-                <div data-pix-details hidden style="margin-top:20px">
-                  <label class="portal-field">
-                    PIX Copia e Cola
-                    <textarea class="portal-input" data-pix-code readonly rows="3" style="resize:vertical;word-break:break-all"></textarea>
-                  </label>
-                  <button type="button" class="portal-button" data-pix-copy style="margin-top:12px">Copiar código PIX</button>
-                </div>
-                <p data-pix-status role="status" aria-live="polite"></p>
-                <p class="portal-help">Após a confirmação do pagamento, o responsável fará a renovação do seu acesso. Consulte a validade atualizada nesta área.</p>
-              <% } else { %>
-                <p class="portal-help">PIX indisponível no momento. Entre em contato com o responsável pelo seu cadastro para renovar.</p>
+            </p>
+            <dl class="portal-details">
+              <div>
+                <dt>Usuário IPTV</dt>
+                <dd><%= cliente.user %></dd>
+              </div>
+              <div>
+                <dt>Plano</dt>
+                <dd><%= cliente.plano %></dd>
+              </div>
+              <div>
+                <dt>Telas</dt>
+                <dd><%= cliente.telas %></dd>
+              </div>
+              <% if (cliente.aplicativo) { %>
+              <div>
+                <dt>Aplicativo</dt>
+                <dd><%= cliente.aplicativo %></dd>
+              </div>
               <% } %>
-            </section>
-          </div>
+            </dl>
+            <% if (locals.adicional) { %>
+            <h3
+              >Segundo servidor:
+              <%= adicional.servidor %></h3
+            >
+            <dl class="portal-details">
+              <div>
+                <dt>Plano</dt>
+                <dd><%= adicional.plano %></dd>
+              </div>
+              <div>
+                <dt>Valor</dt>
+                <dd><%= formatMoney(adicional.valor) %></dd>
+              </div>
+              <div>
+                <dt>Vencimento</dt>
+                <dd><%= formatDateBr(adicional.vencimento) %></dd>
+              </div>
+              <div>
+                <dt>Telas</dt>
+                <dd><%= adicional.telas %></dd>
+              </div>
+              <% if (adicional.user) { %>
+              <div>
+                <dt>Usuário IPTV</dt>
+                <dd><%= adicional.user %></dd>
+              </div>
+              <% } %>
+            </dl>
+            <% } %>
+          </section>
+          <section class="portal-card">
+            <h2>Renovar assinatura</h2>
+            <p class="portal-renew-price"><%= formatMoney(locals.opcoesRenovacao?.[0]?.valor ?? cliente.valor) %></p>
+            <p class="portal-lead"
+              >Escolha a duração da renovação e confira o total antes de gerar o
+              PIX.</p
+            >
+            <% if (pix) { %>
+            <form method="post" action="/area-cliente/renovar" data-pix-form>
+              <%- csrfInput %>
+              <% if (locals.escolhas?.length > 1) { %>
+              <label class="portal-field" style="margin-bottom:16px">
+                Quais servidores deseja renovar?
+                <select class="portal-input" name="selecao">
+                  <% escolhas.forEach(grupo => { %>
+                  <option
+                    value="<%= grupo.selecao %>"
+                    data-opcoes="<%= JSON.stringify(grupo.opcoes) %>"
+                    ><%= grupo.label %></option
+                  >
+                  <% }) %>
+                </select>
+              </label>
+              <% } %>
+              <label class="portal-field" style="margin-bottom:16px">
+                Por quanto tempo deseja renovar?
+                <select class="portal-input" name="periodos">
+                  <% (locals.opcoesRenovacao || [{periodos:1,label:'1 período do plano',valor:cliente.valor}]).forEach(opcao => { %>
+                  <option
+                    value="<%= opcao.periodos %>"
+                    data-valor="<%= opcao.valor %>"
+                    ><%= opcao.label %></option
+                  >
+                  <% }) %>
+                </select>
+              </label>
+              <button class="portal-button">Renovar com PIX</button>
+            </form>
+            <div data-pix-details hidden style="margin-top:20px">
+              <label class="portal-field">
+                PIX Copia e Cola
+                <textarea
+                  class="portal-input"
+                  data-pix-code
+                  readonly
+                  rows="3"
+                  style="resize:vertical;word-break:break-all"
+                ></textarea>
+              </label>
+              <button
+                type="button"
+                class="portal-button"
+                data-pix-copy
+                style="margin-top:12px"
+                >Copiar código PIX</button
+              >
+            </div>
+            <p data-pix-status role="status" aria-live="polite"></p>
+            <p class="portal-help"
+              >Após a confirmação do pagamento, o responsável fará a renovação
+              do seu acesso. Consulte a validade atualizada nesta área.</p
+            >
+            <% } else { %>
+            <p class="portal-help"
+              >PIX indisponível no momento. Entre em contato com o responsável
+              pelo seu cadastro para renovar.</p
+            >
+            <% } %>
+          </section>
+        </div>
         <% } %>
       </main>
       <footer class="portal-footer">ixstreaming · Área do cliente</footer>
     </div>
-    <script src="/assets/js/portal-login.js?v=1" defer></script>
-    <script src="/assets/js/portal-pix.js?v=4" defer></script>
+    <script src="<%= assetUrl('/assets/js/portal-login.js') %>" defer></script>
+    <script src="<%= assetUrl('/assets/js/portal-pix.js') %>" defer></script>
   </body>
 </html>

@@ -1,17 +1,30 @@
 <div class="card status-historico">
   <div class="card-head">
-    <div><strong>Histórico</strong><small class="status-live-note">Publicados são removidos após 24 horas</small></div>
-    <span class="muted"><%= historico.length %> registro(s)</span>
+    <div
+      ><strong>Histórico</strong
+      ><small class="status-live-note"
+        >Publicados são removidos após 24 horas</small
+      ></div
+    >
+    <span class="muted"
+      ><%= historico.length %>
+      registro(s)</span
+    >
   </div>
   <% if (!historico.length) { %>
-    <div class="status-empty">
-      <div class="status-empty-ico"><%- include('ui-icon', { name: 'broadcast' }) %></div>
-      <p>Nenhum status publicado ainda.</p>
-      <button class="btn btn-primary" type="button" data-open-modal="modal-novo-status">Publicar primeiro status</button>
-    </div>
+  <div class="status-empty">
+    <div class="status-empty-ico"><%- include('ui-icon', { name: 'broadcast' }) %></div>
+    <p>Nenhum status publicado ainda.</p>
+    <button
+      class="btn btn-primary"
+      type="button"
+      data-open-modal="modal-novo-status"
+      >Publicar primeiro status</button
+    >
+  </div>
   <% } else { %>
-    <div class="status-list">
-      <% historico.forEach(h => {
+  <div class="status-list">
+    <% historico.forEach(h => {
         const isAgendado = h.status === 'agendado';
         const isPublicando = h.status === 'publicando';
         const badgeClass = h.status === 'postado' ? 'badge-green'
@@ -23,57 +36,79 @@
           : isAgendado ? '⏰ Agendado'
           : 'Publicando...';
       %>
-        <div class="status-item <%= h.status === 'erro' ? 'is-error' : isAgendado ? 'is-scheduled' : 'is-ok' %>">
-          <div class="status-item-ico" style="<%= h.tipo === 'text' && h.corFundo ? `background:${h.corFundo};` : '' %>">
-            <%- include('ui-icon', { name: h.tipo === 'text' ? 'message' : h.tipo === 'image' ? 'image' : 'monitor' }) %>
-          </div>
-          <div class="status-item-body">
-            <div class="status-item-head">
-              <strong><%= h.tipo === 'text' ? 'Texto' : h.tipo === 'image' ? 'Imagem' : 'Vídeo' %></strong>
-              <span class="badge <%= badgeClass %>"><%= badgeLabel %></span>
-            </div>
-            <% if (h.tipo === 'text') { %>
-              <p class="status-item-text"><%= (h.texto || '').slice(0, 140) %><%= (h.texto || '').length > 140 ? '…' : '' %></p>
-            <% } else { %>
-              <p class="status-item-text muted"><%= h.mediaUrl %></p>
-              <% if (h.legenda) { %>
-                <p class="status-item-text"><%= h.legenda %></p>
-              <% } %>
-            <% } %>
-            <div class="status-item-foot">
-              <% if (isAgendado && h.agendadoPara) { %>
-                <span><%- include('ui-icon', { name: 'clock' }) %> Publica em <%= new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).format(h.agendadoPara instanceof Date ? h.agendadoPara : new Date(String(h.agendadoPara).replace(' ', 'T').replace(/Z$/, '') + 'Z')) %></span>
-              <% } else { %>
-                <span><%= formatDateBr(h.createdAt) %></span>
-              <% } %>
-              <% if (h.destinatarios) { %>
-                <span class="dot">•</span>
-                <span><%- include('ui-icon', { name: 'users' }) %> <%= h.destinatarios %> contatos</span>
-              <% } %>
-              <% if (h.erro) { %>
-                <span class="dot">•</span>
-                <span style="color: <%= h.status === 'erro' ? 'var(--red)' : 'var(--muted)' %>;"><%= h.erro %></span>
-              <% } %>
-            </div>
-          </div>
-          <% if (isAgendado) { %>
-            <form method="post" action="/status" class="status-item-del">
-              <%- csrfInput %>
-              <input type="hidden" name="action" value="cancelar_agendamento">
-              <input type="hidden" name="id" value="<%= h.id %>">
-              <button class="cli-ico-btn danger" type="submit" title="Cancelar agendamento"
-              onclick="return confirm('Cancelar este agendamento?');">✕</button>
-            </form>
-          <% } else if (!isPublicando) { %>
-            <form method="post" action="/status" class="status-item-del">
-              <%- csrfInput %>
-              <input type="hidden" name="action" value="delete_status">
-              <input type="hidden" name="id" value="<%= h.id %>">
-              <button class="cli-ico-btn danger" type="submit" title="Apagar do histórico"><%- include('ui-icon', { name: 'trash' }) %></button>
-            </form>
+    <div class="status-item <%= h.status === 'erro' ? 'is-error' : isAgendado ? 'is-scheduled' : 'is-ok' %>">
+      <div class="status-item-ico" style="<%= h.tipo === 'text' && h.corFundo ? `background:${h.corFundo};` : '' %>">
+        <%- include('ui-icon', { name: h.tipo === 'text' ? 'message' : h.tipo === 'image' ? 'image' : 'monitor' }) %>
+      </div>
+      <div class="status-item-body">
+        <div class="status-item-head">
+          <strong><%= h.tipo === 'text' ? 'Texto' : h.tipo === 'image' ? 'Imagem' : 'Vídeo' %></strong>
+          <span class="badge <%= badgeClass %>"><%= badgeLabel %></span>
+        </div>
+        <% if (h.tipo === 'text') { %>
+        <p class="status-item-text"
+          ><%= (h.texto || '').slice(0, 140) %><%= (h.texto || '').length > 140 ? '…' : '' %></p
+        >
+        <% } else { %>
+        <p class="status-item-text muted"><%= h.mediaUrl %></p>
+        <% if (h.legenda) { %>
+        <p class="status-item-text"><%= h.legenda %></p>
+        <% } %>
+        <% } %>
+        <div class="status-item-foot">
+          <% if (isAgendado && h.agendadoPara) { %>
+          <span
+            ><%- include('ui-icon', { name: 'clock' }) %>
+            Publica em
+            <%= new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).format(h.agendadoPara instanceof Date ? h.agendadoPara : new Date(String(h.agendadoPara).replace(' ', 'T').replace(/Z$/, '') + 'Z')) %></span
+          >
+          <% } else { %>
+          <span><%= formatDateBr(h.createdAt) %></span>
+          <% } %>
+          <% if (h.destinatarios) { %>
+          <span class="dot">•</span>
+          <span
+            ><%- include('ui-icon', { name: 'users' }) %>
+            <%= h.destinatarios %>
+            contatos</span
+          >
+          <% } %>
+          <% if (h.erro) { %>
+          <span class="dot">•</span>
+          <span style="color: <%= h.status === 'erro' ? 'var(--red)' : 'var(--muted)' %>;"
+            ><%= h.erro %></span
+          >
           <% } %>
         </div>
-      <% }) %>
+      </div>
+      <% if (isAgendado) { %>
+      <form method="post" action="/status" class="status-item-del">
+        <%- csrfInput %>
+        <input type="hidden" name="action" value="cancelar_agendamento" />
+        <input type="hidden" name="id" value="<%= h.id %>" />
+        <button
+          class="cli-ico-btn danger"
+          type="submit"
+          title="Cancelar agendamento"
+          onclick="return confirm('Cancelar este agendamento?');"
+          >✕</button
+        >
+      </form>
+      <% } else if (!isPublicando) { %>
+      <form method="post" action="/status" class="status-item-del">
+        <%- csrfInput %>
+        <input type="hidden" name="action" value="delete_status" />
+        <input type="hidden" name="id" value="<%= h.id %>" />
+        <button
+          class="cli-ico-btn danger"
+          type="submit"
+          title="Apagar do histórico"
+          ><%- include('ui-icon', { name: 'trash' }) %></button
+        >
+      </form>
+      <% } %>
     </div>
+    <% }) %>
+  </div>
   <% } %>
 </div>
