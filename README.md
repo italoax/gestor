@@ -1,15 +1,16 @@
 # Gestor IXTV
 
-Na hospedagem, a entrada principal é `src/server.js`. Para configurações antigas que usam `dist/server.js`, `npm run build` cria um arquivo de compatibilidade que inicia o mesmo servidor, sem compilar TypeScript nem duplicar o código.
+## Atualizações — 07/10/2026
 
-**Versão atual: 0.1.0**
-
-O mapa das pastas, as responsabilidades de cada módulo e os comandos de manutenção estão em [Organização do código](docs/CODIGO.md). Use `npm run format` para organizar os arquivos, `npm run format:check` para conferir o padrão e `npm run check` para verificar JavaScript e templates EJS.
-
-Os arquivos estáticos usam versões automáticas pelo conteúdo (SHA-256). Os templates chamam `assetUrl('/assets/js/navigation.js')`, sem números manuais. O build gera `dist/assets-manifest.json` e `dist/sw.js` para conferência; o servidor calcula as mesmas versões ao iniciar e serve `/sw.js` e `/manifest.json` com URLs sincronizadas. Alterar um arquivo muda sua URL e o cache do service worker automaticamente no próximo deploy/reinício. Em desenvolvimento, as versões são recalculadas ao carregar a página, sem precisar reiniciar. Os artefatos em `dist/` não precisam ser enviados ao GitHub.
-
-## Últimas atualizações — 07/10/2026
-
+- Código reorganizado para facilitar a manutenção do painel e de suas funcionalidades.
+- Atualização automática do cache dos arquivos: novas versões de scripts, estilos e ícones passam a ser identificadas sem alterar números manualmente.
+- Corrigido o aviso de falta de conexão que aparecia mesmo com internet na página de Avisos.
+- Melhorada a recuperação de falhas ao navegar entre as páginas do painel.
+- Melhorias de SEO no site da IX Streaming e inclusão do sitemap.
+- Corrigido o foco ao retornar ao aplicativo instalado (PWA).
+- Ajustado o comportamento do servidor ao atingir o limite de conexões do MySQL, evitando reinícios repetidos.
+- Atalhos no celular mais rápidos, com ajustes de espaçamento e barra fixa na borda inferior.
+- Logo e ícones do aplicativo atualizados.
 - Visual do painel revisado para desktop e celular, com ajustes em cards, formulários, modais e botões.
 - Dashboard com resumo de clientes, acessos principais e adicionais e situação dos acessos por servidor.
 - Status publicados no WhatsApp removidos automaticamente do painel após 24 horas.
