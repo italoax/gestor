@@ -623,7 +623,9 @@
   // notification não é registrado automaticamente — o user precisa pedir via
   // window.pushSubscribe() (botão na conta) pra abrir o popup de permissão.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(function () {
+    var workerScript = document.querySelector('script[data-service-worker-url]');
+    var workerUrl = workerScript ? workerScript.getAttribute('data-service-worker-url') : '/sw.js';
+    navigator.serviceWorker.register(workerUrl, { updateViaCache: 'none' }).catch(function () {
       /* ignora — site segue funcionando */
     });
   }

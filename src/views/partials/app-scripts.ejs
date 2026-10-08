@@ -19,6 +19,9 @@
 <script src="<%= assetUrl('/assets/js/' + name + '.js') %>"></script>
 <% }) %>
 <script src="<%= assetUrl('/assets/js/main.js') %>"></script>
-<script src="<%= assetUrl('/assets/js/app-shell.js') %>"></script>
+<script
+  src="<%= assetUrl('/assets/js/app-shell.js') %>"
+  data-service-worker-url="<%= serviceWorkerUrl() %>"
+></script>
 <script src="<%= assetUrl('/assets/js/navigation.js') %>"></script>
 <script src="<%= assetUrl('/assets/js/visual-effects.js') %>"></script>

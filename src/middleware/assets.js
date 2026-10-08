@@ -4,6 +4,7 @@ import { createAssetVersions } from '../services/assetVersions.js';
 export function installAssets(app, publicRoot, { development = false } = {}) {
   let assets = createAssetVersions(publicRoot);
   app.locals.assetUrl = (url) => assets.assetUrl(url);
+  app.locals.serviceWorkerUrl = () => '/sw.js?v=' + assets.cacheName;
   if (development) {
     app.use((req, _res, next) => {
       if (req.method === 'GET' && !/^\/(assets|icons|uploads)\//.test(req.path))
