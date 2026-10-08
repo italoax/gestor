@@ -142,7 +142,7 @@
               />
               <span class="status-drop-ico"><%- include('../partials/ui-icon', { name: 'image' }) %></span>
               <span class="status-drop-text"
-                ><strong>Selecionar imagem</strong
+                ><strong>Selecionar imagem ou colar com Ctrl+V</strong
                 ><small>PNG, JPG ou WebP · máx 5 MB</small></span
               >
             </label>
@@ -356,6 +356,22 @@
   }
   bindPreview('status-image-file', 'status-image-preview', 'image', 'status-image-drop');
   bindPreview('status-video-file', 'status-video-preview', 'video', 'status-video-drop');
+
+  const modal = document.getElementById('modal-novo-status');
+  const imageInput = document.getElementById('status-image-file');
+  modal.addEventListener('paste', (event) => {
+    if (modal.getAttribute('aria-hidden') === 'true') return;
+    const items = Array.from(event.clipboardData?.items || []);
+    const imageItem = items.find(item => item.kind === 'file' && item.type.startsWith('image/'));
+    const file = imageItem?.getAsFile();
+    if (!file) return;
+    event.preventDefault();
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    imageInput.files = transfer.files;
+    showTab('image');
+    imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+  });
 
   // Agendamento (sempre obrigatório agora — limite mínimo = agora + 1min)
   const agendarInput = document.getElementById('status-agendado-input');
