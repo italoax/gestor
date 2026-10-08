@@ -2,6 +2,34 @@
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
   var shell = document.querySelector('[data-shell]');
 
+  // Um bloqueio de tráfego pausa todas as consultas automáticas da aba.
+  window.gestorPolling =
+    window.gestorPolling ||
+    (function () {
+      var blockedUntil = 0,
+        failures = 0;
+      return {
+        canFetch: function () {
+          return !document.hidden && Date.now() >= blockedUntil;
+        },
+        recordResponse: function (response) {
+          var now = Date.now();
+          if (response.status === 429) {
+            failures = Math.min(failures + 1, 4);
+            var retryAfter = response.headers.get('Retry-After') || '';
+            var requested = /^\d+$/.test(retryAfter)
+              ? Number(retryAfter) * 1000
+              : Date.parse(retryAfter) - now;
+            var delay = Math.min(60000 * Math.pow(2, failures - 1), 300000);
+            if (Number.isFinite(requested)) delay = Math.max(delay, requested);
+            blockedUntil = Math.max(blockedUntil, now + delay);
+          } else if (response.ok && now >= blockedUntil) {
+            failures = 0;
+          }
+        },
+      };
+    })();
+
   // ----- CSRF helper -----
   // O token vem como meta tag no <head>. Toda chamada AJAX POST/PUT/DELETE
   // precisa enviar como `x-csrf-token`, senão o middleware csrfMiddleware
@@ -142,18 +170,20 @@
   // mostrava "desconectado" enganosamente. Regras:
   //  - Falha de rede NAO vira "is-off" (mantem estado anterior).
   //  - Retry rapido no boot (2 tentativas com 1s de gap) pra cobrir cold start.
-  //  - Poll adaptativo: 5s no primeiro minuto, depois 30s.
+  //  - Poll a cada 30s, pausado quando a aba está oculta ou recebe 429.
   //  - Refetch imediato em visibilitychange/focus/pageshow — cobre o caso
   //    do user voltar pra aba/app depois de ficar em outro app.
   var waFetchInflight = false;
   function atualizarWaChip() {
-    if (!waChip || waFetchInflight) return Promise.resolve();
+    if (!waChip || waFetchInflight || !window.gestorPolling.canFetch())
+      return Promise.resolve();
     waFetchInflight = true;
     return fetch('/whatsapp/status', {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
       .then(function (r) {
+        window.gestorPolling.recordResponse(r);
         return r.ok ? r.json() : null;
       })
       .then(function (s) {
@@ -204,14 +234,12 @@
       setTimeout(atualizarWaChip, 1500);
     }
   });
-  // Polling adaptativo: 5s no primeiro minuto, depois 30s.
+  // Consultas periódicas sem novas tentativas durante o bloqueio.
   if (waChip) {
-    var waFastUntil = Date.now() + 60000;
     function waSchedule() {
-      var delay = Date.now() < waFastUntil ? 5000 : 30000;
       setTimeout(function () {
         atualizarWaChip().finally(waSchedule);
-      }, delay);
+      }, 30000);
     }
     waSchedule();
     // Refetch quando o user volta pra aba (mobile: troca de app).
@@ -499,12 +527,17 @@
         })
         .join('');
     }
+    var notificationsInflight = false;
     function carregar() {
+      if (notificationsInflight || !window.gestorPolling.canFetch())
+        return Promise.resolve(false);
+      notificationsInflight = true;
       return fetch('/notificacoes', {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
       })
         .then(function (r) {
+          window.gestorPolling.recordResponse(r);
           if (!r.ok) throw new Error('notifications');
           return r.json();
         })
@@ -520,6 +553,10 @@
             list.innerHTML =
               '<li class="notif-empty" role="status">Não foi possível carregar os alertas. Feche e abra o sino para tentar novamente.</li>';
           return false;
+        })
+        .then(function (loaded) {
+          notificationsInflight = false;
+          return loaded;
         });
     }
     function abrir() {
@@ -623,11 +660,17 @@
   // notification não é registrado automaticamente — o user precisa pedir via
   // window.pushSubscribe() (botão na conta) pra abrir o popup de permissão.
   if ('serviceWorker' in navigator) {
-    var workerScript = document.querySelector('script[data-service-worker-url]');
-    var workerUrl = workerScript ? workerScript.getAttribute('data-service-worker-url') : '/sw.js';
-    navigator.serviceWorker.register(workerUrl, { updateViaCache: 'none' }).catch(function () {
-      /* ignora — site segue funcionando */
-    });
+    var workerScript = document.querySelector(
+      'script[data-service-worker-url]',
+    );
+    var workerUrl = workerScript
+      ? workerScript.getAttribute('data-service-worker-url')
+      : '/sw.js';
+    navigator.serviceWorker
+      .register(workerUrl, { updateViaCache: 'none' })
+      .catch(function () {
+        /* ignora — site segue funcionando */
+      });
   }
 
   function urlBase64ToUint8Array(base64) {

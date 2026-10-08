@@ -34,11 +34,33 @@ function parseAgendamento(input) {
   return `${m[1]} ${m[2]}:00`;
 }
 export const statusRouter = Router();
+statusRouter.get('/status/:id/imagem', async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.sendStatus(404);
+    const rows = await queryRows(
+      `SELECT media_data AS mediaData FROM whatsapp_status
+        WHERE id = :id AND user_id = :userId AND tipo = 'image'
+          AND (status <> 'postado' OR postado_em > UTC_TIMESTAMP() - INTERVAL 24 HOUR)`,
+      { id, userId: req.session.user.id },
+    );
+    const image = /^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i.exec(
+      rows[0]?.mediaData || '',
+    );
+    if (!image) return res.sendStatus(404);
+    res.set('Cache-Control', 'no-store');
+    res.set('Content-Security-Policy', "default-src 'none'; sandbox");
+    res.type(image[1]).send(Buffer.from(image[2], 'base64'));
+  } catch (error) {
+    next(error);
+  }
+});
 statusRouter.get('/status/historico', async (req, res, next) => {
   try {
     await removerStatusExpirados(req.session.user.id);
     const historico = await queryRows(
       `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
+              (tipo = 'image' AND media_data IS NOT NULL) AS temImagem,
               legenda, status, erro, destinatarios,
               postado_em AS postadoEm, agendado_para AS agendadoPara, created_at AS createdAt
          FROM whatsapp_status WHERE user_id = :userId ORDER BY created_at DESC LIMIT 50`,
@@ -56,6 +78,7 @@ statusRouter.get('/status', async (req, res, next) => {
     await removerStatusExpirados(userId);
     const historico = await queryRows(
       `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
+              (tipo = 'image' AND media_data IS NOT NULL) AS temImagem,
               legenda, status, erro, destinatarios,
               postado_em AS postadoEm, agendado_para AS agendadoPara, created_at AS createdAt
          FROM whatsapp_status
@@ -121,6 +144,26 @@ statusRouter.post('/status', uploadOrFlash, async (req, res, next) => {
       return res.redirect('/status');
     }
     // Publicar status
+    let original = null;
+    const editId = action === 'editar_status' ? Number(req.body.id) : null;
+    if (editId !== null) {
+      if (!Number.isSafeInteger(editId) || editId <= 0) {
+        req.flash('error', 'Agendamento inválido.');
+        return res.redirect('/status');
+      }
+      const rows = await queryRows(
+        "SELECT tipo, media_data AS mediaData, media_url AS mediaResumo FROM whatsapp_status WHERE id = :id AND user_id = :userId AND status = 'agendado'",
+        { id: editId, userId },
+      );
+      original = rows[0];
+      if (!original) {
+        req.flash(
+          'error',
+          'Este status já foi publicado, está publicando ou foi removido.',
+        );
+        return res.redirect('/status');
+      }
+    }
     const tipoRaw = String(req.body.tipo ?? 'text').toLowerCase();
     const tipo = ['text', 'image', 'video'].includes(tipoRaw)
       ? tipoRaw
@@ -143,6 +186,8 @@ statusRouter.post('/status', uploadOrFlash, async (req, res, next) => {
       const mime =
         req.file.mimetype || (tipo === 'video' ? 'video/mp4' : 'image/jpeg');
       mediaUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+    } else if (original?.tipo === tipo) {
+      mediaUrl = original.mediaData;
     }
     if (tipo === 'text' && !texto) {
       req.flash('error', 'Digite o texto do status.');
@@ -162,7 +207,7 @@ statusRouter.post('/status', uploadOrFlash, async (req, res, next) => {
     }
     // Agendamento obrigatório — não há mais fluxo de publicação imediata.
     // O statusCron publica no horário marcado. media_data guarda o data URL
-    // inteiro (MEDIUMTEXT) só até publicar; após, vira o resumo curto.
+    // inteiro (MEDIUMTEXT); imagens ficam disponíveis para a prévia no histórico.
     const localAgendamento = parseAgendamento(req.body.agendado_para);
     const offset = Number(req.body.agendado_offset ?? 180);
     if (
@@ -186,8 +231,37 @@ statusRouter.post('/status', uploadOrFlash, async (req, res, next) => {
     }
     const mediaResumo = req.file
       ? `${req.file.originalname || 'arquivo'} (${(req.file.size / 1024).toFixed(0)} KB · ${req.file.mimetype})`
-      : null;
+      : original?.tipo === tipo
+        ? original.mediaResumo
+        : null;
     const agendadoPara = alvo.toISOString().slice(0, 19).replace('T', ' ');
+    if (original) {
+      const result = await execute(
+        `UPDATE whatsapp_status SET tipo = :tipo, texto = :texto, cor_fundo = :corFundo,
+            fonte = :fonte, media_url = :mediaResumo, media_data = :mediaData,
+            legenda = :legenda, agendado_para = :agendadoPara
+          WHERE id = :id AND user_id = :userId AND status = 'agendado'`,
+        {
+          id: editId,
+          userId,
+          tipo,
+          texto,
+          corFundo,
+          fonte,
+          mediaResumo,
+          mediaData: mediaUrl,
+          legenda,
+          agendadoPara,
+        },
+      );
+      req.flash(
+        result.affectedRows ? 'success' : 'error',
+        result.affectedRows
+          ? 'Agendamento atualizado.'
+          : 'O status começou a publicar e não pode mais ser editado.',
+      );
+      return res.redirect('/status');
+    }
     await execute(
       `INSERT INTO whatsapp_status (user_id, tipo, texto, cor_fundo, fonte, media_url, media_data,
             legenda, status, agendado_para)

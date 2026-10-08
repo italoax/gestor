@@ -53,7 +53,6 @@
         { label: 'Transações', href: '/transacoes', icon: '🧾' },
         { label: 'Servidores', href: '/servidores', icon: '🖥️' },
         { label: 'Planos', href: '/planos', icon: '📦' },
-        { label: 'Integrações', href: '/integracoes', icon: '🔗' },
         { label: 'Aplicativos', href: '/aplicativos', icon: '📱' },
         { label: 'Dispositivos', href: '/dispositivos', icon: '💻' },
         { label: 'Status', href: '/status', icon: '📢', badge: 'NOVO' },
@@ -79,9 +78,13 @@
               height="1280"
           /></span>
         </a>
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="Menu principal">
           <% menu.forEach(item => { %>
-          <a class="sidebar-link <%= isActive(item.href) ? 'active' : '' %>" href="<%= item.href %>">
+          <a
+            class="sidebar-link <%= isActive(item.href) ? 'active' : '' %>"
+            href="<%= item.href %>"
+            <%- isActive(item.href) ? 'aria-current="page"' : '' %>
+          >
             <span class="sidebar-ico"><%- include('../partials/ui-icon', { name: item.icon }) %></span>
             <span class="sidebar-label"><%= item.label %></span>
             <% if (item.badge) { %>

@@ -112,7 +112,8 @@ const pagamentosNovasColunas = [
 const whatsappStatusNovasColunas = [
   // Quando agendado (status='agendado'), guarda a hora-alvo de publicação.
   ['agendado_para', 'DATETIME NULL'],
-  // Guarda o arquivo (data URL base64) só pra status agendados; é limpo após postar.
+  // Guarda a mídia agendada e a imagem de prévia até o registro ser removido.
+  // Vídeos são limpos após a tentativa de publicação.
   // MEDIUMTEXT cobre até ~16MB (mais que o limite de upload de 5MB + overhead).
   ['media_data', 'MEDIUMTEXT NULL'],
 ];

@@ -251,49 +251,62 @@
             <td
               ><span class="cli-wpp"><%= c.telefone %></span></td
             >
-            <td>
-              <%= c.plano || '-' %>
+            <td class="cli-access-cell">
+              <div class="cli-access-line"><%= c.plano || '-' %></div>
               <% if (c.adicional) { %>
-              <br />
-              <small
-                >+
-                <%= c.adicional.plano %></small
-              >
+              <div class="cli-access-line"><%= c.adicional.plano || '-' %></div>
               <% } %>
             </td>
-            <td>
-              <strong><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></strong>
+            <td class="cli-price-cell">
+              <strong class="cli-price-total"><%= formatMoney(Number(c.valor) + Number(c.adicional?.valor || 0)) %></strong>
               <% if (c.adicional) { %>
-              <br />
-              <small
-                ><%= formatMoney(c.valor) %>
-                +
+              <small class="cli-price-label">Total dos 2 acessos</small>
+              <small class="cli-price-part"
+                >1 ·
+                <%= formatMoney(c.valor) %></small
+              >
+              <small class="cli-price-part"
+                >2 ·
                 <%= formatMoney(c.adicional.valor) %></small
               >
               <% } %>
             </td>
-            <td>
-              <%= c.servidor || '-' %>
+            <td class="cli-access-cell">
+              <div class="cli-access-line">
+                <% if (c.adicional) { %><span
+                  class="cli-access-number"
+                  title="Acesso principal"
+                  >1</span
+                ><% } %>
+                <span><%= c.servidor || '-' %></span>
+              </div>
               <% if (c.adicional) { %>
-              <br />
-              <small><%= c.adicional.servidor %></small>
+              <div class="cli-access-line">
+                <span class="cli-access-number" title="Acesso adicional"
+                  >2</span
+                >
+                <span><%= c.adicional.servidor || '-' %></span>
+              </div>
               <% } %>
             </td>
-            <td class="cli-app-cell">
-              <%- include('../partials/ui-icon', { name: 'phone' }) %>
-              <%= c.aplicativo || '-' %>
+            <td class="cli-app-cell cli-access-cell">
+              <div class="cli-access-line"
+                ><span class="cli-app-name">
+                  <%- include('../partials/ui-icon', { name: 'phone' }) %>
+                  <%= c.aplicativo || '-' %>
+                </span></div
+              >
               <% if (c.adicional) { %>
-              <br />
-              <small><%= c.adicional.aplicativo || '-' %></small>
+              <div class="cli-access-line"
+                ><span class="cli-app-name">
+                  <%- include('../partials/ui-icon', { name: 'phone' }) %>
+                  <%= c.adicional.aplicativo || '-' %>
+                </span></div
+              >
               <% } %>
             </td>
             <td class="cli-venc">
               <div class="cli-expiry-access">
-                <% if (c.adicional) { %>
-                <small class="cli-expiry-server"
-                  ><%= c.servidor || 'Servidor principal' %></small
-                >
-                <% } %>
                 <span class="cli-expiry-date"><%= formatDateBr(c.vencimento) %></span>
                 <% if (c.horaVencimento) { %>
                 <small class="cli-expiry-time"
@@ -304,9 +317,6 @@
               </div>
               <% if (c.adicional) { %>
               <div class="cli-expiry-access">
-                <small class="cli-expiry-server"
-                  ><%= c.adicional.servidor || 'Segundo servidor' %></small
-                >
                 <span class="cli-expiry-date"><%= formatDateBr(c.adicional.vencimento) %></span>
               </div>
               <% } %>

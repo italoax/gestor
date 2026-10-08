@@ -3,7 +3,7 @@
     <div
       ><strong>Histórico</strong
       ><small class="status-live-note"
-        >Publicados são removidos após 24 horas</small
+        >Removidos 24 horas após a publicação confirmada</small
       ></div
     >
     <span class="muted"
@@ -37,12 +37,17 @@
           : 'Publicando...';
       %>
     <div class="status-item <%= h.status === 'erro' ? 'is-error' : isAgendado ? 'is-scheduled' : 'is-ok' %>">
-      <div class="status-item-ico" style="<%= h.tipo === 'text' && h.corFundo ? `background:${h.corFundo};` : '' %>">
-        <%- include('ui-icon', { name: h.tipo === 'text' ? 'message' : h.tipo === 'image' ? 'image' : 'monitor' }) %>
-      </div>
       <div class="status-item-body">
         <div class="status-item-head">
-          <strong><%= h.tipo === 'text' ? 'Texto' : h.tipo === 'image' ? 'Imagem' : 'Vídeo' %></strong>
+          <div class="status-item-label">
+            <div
+              class="status-item-ico"
+              data-status-background="<%= h.tipo === 'text' ? h.corFundo || '' : '' %>"
+            >
+              <%- include('ui-icon', { name: h.tipo === 'text' ? 'message' : h.tipo === 'image' ? 'image' : 'monitor' }) %>
+            </div>
+            <strong><%= h.tipo === 'text' ? 'Texto' : h.tipo === 'image' ? 'Imagem' : 'Vídeo' %></strong>
+          </div>
           <span class="badge <%= badgeClass %>"><%= badgeLabel %></span>
         </div>
         <% if (h.tipo === 'text') { %>
@@ -50,7 +55,17 @@
           ><%= (h.texto || '').slice(0, 140) %><%= (h.texto || '').length > 140 ? '…' : '' %></p
         >
         <% } else { %>
-        <p class="status-item-text muted"><%= h.mediaUrl %></p>
+        <% if (h.tipo === 'image' && h.temImagem) { %>
+        <div class="status-item-media">
+          <img
+            class="status-item-image"
+            src="/status/<%= h.id %>/imagem"
+            alt="Imagem do status"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <% } %>
         <% if (h.legenda) { %>
         <p class="status-item-text"><%= h.legenda %></p>
         <% } %>
@@ -75,14 +90,21 @@
           <% } %>
           <% if (h.erro) { %>
           <span class="dot">•</span>
-          <span style="color: <%= h.status === 'erro' ? 'var(--red)' : 'var(--muted)' %>;"
-            ><%= h.erro %></span
-          >
+          <span class="<%= h.status === 'erro' ? 'status-item-error' : 'status-item-note' %>"><%= h.erro %></span>
           <% } %>
         </div>
       </div>
       <% if (isAgendado) { %>
       <form method="post" action="/status" class="status-item-del">
+        <button
+          class="cli-ico-btn status-edit-btn"
+          type="button"
+          title="Editar agendamento"
+          aria-label="Editar agendamento"
+          data-open-modal="modal-novo-status"
+          data-status-edit="<%= JSON.stringify({ id: h.id, tipo: h.tipo, texto: h.texto, legenda: h.legenda, corFundo: h.corFundo, agendadoPara: h.agendadoPara }) %>"
+          ><%- include('ui-icon', { name: 'edit' }) %></button
+        >
         <%- csrfInput %>
         <input type="hidden" name="action" value="cancelar_agendamento" />
         <input type="hidden" name="id" value="<%= h.id %>" />

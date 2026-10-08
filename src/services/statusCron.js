@@ -39,22 +39,33 @@ export async function executarAgendados() {
                 ORDER BY principal DESC, id ASC LIMIT 1) AS sessao
          FROM whatsapp_status s
         WHERE s.status = 'agendado' AND s.agendado_para <= NOW()
-        ORDER BY s.agendado_para ASC
+        ORDER BY s.agendado_para ASC, s.id ASC
         LIMIT 20`);
     let postados = 0;
-    for (const row of due) {
+    for (let row of due) {
       if (stopping) break;
       // Marca como "publicando" antes de tentar — proteção extra contra dupla
       // publicação se um tick atrasou e outro pegou a mesma linha.
       const reservado = await execute(
-        "UPDATE whatsapp_status SET status = 'publicando' WHERE id = :id AND status = 'agendado'",
+        "UPDATE whatsapp_status SET status = 'publicando' WHERE id = :id AND status = 'agendado' AND agendado_para <= NOW()",
         { id: row.id },
       );
       if (reservado.affectedRows === 0) continue;
+      // A edição pode ocorrer depois de ler a fila. Releia após reservar para
+      // enviar o conteúdo atualizado; o UPDATE acima respeita reagendamentos.
+      const current = await queryRows(
+        `SELECT tipo, texto, cor_fundo AS corFundo, fonte, media_data AS mediaData,
+                media_url AS mediaUrl, legenda FROM whatsapp_status
+          WHERE id = :id AND status = 'publicando'`,
+        { id: row.id },
+      );
+      if (!current.length) continue;
+      row = { ...row, ...current[0] };
       if (!row.sessao) {
         await execute(
           `UPDATE whatsapp_status
-              SET status = 'erro', erro = 'Sem dispositivo WhatsApp cadastrado.', media_data = NULL
+              SET status = 'erro', erro = 'Sem dispositivo WhatsApp cadastrado.',
+                  media_data = CASE WHEN tipo = 'image' THEN media_data ELSE NULL END
             WHERE id = :id`,
           { id: row.id },
         );
@@ -88,7 +99,8 @@ export async function executarAgendados() {
         await execute(
           `UPDATE whatsapp_status
               SET status = :status, erro = :erro, destinatarios = :destinatarios,
-                  postado_em = :postadoEm, media_data = NULL
+                  postado_em = :postadoEm,
+                  media_data = CASE WHEN tipo = 'image' THEN media_data ELSE NULL END
             WHERE id = :id`,
           {
             id: row.id,
@@ -125,7 +137,8 @@ export async function executarAgendados() {
       } catch (error) {
         await execute(
           `UPDATE whatsapp_status
-              SET status = 'erro', erro = :erro, media_data = NULL
+              SET status = 'erro', erro = :erro,
+                  media_data = CASE WHEN tipo = 'image' THEN media_data ELSE NULL END
             WHERE id = :id`,
           {
             id: row.id,

@@ -18,6 +18,7 @@
       class="btn btn-primary"
       type="button"
       data-open-modal="modal-novo-status"
+      data-status-new
     >
       <%- include('../partials/ui-icon', { name: 'broadcast' }) %>
       Nova publicação
@@ -32,7 +33,7 @@
 <div class="modal-overlay" id="modal-novo-status" aria-hidden="true" inert>
   <div class="modal modal-lg status-composer">
     <div class="modal-header">
-      <h3
+      <h3 id="status-composer-title"
         ><%- include('../partials/ui-icon', { name: 'broadcast' }) %>
         Nova publicação</h3
       >
@@ -52,6 +53,8 @@
       class="modal-body"
     >
       <%- csrfInput %>
+      <input type="hidden" name="action" id="status-action" value="" />
+      <input type="hidden" name="id" id="status-edit-id" value="" />
       <input type="hidden" name="tipo" id="status-tipo" value="text" />
       <p class="status-intro muted"
         >Escolha o conteúdo e o horário. A publicação aparece em Meu status por
@@ -123,7 +126,7 @@
                   <%= i === 0 ? ' checked' : '' %>
                 />
                 <span
-                  style="background: <%= hex %>;"
+                  data-status-color="<%= hex %>"
                   title="<%= nome %>"
                 ></span>
               </label>
@@ -267,10 +270,19 @@
   let stopped = false, timer, previous = '';
   function stop() { stopped = true; clearTimeout(timer); controller.abort(); }
   document.addEventListener('gestor:before-swap', stop, { once: true });
+  function applyHistoryColors(root) {
+    root.querySelectorAll('[data-status-background]').forEach(icon => {
+      const color = icon.dataset.statusBackground;
+      if (/^#[0-9a-f]{6}$/i.test(color)) icon.style.backgroundColor = color;
+    });
+  }
+  applyHistoryColors(document);
   async function refreshHistory() {
+    if (stopped) return;
     try {
-      if (!document.hidden) {
+      if (!document.hidden && (!window.gestorPolling || window.gestorPolling.canFetch())) {
         const response = await fetch('/status/historico', { signal: controller.signal, headers: { Accept: 'text/html' }, cache: 'no-store' });
+        window.gestorPolling?.recordResponse(response);
         if (response.ok && !response.redirected) {
           const html = await response.text();
           const current = document.querySelector('.status-historico');
@@ -278,14 +290,14 @@
             const template = document.createElement('template');
             template.innerHTML = html.trim();
             const replacement = template.content.querySelector('.status-historico');
-            if (replacement) { current.replaceWith(replacement); previous = html; }
+            if (replacement) { applyHistoryColors(replacement); current.replaceWith(replacement); previous = html; }
           }
         }
       }
     } catch (_) { /* Retry on the next poll. */ }
-    if (!stopped) timer = setTimeout(refreshHistory, 5000);
+    if (!stopped) timer = setTimeout(refreshHistory, 15000);
   }
-  timer = setTimeout(refreshHistory, 5000);
+  timer = setTimeout(refreshHistory, 15000);
   const tipoHidden = document.getElementById('status-tipo');
   if (!tipoHidden) return; // página sem WhatsApp conectado
 
@@ -316,6 +328,8 @@
     });
   }
   document.querySelectorAll('input[name="cor_fundo"]').forEach(r => {
+    const swatch = r.parentElement.querySelector('[data-status-color]');
+    if (swatch) swatch.style.backgroundColor = swatch.dataset.statusColor;
     r.addEventListener('change', () => {
       preview.style.background = r.value;
       const escuro = r.value !== '#FFFFFF';
@@ -383,6 +397,48 @@
   }
 
   const form = document.getElementById('form-status');
+  function prepareComposer(record) {
+    form.reset();
+    document.getElementById('status-action').value = record ? 'editar_status' : '';
+    document.getElementById('status-edit-id').value = record ? record.id : '';
+    document.getElementById('status-composer-title').textContent = record ? 'Editar agendamento' : 'Nova publicação';
+    document.getElementById('status-submit-btn').textContent = record ? 'Salvar alterações' : 'Agendar status';
+    ['image', 'video'].forEach(type => {
+      const input = document.getElementById('status-' + type + '-file');
+      input.value = '';
+      input.dispatchEvent(new Event('change'));
+      document.getElementById('status-' + type + '-caption').value = record?.legenda || '';
+      const drop = document.getElementById('status-' + type + '-drop');
+      drop.querySelector('small').textContent = type === 'image' ? 'PNG, JPG ou WebP · máx 5 MB' : 'MP4 · máx 30s e 5 MB';
+    });
+    showTab(record?.tipo || 'text');
+    txt.value = record?.texto || '';
+    txt.dispatchEvent(new Event('input'));
+    const color = Array.from(document.querySelectorAll('input[name="cor_fundo"]')).find(input => input.value === (record?.corFundo || '#075E54'));
+    if (color) { color.checked = true; color.dispatchEvent(new Event('change')); }
+    if (record) {
+      const raw = record.agendadoPara;
+      const date = new Date(String(raw).includes('T') ? raw : String(raw).replace(' ', 'T') + 'Z');
+      agendarInput.value = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      if (record.tipo !== 'text') {
+        const drop = document.getElementById('status-' + record.tipo + '-drop');
+        drop.querySelector('strong').textContent = 'Manter arquivo atual ou selecionar outro';
+        if (record.tipo === 'image') {
+          const img = document.createElement('img');
+          img.src = '/status/' + record.id + '/imagem';
+          img.alt = 'Imagem atual do status';
+          document.getElementById('status-image-preview').replaceChildren(img);
+        }
+      }
+    }
+  }
+  function handleComposer(event) {
+    const edit = event.target.closest('[data-status-edit]');
+    if (edit) prepareComposer(JSON.parse(edit.getAttribute('data-status-edit')));
+    else if (event.target.closest('[data-status-new], .status-empty [data-open-modal]')) prepareComposer(null);
+  }
+  document.addEventListener('click', handleComposer);
+  document.addEventListener('gestor:before-swap', () => document.removeEventListener('click', handleComposer), { once: true });
   if (form) {
     form.addEventListener('submit', () => {
       const selectedDate = new Date(agendarInput.value);

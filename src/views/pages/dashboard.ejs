@@ -274,7 +274,7 @@
               ></div
             >
             <div class="meter"
-              ><i class="c-blue" style="width:<%= x.percent %>%"></i
+              ><i class="c-blue" data-bar-percent="<%= x.percent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -310,7 +310,7 @@
               ></div
             >
             <div class="meter"
-              ><i class="c-blue" style="width:<%= d.percent %>%"></i
+              ><i class="c-blue" data-bar-percent="<%= d.percent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -344,7 +344,7 @@
               ></div
             >
             <div class="meter"
-              ><i class="c-blue" style="width:<%= f.percent %>%"></i
+              ><i class="c-blue" data-bar-percent="<%= f.percent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -382,7 +382,7 @@
               ></div
             >
             <div class="meter"
-              ><i class="c-blue" style="width:<%= p.percent %>%"></i
+              ><i class="c-blue" data-bar-percent="<%= p.percent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -445,8 +445,8 @@
               </span>
             </div>
             <div class="meter split"
-              ><i class="c-green" style="width:<%= s.lucroPercent %>%"></i
-              ><i class="c-red" style="width:<%= s.custoPercent %>%"></i
+              ><i class="c-green" data-bar-percent="<%= s.lucroPercent %>"></i
+              ><i class="c-red" data-bar-percent="<%= s.custoPercent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -479,7 +479,7 @@
               ></div
             >
             <div class="meter"
-              ><i class="c-blue" style="width:<%= i.percent %>%"></i
+              ><i class="c-blue" data-bar-percent="<%= i.percent %>"></i
             ></div>
           </div>
           <% }) %>
@@ -599,3 +599,12 @@
 <script src="<%= assetUrl('/assets/js/dashboard-charts.js') %>"></script>
 <script>window.__geoData = <%- geo.replace(/</g, '\\u003c') %>;</script>
 <script src="<%= assetUrl('/assets/js/dashboard-maps.js') %>"></script>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-bar-percent]').forEach(bar => {
+    const percent = Number(bar.dataset.barPercent);
+    if (Number.isFinite(percent)) bar.style.width = Math.max(0, Math.min(100, percent)) + '%';
+  });
+})();
+</script>

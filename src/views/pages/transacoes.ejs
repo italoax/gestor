@@ -83,10 +83,11 @@
               style="display:none"
               aria-hidden="true"
             ></td>
-            <td
-              ><%- include('../partials/ui-icon', { name: 'calendar' }) %>
-              <%= formatDateBr(t.data) %></td
-            >
+            <td class="tx-date-cell">
+              <span class="tx-date">
+                <%= formatDateBr(t.data) %>
+              </span>
+            </td>
             <td><%= t.clienteNome || '-' %></td>
             <td>
               <% if (t.formaPagamento) { %>

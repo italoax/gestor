@@ -177,7 +177,7 @@
     %>
     <div
       class="int-pag-card <%= ativo ? 'is-active' : '' %>"
-      style="--card-accent: <%= info.cor %>;"
+      data-card-accent="<%= info.cor %>"
     >
       <div class="int-pag-card-head">
         <div class="int-pag-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
@@ -318,3 +318,12 @@
   </div>
 </div>
 <% }) %>
+
+<script>
+(function () {
+  document.querySelectorAll('[data-card-accent]').forEach(card => {
+    const color = card.dataset.cardAccent;
+    if (/^#[0-9a-f]{6}$/i.test(color)) card.style.setProperty('--card-accent', color);
+  });
+})();
+</script>
