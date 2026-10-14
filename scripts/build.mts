@@ -1,3 +1,4 @@
+await import('./prepare-next.mts');
 await import('./check-types.mts');
 await import('./build-react.mts');
 await import('./build-browser.mts');

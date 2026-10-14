@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'node:url';
 export default {
   poweredByHeader: false,
+  // A hospedagem compartilha CPUs; evite criar 27 processos de compilação.
+  experimental: { cpus: 2 },
   turbopack: { root: fileURLToPath(new URL('../', import.meta.url)) },
   async headers() {
     return [
