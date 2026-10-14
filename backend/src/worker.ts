@@ -40,8 +40,11 @@ try {
   });
   worker.enableShutdownHooks(['SIGINT', 'SIGTERM']);
   await worker.listen(env.workerPort, '127.0.0.1');
+  const address = worker.getHttpServer().address();
+  if (address && typeof address === 'object')
+    process.send?.({ type: 'listening', port: address.port });
   console.log(
-    `Worker NestJS de automações iniciado na porta ${env.workerPort}.`,
+    `Worker NestJS de automações iniciado na porta ${address?.port ?? env.workerPort}.`,
   );
 } catch (error) {
   console.error('Erro ao iniciar o worker NestJS:', error);

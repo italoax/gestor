@@ -79,11 +79,22 @@ try {
     closeSessionStores,
     closeDatabase: () => db.end(),
   });
+  process.on('message', (message: unknown) => {
+    const value = message as { type?: string; url?: string };
+    if (value?.type === 'worker-url' && typeof value.url === 'string') {
+      const url = new URL(value.url);
+      if (url.protocol === 'http:' && url.hostname === '127.0.0.1')
+        env.workerUrl = url.origin;
+    }
+  });
   backend.enableShutdownHooks(['SIGINT', 'SIGTERM']);
   await backend.listen(
     env.port,
     env.host ?? (env.localMode ? '127.0.0.1' : '0.0.0.0'),
   );
+  const address = backend.getHttpServer().address();
+  if (address && typeof address === 'object')
+    process.send?.({ type: 'listening', port: address.port });
   console.log(
     `Gestor NestJS rodando em ${env.appUrl || `http://localhost:${env.port}`}`,
   );
