@@ -1,3 +1,4 @@
+import { renderClientPage } from '../services/clientPage.js';
 import {
   badgeStatusByVencimento,
   formatDateBr,
@@ -8,6 +9,7 @@ import {
 } from '../services/format.js';
 
 export function exposeFormatLocals(_req, res, next) {
+  res.locals.renderClientPage = renderClientPage;
   res.locals.formatMoney = formatMoney;
   res.locals.formatDateBr = formatDateBr;
   res.locals.formatDateInput = formatDateInput;

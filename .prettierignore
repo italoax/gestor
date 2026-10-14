@@ -1,5 +1,7 @@
 node_modules/
 dist/
+web/.next/
+public/assets/js/react/
 .deploy/
 .tmp-ui/
 .vscode/

@@ -1,0 +1,62 @@
+.integ-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.integ-card {
+  margin-top: 16px;
+}
+.integ-card-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+.integ-empty {
+  text-align: center;
+  padding: 28px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.integ-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.integ-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.integ-info-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.integ-info small {
+  word-break: break-all;
+}
+.integ-acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.integ-inline {
+  display: inline;
+  margin: 0;
+}
+.integ-danger {
+  color: #ff6b6b;
+}
+.integ-cf-note {
+  margin-top: 10px;
+}

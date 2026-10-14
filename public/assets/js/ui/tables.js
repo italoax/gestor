@@ -90,6 +90,7 @@ window.gestorPageModules.initTables = function ({ on }) {
   };
 
   document.querySelectorAll('[data-search-scope]').forEach((scope) => {
+    if (scope.closest('[data-react-page]')) return;
     const input = scope.querySelector('[data-search-input]');
     const selects = Array.from(scope.querySelectorAll('[data-filter-select]'));
     const vencimentoFilter = scope.querySelector('[data-vencimento-filter]');
@@ -115,6 +116,7 @@ window.gestorPageModules.initTables = function ({ on }) {
   // Delegado no document pra cobrir rows criadas via AJAX (cadastro/edição inline).
   on(document, 'change', (e) => {
     const t = e.target;
+    if (t?.closest('[data-react-page]')) return;
     if (!t || !t.classList || !t.classList.contains('cli-check')) return;
     if (t.hasAttribute('data-check-all')) {
       const table = t.closest('table');

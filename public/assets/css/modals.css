@@ -1,32 +1,35 @@
 /* Padrão compartilhado por formulários, detalhes, avisos e conexão WhatsApp. */
-html.modal-open {
+html.modal-open,
+html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 /* Automação em um formulário contínuo, sem navegação por etapas. */
-#modal-nova-regra .auto-form-section {
+:is(#modal-nova-regra, #react-rule-form) .auto-form-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-#modal-nova-regra .auto-form-section + .auto-form-section {
+:is(#modal-nova-regra, #react-rule-form)
+  .auto-form-section
+  + .auto-form-section {
   border-top: 1px solid var(--border);
   margin-top: 16px;
   padding-top: 14px;
 }
-#modal-nova-regra .auto-form-section h4 {
+:is(#modal-nova-regra, #react-rule-form) .auto-form-section h4 {
   margin: 0;
   font-size: 14px;
   color: var(--text);
 }
-#modal-nova-regra .auto-trigger-list {
+:is(#modal-nova-regra, #react-rule-form) .auto-trigger-list {
   gap: 6px;
 }
-#modal-nova-regra .auto-trigger {
+:is(#modal-nova-regra, #react-rule-form) .auto-trigger {
   padding: 10px 12px;
 }
-#modal-nova-regra .auto-box {
+:is(#modal-nova-regra, #react-rule-form) .auto-box {
   padding: 12px;
 }
 
@@ -87,6 +90,27 @@ html.modal-open {
   margin: 8px 0 14px;
   color: var(--muted);
   font-size: 12px;
+}
+.cli-react-sort {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.input-mask {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+.sidebar-backdrop {
+  border: 0;
+  padding: 0;
+}
+.cli-react-sort:focus-visible {
+  outline: 2px solid var(--primary, #818cf8);
+  outline-offset: 4px;
 }
 .client-plan-panel .server-access-card {
   padding: 16px;
@@ -786,4 +810,17 @@ html.modal-open {
   .client-modal .server-option {
     min-height: 40px;
   }
+}
+dialog:is(.react-catalog-dialog, .react-dialog)::backdrop {
+  background: rgb(0 0 0 / 58%);
+  backdrop-filter: blur(5px);
+}
+dialog:is(.react-catalog-dialog, .react-dialog):not([open]) {
+  display: none;
+}
+dialog:is(.react-catalog-dialog, .react-dialog) .modal-body {
+  padding: 20px;
+}
+dialog:is(.react-catalog-dialog, .react-dialog) .modal-footer {
+  padding: 14px 20px;
 }

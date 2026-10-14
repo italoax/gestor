@@ -1,4 +1,4 @@
-import { invalidarDashboardCache } from '../routes/dashboard.js';
+import { invalidateDashboard as invalidarDashboardCache } from '../services/dashboardCache.js';
 // Rotas cujo POST altera dados refletidos no dashboard. Lista explícita pra não
 // invalidar à toa em rotas que não mudam nada (ex.: /whatsapp/status polling).
 const ROTAS_QUE_AFETAM_DASHBOARD = [

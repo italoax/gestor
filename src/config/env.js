@@ -21,6 +21,10 @@ const cookieSecure = process.env.COOKIE_SECURE
   : nodeEnv === 'production';
 export const env = {
   localMode: process.env.LOCAL_MODE === 'true',
+  nextFrontendEnabled: process.env.NEXT_FRONTEND_ENABLED === 'true',
+  runAutomations: process.env.RUN_AUTOMATIONS === 'true',
+  workerUrl: process.env.WORKER_URL || '',
+  workerPort: Number(process.env.WORKER_PORT || 3002),
   nodeEnv,
   port: Number(process.env.PORT ?? 3000),
   host: process.env.HOST || undefined,
@@ -68,13 +72,6 @@ export const env = {
     // Intervalo (em segundos) entre cada envio automático, para evitar rajada.
     sendMinDelaySec: Number(process.env.WA_SEND_MIN_DELAY ?? 3),
     sendMaxDelaySec: Number(process.env.WA_SEND_MAX_DELAY ?? 7),
-  },
-  // Assinatura do gestor: credencial Mercado Pago do DONO do sistema (Italo).
-  // Todos os usuarios pagam a mensalidade pra essa conta. Diferente das
-  // credenciais de cada user em payment_provider_configs (que sao pros
-  // clientes IPTV dele). Sem token, /meu-plano fica em modo "indisponivel".
-  mpMaster: {
-    accessToken: process.env.MP_MASTER_ACCESS_TOKEN ?? '',
   },
   // PWA / Push notifications.
   // VAPID keys identificam o servidor que envia push. Geradas uma vez via:

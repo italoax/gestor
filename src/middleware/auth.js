@@ -1,6 +1,11 @@
 import { queryOne } from '../db/mysql.js';
 export function requireAuth(req, res, next) {
   if (!req.session.user) {
+    if (req.path.startsWith('/api/')) {
+      return res
+        .status(401)
+        .json({ ok: false, error: 'Faça login para continuar.' });
+    }
     res.redirect('/login');
     return;
   }

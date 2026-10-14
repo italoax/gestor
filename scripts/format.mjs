@@ -1,4 +1,5 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import * as prettier from 'prettier';
 import { projectRoot } from '../src/config/paths.js';
@@ -6,9 +7,10 @@ import { formatSource } from './lib/format-source.mjs';
 
 const check = process.argv.includes('--check');
 const ignorePath = path.join(projectRoot, '.prettierignore');
-const extensions = /\.(?:m?js|css|json|html|ejs|md)$/;
+const extensions = /\.(?:m?js|jsx|ts|css|json|html|ejs|md)$/;
 
 async function files(directory) {
+  if (!existsSync(directory)) return [];
   const entries = await readdir(directory, { withFileTypes: true });
   const paths = await Promise.all(
     entries.map(async (entry) => {
@@ -25,11 +27,13 @@ async function files(directory) {
 const targets = [
   '.prettierrc.json',
   'package.json',
-  'README.md',
+  ...(existsSync(path.join(projectRoot, 'README.md')) ? ['README.md'] : []),
   ...(await files(path.join(projectRoot, 'src'))),
+  ...(await files(path.join(projectRoot, 'backend'))),
   ...(await files(path.join(projectRoot, 'public'))),
   ...(await files(path.join(projectRoot, 'scripts'))),
   ...(await files(path.join(projectRoot, 'docs'))),
+  ...(await files(path.join(projectRoot, 'web'))),
 ]
   .map((file) => path.resolve(projectRoot, file))
   .sort();

@@ -3,6 +3,7 @@ window.gestorPageModules.initTransactions = function ({
   setIconLabel,
   setModalState,
 }) {
+  if (document.querySelector('[data-react-page="transacoes"]')) return;
   // ----- Transações -----
   document
     .querySelectorAll('[data-open-modal="modal-nova-transacao"]')

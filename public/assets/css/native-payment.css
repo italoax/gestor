@@ -1,0 +1,248 @@
+:root {
+  --bg: #0b1220;
+  --surface: #131a2b;
+  --surface-2: #1b2238;
+  --border: #232b46;
+  --text: #e6e9f4;
+  --muted: #8b94b3;
+  --primary: #6366f1;
+  --green: #22c55e;
+  --red: #ef4444;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+.pay-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 14px;
+}
+.pay-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+}
+.pay-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pay-head h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 700;
+}
+.pay-head .badge {
+  background: rgba(34, 197, 94, 0.14);
+  color: #b7f7d7;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pay-body {
+  padding: 22px 20px;
+}
+.pay-info {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.pay-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 14px;
+}
+.pay-info-row:last-child {
+  border-bottom: 0;
+}
+.pay-info-row span {
+  color: var(--muted);
+}
+.pay-info-row strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-align: right;
+}
+.pay-info-row {
+  gap: 16px;
+}
+.pay-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--green);
+  text-align: center;
+  margin: 8px 0 18px;
+}
+.pay-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.pay-btn:hover {
+  filter: brightness(1.1);
+}
+.pay-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.pay-qr-box {
+  display: none;
+  text-align: center;
+  padding: 8px 0;
+}
+.pay-qr-box.on {
+  display: block;
+}
+.pay-qr-box img {
+  width: 240px;
+  max-width: 100%;
+  background: #fff;
+  padding: 10px;
+  border-radius: 10px;
+}
+.pay-pix-code {
+  margin-top: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+  user-select: all;
+  max-height: 90px;
+  overflow-y: auto;
+}
+.pay-copy {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.pay-copy:hover {
+  background: var(--border);
+}
+.pay-foot {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.pay-status-msg {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.pay-status-msg.success {
+  color: var(--green);
+  font-weight: 700;
+  font-size: 16px;
+}
+.pay-status-msg.error {
+  color: var(--red);
+}
+.pay-confirmed {
+  text-align: center;
+  padding: 24px 12px;
+  border: 1px solid #22c55e55;
+  border-radius: 14px;
+  background: #22c55e0d;
+}
+.pay-confirmed[hidden] {
+  display: none;
+}
+.pay-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #22c55e20;
+  color: var(--green);
+}
+.pay-confirmed h2 {
+  margin: 0 0 8px;
+  color: var(--green);
+  font-size: 22px;
+}
+.pay-confirmed p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pay-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--muted);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pay-field {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.pay-field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 16px;
+}
+.pay-pix-code {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  color: var(--text);
+}

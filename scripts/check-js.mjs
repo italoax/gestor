@@ -7,6 +7,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 function scripts(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const file = path.join(directory, entry.name);
+    if (entry.name === '.next') return [];
     return entry.isDirectory()
       ? scripts(file)
       : /\.m?js$/.test(file)
@@ -14,7 +15,7 @@ function scripts(directory) {
         : [];
   });
 }
-const files = ['src', 'public', 'scripts'].flatMap((dir) =>
+const files = ['src', 'public', 'scripts', 'web'].flatMap((dir) =>
   scripts(path.join(root, dir)),
 );
 for (const file of files)

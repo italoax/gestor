@@ -1,0 +1,41 @@
+.native-chart {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+}
+.native-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0 12px 12px;
+  font-size: 12px;
+  min-height: 30px;
+}
+.native-chart-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.native-chart-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.native-chart-data {
+  padding: 0 12px 12px;
+  font-size: 12px;
+}
+.native-chart-data summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.native-chart-data .table-wrap {
+  max-height: 260px;
+  overflow: auto;
+  margin-top: 8px;
+}
+.native-map-credit {
+  display: block;
+  margin-top: 8px;
+  font-size: 10px;
+}

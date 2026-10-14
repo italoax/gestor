@@ -1,8 +1,11 @@
+import './build-react.mjs';
+import './build-backend.mjs';
 import './check-js.mjs';
 import './check-views.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createAssetVersions } from '../src/services/assetVersions.js';
+import { execFileSync } from 'node:child_process';
 
 // Compatibilidade com hospedagens ainda configuradas para dist/server.js.
 const output = new URL('../dist/', import.meta.url);
@@ -16,5 +19,13 @@ writeFileSync(
 );
 writeFileSync(new URL('sw.js', output), assets.workerSource);
 console.log('Versões automáticas dos assets geradas: ' + assets.cacheName);
-writeFileSync(new URL('server.js', output), "import '../src/server.js';\n");
+execFileSync(
+  process.execPath,
+  ['node_modules/next/dist/bin/next', 'build', 'web'],
+  { stdio: 'inherit' },
+);
+writeFileSync(
+  new URL('server.js', output),
+  "import '../scripts/run-stack.mjs';\n",
+);
 console.log('Entrada de compatibilidade criada: dist/server.js');

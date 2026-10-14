@@ -1,0 +1,288 @@
+import Link from 'next/link';
+import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.jsx';
+
+const menu = [
+  ['Dashboard', '/dashboard', 'chart'],
+  ['Clientes', '/clientes', 'users'],
+  ['Avisos', '/avisos', 'warning'],
+  ['Transações', '/transacoes', 'card'],
+  ['Planos', '/planos', 'package'],
+  ['Servidores', '/servidores', 'server'],
+  ['Aplicativos', '/aplicativos', 'phone'],
+  ['Dispositivos', '/dispositivos', 'monitor'],
+  ['Status', '/status', 'image'],
+  ['Mensagens', '/mensagens', 'message'],
+  ['Automação', '/automacao', 'bolt'],
+];
+
+export function PanelShell({ data, children }) {
+  const currentPath = data.currentPath || '/clientes';
+  const isActive = (href) =>
+    currentPath === href || currentPath.startsWith(href + '/');
+  const ClientDockLink = currentPath === '/clientes' ? Link : 'a';
+  return (
+    <div className="app-shell" data-shell="">
+      <aside className="sidebar" data-sidebar="">
+        <a
+          className="sidebar-brand sidebar-brand-custom"
+          href="/dashboard"
+          aria-label="ixstreaming - Dashboard"
+        >
+          <span className="sidebar-brand-image">
+            <img
+              src="/assets/images/ixlogo.png"
+              alt="ixstreaming"
+              width="1280"
+              height="1280"
+            />
+          </span>
+        </a>
+        <nav className="sidebar-nav" aria-label="Menu principal">
+          {menu.map(([label, href, icon]) => {
+            const content = (
+              <>
+                <span className="sidebar-ico">
+                  <Icon name={icon} />
+                </span>
+                <span className="sidebar-label">{label}</span>
+              </>
+            );
+            const props = {
+              className: `sidebar-link${isActive(href) ? ' active' : ''}`,
+              href,
+              'aria-current': isActive(href) ? 'page' : undefined,
+            };
+            return href === '/clientes' && currentPath === '/clientes' ? (
+              <Link key={href} prefetch={false} {...props}>
+                {content}
+              </Link>
+            ) : (
+              <a key={href} {...props}>
+                {content}
+              </a>
+            );
+          })}
+        </nav>
+        <div className="sidebar-foot">
+          <form method="post" action="/logout" className="sidebar-logout-form">
+            <CsrfInput token={data.page.csrfToken} />
+            <button className="sidebar-logout" type="submit" title="Sair">
+              <span className="sidebar-ico">
+                <Icon name="logout" />
+              </span>
+              <span className="sidebar-label">Sair</span>
+            </button>
+          </form>
+        </div>
+      </aside>
+      <div className="app-main">
+        <header className="topbar2">
+          <div className="topbar2-title">
+            <h1>{data.title}</h1>
+            <span>{data.subtitle}</span>
+          </div>
+          <div className="topbar2-actions">
+            <a
+              className="topbar-chip"
+              href="/whatsapp"
+              data-wa-chip=""
+              data-wa-state-key={`gestor:wa-state:${data.user.id}`}
+              title="Status do WhatsApp"
+            >
+              <span className="wa-dot" />
+              <span className="wa-ico">
+                <Icon name="phone" />
+              </span>
+            </a>
+            <button
+              className="theme-toggle"
+              type="button"
+              data-theme-toggle=""
+              aria-label="Alternar tema claro/escuro"
+            >
+              <span className="ui-theme-sun">
+                <Icon name="sun" />
+              </span>
+              <span className="ui-theme-moon">
+                <Icon name="moon" />
+              </span>
+            </button>
+            <div className="notif-wrap" data-notif-wrap="">
+              <button
+                className="topbar-icon notif-bell-btn"
+                type="button"
+                data-notif-toggle=""
+                aria-label="Notificações"
+                aria-expanded="false"
+              >
+                <svg
+                  className="notif-bell-svg"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                <span
+                  className="topbar-badge"
+                  data-notif-count=""
+                  style={{ display: 'none' }}
+                />
+              </button>
+              <div className="notif-panel" data-notif-panel="" hidden>
+                <div className="notif-panel-head">
+                  <div className="notif-head-title">
+                    <strong>Notificações</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="notif-clear-all"
+                    data-notif-clear=""
+                  >
+                    Limpar tudo
+                  </button>
+                </div>
+                <ul className="notif-list" data-notif-list="">
+                  <li className="notif-empty">
+                    <span className="notif-empty-title">Tudo em dia</span>
+                    <span className="notif-empty-sub">
+                      Pagamentos recebidos e alertas de créditos aparecem aqui.
+                    </span>
+                  </li>
+                </ul>
+                <div className="notif-panel-foot">
+                  <a href="/minha-conta">Ajustar notificações</a>
+                </div>
+              </div>
+            </div>
+            <div className="account-menu-wrap" data-account-menu-wrap="">
+              <button
+                className="topbar-avatar"
+                type="button"
+                data-account-menu-toggle=""
+                title="Menu da conta"
+                aria-label="Abrir menu da conta"
+                aria-expanded="false"
+                aria-controls="account-menu"
+              >
+                {(data.user.name || 'U').slice(0, 1).toUpperCase()}
+              </button>
+              <nav
+                className="account-menu"
+                id="account-menu"
+                aria-label="Conta"
+                data-account-menu=""
+                hidden
+              >
+                <a href="/minha-conta">
+                  <Icon name="settings" />
+                  <span>Configurações</span>
+                </a>
+                <a href="/integracao-pagamento">
+                  <Icon name="card" />
+                  <span>Integração de pagamento</span>
+                </a>
+              </nav>
+            </div>
+          </div>
+        </header>
+        <main className="app-content">{children}</main>
+      </div>
+      <nav className="mobile-dock" aria-label="Atalhos principais">
+        <a href="/dashboard" data-dock-link="">
+          <Icon name="chart" />
+          <span>Dashboard</span>
+        </a>
+        <ClientDockLink
+          href="/clientes"
+          {...(currentPath === '/clientes' ? { prefetch: false } : {})}
+          data-dock-link=""
+          className={isActive('/clientes') ? 'is-active' : undefined}
+          aria-current={isActive('/clientes') ? 'page' : undefined}
+        >
+          <Icon name="users" />
+          <span>Clientes</span>
+        </ClientDockLink>
+        <a href="/automacao" data-dock-link="">
+          <Icon name="bolt" />
+          <span>Automação</span>
+        </a>
+        <button
+          type="button"
+          data-sidebar-mobile=""
+          aria-expanded="false"
+          aria-label="Abrir menu"
+        >
+          <Icon name="menu" />
+          <span>Menu</span>
+        </button>
+      </nav>
+      <button
+        className="sidebar-backdrop"
+        type="button"
+        data-sidebar-backdrop=""
+        aria-label="Fechar menu"
+        tabIndex={-1}
+      />
+    </div>
+  );
+}
+
+export function SiteNotice({ success = [], error = [] }) {
+  if (!success.length && !error.length) return null;
+  return (
+    <div
+      className="modal-overlay"
+      id="modal-site-notice"
+      data-auto-notice=""
+      aria-hidden="true"
+      inert
+    >
+      <div className="modal site-notice-modal">
+        <div className="modal-header">
+          <h3>{error.length ? 'Confira este aviso' : 'Tudo certo!'}</h3>
+          <button
+            type="button"
+            className="modal-close"
+            data-close-modal=""
+            aria-label="Fechar"
+          >
+            ×
+          </button>
+        </div>
+        <div className="modal-body">
+          {success.map((text, index) => (
+            <div
+              key={`success-${index}`}
+              className="site-notice-message is-success"
+            >
+              <p>{text}</p>
+            </div>
+          ))}
+          {error.map((text, index) => (
+            <div
+              key={`error-${index}`}
+              className="site-notice-message is-error"
+            >
+              <p>{text}</p>
+            </div>
+          ))}
+          <div className="modal-actions">
+            <button
+              className="btn btn-primary"
+              type="button"
+              data-close-modal=""
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

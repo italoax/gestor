@@ -6,9 +6,6 @@
     'ui/tables',
     'pages/catalogs',
     'pages/client-access',
-    'pages/client-usage',
-    'pages/clientes',
-    'pages/client-payments',
     'pages/transacoes',
     'pages/whatsapp-messages',
     'pages/automacao',
@@ -18,6 +15,7 @@
 <% pageModules.forEach(name => { %>
 <script src="<%= assetUrl('/assets/js/' + name + '.js') %>"></script>
 <% }) %>
+<script src="<%= assetUrl('/assets/js/react-loader.js') %>"></script>
 <script src="<%= assetUrl('/assets/js/main.js') %>"></script>
 <script src="<%= assetUrl('/assets/js/app-shell.js') %>" data-service-worker-url="<%= serviceWorkerUrl() %>"></script>
 <script src="<%= assetUrl('/assets/js/navigation.js') %>"></script>

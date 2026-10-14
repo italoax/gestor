@@ -1,8 +1,16 @@
 // Navegação compartilhada: mantém a estrutura do painel e busca dados atuais.
 (function () {
-  if (!document.querySelector('main.app-content') || window.gestorNavigate)
+  // Inclui respostas HTML de erros de POST: o próximo GET pertence ao Next,
+  // então o navegador deve carregar o documento inteiro, sem trocar seu DOM.
+  if (
+    !document.querySelector('main.app-content') ||
+    window.gestorNavigate ||
+    document.body.dataset.nextClients === '1'
+  )
     return;
   const content = document.querySelector('main.app-content');
+  const isNextPage = (url) =>
+    document.body.dataset.nextClients === '1' && url.origin === location.origin;
   const libraries = new Set(
     [...document.querySelectorAll('script[data-nav-once][src]')].map(
       (s) => s.src,
@@ -16,6 +24,7 @@
   function prefetchDock(link) {
     if (saving || document.hidden || navigator.connection?.saveData) return;
     const url = new URL(link.href, location.href);
+    if (isNextPage(url)) return;
     if (url.origin !== location.origin || url.href === location.href) return;
     const existing = dockPages.get(url.href);
     if (existing && Date.now() - existing.at < 5000) return;
@@ -150,6 +159,10 @@
     } = {},
   ) {
     const destination = new URL(url, location.href);
+    if (isNextPage(destination) && method === 'GET') {
+      location.assign(destination.href);
+      return false;
+    }
     if (destination.origin !== location.origin) {
       location.assign(destination.href);
       return false;
@@ -272,7 +285,7 @@
       } catch (_) {}
       await scripts(token);
       if (token !== sequence) return false;
-      window.__gestorInitPage?.();
+      await window.__gestorInitPage?.();
       window.scrollTo({ top: y, behavior: 'instant' });
       if (finalUrl.hash && !keepScroll && scrollY === undefined) {
         document
@@ -349,6 +362,7 @@
     const url = new URL(link.href, location.href);
     if (url.origin !== location.origin || !/^https?:$/.test(url.protocol))
       return;
+    if (isNextPage(url)) return;
     if (
       url.pathname === location.pathname &&
       url.search === location.search &&

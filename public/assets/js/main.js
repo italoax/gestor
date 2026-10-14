@@ -1,4 +1,9 @@
-function initGestor() {
+let gestorInitialization = 0;
+document.addEventListener('gestor:before-swap', () => gestorInitialization++);
+async function initGestor() {
+  const initialization = ++gestorInitialization;
+  await window.gestorMountReactPage?.();
+  if (initialization !== gestorInitialization) return;
   const modules = window.gestorPageModules;
   // Texto dinâmico do modal de plano
   var planoInfo = document.querySelector('[data-plano-info]');
@@ -43,6 +48,12 @@ function initGestor() {
     );
     element.replaceChildren();
     if (template) element.append(template.content.cloneNode(true));
+    else {
+      const source = document.querySelector(
+        '[data-ui-icon-source="' + name + '"] svg',
+      );
+      if (source) element.append(source.cloneNode(true));
+    }
     if (label) element.append(document.createTextNode(' ' + label));
   };
   document.querySelectorAll('[data-password-field]').forEach((field) => {
@@ -323,7 +334,6 @@ function initGestor() {
   });
 
   const phone = modules.initPhoneFields({ on });
-  const { setPhonePrefix } = phone;
 
   const { setDateInputValue } = modules.initDateFields({ setIconLabel });
 
@@ -342,17 +352,6 @@ function initGestor() {
           form.reset();
           form.querySelector('[name="action"]').value = 'create_plano';
           form.querySelector('[name="id"]').value = '';
-        }
-      }
-      if (id === 'modal-add-cliente') {
-        const form = modal.querySelector('#modal-add-cliente-form');
-        if (form) {
-          form.reset();
-          form.querySelector('[name="action"]').value = 'create_cliente';
-          form.querySelector('[name="id"]').value = '';
-          form.querySelector('[name="status"]').value = 'Ativo';
-          setPhonePrefix(form.querySelector('[data-phone-prefix]'), '+55');
-          setTimeout(() => syncClienteUsageFields(form), 0);
         }
       }
       if (id === 'modal-add-servidor') {
@@ -448,6 +447,7 @@ function initGestor() {
   syncModalUiState();
 
   document.querySelectorAll('.modal').forEach((modal) => {
+    if (modal.querySelector('[data-react-client-form]')) return;
     const tabs = modal.querySelectorAll('.tab-btn');
     const panels = modal.querySelectorAll('.tab-panel');
     tabs.forEach((tab) => {
@@ -464,21 +464,7 @@ function initGestor() {
 
   modules.initCatalogs({ setIconLabel, setModalState });
 
-  const usage = modules.initClientUsage({ setDateInputValue });
-  const { syncClienteUsageFields } = usage;
-
-  const pageContext = {
-    on,
-    setIconLabel,
-    setModalState,
-    showNoticeModal,
-    showToast,
-    setDateInputValue,
-    ...phone,
-    ...usage,
-  };
-  modules.initClients(pageContext);
-  modules.initClientPayments(pageContext);
+  window.gestorClientFieldTools = { ...phone, setDateInputValue };
 
   modules.initTransactions({ setIconLabel, setModalState });
 

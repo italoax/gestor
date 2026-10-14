@@ -44,7 +44,7 @@
     var user = locals.user || null;
     var currentPath = locals.currentPath || '';
   %>
-  <body class="<%= user ? 'page-app' : 'login-page' %>">
+  <body class="<%= user ? 'page-app' : 'login-page' %>" data-next-clients="<%= locals.nextFrontendEnabled ? '1' : '0' %>">
     <% if (user) {
       const menu = [
         { label: 'Dashboard', href: '/dashboard', icon: '📊' },

@@ -1,5 +1,7 @@
 node_modules/
 dist/
+web/.next/
+public/assets/js/react/
 .env
 tokens/
 npm-debug.log*
@@ -19,3 +21,11 @@ sessions/
 
 # Testes mantidos somente neste computador
 /test/
+
+# Documentação e controle local de deploy não fazem parte do site
+/docs/
+/README.md
+/.deploy-version.json
+
+# Arquivos enviados pelos usuários em runtime
+/public/uploads/

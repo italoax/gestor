@@ -267,6 +267,7 @@
 
   // Selecionar todos os clientes (checkbox do cabeçalho)
   document.querySelectorAll('[data-check-all]').forEach(function (master) {
+    if (master.closest('[data-react-page]')) return;
     master.addEventListener('change', function () {
       var scope = master.closest('table') || document;
       scope.querySelectorAll('tbody .cli-check').forEach(function (cb) {

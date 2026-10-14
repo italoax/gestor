@@ -1319,20 +1319,6 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .modal-error:not(:empty) {
   display: block;
 }
-.modal-required-list {
-  display: grid;
-  gap: 8px;
-  color: var(--text);
-  font-size: 13px;
-  text-align: center;
-}
-.modal-required-list .item {
-  display: block;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(var(--tint), 0.04);
-}
 .form-alert {
   padding: 10px 12px;
   border-radius: 10px;

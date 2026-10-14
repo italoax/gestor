@@ -6,6 +6,7 @@ import compression from 'compression';
 import expressLayouts from 'express-ejs-layouts';
 
 export function configureHttp(app, root, env) {
+  app.locals.nextFrontendEnabled = env.nextFrontendEnabled;
   // Hostinger/Cloudflare terminam o HTTPS antes do Node.
   // Sem trust proxy, o express-session não envia cookie `secure` em produção,
   // então o login redireciona para /dashboard mas a sessão não fica salva.

@@ -33,7 +33,7 @@ function periodoEmMeses(tipo) {
 }
 /**
  * base + (periodo × vezes), em dias ou meses de calendário conforme o plano.
- * ESPELHA o somarPeriodo do public/assets/js/main.js — os dois precisam
+ * ESPELHA addRenewalPeriod em src/frontend/clients/renewalModel.js — precisam
  * concordar, senão o modal sugere uma data e a renovação automática grava outra.
  * Em meses, o dia é preso ao último dia válido: 31/01 + 1 mês = 28/02.
  */
