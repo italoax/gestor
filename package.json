@@ -23,7 +23,7 @@
     "dev:backend": "node --watch --import tsx scripts/start-backend.mts",
     "start:backend": "node --import tsx scripts/start-backend.mts",
     "start:worker": "node --import tsx scripts/start-worker.mts",
-    "dev:frontend": "next dev web --port 3000",
+    "dev:frontend": "next dev web --port 80",
     "build:frontend": "next build web --webpack",
     "build:backend": "node --import tsx scripts/build-backend.mts",
     "start:frontend": "next start web --port 3000",

@@ -17,8 +17,9 @@ export async function runStack(listener?: PublicListener) {
   const development = process.argv.includes('--dev');
   const sockets = development ? undefined : createInternalSockets();
   const publicPort = Number(
-    process.env.FRONTEND_PORT || process.env.PORT || 3000,
+    process.env.FRONTEND_PORT || (development ? 80 : process.env.PORT || 3000),
   );
+  const localUrl = new URL(`http://localhost:${publicPort}`).origin;
   // Cada processo da hospedagem recebe portas privadas próprias do sistema.
   // As portas fixas são mantidas apenas para as ferramentas de desenvolvimento.
   const backendPort = development
@@ -33,7 +34,7 @@ export async function runStack(listener?: PublicListener) {
   const runtimeEnv: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: development ? 'development' : 'production',
-    APP_URL: process.env.APP_URL || `http://localhost:${publicPort}`,
+    APP_URL: development ? localUrl : process.env.APP_URL || localUrl,
     NEXT_BACKEND_URL: backendUrl,
     WORKER_URL: `http://127.0.0.1:${workerPort}`,
     WORKER_PORT: String(workerPort),
@@ -111,7 +112,11 @@ export async function runStack(listener?: PublicListener) {
 
   try {
     if (listener) await listener.ready;
-    console.log('Inicialização: servidor público aberto; iniciando o backend.');
+    console.log(
+      listener
+        ? 'Inicialização: servidor público aberto; iniciando o backend.'
+        : 'Inicialização: iniciando o backend de desenvolvimento.',
+    );
     if (development) {
       await import('./build-react.mts');
       await import('./build-browser.mts');
@@ -162,6 +167,7 @@ export async function runStack(listener?: PublicListener) {
     // Em produção, o aviso do filho ocorre após initialize(), bootstrap e listen().
     // A consulta de saúde ao MySQL não deve impedir a preparação do Next.js.
     let ready = !development;
+    let lastHealthError: unknown;
     for (let attempt = 0; development && attempt < 30 && !stopping; attempt++) {
       try {
         const response = await fetch(`${backendUrl}/healthz`, {
@@ -169,19 +175,24 @@ export async function runStack(listener?: PublicListener) {
           redirect: 'error',
         });
         if (response.ok) {
+          await response.body?.cancel();
           ready = true;
           break;
         }
-        if (attempt === 0)
-          console.error(`Saúde do backend: HTTP ${response.status}.`);
+        lastHealthError = new Error(
+          `Saúde do backend: HTTP ${response.status}.`,
+        );
         await response.body?.cancel();
       } catch (error) {
-        if (attempt === 0)
-          console.error('Falha ao consultar a saúde do backend:', error);
+        // A porta ainda pode estar fechada enquanto o Nest inicializa.
+        // Reporte a falha somente se o backend não ficar pronto no prazo.
+        lastHealthError = error;
       }
       await sleep(500);
     }
     if (!ready) {
+      if (stopping) return;
+      console.error('Falha ao consultar a saúde do backend:', lastHealthError);
       console.error(
         'O backend não ficou disponível. Consulte o erro de inicialização acima.',
       );

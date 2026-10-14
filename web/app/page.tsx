@@ -48,9 +48,12 @@ export default async function Page() {
     <>
       <link rel="stylesheet" href="/assets/css/ix-streaming.css" />
       <link rel="stylesheet" href="/assets/css/visual-effects.css" />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
+      <div
+        hidden
+        dangerouslySetInnerHTML={{
+          // Mantém o JSON-LD no HTML inicial sem montar uma tag script pelo React.
+          __html: `<script type="application/ld+json">${JSON.stringify(organization).replace(/</g, '\\u003c')}</script>`,
+        }}
       />
       <LandingContent data={data} />
       <Script src="/assets/js/visual-effects.js" strategy="afterInteractive" />

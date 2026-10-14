@@ -14,25 +14,8 @@ type Handler = (
 export function openPublicServer(port: number, hostname = '0.0.0.0') {
   let handler: Handler | undefined;
   let closing: Promise<void> | undefined;
-  const server = createServer((request, response) => {
-    if (!handler) {
-      const navigation =
-        request.method === 'GET' &&
-        request.headers.accept?.includes('text/html');
-      response.writeHead(503, {
-        'Retry-After': '2',
-        'Cache-Control': 'no-store',
-        'Content-Type': navigation
-          ? 'text/html; charset=utf-8'
-          : 'text/plain; charset=utf-8',
-      });
-      response.end(
-        navigation
-          ? '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="3"><title>Iniciando o site</title></head><body><p>O site está iniciando. Esta página será atualizada automaticamente.</p></body></html>'
-          : 'O site está iniciando. Tente novamente em instantes.',
-      );
-      return;
-    }
+  const pending = new Map<ServerResponse, () => void>();
+  function serve(request: IncomingMessage, response: ServerResponse) {
     void Promise.resolve()
       .then(() => handler!(request, response))
       .catch((error) => {
@@ -43,6 +26,19 @@ export function openPublicServer(port: number, hostname = '0.0.0.0') {
           response.end('Não foi possível carregar esta página.');
         }
       });
+  }
+  const server = createServer((request, response) => {
+    if (closing) return response.destroy();
+    if (handler) return serve(request, response);
+    // A primeira navegação recebe o site quando o Next estiver pronto.
+    const resume = () => {
+      pending.delete(response);
+      if (!response.destroyed) serve(request, response);
+    };
+    pending.set(response, resume);
+    response.once('close', () => {
+      pending.delete(response);
+    });
   });
   const ready = new Promise<void>((resolve, reject) => {
     server.once('error', reject);
@@ -57,9 +53,14 @@ export function openPublicServer(port: number, hostname = '0.0.0.0') {
     server,
     ready,
     setHandler(next: Handler) {
-      if (!closing) handler = next;
+      if (!closing) {
+        handler = next;
+        for (const resume of pending.values()) resume();
+      }
     },
     close() {
+      for (const response of pending.keys()) response.destroy();
+      pending.clear();
       closing ??= ready
         .catch(() => {})
         .then(

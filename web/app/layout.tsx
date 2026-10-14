@@ -1,4 +1,3 @@
-import Script from 'next/script';
 import { headers } from 'next/headers';
 
 export const metadata = {
@@ -37,11 +36,14 @@ export default async function RootLayout({
   return (
     <html lang="pt-br" suppressHydrationWarning>
       <body className={bodyClass}>
-        <Script id="restore-theme" strategy="beforeInteractive">
-          {
-            'try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}'
-          }
-        </Script>
+        <div
+          hidden
+          dangerouslySetInnerHTML={{
+            // Executa na leitura do HTML, antes do conteúdo e da hidratação.
+            __html:
+              '<script id="restore-theme">try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>',
+          }}
+        />
         {children}
       </body>
     </html>
