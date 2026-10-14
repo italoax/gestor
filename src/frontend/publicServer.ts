@@ -16,12 +16,21 @@ export function openPublicServer(port: number, hostname = '0.0.0.0') {
   let closing: Promise<void> | undefined;
   const server = createServer((request, response) => {
     if (!handler) {
+      const navigation =
+        request.method === 'GET' &&
+        request.headers.accept?.includes('text/html');
       response.writeHead(503, {
         'Retry-After': '2',
         'Cache-Control': 'no-store',
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': navigation
+          ? 'text/html; charset=utf-8'
+          : 'text/plain; charset=utf-8',
       });
-      response.end('O site está iniciando. Tente novamente em instantes.');
+      response.end(
+        navigation
+          ? '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="3"><title>Iniciando o site</title></head><body><p>O site está iniciando. Esta página será atualizada automaticamente.</p></body></html>'
+          : 'O site está iniciando. Tente novamente em instantes.',
+      );
       return;
     }
     void Promise.resolve()

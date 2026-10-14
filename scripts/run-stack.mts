@@ -105,6 +105,7 @@ export async function runStack(listener?: PublicListener) {
 
   try {
     if (listener) await listener.ready;
+    console.log('Inicialização: servidor público aberto; iniciando o backend.');
     if (development) {
       await import('./build-react.mts');
       await import('./build-browser.mts');
@@ -130,25 +131,37 @@ export async function runStack(listener?: PublicListener) {
       { PORT: String(backendPort), HOST: '127.0.0.1' },
     );
     if (!development) {
-      const port = await waitForPort(backend);
+      const port = await waitForPort(backend, 'Backend');
       if (!port || stopping) {
         await shutdown(1);
         return;
       }
       backendUrl = 'http://127.0.0.1:' + port;
       runtimeEnv.NEXT_BACKEND_URL = backendUrl;
+      console.log(
+        `Inicialização: backend confirmou a escuta em ${backendUrl}.`,
+      );
     }
-    let ready = false;
-    for (let attempt = 0; attempt < 60 && !stopping; attempt++) {
+    // Em produção, o aviso do filho ocorre após initialize(), bootstrap e listen().
+    // A consulta de saúde ao MySQL não deve impedir a preparação do Next.js.
+    let ready = !development;
+    for (let attempt = 0; development && attempt < 30 && !stopping; attempt++) {
       try {
         const response = await fetch(`${backendUrl}/healthz`, {
-          signal: AbortSignal.timeout(1000),
+          signal: AbortSignal.timeout(6000),
+          redirect: 'error',
         });
         if (response.ok) {
           ready = true;
           break;
         }
-      } catch {}
+        if (attempt === 0)
+          console.error(`Saúde do backend: HTTP ${response.status}.`);
+        await response.body?.cancel();
+      } catch (error) {
+        if (attempt === 0)
+          console.error('Falha ao consultar a saúde do backend:', error);
+      }
       await sleep(500);
     }
     if (!ready) {
@@ -158,6 +171,37 @@ export async function runStack(listener?: PublicListener) {
       await shutdown(1);
     } else {
       if (stopping) return;
+      console.log('Inicialização: preparando a interface Next.js.');
+      if (development) {
+        launch('Next.js', [
+          'node_modules/next/dist/bin/next',
+          'dev',
+          'web',
+          '--hostname',
+          process.env.FRONTEND_HOST || '0.0.0.0',
+          '--port',
+          String(publicPort),
+        ]);
+      } else {
+        Object.assign(process.env, {
+          NODE_ENV: 'production',
+          APP_URL: runtimeEnv.APP_URL,
+        });
+        const started = await startNextFrontend({
+          port: publicPort,
+          hostname: process.env.FRONTEND_HOST || '0.0.0.0',
+          backendUrl,
+          listener,
+        });
+        if (stopping) {
+          await started.close();
+          return;
+        }
+        frontend = started;
+        console.log(
+          'Inicialização: interface Next.js pronta; site disponível.',
+        );
+      }
       if (runtimeEnv.LOCAL_MODE !== 'true') {
         const worker = launch(
           'Worker',
@@ -172,7 +216,7 @@ export async function runStack(listener?: PublicListener) {
             : ['dist/runtime/backend/src/worker.js'],
         );
         if (!development) {
-          const port = await waitForPort(worker);
+          const port = await waitForPort(worker, 'Worker');
           if (!port || stopping) {
             await shutdown(1);
             return;
@@ -183,35 +227,6 @@ export async function runStack(listener?: PublicListener) {
               (error) => (error ? reject(error) : resolve()),
             ),
           );
-        }
-      }
-      if (development) {
-        launch('Next.js', [
-          'node_modules/next/dist/bin/next',
-          'dev',
-          'web',
-          '--hostname',
-          process.env.FRONTEND_HOST || '0.0.0.0',
-          '--port',
-          String(publicPort),
-        ]);
-      } else {
-        try {
-          Object.assign(process.env, {
-            NODE_ENV: 'production',
-            APP_URL: runtimeEnv.APP_URL,
-          });
-          const started = await startNextFrontend({
-            port: publicPort,
-            hostname: process.env.FRONTEND_HOST || '0.0.0.0',
-            backendUrl,
-            listener,
-          });
-          if (stopping) await started.close();
-          else frontend = started;
-        } catch (error) {
-          console.error('Erro ao iniciar o servidor público:', error);
-          await shutdown(1);
         }
       }
       if (!stopping)
@@ -225,9 +240,17 @@ export async function runStack(listener?: PublicListener) {
   }
 }
 
-function waitForPort(child: ChildProcess): Promise<number | undefined> {
+function waitForPort(
+  child: ChildProcess,
+  name: string,
+): Promise<number | undefined> {
   return new Promise((resolve) => {
-    const timer = setTimeout(() => finish(), 60000);
+    const timer = setTimeout(() => {
+      console.error(
+        `${name}: nenhuma porta de escuta foi informada em 60 segundos.`,
+      );
+      finish();
+    }, 60000);
     function finish(port?: number) {
       clearTimeout(timer);
       child.off('message', onMessage);
