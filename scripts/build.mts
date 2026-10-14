@@ -8,6 +8,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createAssetVersions } from '../src/services/assetVersions.ts';
 import { execFileSync } from 'node:child_process';
+import { hostingEntrySource } from './hosting-entry.mts';
 
 // Compatibilidade com hospedagens ainda configuradas para dist/server.js.
 const output = new URL('../dist/', import.meta.url);
@@ -26,8 +27,5 @@ execFileSync(
   ['node_modules/next/dist/bin/next', 'build', 'web', '--webpack'],
   { stdio: 'inherit' },
 );
-writeFileSync(
-  new URL('server.js', output),
-  "import './runtime/scripts/run-stack.mjs';\n",
-);
+writeFileSync(new URL('server.js', output), hostingEntrySource());
 console.log('Entrada de compatibilidade criada: dist/server.js');

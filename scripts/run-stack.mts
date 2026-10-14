@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import dotenv from 'dotenv';
 import { projectRoot } from '../src/config/paths.ts';
+import { startNextFrontend } from '../src/frontend/serveNext.ts';
 
 dotenv.config();
 const root = projectRoot;
@@ -25,11 +26,12 @@ const runtimeEnv: NodeJS.ProcessEnv = {
   NEXT_FRONTEND_ENABLED: 'true',
 };
 const children: ChildProcess[] = [];
+let frontend: Awaited<ReturnType<typeof startNextFrontend>> | undefined;
 let stopping = false;
 function launch(
   name: string,
   args: string[],
-  extraEnv: NodeJS.ProcessEnv = {},
+  extraEnv: Partial<NodeJS.ProcessEnv> = {},
 ) {
   const child = spawn(process.execPath, args, {
     cwd: root,
@@ -54,8 +56,11 @@ async function shutdown(code = 0) {
   if (stopping) return;
   stopping = true;
   process.exitCode = code;
-  await Promise.all(
-    children.map(
+  await Promise.all([
+    frontend
+      ?.close()
+      .catch((error) => console.error('Erro ao encerrar o site:', error)),
+    ...children.map(
       (child) =>
         new Promise<void>((resolve) => {
           if (child.exitCode !== null || child.signalCode !== null)
@@ -71,7 +76,7 @@ async function shutdown(code = 0) {
           child.kill('SIGTERM');
         }),
     ),
-  );
+  ]);
 }
 process.on('SIGINT', () => void shutdown(0));
 process.on('SIGTERM', () => void shutdown(0));
@@ -131,16 +136,36 @@ if (!ready) {
           ]
         : ['dist/runtime/backend/src/worker.js'],
     );
-  launch('Next.js', [
-    'node_modules/next/dist/bin/next',
-    development ? 'dev' : 'start',
-    'web',
-    '--hostname',
-    process.env.FRONTEND_HOST || '0.0.0.0',
-    '--port',
-    String(publicPort),
-  ]);
-  console.log(
-    `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker separados.`,
-  );
+  if (development) {
+    launch('Next.js', [
+      'node_modules/next/dist/bin/next',
+      'dev',
+      'web',
+      '--hostname',
+      process.env.FRONTEND_HOST || '0.0.0.0',
+      '--port',
+      String(publicPort),
+    ]);
+  } else {
+    try {
+      Object.assign(process.env, {
+        NODE_ENV: 'production',
+        APP_URL: runtimeEnv.APP_URL,
+      });
+      const started = await startNextFrontend({
+        port: publicPort,
+        hostname: process.env.FRONTEND_HOST || '0.0.0.0',
+        backendUrl,
+      });
+      if (stopping) await started.close();
+      else frontend = started;
+    } catch (error) {
+      console.error('Erro ao iniciar o servidor público:', error);
+      await shutdown(1);
+    }
+  }
+  if (!stopping)
+    console.log(
+      `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker ativos.`,
+    );
 }
