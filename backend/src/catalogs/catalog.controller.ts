@@ -9,13 +9,12 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { CatalogName } from './catalog.types.js';
-import { CatalogService } from './catalog.service.js';
-import { CatalogAuthGuard } from './catalog.guard.js';
-import { CatalogExceptionFilter } from './catalog.filter.js';
+import type { CatalogName } from './catalog.types.ts';
+import { CatalogService } from './catalog.service.ts';
+import { CatalogAuthGuard } from './catalog.guard.ts';
+import { CatalogExceptionFilter } from './catalog.filter.ts';
 interface CatalogRequest extends Request {
-  session: { user: { id: number } };
-  flash(type: string, message: string): unknown;
+  session: Request['session'] & { user: { id: number } };
 }
 @Controller(['aplicativos', 'dispositivos'])
 @UseGuards(CatalogAuthGuard)

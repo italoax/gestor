@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { PaymentsController } from './payments.controller.js';
-import { PaymentsService } from './payments.service.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../clients/clients.guard.js';
-import { PaymentConfirmationController } from './payment-confirmation.controller.js';
+import { PaymentsController } from './payments.controller.ts';
+import { PaymentsService } from './payments.service.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../clients/clients.guard.ts';
+import { PaymentConfirmationController } from './payment-confirmation.controller.ts';
 @Module({
   controllers: [PaymentsController, PaymentConfirmationController],
   providers: [PaymentsService, CatalogExceptionFilter, ClientsAuthGuard],

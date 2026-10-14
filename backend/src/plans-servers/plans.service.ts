@@ -3,8 +3,8 @@ import {
   boolField,
   toNullableString,
   toNumber,
-} from '../../../src/services/format.js';
-import { PlansServersStore } from './plans-servers.store.js';
+} from '../../../src/services/format.ts';
+import { PlansServersStore } from './plans-servers.store.ts';
 @Injectable()
 export class PlansService {
   constructor(

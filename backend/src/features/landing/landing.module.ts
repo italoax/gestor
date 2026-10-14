@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { LandingController } from './landing.controller.js';
-import { LandingService } from './landing.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { LandingController } from './landing.controller.ts';
+import { LandingService } from './landing.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [LandingController],

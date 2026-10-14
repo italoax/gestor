@@ -21,7 +21,7 @@ export interface WorkflowInput {
     size: number;
   };
   get(name: string): string | undefined;
-  flash(type: string, message?: string): string[];
+  flash(type: string, message?: string): string[] | number;
 }
 
 interface ResponseBase {

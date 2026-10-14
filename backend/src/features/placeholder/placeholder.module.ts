@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PlaceholderController } from './placeholder.controller.js';
-import { PlaceholderService } from './placeholder.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { PlaceholderController } from './placeholder.controller.ts';
+import { PlaceholderService } from './placeholder.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [PlaceholderController],

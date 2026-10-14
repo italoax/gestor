@@ -9,11 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
-import { PortalService } from './portal.service.js';
-import { workflowInput, sendWorkflowResponse } from '../workflow.http.js';
-import { PortalAuthGuard } from './portal.guard.js';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
+import { PortalService } from './portal.service.ts';
+import { workflowInput, sendWorkflowResponse } from '../workflow.http.ts';
+import { PortalAuthGuard } from './portal.guard.ts';
 @Controller()
 @UseFilters(CatalogExceptionFilter)
 export class PortalController {

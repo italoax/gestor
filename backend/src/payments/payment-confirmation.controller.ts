@@ -8,11 +8,11 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { PaymentsService } from './payments.service.js';
-import { ClientsAuthGuard } from '../clients/clients.guard.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
+import { PaymentsService } from './payments.service.ts';
+import { ClientsAuthGuard } from '../clients/clients.guard.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 interface PanelRequest extends Request {
-  session: { user: { id: number } };
+  session: Request['session'] & { user: { id: number } };
 }
 @Controller('pagamentos')
 @UseGuards(ClientsAuthGuard)

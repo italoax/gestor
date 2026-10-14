@@ -9,14 +9,15 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ClientsService } from './clients.service.js';
-import { ClientMutationsService } from './client-mutations.service.js';
-import { ClientsAuthGuard } from './clients.guard.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
-import { createClientPageData } from '../../../src/services/clientPageData.js';
+import { ClientsService } from './clients.service.ts';
+import { ClientMutationsService } from './client-mutations.service.ts';
+import { ClientsAuthGuard } from './clients.guard.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
+import { createClientPageData } from '../../../src/services/clientPageData.ts';
 interface ClientsRequest extends Request {
-  session: { user: { id: number; name: string; isAdmin?: boolean } };
-  flash(type: string, message?: string): string[];
+  session: Request['session'] & {
+    user: { id: number; name: string; isAdmin?: boolean };
+  };
 }
 @Controller()
 @UseGuards(ClientsAuthGuard)

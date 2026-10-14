@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
 const PLANOS_PADRAO: readonly (readonly [string, number, number, string])[] = [
   ['Mensal', 30, 1, 'Plano mensal de 30 dias'],
   ['Trimestral', 90, 3, 'Plano trimestral de 90 dias'],

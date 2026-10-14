@@ -5,8 +5,8 @@ import {
   type ExecutionContext,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { PortalService } from './portal.service.js';
-import { workflowInput, sendWorkflowResponse } from '../workflow.http.js';
+import { PortalService } from './portal.service.ts';
+import { workflowInput, sendWorkflowResponse } from '../workflow.http.ts';
 
 @Injectable()
 export class PortalAuthGuard implements CanActivate {

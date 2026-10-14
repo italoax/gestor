@@ -6,7 +6,7 @@ import {
   type ArgumentsHost,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
 @Catch()
 export class CatalogExceptionFilter implements ExceptionFilter {
   constructor(

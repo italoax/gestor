@@ -3,7 +3,7 @@ import type {
   WorkflowInput,
   WorkflowResponse,
   WorkflowSession,
-} from './workflow.types.js';
+} from './workflow.types.ts';
 
 export function workflowInput(
   request: Request,

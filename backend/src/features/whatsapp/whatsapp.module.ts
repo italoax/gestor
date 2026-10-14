@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { WhatsappController } from './whatsapp.controller.js';
-import { WhatsappService } from './whatsapp.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { WhatsappController } from './whatsapp.controller.ts';
+import { WhatsappService } from './whatsapp.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [WhatsappController],

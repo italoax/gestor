@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { TransactionsController } from './transactions.controller.js';
-import { TransactionsService } from './transactions.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { TransactionsController } from './transactions.controller.ts';
+import { TransactionsService } from './transactions.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [TransactionsController],

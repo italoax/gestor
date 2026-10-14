@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import crypto from 'node:crypto';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
 import {
   escolhasRenovacao,
   lerPlanoAdicional,
-} from '../../../src/services/renovacaoOpcoes.js';
+} from '../../../src/services/renovacaoOpcoes.ts';
 @Injectable()
 export class ClientsService {
   constructor(

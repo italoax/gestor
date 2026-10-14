@@ -1,17 +1,17 @@
 import express from 'express';
-import { createWorker } from './create-worker.js';
-import { env } from '../../src/config/env.js';
-import { db } from '../../src/db/mysql.js';
-import { createDefaultLocalCronWorkflow } from '../../src/workflows/defaults.js';
+import { createWorker } from './create-worker.ts';
+import { env } from '../../src/config/env.ts';
+import { db } from '../../src/db/mysql.ts';
+import { createDefaultLocalCronWorkflow } from '../../src/workflows/defaults.ts';
 import {
   startCobrancasCron,
   stopCobrancasCron,
-} from '../../src/services/cobrancasCron.js';
+} from '../../src/services/cobrancasCron.ts';
 import {
   startStatusCron,
   stopStatusCron,
-} from '../../src/services/statusCron.js';
-import { createErrorHandler } from '../../src/middleware/errorHandler.js';
+} from '../../src/services/statusCron.ts';
+import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 
 let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
 try {

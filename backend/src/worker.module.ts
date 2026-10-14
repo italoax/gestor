@@ -1,9 +1,9 @@
 import { Module, type DynamicModule } from '@nestjs/common';
-import { RuntimeModule } from './runtime.module.js';
-import { HealthModule } from './health/health.module.js';
-import { CronModule } from './features/cron/cron.module.js';
-import { LifecycleService } from './lifecycle.service.js';
-import type { BackendRuntime } from './runtime.js';
+import { RuntimeModule } from './runtime.module.ts';
+import { HealthModule } from './health/health.module.ts';
+import { CronModule } from './features/cron/cron.module.ts';
+import { LifecycleService } from './lifecycle.service.ts';
+import type { BackendRuntime } from './runtime.ts';
 
 @Module({})
 export class WorkerModule {

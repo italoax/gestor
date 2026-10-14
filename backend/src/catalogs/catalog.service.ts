@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.js';
-import type { CatalogName } from './catalog.types.js';
-import { toNullableString, toNumber } from '../../../src/services/format.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
+import type { CatalogName } from './catalog.types.ts';
+import { toNullableString, toNumber } from '../../../src/services/format.ts';
 
 @Injectable()
 export class CatalogService {

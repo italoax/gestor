@@ -8,11 +8,11 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { AuthService } from './auth.service.js';
-import type { PanelUser } from './auth.types.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
+import { AuthService } from './auth.service.ts';
+import type { PanelUser } from './auth.types.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 interface AuthRequest extends Request {
-  session: {
+  session: Request['session'] & {
     user?: PanelUser;
     csrfToken?: string;
     cookie: { maxAge?: number | null };
@@ -20,7 +20,6 @@ interface AuthRequest extends Request {
     save(callback: (error?: unknown) => void): void;
     destroy(callback: (error?: unknown) => void): void;
   };
-  flash(type: string, message: string): unknown;
 }
 @Controller()
 @UseFilters(CatalogExceptionFilter)

@@ -2,6 +2,10 @@ node_modules/
 dist/
 web/.next/
 public/assets/js/react/
+/public/assets/js/
+/public/sw.js
+/web/next-env.d.ts
+*.tsbuildinfo
 .env
 tokens/
 npm-debug.log*

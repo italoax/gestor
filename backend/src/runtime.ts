@@ -1,9 +1,9 @@
 import type { Express, ErrorRequestHandler } from 'express';
-import type { ClientsDependencies } from './clients/clients.types.js';
-import type { CatalogDependencies } from './catalogs/catalog.types.js';
-import type { AuthDependencies } from './auth/auth.types.js';
-import type { PaymentWorkflow } from './payments/payments.types.js';
-import type { FeatureWorkflows } from './features/workflow.types.js';
+import type { ClientsDependencies } from './clients/clients.types.ts';
+import type { CatalogDependencies } from './catalogs/catalog.types.ts';
+import type { AuthDependencies } from './auth/auth.types.ts';
+import type { PaymentWorkflow } from './payments/payments.types.ts';
+import type { FeatureWorkflows } from './features/workflow.types.ts';
 
 export const BACKEND_RUNTIME = Symbol('BACKEND_RUNTIME');
 export interface BackendRuntime {

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AccountController } from './account.controller.js';
-import { AccountService } from './account.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { AccountController } from './account.controller.ts';
+import { AccountService } from './account.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [AccountController],

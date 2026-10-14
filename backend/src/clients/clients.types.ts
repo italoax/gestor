@@ -1,4 +1,4 @@
-import type { CatalogDependencies } from '../catalogs/catalog.types.js';
+import type { CatalogDependencies } from '../catalogs/catalog.types.ts';
 export interface ClientsDependencies extends Pick<
   CatalogDependencies,
   'queryRows' | 'queryOne' | 'execute'

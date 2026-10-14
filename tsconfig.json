@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "rewriteRelativeImportExtensions": true,
+    "moduleDetection": "force",
+    "types": ["node", "react", "react-dom"],
+    "rootDir": ".",
+    "outDir": "dist/runtime",
+    "sourceMap": true,
+    "noEmitOnError": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "backend/src/**/*.ts",
+    "scripts/**/*.mts"
+  ],
+  "exclude": ["node_modules", "dist", "backend/dist", "src/browser"]
+}

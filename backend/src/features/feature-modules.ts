@@ -1,18 +1,18 @@
-import { DashboardModule } from './dashboard/dashboard.module.js';
-import { AccountModule } from './account/account.module.js';
-import { TransactionsModule } from './transactions/transactions.module.js';
-import { MessagesModule } from './messages/messages.module.js';
-import { AutomationModule } from './automation/automation.module.js';
-import { WhatsappModule } from './whatsapp/whatsapp.module.js';
-import { StatusModule } from './status/status.module.js';
-import { PaymentSettingsModule } from './payment-settings/payment-settings.module.js';
-import { IntegrationsModule } from './integrations/integrations.module.js';
-import { PushModule } from './push/push.module.js';
-import { NotificationsModule } from './notifications/notifications.module.js';
-import { PortalModule } from './portal/portal.module.js';
-import { LandingModule } from './landing/landing.module.js';
-import { PlaceholderModule } from './placeholder/placeholder.module.js';
-import { CronModule } from './cron/cron.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.ts';
+import { AccountModule } from './account/account.module.ts';
+import { TransactionsModule } from './transactions/transactions.module.ts';
+import { MessagesModule } from './messages/messages.module.ts';
+import { AutomationModule } from './automation/automation.module.ts';
+import { WhatsappModule } from './whatsapp/whatsapp.module.ts';
+import { StatusModule } from './status/status.module.ts';
+import { PaymentSettingsModule } from './payment-settings/payment-settings.module.ts';
+import { IntegrationsModule } from './integrations/integrations.module.ts';
+import { PushModule } from './push/push.module.ts';
+import { NotificationsModule } from './notifications/notifications.module.ts';
+import { PortalModule } from './portal/portal.module.ts';
+import { LandingModule } from './landing/landing.module.ts';
+import { PlaceholderModule } from './placeholder/placeholder.module.ts';
+import { CronModule } from './cron/cron.module.ts';
 export const featureModules = [
   DashboardModule,
   AccountModule,

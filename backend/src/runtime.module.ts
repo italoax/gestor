@@ -1,5 +1,5 @@
 import { Global, Module, type DynamicModule } from '@nestjs/common';
-import { BACKEND_RUNTIME, type BackendRuntime } from './runtime.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from './runtime.ts';
 @Global()
 @Module({})
 export class RuntimeModule {

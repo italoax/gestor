@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { CatalogController } from './catalog.controller.js';
-import { CatalogService } from './catalog.service.js';
-import { CatalogAuthGuard } from './catalog.guard.js';
-import { CatalogExceptionFilter } from './catalog.filter.js';
+import { CatalogController } from './catalog.controller.ts';
+import { CatalogService } from './catalog.service.ts';
+import { CatalogAuthGuard } from './catalog.guard.ts';
+import { CatalogExceptionFilter } from './catalog.filter.ts';
 @Module({
   controllers: [CatalogController],
   providers: [CatalogService, CatalogAuthGuard, CatalogExceptionFilter],

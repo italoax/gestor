@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ClientsController } from './clients.controller.js';
-import { ClientsService } from './clients.service.js';
-import { ClientMutationsService } from './client-mutations.service.js';
-import { ClientsAuthGuard } from './clients.guard.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
+import { ClientsController } from './clients.controller.ts';
+import { ClientsService } from './clients.service.ts';
+import { ClientMutationsService } from './client-mutations.service.ts';
+import { ClientsAuthGuard } from './clients.guard.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 @Module({
   controllers: [ClientsController],
   providers: [

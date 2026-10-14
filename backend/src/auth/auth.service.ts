@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.js';
-import type { PanelUser } from './auth.types.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
+import type { PanelUser } from './auth.types.ts';
 @Injectable()
 export class AuthService {
   constructor(

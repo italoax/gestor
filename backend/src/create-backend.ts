@@ -1,8 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { AppModule } from './app.module.js';
-import type { BackendRuntime } from './runtime.js';
+import { AppModule } from './app.module.ts';
+import type { BackendRuntime } from './runtime.ts';
 
 export async function createBackend(
   runtime: BackendRuntime,

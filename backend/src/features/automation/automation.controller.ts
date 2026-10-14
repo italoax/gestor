@@ -9,10 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
-import { AutomationService } from './automation.service.js';
-import { workflowInput, sendWorkflowResponse } from '../workflow.http.js';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
+import { AutomationService } from './automation.service.ts';
+import { workflowInput, sendWorkflowResponse } from '../workflow.http.ts';
 @Controller()
 @UseFilters(CatalogExceptionFilter)
 @UseGuards(ClientsAuthGuard)

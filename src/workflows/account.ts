@@ -1,0 +1,219 @@
+import {
+  workflowResult,
+  raiseWorkflowError,
+} from '../services/workflowReply.ts';
+export function createAccountWorkflow({
+  bcrypt,
+  execute,
+  queryOne,
+  queryRows,
+  invalidarPixConfig,
+  toNullableString,
+}) {
+  return {
+    profile: (input) =>
+      workflowResult(input, async (reply) => {
+        try {
+          const user = await queryOne(
+            `SELECT id, name, username, email, password_hash AS passwordHash,
+              pix_chave AS pixChave, pix_nome AS pixNome, pix_tipo AS pixTipo
+         FROM users WHERE id = :id LIMIT 1`,
+            { id: input.session.user.id },
+          );
+          reply.render('pages/minha-conta', {
+            title: 'Minha Conta',
+            account: user,
+          });
+        } catch (error) {
+          raiseWorkflowError(error);
+        }
+      }),
+    savePix: (input) =>
+      workflowResult(input, async (reply) => {
+        try {
+          const id = input.session.user.id;
+          const pixChave = toNullableString(input.body.pix_chave);
+          const pixNome = toNullableString(input.body.pix_nome);
+          const pixTipo = toNullableString(input.body.pix_tipo);
+          await execute(
+            'UPDATE users SET pix_chave = :pixChave, pix_nome = :pixNome, pix_tipo = :pixTipo WHERE id = :id',
+            { id, pixChave, pixNome, pixTipo },
+          );
+          invalidarPixConfig(id); // limpa o cache pra a mudanca valer na proxima mensagem
+          input.flash(
+            'success',
+            'Chave PIX salva. Use a tag {pix} nas mensagens.',
+          );
+          return reply.redirect('/minha-conta');
+        } catch (error) {
+          raiseWorkflowError(error);
+        }
+      }),
+    saveProfile: (input) =>
+      workflowResult(input, async (reply) => {
+        try {
+          const id = input.session.user.id;
+          const name = String(input.body.name ?? '').trim();
+          const username = String(input.body.username ?? '').trim();
+          const password = String(input.body.password ?? '');
+          const passwordConfirm = String(input.body.password_confirm ?? '');
+          const account = await queryOne(
+            'SELECT username, password_hash AS passwordHash FROM users WHERE id = :id LIMIT 1',
+            { id },
+          );
+          if (!account) return reply.sendStatus(401);
+          if (password || username !== account.username) {
+            const currentPassword = input.body.current_password;
+            if (
+              typeof currentPassword !== 'string' ||
+              !currentPassword ||
+              Buffer.byteLength(currentPassword, 'utf8') > 72 ||
+              !(await bcrypt.compare(currentPassword, account.passwordHash))
+            ) {
+              input.flash(
+                'error',
+                'Informe a senha atual correta para alterar o usuário ou a senha.',
+              );
+              return reply.redirect('/minha-conta');
+            }
+          }
+          if (!name || !username) {
+            input.flash('error', 'Nome e usuário são obrigatórios.');
+            return reply.redirect('/minha-conta');
+          }
+          const existingUser = await queryOne(
+            'SELECT id FROM users WHERE username = :username AND id <> :id LIMIT 1',
+            { id, username },
+          );
+          if (existingUser) {
+            input.flash('error', 'Usuário já cadastrado em outra conta.');
+            return reply.redirect('/minha-conta');
+          }
+          if (password) {
+            if (
+              password.length < 8 ||
+              Buffer.byteLength(password, 'utf8') > 72 ||
+              password !== passwordConfirm
+            ) {
+              input.flash(
+                'error',
+                'A nova senha deve ter pelo menos 8 caracteres, no máximo 72 bytes e confirmação igual.',
+              );
+              return reply.redirect('/minha-conta');
+            }
+            const passwordHash = await bcrypt.hash(password, 12);
+            await execute(
+              'UPDATE users SET name = :name, username = :username, password_hash = :passwordHash WHERE id = :id',
+              { id, name, username, passwordHash },
+            );
+          } else {
+            await execute(
+              'UPDATE users SET name = :name, username = :username WHERE id = :id',
+              { id, name, username },
+            );
+          }
+          // Preserva isAdmin da sessao (senao o menu Admin some ao editar o perfil).
+          input.session.user = { ...input.session.user, id, name, username };
+          input.flash('success', 'Conta atualizada.');
+          return reply.redirect('/minha-conta');
+        } catch (error) {
+          raiseWorkflowError(error);
+        }
+      }),
+    backup: (input) =>
+      workflowResult(input, async (reply) => {
+        try {
+          const userId = input.session.user.id;
+          const [
+            user,
+            clientes,
+            transacoes,
+            planos,
+            servidores,
+            dispositivos,
+            aplicativos,
+            mensagens,
+            cobrancas,
+          ] = await Promise.all([
+            queryOne(
+              'SELECT id, name, username, email FROM users WHERE id = :userId',
+              { userId },
+            ),
+            queryRows(
+              'SELECT * FROM clientes WHERE user_id = :userId ORDER BY id',
+              {
+                userId,
+              },
+            ),
+            queryRows(
+              'SELECT * FROM transacoes WHERE user_id = :userId ORDER BY id',
+              { userId },
+            ),
+            queryRows(
+              'SELECT * FROM planos WHERE user_id = :userId ORDER BY id',
+              {
+                userId,
+              },
+            ),
+            queryRows(
+              'SELECT * FROM servidores WHERE user_id = :userId ORDER BY id',
+              { userId },
+            ),
+            queryRows(
+              'SELECT * FROM dispositivos WHERE user_id = :userId ORDER BY id',
+              { userId },
+            ),
+            queryRows(
+              'SELECT * FROM aplicativos WHERE user_id = :userId ORDER BY id',
+              { userId },
+            ),
+            queryRows(
+              'SELECT * FROM mensagens WHERE user_id = :userId ORDER BY id',
+              {
+                userId,
+              },
+            ),
+            queryRows(
+              'SELECT * FROM cobrancas WHERE user_id = :userId ORDER BY id',
+              {
+                userId,
+              },
+            ),
+          ]);
+          const stamp = new Date()
+            .toISOString()
+            .replace(/[:.]/g, '-')
+            .slice(0, 19);
+          const filename = `gestor-backup-${userId}-${stamp}.json`;
+          reply.setHeader('Content-Type', 'application/json; charset=utf-8');
+          reply.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${filename}"`,
+          );
+          reply.send(
+            JSON.stringify(
+              {
+                meta: {
+                  exportadoEm: new Date().toISOString(),
+                  versao: 1,
+                  user,
+                },
+                clientes,
+                transacoes,
+                planos,
+                servidores,
+                dispositivos,
+                aplicativos,
+                mensagens,
+                cobrancas,
+              },
+              null,
+              2,
+            ),
+          );
+        } catch (error) {
+          raiseWorkflowError(error);
+        }
+      }),
+  };
+}

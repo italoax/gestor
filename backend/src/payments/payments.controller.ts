@@ -8,9 +8,9 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { PaymentsService } from './payments.service.js';
-import type { PaymentResponse } from './payments.types.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
+import { PaymentsService } from './payments.service.ts';
+import type { PaymentResponse } from './payments.types.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 @Controller()
 @UseFilters(CatalogExceptionFilter)
 export class PaymentsController {

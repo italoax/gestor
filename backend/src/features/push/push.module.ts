@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PushController } from './push.controller.js';
-import { PushService } from './push.service.js';
-import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.js';
-import { ClientsAuthGuard } from '../../clients/clients.guard.js';
+import { PushController } from './push.controller.ts';
+import { PushService } from './push.service.ts';
+import { CatalogExceptionFilter } from '../../catalogs/catalog.filter.ts';
+import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 
 @Module({
   controllers: [PushController],

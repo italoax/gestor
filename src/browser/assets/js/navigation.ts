@@ -1,0 +1,509 @@
+// Navegação compartilhada: mantém a estrutura do painel e busca dados atuais.
+(function () {
+  // Inclui respostas HTML de erros de POST: o próximo GET pertence ao Next,
+  // então o navegador deve carregar o documento inteiro, sem trocar seu DOM.
+  if (
+    !(document.querySelector('main.app-content') as HTMLElement) ||
+    window.gestorNavigate ||
+    document.body.dataset.nextClients === '1'
+  )
+    return;
+  const content = document.querySelector('main.app-content') as HTMLElement;
+  const isNextPage = (url) =>
+    document.body.dataset.nextClients === '1' && url.origin === location.origin;
+  const libraries = new Set(
+    [
+      ...(document.querySelectorAll(
+        'script[data-nav-once][src]',
+      ) as NodeListOf<HTMLScriptElement>),
+    ].map((s) => s.src),
+  );
+  let sequence = 0,
+    controller,
+    saving = false;
+  let currentUrl = location.href;
+  const dockPages = new Map();
+  function prefetchDock(link) {
+    if (saving || document.hidden || navigator.connection?.saveData) return;
+    const url = new URL(link.href, location.href);
+    if (isNextPage(url)) return;
+    if (url.origin !== location.origin || url.href === location.href) return;
+    const existing = dockPages.get(url.href);
+    if (existing && Date.now() - existing.at < 5000) return;
+    const page: { at: number; result?: Promise<any> } = { at: Date.now() };
+    page.result = fetch(url.href, {
+      cache: 'no-store',
+      headers: { Accept: 'text/html' },
+      signal: AbortSignal.timeout(8000),
+    })
+      .then(async (response) => {
+        if (
+          !response.ok ||
+          !response.headers.get('Content-Type')?.includes('text/html')
+        )
+          return null;
+        return { response, html: await response.text() };
+      })
+      .catch(() => null);
+    dockPages.set(url.href, page);
+  }
+  function warmDock() {
+    if (matchMedia('(max-width: 900px)').matches) {
+      (
+        document.querySelectorAll('[data-dock-link]') as NodeListOf<HTMLElement>
+      ).forEach(prefetchDock);
+    }
+  }
+  for (const eventName of ['pointerover', 'pointerdown', 'focusin']) {
+    document.addEventListener(
+      eventName,
+      (event) => {
+        const link = (event.target as HTMLInputElement).closest(
+          '[data-dock-link]',
+        ) as HTMLAnchorElement;
+        if (link) prefetchDock(link);
+      },
+      { passive: true },
+    );
+  }
+  if (window.requestIdleCallback)
+    requestIdleCallback(warmDock, { timeout: 1500 });
+  else setTimeout(warmDock, 300);
+  const notice = document.createElement('div');
+  notice.className = 'navigation-notice';
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
+  document.body.append(notice);
+  function message(text) {
+    notice.textContent = text;
+    notice.hidden = false;
+  }
+  function rememberScroll() {
+    if (location.href === currentUrl)
+      history.replaceState(
+        { ...history.state, scrollY: window.scrollY },
+        '',
+        location.href,
+      );
+  }
+  history.replaceState(
+    { ...history.state, scrollY: window.scrollY },
+    '',
+    location.href,
+  );
+  history.scrollRestoration = 'manual';
+
+  function cleanup() {
+    document.dispatchEvent(new Event('gestor:before-swap'));
+    window.__gestorAbort?.abort();
+    if (window.__waSessoesInterval) clearInterval(window.__waSessoesInterval);
+    (document.querySelector('[data-shell]') as HTMLElement)?.classList.remove(
+      'sidebar-open',
+    );
+    (
+      document.querySelectorAll('.cli-menu-pop.open') as NodeListOf<HTMLElement>
+    ).forEach((p) => {
+      p.classList.remove('open');
+      p.hidden = true;
+    });
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+    document.documentElement.style.removeProperty('--modal-viewport-height');
+    document.documentElement.style.removeProperty('--modal-viewport-top');
+    (document.querySelector('[data-notif-panel]') as HTMLElement)?.setAttribute(
+      'hidden',
+      '',
+    );
+    (
+      document.querySelector('[data-notif-toggle]') as HTMLElement
+    )?.setAttribute('aria-expanded', 'false');
+  }
+
+  async function scripts(token) {
+    for (const old of [
+      ...(content.querySelectorAll('script') as NodeListOf<HTMLScriptElement>),
+    ]) {
+      if (token !== sequence) return;
+      if (
+        old.type &&
+        !['text/javascript', 'application/javascript', 'module'].includes(
+          old.type,
+        )
+      )
+        continue;
+      if (
+        old.src &&
+        old.hasAttribute('data-nav-once') &&
+        libraries.has(old.src)
+      ) {
+        old.remove();
+        continue;
+      }
+      const script = document.createElement('script');
+      for (const attr of old.attributes)
+        script.setAttribute(attr.name, attr.value);
+      script.async = false;
+      script.textContent = old.textContent;
+      if (script.src || script.type === 'module') {
+        await new Promise<void>((resolve) => {
+          script.onload = () => {
+            if (script.hasAttribute('data-nav-once')) libraries.add(script.src);
+            resolve();
+          };
+          script.onerror = () => {
+            console.warn('Recurso indisponível:', script.src);
+            resolve();
+          };
+          old.replaceWith(script);
+        });
+      } else old.replaceWith(script);
+    }
+  }
+
+  // Exposta também para ações que antes chamavam location.reload().
+  async function navigate(
+    url,
+    {
+      push = true,
+      method = 'GET',
+      body,
+      keepScroll = false,
+      scrollY,
+      pop = false,
+      dock = false,
+    }: Record<string, any> = {},
+  ) {
+    const destination = new URL(url, location.href);
+    if (isNextPage(destination) && method === 'GET') {
+      location.assign(destination.href);
+      return false;
+    }
+    if (destination.origin !== location.origin) {
+      location.assign(destination.href);
+      return false;
+    }
+    if (saving) {
+      if (pop) history.replaceState({ ...history.state }, '', currentUrl);
+      message('Aguarde a conclusão do salvamento.');
+      return false;
+    }
+    const mutation = method !== 'GET';
+    if (mutation) dockPages.clear();
+    saving = mutation;
+    controller?.abort();
+    controller = new AbortController();
+    const token = ++sequence;
+    const y = scrollY ?? (keepScroll ? window.scrollY : 0);
+    if (!pop) rememberScroll();
+    content.setAttribute('aria-busy', 'true');
+    document.documentElement.classList.add('is-navigating');
+    notice.hidden = true;
+    document.dispatchEvent(
+      new CustomEvent('gestor:navigation-start', {
+        detail: { url: destination.href },
+      }),
+    );
+    let pageApplied = false;
+    let responseStatus;
+    try {
+      const prepared =
+        dock && !mutation ? dockPages.get(destination.href) : null;
+      dockPages.delete(destination.href);
+      const cached =
+        prepared && Date.now() - prepared.at < 5000
+          ? await prepared.result
+          : null;
+      if (token !== sequence) return false;
+      const response =
+        cached?.response ||
+        (await fetch(destination.href, {
+          method,
+          body,
+          signal: controller.signal,
+          redirect: 'follow',
+          cache: 'no-store',
+          headers: {
+            Accept: 'text/html',
+            ...(mutation
+              ? {
+                  'x-csrf-token': String(
+                    body?.get('_csrf') || window.getCsrfToken?.() || '',
+                  ),
+                }
+              : {}),
+          },
+        }));
+      responseStatus = response.status;
+      if (response.status === 429)
+        throw new Error(
+          'Muitas solicitações ao servidor. Aguarde um momento e tente novamente.',
+        );
+      if (response.status >= 500)
+        throw new Error(
+          'O servidor não conseguiu carregar a página. Tente novamente em instantes.',
+        );
+      const html = cached?.html ?? (await response.text());
+      if (token !== sequence) return false;
+      if (!response.headers.get('Content-Type')?.includes('text/html'))
+        throw new Error('Resposta inesperada');
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const next = doc.querySelector('main.app-content') as HTMLElement;
+      const finalUrl = new URL(response.url || destination.href);
+      // Login/saída e páginas públicas possuem outro layout e outra sessão.
+      if (
+        !next &&
+        response.ok &&
+        !(doc.querySelector('main.app-content') as HTMLElement) &&
+        (doc.querySelector('body') as HTMLElement)
+      ) {
+        location.assign(finalUrl.href);
+        return false;
+      }
+      if (!next) throw new Error('Resposta indisponível');
+      cleanup();
+      content.innerHTML = next.innerHTML;
+      if (doc.title) document.title = doc.title;
+      for (const selector of ['.topbar2-title', '.topbar-avatar']) {
+        const current = document.querySelector(selector) as HTMLElement,
+          replacement = doc.querySelector(selector) as HTMLElement;
+        if (current && replacement) {
+          current.innerHTML = replacement.innerHTML;
+          current.title = replacement.title;
+        }
+      }
+      const csrf = doc.querySelector(
+        'meta[name="csrf-token"]',
+      ) as HTMLMetaElement;
+      if (csrf)
+        (
+          document.querySelector('meta[name="csrf-token"]') as HTMLElement
+        )?.setAttribute('content', csrf.content);
+      (
+        document.querySelectorAll(
+          '.sidebar-link',
+        ) as NodeListOf<HTMLAnchorElement>
+      ).forEach((a) => {
+        const path = new URL(a.href).pathname;
+        const active =
+          finalUrl.pathname === path ||
+          finalUrl.pathname.startsWith(path + '/');
+        a.classList.toggle('active', active);
+        if (active) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      if (!pop && push && finalUrl.href !== currentUrl)
+        history.pushState({ scrollY: y }, '', finalUrl.href);
+      else
+        history.replaceState(
+          { ...history.state, scrollY: y },
+          '',
+          finalUrl.href,
+        );
+      currentUrl = finalUrl.href;
+      pageApplied = true;
+      try {
+        sessionStorage.removeItem('gestor:scroll:' + finalUrl.pathname);
+      } catch (_) {}
+      await scripts(token);
+      if (token !== sequence) return false;
+      await window.__gestorInitPage?.();
+      window.scrollTo({ top: y, behavior: 'instant' });
+      if (finalUrl.hash && !keepScroll && scrollY === undefined) {
+        (
+          document.getElementById(
+            decodeURIComponent(finalUrl.hash.slice(1)),
+          ) as HTMLElement
+        )?.scrollIntoView();
+      }
+      if (!keepScroll && !pop) {
+        const heading = document.querySelector(
+          '.topbar2-title h1',
+        ) as HTMLElement;
+        heading?.setAttribute('tabindex', '-1');
+        heading?.focus({ preventScroll: true });
+      }
+      document.dispatchEvent(
+        new CustomEvent('gestor:navigated', { detail: { url: currentUrl } }),
+      );
+      return true;
+    } catch (error) {
+      if (error.name === 'AbortError' || token !== sequence) return false;
+      console.error('Falha na navegação do painel:', error);
+      // Uma falha no fetch ou na inicialização não significa falta de internet.
+      // GET pode ser recuperado pela navegação nativa; nunca reenvia um POST.
+      if (
+        !mutation &&
+        (pageApplied ||
+          ((responseStatus === undefined || responseStatus < 400) &&
+            navigator.onLine !== false))
+      ) {
+        location.assign(pageApplied ? currentUrl : destination.href);
+        return false;
+      }
+      if (pop) history.replaceState({ ...history.state }, '', currentUrl);
+      message(
+        mutation
+          ? pageApplied
+            ? 'O servidor respondeu ao envio, mas ocorreu um erro ao atualizar a tela. Recarregue a página para conferir os dados.'
+            : 'Não foi possível confirmar o salvamento. Confira os dados antes de enviar novamente.'
+          : responseStatus === 429 || responseStatus >= 500
+            ? error.message
+            : navigator.onLine === false
+              ? 'Você está sem conexão. Verifique sua internet e tente novamente.'
+              : 'Não foi possível carregar a página. Tente novamente.',
+      );
+      return false;
+    } finally {
+      if (token === sequence) {
+        saving = false;
+        content.removeAttribute('aria-busy');
+        document.documentElement.classList.remove('is-navigating');
+        document.dispatchEvent(new Event('gestor:navigation-finished'));
+      }
+    }
+  }
+  window.gestorNavigate = navigate;
+  window.gestorRefresh = () =>
+    navigate(location.href, { push: false, keepScroll: true });
+
+  document.addEventListener('click', (event) => {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    )
+      return;
+    const link = (event.target as HTMLInputElement).closest(
+      'a[href]',
+    ) as HTMLAnchorElement;
+    if (
+      !link ||
+      (link.target && link.target !== '_self') ||
+      link.hasAttribute('download') ||
+      link.hasAttribute('data-no-pjax')
+    )
+      return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || !/^https?:$/.test(url.protocol))
+      return;
+    if (isNextPage(url)) return;
+    if (
+      url.pathname === location.pathname &&
+      url.search === location.search &&
+      url.hash
+    )
+      return;
+    event.preventDefault();
+    navigate(url.href, { dock: link.hasAttribute('data-dock-link') });
+  });
+
+  document.addEventListener('submit', async (event) => {
+    const form = event.target as HTMLInputElement;
+    if (
+      event.defaultPrevented ||
+      !(form instanceof HTMLFormElement) ||
+      form.hasAttribute('data-no-pjax')
+    )
+      return;
+    const submitter = event.submitter as
+      HTMLButtonElement | HTMLInputElement | null;
+    const method = (
+      submitter?.getAttribute('formmethod') ||
+      form.getAttribute('method') ||
+      'GET'
+    ).toUpperCase();
+    const url = new URL(
+      submitter?.getAttribute('formaction') ||
+        form.getAttribute('action') ||
+        location.href,
+      location.href,
+    );
+    const target =
+      submitter?.getAttribute('formtarget') || form.getAttribute('target');
+    if (
+      (target && target !== '_self') ||
+      url.origin !== location.origin ||
+      !['GET', 'POST'].includes(method) ||
+      url.pathname === '/logout'
+    )
+      return;
+    event.preventDefault();
+    if (form.dataset.pjaxBusy === '1' || saving) return;
+    form.dataset.pjaxBusy = '1';
+    const data = new FormData(form);
+    if (submitter?.name) data.append(submitter.name, submitter.value);
+    let body;
+    if (method === 'GET') {
+      url.search = '';
+      data.forEach((value, key) => {
+        if (!(value instanceof File)) url.searchParams.append(key, value);
+      });
+    } else if (
+      (
+        submitter?.getAttribute('formenctype') ||
+        form.getAttribute('enctype') ||
+        ''
+      ).includes('multipart')
+    )
+      body = data;
+    else {
+      body = new URLSearchParams();
+      data.forEach((value, key) => {
+        if (!(value instanceof File)) body.append(key, value);
+      });
+    }
+    const buttons = [
+      ...(document.querySelectorAll(
+        'button, input[type="submit"]',
+      ) as NodeListOf<HTMLButtonElement>),
+    ].filter(
+      (b) => b.form === form && (b.type === 'submit' || b === submitter),
+    );
+    const originals = buttons.map((b) => ({
+      b,
+      disabled: b.disabled,
+      text: b.dataset.prevText ?? b.innerHTML,
+    }));
+    buttons.forEach((b) => {
+      b.disabled = true;
+      b.classList.add('is-submitting');
+      if (
+        b.tagName === 'BUTTON' &&
+        !(b.querySelector('.btn-spinner') as HTMLElement)
+      ) {
+        const spinner = document.createElement('span');
+        spinner.className = 'btn-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        b.replaceChildren(
+          spinner,
+          document.createTextNode(' ' + (b.dataset.loadingText || 'Salvando')),
+        );
+      }
+    });
+    try {
+      await navigate(url.href, { method, body, keepScroll: true });
+    } finally {
+      form.dataset.pjaxBusy = '';
+      form.dataset.submitting = '';
+      originals.forEach(({ b, disabled, text }) => {
+        b.disabled = disabled;
+        b.innerHTML = text;
+        b.style.pointerEvents = '';
+        b.classList.remove('is-submitting');
+        delete b.dataset.submitting;
+        delete b.dataset.prevText;
+      });
+    }
+  });
+  window.addEventListener('popstate', (event) =>
+    navigate(location.href, {
+      push: false,
+      pop: true,
+      scrollY: event.state?.scrollY || 0,
+    }),
+  );
+  window.addEventListener('scroll', rememberScroll, { passive: true });
+})();

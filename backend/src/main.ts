@@ -1,31 +1,31 @@
-import { listarRenovacoesPendentes } from '../../src/services/renovacoesPendentes.js';
+import { listarRenovacoesPendentes } from '../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
 import {
   createDefaultFeatures,
   createDefaultCronWorkflow,
-} from '../../src/workflows/defaults.js';
-import { urlPagamentoDoCliente } from '../../src/workflows/payment-defaults.js';
-import { createDefaultPaymentWorkflow } from '../../src/workflows/payment-defaults.js';
-import { createDefaultPaymentConfirmation } from '../../src/workflows/confirmation-defaults.js';
-import { createDefaultClientMutationWorkflow } from '../../src/workflows/client-defaults.js';
-import { createBackend } from './create-backend.js';
-import { createApplication } from '../../src/app.js';
-import { env } from '../../src/config/env.js';
-import { db, queryRows, queryOne, execute } from '../../src/db/mysql.js';
-import { jaSemeou, marcarSemeado } from '../../src/services/catalogSeeds.js';
-import { aplicativosConfig } from '../../src/config/catalogs.js';
-import { dispositivosConfig } from '../../src/config/catalogs.js';
-import { createErrorHandler } from '../../src/middleware/errorHandler.js';
-import { closeSessionStores } from '../../src/db/sessionStore.js';
-import { ensureDatabaseSchema } from '../../src/db/schema.js';
+} from '../../src/workflows/defaults.ts';
+import { urlPagamentoDoCliente } from '../../src/workflows/payment-defaults.ts';
+import { createDefaultPaymentWorkflow } from '../../src/workflows/payment-defaults.ts';
+import { createDefaultPaymentConfirmation } from '../../src/workflows/confirmation-defaults.ts';
+import { createDefaultClientMutationWorkflow } from '../../src/workflows/client-defaults.ts';
+import { createBackend } from './create-backend.ts';
+import { createApplication } from '../../src/app.ts';
+import { env } from '../../src/config/env.ts';
+import { db, queryRows, queryOne, execute } from '../../src/db/mysql.ts';
+import { jaSemeou, marcarSemeado } from '../../src/services/catalogSeeds.ts';
+import { aplicativosConfig } from '../../src/config/catalogs.ts';
+import { dispositivosConfig } from '../../src/config/catalogs.ts';
+import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
+import { closeSessionStores } from '../../src/db/sessionStore.ts';
+import { ensureDatabaseSchema } from '../../src/db/schema.ts';
 import {
   startCobrancasCron,
   stopCobrancasCron,
-} from '../../src/services/cobrancasCron.js';
+} from '../../src/services/cobrancasCron.ts';
 import {
   startStatusCron,
   stopStatusCron,
-} from '../../src/services/statusCron.js';
+} from '../../src/services/statusCron.ts';
 
 const { app: application, stopDevReload } = createApplication();
 let backend: Awaited<ReturnType<typeof createBackend>> | undefined;

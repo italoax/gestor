@@ -9,14 +9,13 @@ import {
   UseFilters,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { PlansService } from './plans.service.js';
-import { ServersService } from './servers.service.js';
-import { CatalogAuthGuard } from '../catalogs/catalog.guard.js';
-import { CatalogExceptionFilter } from '../catalogs/catalog.filter.js';
+import { PlansService } from './plans.service.ts';
+import { ServersService } from './servers.service.ts';
+import { CatalogAuthGuard } from '../catalogs/catalog.guard.ts';
+import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 type PlansServersName = 'planos' | 'servidores';
 interface PlansServersRequest extends Request {
-  session: { user: { id: number } };
-  flash(type: string, message: string): unknown;
+  session: Request['session'] & { user: { id: number } };
 }
 @Controller(['planos', 'servidores'])
 @UseGuards(CatalogAuthGuard)

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { BACKEND_RUNTIME, type BackendRuntime } from '../../runtime.js';
-import type { WorkflowInput, WorkflowResponse } from '../workflow.types.js';
+import { BACKEND_RUNTIME, type BackendRuntime } from '../../runtime.ts';
+import type { WorkflowInput, WorkflowResponse } from '../workflow.types.ts';
 @Injectable()
 export class PlaceholderService {
   constructor(
