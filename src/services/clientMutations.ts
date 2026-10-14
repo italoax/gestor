@@ -457,8 +457,8 @@ export function createClientMutationWorkflow({
         flash(
           'modal-success',
           sigmaOk
-            ? 'Pagamento registrado e renovado no painel Sigma. ✅'
-            : 'Pagamento registrado.',
+            ? 'Pagamento registrado com sucesso e acesso renovado no painel Sigma.'
+            : 'Pagamento registrado com sucesso.',
         );
         const mensagemPagamentoId = Number(body.mensagem_pagamento_id);
         if (mensagemPagamentoId) {
@@ -492,7 +492,7 @@ export function createClientMutationWorkflow({
               if (result.ok) {
                 flash(
                   'modal-success',
-                  'Pagamento salvo e mensagem enviada pelo WhatsApp.',
+                  'Mensagem enviada ao cliente pelo WhatsApp.',
                 );
               } else {
                 flash(

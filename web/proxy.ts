@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server';
-import { isSitePage } from '../src/frontend/pageRoutes.ts';
+import {
+  isSitePage,
+  isUnknownPageNavigation,
+} from '../src/frontend/pageRoutes.ts';
 
 export function proxy(request) {
+  if (
+    isUnknownPageNavigation(
+      request.nextUrl.pathname,
+      request.method,
+      request.headers.get('accept') || '',
+    )
+  )
+    return NextResponse.redirect(new URL('/', request.url));
   // Os formulários continuam sendo validados e gravados pelo Express.
   if (
     !isSitePage(request.nextUrl.pathname) ||

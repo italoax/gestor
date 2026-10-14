@@ -4,7 +4,7 @@ import path from 'node:path';
 import { projectRoot } from '../config/paths.ts';
 import { openPublicServer, type PublicListener } from './publicServer.ts';
 import { proxyBackend } from './backendTransport.ts';
-import { isSitePage } from './pageRoutes.ts';
+import { isSitePage, isUnknownPageNavigation } from './pageRoutes.ts';
 
 export interface NextFrontendOptions {
   port: number;
@@ -62,6 +62,17 @@ export async function startNextFrontend({
   const handle = app.getRequestHandler();
   listener.setHandler((request, response) => {
     const url = new URL(request.url || '/', 'http://gestor.local');
+    if (
+      isUnknownPageNavigation(
+        url.pathname,
+        request.method || 'GET',
+        request.headers.accept || '',
+      )
+    ) {
+      response.writeHead(307, { Location: '/', 'Cache-Control': 'no-store' });
+      response.end();
+      return;
+    }
     if (
       process.env.BACKEND_SOCKET &&
       !url.pathname.startsWith('/_next/') &&

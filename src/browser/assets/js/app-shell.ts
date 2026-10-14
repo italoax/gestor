@@ -8,11 +8,30 @@
     (function () {
       var blockedUntil = 0,
         failures = 0;
+      var storageKey = 'gestor-polling-backoff';
+      function restoreBlock() {
+        try {
+          var saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+          if (
+            saved &&
+            Number.isFinite(saved.until) &&
+            saved.until > blockedUntil &&
+            saved.until > Date.now()
+          ) {
+            blockedUntil = saved.until;
+            failures = Math.min(Math.max(Number(saved.failures) || 1, 1), 4);
+          }
+        } catch (e) {
+          /* armazenamento indisponível: mantém a pausa nesta aba */
+        }
+      }
       return {
         canFetch: function () {
+          restoreBlock();
           return !document.hidden && Date.now() >= blockedUntil;
         },
         recordResponse: function (response) {
+          restoreBlock();
           var now = Date.now();
           if (response.status === 429) {
             failures = Math.min(failures + 1, 4);
@@ -23,6 +42,14 @@
             var delay = Math.min(60000 * Math.pow(2, failures - 1), 300000);
             if (Number.isFinite(requested)) delay = Math.max(delay, requested);
             blockedUntil = Math.max(blockedUntil, now + delay);
+            try {
+              localStorage.setItem(
+                storageKey,
+                JSON.stringify({ until: blockedUntil, failures: failures }),
+              );
+            } catch (e) {
+              /* armazenamento indisponível: mantém a pausa nesta aba */
+            }
           } else if (response.ok && now >= blockedUntil) {
             failures = 0;
           }

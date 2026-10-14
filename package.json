@@ -6,7 +6,7 @@
   "description": "Painel Gestor em TypeScript, Next.js e NestJS.",
   "main": "dist/server.js",
   "scripts": {
-    "postinstall": "node --import tsx scripts/prepare-next.mts",
+    "postinstall": "node --import tsx scripts/prepare-next.mts && node --import tsx scripts/prepare-flash.mts",
     "format": "node --import tsx scripts/format.mts",
     "format:check": "node --import tsx scripts/format.mts --check",
     "check": "npm run typecheck && npm run build:backend && npm run build:react && npm run build:browser && node --import tsx scripts/check-views.mts",
