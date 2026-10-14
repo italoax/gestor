@@ -48,12 +48,18 @@ try {
     process.send?.({ type: 'listening', port: address.port });
   console.log(
     typeof address === 'string'
-      ? 'Worker NestJS de automações iniciado no canal interno.'
-      : `Worker NestJS de automações iniciado na porta ${address?.port ?? env.workerPort}.`,
+      ? '[Worker] Automações prontas no canal interno.'
+      : `[Worker] Automações prontas na porta ${address?.port ?? env.workerPort}.`,
   );
 } catch (error) {
-  console.error('Erro ao iniciar o worker NestJS:', error);
+  const databaseLimit =
+    (error as { code?: string })?.code === 'ER_USER_LIMIT_REACHED';
+  if (databaseLimit && process.env.LOG_VERBOSE !== 'true')
+    console.error(
+      '[Worker] MySQL atingiu um limite de recursos. As automações não puderam iniciar; verifique a cota na hospedagem.',
+    );
+  else console.error('Erro ao iniciar o worker NestJS:', error);
   if (worker) await worker.close();
   else await db.end();
-  process.exit(1);
+  process.exit(databaseLimit ? 78 : 1);
 }

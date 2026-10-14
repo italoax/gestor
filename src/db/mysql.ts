@@ -14,7 +14,7 @@ export const db = mysql.createPool({
   compress: false,
   port: env.db.port,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: env.localMode ? 2 : 10,
   queueLimit: 100,
   connectTimeout: 10000,
   namedPlaceholders: true,

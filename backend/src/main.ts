@@ -101,10 +101,16 @@ try {
   if (address && typeof address === 'object')
     process.send?.({ type: 'listening', port: address.port });
   console.log(
-    `Gestor NestJS rodando em ${env.appUrl || `http://localhost:${env.port}`}`,
+    `[Backend] Pronto em ${env.appUrl || `http://localhost:${env.port}`}`,
   );
 } catch (error) {
-  console.error('Erro ao iniciar o Gestor NestJS:', error);
+  const databaseLimit =
+    (error as { code?: string })?.code === 'ER_USER_LIMIT_REACHED';
+  if (databaseLimit && process.env.LOG_VERBOSE !== 'true')
+    console.error(
+      '[Backend] MySQL atingiu um limite de recursos. Se for o limite de conexões por hora, aguarde a renovação da cota ou solicite a liberação à hospedagem.',
+    );
+  else console.error('Erro ao iniciar o Gestor NestJS:', error);
   try {
     if (backend) await backend.close();
     else {
@@ -115,7 +121,5 @@ try {
   } catch (cleanupError) {
     console.error('Erro ao encerrar após falha:', cleanupError);
   }
-  process.exit(
-    (error as { code?: string })?.code === 'ER_USER_LIMIT_REACHED' ? 78 : 1,
-  );
+  process.exit(databaseLimit ? 78 : 1);
 }

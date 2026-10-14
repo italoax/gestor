@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 const DEV_SESSION_SECRET = 'dev-secret-change-me';
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const sessionSecret = process.env.SESSION_SECRET ?? DEV_SESSION_SECRET;

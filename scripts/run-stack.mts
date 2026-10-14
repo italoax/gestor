@@ -34,6 +34,9 @@ export async function runStack(listener?: PublicListener) {
   const runtimeEnv: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: development ? 'development' : 'production',
+    // O desenvolvimento não precisa migrar o banco remoto, gravar sessões
+    // no MySQL nem abrir um segundo pool para automações.
+    LOCAL_MODE: process.env.LOCAL_MODE ?? (development ? 'true' : 'false'),
     APP_URL: development ? localUrl : process.env.APP_URL || localUrl,
     NEXT_BACKEND_URL: backendUrl,
     WORKER_URL: `http://127.0.0.1:${workerPort}`,
@@ -268,7 +271,9 @@ export async function runStack(listener?: PublicListener) {
       }
       if (!stopping)
         console.log(
-          `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker ativos.`,
+          runtimeEnv.LOCAL_MODE === 'true'
+            ? `Gestor: ${runtimeEnv.APP_URL} — Next.js e NestJS; automações desativadas no modo local.`
+            : `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker ativos.`,
         );
     }
   } catch (error) {

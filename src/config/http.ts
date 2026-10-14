@@ -49,7 +49,14 @@ export function configureHttp(app, root, env) {
   // importante em hospedagem compartilhada com largura de banda limitada.
   app.use(compression());
   // URLs de acesso e pagamento contêm credenciais; registre somente metadados.
-  app.use(morgan(':method :status :response-time ms'));
+  app.use(
+    morgan('[HTTP] :method :status :response-time ms', {
+      skip: (req, res) =>
+        process.env.LOG_VERBOSE !== 'true' &&
+        ['GET', 'HEAD'].includes(req.method) &&
+        res.statusCode < 400,
+    }),
+  );
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   // Apenas a pagina comercial deve aparecer nos resultados de busca.
