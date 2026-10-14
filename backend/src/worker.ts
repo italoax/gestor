@@ -39,12 +39,17 @@ try {
     closeDatabase: () => db.end(),
   });
   worker.enableShutdownHooks(['SIGINT', 'SIGTERM']);
-  await worker.listen(env.workerPort, '127.0.0.1');
+  if (process.env.WORKER_SOCKET) await worker.listen(process.env.WORKER_SOCKET);
+  else await worker.listen(env.workerPort, '127.0.0.1');
   const address = worker.getHttpServer().address();
+  if (typeof address === 'string')
+    process.send?.({ type: 'listening', socketPath: address });
   if (address && typeof address === 'object')
     process.send?.({ type: 'listening', port: address.port });
   console.log(
-    `Worker NestJS de automações iniciado na porta ${address?.port ?? env.workerPort}.`,
+    typeof address === 'string'
+      ? 'Worker NestJS de automações iniciado no canal interno.'
+      : `Worker NestJS de automações iniciado na porta ${address?.port ?? env.workerPort}.`,
   );
 } catch (error) {
   console.error('Erro ao iniciar o worker NestJS:', error);

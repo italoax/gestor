@@ -1,14 +1,13 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { requestBackend } from '../../src/frontend/backendTransport.ts';
 
 export async function loadClientsPage(archived) {
   const requestHeaders = await headers();
   const backend = process.env.NEXT_BACKEND_URL || 'http://127.0.0.1:3001';
-  const response = await fetch(
+  const response = await requestBackend(
     `${backend}/api/clientes${archived ? '?arquivados=1' : ''}`,
     {
-      cache: 'no-store',
-      redirect: 'manual',
       headers: {
         cookie: requestHeaders.get('cookie') || '',
         Accept: 'application/json',

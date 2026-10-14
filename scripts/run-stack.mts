@@ -8,11 +8,14 @@ import {
 } from '../src/frontend/publicServer.ts';
 import { projectRoot } from '../src/config/paths.ts';
 import { startNextFrontend } from '../src/frontend/serveNext.ts';
+import { createInternalSockets } from '../src/frontend/internalSockets.ts';
+import { requestInternal } from '../src/frontend/backendTransport.ts';
 
 export async function runStack(listener?: PublicListener) {
   dotenv.config({ quiet: true });
   const root = projectRoot;
   const development = process.argv.includes('--dev');
+  const sockets = development ? undefined : createInternalSockets();
   const publicPort = Number(
     process.env.FRONTEND_PORT || process.env.PORT || 3000,
   );
@@ -36,6 +39,8 @@ export async function runStack(listener?: PublicListener) {
     WORKER_PORT: String(workerPort),
     RUN_AUTOMATIONS: 'false',
     NEXT_FRONTEND_ENABLED: 'true',
+    BACKEND_SOCKET: sockets?.backend,
+    WORKER_SOCKET: sockets?.worker,
   };
   if (!development)
     listener ??= openPublicServer(
@@ -99,6 +104,7 @@ export async function runStack(listener?: PublicListener) {
           }),
       ),
     ]);
+    sockets?.close();
   }
   process.on('SIGINT', () => void shutdown(0));
   process.on('SIGTERM', () => void shutdown(0));
@@ -131,15 +137,26 @@ export async function runStack(listener?: PublicListener) {
       { PORT: String(backendPort), HOST: '127.0.0.1' },
     );
     if (!development) {
-      const port = await waitForPort(backend, 'Backend');
-      if (!port || stopping) {
+      const endpoint = await waitForEndpoint(backend, 'Backend');
+      const port = endpoint?.port;
+      if ((!port && !endpoint?.socketPath) || stopping) {
         await shutdown(1);
         return;
       }
-      backendUrl = 'http://127.0.0.1:' + port;
+      backendUrl = endpoint.socketPath
+        ? 'http://127.0.0.1'
+        : 'http://127.0.0.1:' + port;
+      runtimeEnv.BACKEND_SOCKET = endpoint.socketPath;
+      const probe = await requestInternal(new URL('/favicon.svg', backendUrl), {
+        socketPath: endpoint.socketPath,
+        timeout: 5000,
+      });
+      await probe.body?.cancel();
       runtimeEnv.NEXT_BACKEND_URL = backendUrl;
       console.log(
-        `Inicialização: backend confirmou a escuta em ${backendUrl}.`,
+        endpoint.socketPath
+          ? 'Inicialização: backend confirmou o canal interno.'
+          : `Inicialização: backend confirmou a escuta em ${backendUrl}.`,
       );
     }
     // Em produção, o aviso do filho ocorre após initialize(), bootstrap e listen().
@@ -187,6 +204,9 @@ export async function runStack(listener?: PublicListener) {
           NODE_ENV: 'production',
           APP_URL: runtimeEnv.APP_URL,
         });
+        if (runtimeEnv.BACKEND_SOCKET)
+          process.env.BACKEND_SOCKET = runtimeEnv.BACKEND_SOCKET;
+        else delete process.env.BACKEND_SOCKET;
         const started = await startNextFrontend({
           port: publicPort,
           hostname: process.env.FRONTEND_HOST || '0.0.0.0',
@@ -216,14 +236,20 @@ export async function runStack(listener?: PublicListener) {
             : ['dist/runtime/backend/src/worker.js'],
         );
         if (!development) {
-          const port = await waitForPort(worker, 'Worker');
+          const endpoint = await waitForEndpoint(worker, 'Worker');
+          const port = endpoint?.port;
           if (!port || stopping) {
             await shutdown(1);
             return;
           }
           await new Promise<void>((resolve, reject) =>
             backend.send(
-              { type: 'worker-url', url: 'http://127.0.0.1:' + port },
+              {
+                type: 'worker-url',
+                url: endpoint.socketPath
+                  ? 'http://127.0.0.1'
+                  : 'http://127.0.0.1:' + port,
+              },
               (error) => (error ? reject(error) : resolve()),
             ),
           );
@@ -240,10 +266,10 @@ export async function runStack(listener?: PublicListener) {
   }
 }
 
-function waitForPort(
+function waitForEndpoint(
   child: ChildProcess,
   name: string,
-): Promise<number | undefined> {
+): Promise<{ port?: number; socketPath?: string } | undefined> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       console.error(
@@ -251,24 +277,28 @@ function waitForPort(
       );
       finish();
     }, 60000);
-    function finish(port?: number) {
+    function finish(endpoint?: { port?: number; socketPath?: string }) {
       clearTimeout(timer);
       child.off('message', onMessage);
       child.off('exit', onExit);
       child.off('error', onExit);
-      resolve(port);
+      resolve(endpoint);
     }
     function onExit() {
       finish();
     }
     function onMessage(message: unknown) {
-      const value = message as { type?: string; port?: number };
+      const value = message as {
+        type?: string;
+        port?: number;
+        socketPath?: string;
+      };
       if (
         value?.type === 'listening' &&
-        Number.isInteger(value.port) &&
-        value.port! > 0
+        ((Number.isInteger(value.port) && value.port! > 0) ||
+          typeof value.socketPath === 'string')
       )
-        finish(value.port);
+        finish(value);
     }
     child.on('message', onMessage);
     child.once('exit', onExit);

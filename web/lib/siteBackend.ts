@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { headers } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { readSiteDocument } from './siteDocument.ts';
+import { requestBackend } from '../../src/frontend/backendTransport.ts';
 
 export const loadSitePage = cache(async () => {
   const request = await headers();
@@ -13,9 +14,7 @@ export const loadSitePage = cache(async () => {
   const pageUrl = new URL(target, 'http://gestor.local');
   url.pathname = pageUrl.pathname;
   url.search = pageUrl.search;
-  const response = await fetch(url, {
-    cache: 'no-store',
-    redirect: 'manual',
+  const response = await requestBackend(url, {
     signal: AbortSignal.timeout(20000),
     headers: {
       cookie: request.get('cookie') || '',

@@ -88,11 +88,16 @@ try {
     }
   });
   backend.enableShutdownHooks(['SIGINT', 'SIGTERM']);
-  await backend.listen(
-    env.port,
-    env.host ?? (env.localMode ? '127.0.0.1' : '0.0.0.0'),
-  );
+  if (process.env.BACKEND_SOCKET)
+    await backend.listen(process.env.BACKEND_SOCKET);
+  else
+    await backend.listen(
+      env.port,
+      env.host ?? (env.localMode ? '127.0.0.1' : '0.0.0.0'),
+    );
   const address = backend.getHttpServer().address();
+  if (typeof address === 'string')
+    process.send?.({ type: 'listening', socketPath: address });
   if (address && typeof address === 'object')
     process.send?.({ type: 'listening', port: address.port });
   console.log(

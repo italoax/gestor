@@ -3,6 +3,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { projectRoot } from '../config/paths.ts';
 import { openPublicServer, type PublicListener } from './publicServer.ts';
+import { proxyBackend } from './backendTransport.ts';
+import { isSitePage } from './pageRoutes.ts';
 
 export interface NextFrontendOptions {
   port: number;
@@ -36,7 +38,12 @@ export async function startNextFrontend({
   listener = openPublicServer(port, hostname),
 }: NextFrontendOptions) {
   process.env.NEXT_BACKEND_URL = backendUrl;
-  const next: CreateNext = createRequire(import.meta.url)('next');
+  const require = createRequire(import.meta.url);
+  require('@next/env').updateInitialEnv({
+    NEXT_BACKEND_URL: backendUrl,
+    BACKEND_SOCKET: process.env.BACKEND_SOCKET,
+  });
+  const next: CreateNext = require('next');
   const app = next({
     dev: false,
     dir: path.join(projectRoot, 'web'),
@@ -52,7 +59,27 @@ export async function startNextFrontend({
     await app.close().catch(() => {});
     throw error;
   }
-  listener.setHandler(app.getRequestHandler());
+  const handle = app.getRequestHandler();
+  listener.setHandler((request, response) => {
+    const url = new URL(request.url || '/', 'http://gestor.local');
+    if (
+      process.env.BACKEND_SOCKET &&
+      !url.pathname.startsWith('/_next/') &&
+      (!isSitePage(url.pathname) ||
+        request.headers.accept?.includes('application/json') ||
+        !['GET', 'HEAD'].includes(request.method || 'GET') ||
+        (url.pathname === '/login' && url.searchParams.has('session_check')) ||
+        (url.pathname === '/area-cliente/login' &&
+          url.searchParams.has('acesso')))
+    )
+      return proxyBackend(
+        request,
+        response,
+        backendUrl,
+        process.env.BACKEND_SOCKET,
+      );
+    return handle(request, response);
+  });
   let closing: Promise<void> | undefined;
   const close = () => {
     closing ??= listener.close().finally(() => app.close());

@@ -2,9 +2,11 @@ import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
+import { requestInternal } from '../frontend/backendTransport.ts';
 export function createWorkerProxyWorkflow({
   env,
-  fetch: requestFetch = globalThis.fetch,
+  fetch: requestFetch = (url, options) =>
+    requestInternal(url, { ...options, socketPath: process.env.WORKER_SOCKET }),
 }) {
   const fetch = requestFetch;
 
