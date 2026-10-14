@@ -238,7 +238,7 @@ export async function runStack(listener?: PublicListener) {
         if (!development) {
           const endpoint = await waitForEndpoint(worker, 'Worker');
           const port = endpoint?.port;
-          if (!port || stopping) {
+          if ((!port && !endpoint?.socketPath) || stopping) {
             await shutdown(1);
             return;
           }
