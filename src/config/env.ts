@@ -1,4 +1,4 @@
-import { databaseTls } from '../security/databaseTls.ts';
+import { databaseConnection } from '../security/databaseTls.ts';
 import dotenv from 'dotenv';
 const configuration = dotenv.config({
   quiet: true,
@@ -79,12 +79,10 @@ export const env = {
   // (Hostinger/cron-job.org) acordar o processo e disparar a execução.
   cronToken: process.env.CRON_TOKEN ?? '',
   db: {
-    host: process.env.DB_HOST ?? '127.0.0.1',
+    ...databaseConnection(process.env),
     name: process.env.DB_NAME ?? '',
     user: process.env.DB_USER ?? '',
     password: process.env.DB_PASSWORD || process.env.DB_PASS || '',
-    port: Number(process.env.DB_PORT ?? 3306),
-    ssl: databaseTls(process.env),
   },
   whatsapp: {
     defaultCountry: process.env.WA_DEFAULT_COUNTRY ?? '55',

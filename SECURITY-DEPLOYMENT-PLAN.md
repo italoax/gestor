@@ -1,5 +1,7 @@
 # Plano final de implantação segura — 15/10/2026
 
+> Compatibilidade Hostinger: consultar [política de transporte SQL e procedimento específico](SECURITY-HOSTINGER-DATABASE.md). O suporte à exceção TCP local está preparado, mas nenhuma hospedagem está aprovada no registro compilado; produção continua bloqueada sem TLS confirmado ou evidências suficientes para aprovação local.
+
 > Atualização 3.1: consultar [correções finais e checklist atualizado](SECURITY-FINAL-FIXES.md). O código agora exige identidade TLS, valida os contratos de webhook confirmados, separa migração explícita do startup e respeita RUN_AUTOMATIONS. Os trechos abaixo registram o diagnóstico anterior; a sequência de migração/startup deve seguir a atualização. Pagar.me v5 permanece pendente. O relatório 3.1 também registra uma ocorrência de acesso de leitura fora do isolamento previsto durante os testes, sem migração ou alteração de dados reais.
 
 ## Decisão e alcance

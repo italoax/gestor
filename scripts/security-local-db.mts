@@ -27,7 +27,10 @@ import { SharedRateStore } from '../src/security/sharedRateStore.ts';
 import { createLoginAttempts } from '../src/services/loginAttempts.ts';
 import { createSecurityEvents } from '../src/security/securityEvents.ts';
 import { gerarDumpSql } from '../src/services/backup.ts';
-import { databaseTls } from '../src/security/databaseTls.ts';
+import {
+  databaseTls,
+  databaseConnection,
+} from '../src/security/databaseTls.ts';
 import {
   runSchemaMigrations,
   verifyDatabaseSchema,
@@ -130,6 +133,33 @@ try {
     }
   }
   assert.ok(conn, 'MariaDB local disponível');
+  const localTcp = await mysql.createConnection({
+    ...credentials,
+    ...databaseConnection({
+      NODE_ENV: 'development',
+      DB_HOST: 'localhost',
+      DB_PORT: String(port),
+      DB_SSL: 'false',
+    }),
+  });
+  try {
+    const [identity] = await localTcp.query('SELECT @@datadir AS dir');
+    assert.ok(
+      path
+        .resolve(identity[0].dir)
+        .toLowerCase()
+        .startsWith(root.toLowerCase()),
+    );
+    const [plainCipher] = await localTcp.query(
+      "SHOW SESSION STATUS LIKE 'Ssl_cipher'",
+    );
+    assert.equal(plainCipher[0].Value, '');
+  } finally {
+    await localTcp.end();
+  }
+  console.log(
+    'PASS: TCP de laboratório fixa localhost em loopback e alcança somente a instância fictícia.',
+  );
   const tlsOptions = (host: string, caFile = certFile) => ({
     ...credentials,
     host,
@@ -233,14 +263,33 @@ try {
   writeFileSync(restoreConfig, config(restoreDb), { mode: 0o600, flag: 'wx' });
   // Nunca herdar dotenv/credenciais do processo que importa os módulos reais.
   // Apenas variáveis do SO, mais o alvo efêmero explícito, chegam aos filhos.
-  const isolatedChildEnv = (overrides: Record<string,string> = {}) => {
-    const os = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
-      /^(systemroot|windir|path|pathext|temp|tmp|comspec|userprofile|appdata|localappdata|number_of_processors|processor_architecture)$/i.test(name)));
-    const result = {...os, NODE_ENV:'development', GESTOR_ENV_FILE:configFile,
-      DB_HOST:'127.0.0.1',DB_PORT:String(port),DB_NAME:database,DB_USER:'root',DB_PASSWORD:password,
-      DB_SSL:'false',RUN_AUTOMATIONS:'false',SESSION_SECRET:legacySecret,...overrides};
-    assert.equal(result.DB_HOST,'127.0.0.1');assert.equal(result.DB_PORT,String(port));
-    assert.ok(result.DB_NAME === database || result.DB_NAME.startsWith(database+'_'));
+  const isolatedChildEnv = (overrides: Record<string, string> = {}) => {
+    const os = Object.fromEntries(
+      Object.entries(process.env).filter(([name]) =>
+        /^(systemroot|windir|path|pathext|temp|tmp|comspec|userprofile|appdata|localappdata|number_of_processors|processor_architecture)$/i.test(
+          name,
+        ),
+      ),
+    );
+    const result = {
+      ...os,
+      NODE_ENV: 'development',
+      GESTOR_ENV_FILE: configFile,
+      DB_HOST: '127.0.0.1',
+      DB_PORT: String(port),
+      DB_NAME: database,
+      DB_USER: 'root',
+      DB_PASSWORD: password,
+      DB_SSL: 'false',
+      RUN_AUTOMATIONS: 'false',
+      SESSION_SECRET: legacySecret,
+      ...overrides,
+    };
+    assert.equal(result.DB_HOST, '127.0.0.1');
+    assert.equal(result.DB_PORT, String(port));
+    assert.ok(
+      result.DB_NAME === database || result.DB_NAME.startsWith(database + '_'),
+    );
     return result;
   };
   const child = (file: string, args: string[] = [], env = {}) =>
@@ -250,10 +299,13 @@ try {
       env: isolatedChildEnv(env),
       timeout: 30000,
     }).toString('utf8');
-  assert.throws(() => isolatedChildEnv({DB_HOST:'remote.invalid'}));
-  assert.throws(() => isolatedChildEnv({DB_PORT:'3306'}));
-  assert.throws(() => isolatedChildEnv({DB_NAME:'unrelated_schema'}));
-  assert.equal(Object.hasOwn(isolatedChildEnv(), 'WA_SESSION_API_TOKEN'), false);
+  assert.throws(() => isolatedChildEnv({ DB_HOST: 'remote.invalid' }));
+  assert.throws(() => isolatedChildEnv({ DB_PORT: '3306' }));
+  assert.throws(() => isolatedChildEnv({ DB_NAME: 'unrelated_schema' }));
+  assert.equal(
+    Object.hasOwn(isolatedChildEnv(), 'WA_SESSION_API_TOKEN'),
+    false,
+  );
   // Ensaio de recuperação completo em outro schema ANTES da primeira migração.
   // Outra conexão altera um registro depois de aberto o snapshot. O dump
   // deve preservar a visão anterior, mesmo lendo a tabela posteriormente.
@@ -549,9 +601,23 @@ try {
   writeFileSync(schemaConfig, config(schemaDb), { mode: 0o600, flag: 'wx' });
   child('scripts/migrate-schema.mts', ['--config', schemaConfig]);
   child('scripts/migrate-schema.mts', ['--config', schemaConfig, '--apply']);
-  const compiledCheck = execFileSync(process.execPath, ['--input-type=module', '-e',
-    "if(process.env.DB_HOST!=='127.0.0.1'||!process.env.DB_NAME.startsWith('gestor_security_'))throw Error('isolated target required'); const {db}=await import('./dist/runtime/src/db/mysql.js'); const {verifyDatabaseSchema}=await import('./dist/runtime/src/db/migrations.js'); try { if(db.pool.config.connectionConfig.host!=='127.0.0.1'||db.pool.config.connectionConfig.database!==process.env.DB_NAME||String(db.pool.config.connectionConfig.port)!==process.env.DB_PORT)throw Error('isolated configuration required'); await verifyDatabaseSchema(db); console.log('compiled-schema-ok'); } finally { await db.end(); }"],
-    { windowsHide:true, stdio:'pipe', env:isolatedChildEnv({GESTOR_ENV_FILE:schemaConfig,DB_NAME:schemaDb}),timeout:15000 }).toString();
+  const compiledCheck = execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '-e',
+      "if(process.env.DB_HOST!=='127.0.0.1'||!process.env.DB_NAME.startsWith('gestor_security_'))throw Error('isolated target required'); const {db}=await import('./dist/runtime/src/db/mysql.js'); const {verifyDatabaseSchema}=await import('./dist/runtime/src/db/migrations.js'); try { if(db.pool.config.connectionConfig.host!=='127.0.0.1'||db.pool.config.connectionConfig.database!==process.env.DB_NAME||String(db.pool.config.connectionConfig.port)!==process.env.DB_PORT)throw Error('isolated configuration required'); await verifyDatabaseSchema(db); console.log('compiled-schema-ok'); } finally { await db.end(); }",
+    ],
+    {
+      windowsHide: true,
+      stdio: 'pipe',
+      env: isolatedChildEnv({
+        GESTOR_ENV_FILE: schemaConfig,
+        DB_NAME: schemaDb,
+      }),
+      timeout: 15000,
+    },
+  ).toString();
   assert.ok(compiledCheck.includes('compiled-schema-ok'));
   await secondConnection.query(`USE \`${schemaDb}\``);
   const [lockRows] = await conn.query('SELECT DATABASE() AS name');

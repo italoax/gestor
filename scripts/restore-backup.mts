@@ -1,4 +1,4 @@
-import { databaseTls } from '../src/security/databaseTls.ts';
+import { databaseConnection } from '../src/security/databaseTls.ts';
 import { readFileSync } from 'node:fs';
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
@@ -43,13 +43,11 @@ async function main() {
   )
     throw new Error('TLS obrigat?rio para banco remoto.');
   const conn = await mysql.createConnection({
-    host: config.DB_HOST,
-    port: Number(config.DB_PORT || 3306),
+    ...databaseConnection(config),
     user: config.DB_USER,
     password: config.DB_PASSWORD,
     database: config.DB_NAME,
     multipleStatements: true,
-    ssl: databaseTls(config, true),
   });
   try {
     const [tables] = await conn.query('SHOW TABLES');

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import dotenv from 'dotenv';
-import { databaseTls } from '../src/security/databaseTls.ts';
+import { databaseConnection } from '../src/security/databaseTls.ts';
 import { loadVault } from '../src/security/secretVault.ts';
 
 async function main() {
@@ -68,13 +68,11 @@ async function main() {
   const mysql = await import('mysql2/promise');
   const { runSchemaMigrations } = await import('../src/db/migrations.ts');
   const connection = await mysql.createConnection({
-    host: config.DB_HOST,
-    port: Number(config.DB_PORT || 3306),
+    ...databaseConnection(config),
     user: config.DB_USER,
     password: config.DB_PASSWORD || config.DB_PASS,
     database: config.DB_NAME,
     namedPlaceholders: true,
-    ssl: databaseTls(config, true),
     connectTimeout: 5000,
   });
   try {

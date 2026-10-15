@@ -1,4 +1,4 @@
-import { databaseTls } from '../src/security/databaseTls.ts';
+import { databaseConnection } from '../src/security/databaseTls.ts';
 import {
   readFileSync,
   realpathSync,
@@ -75,12 +75,29 @@ async function main() {
   if (keyFile && process.platform !== 'win32' && statSync(keyFile).mode & 0o077)
     blockers.push('key-file-permissions-too-open');
   const loopback = ['127.0.0.1', 'localhost', '::1'].includes(config.DB_HOST);
+  let transport: ReturnType<typeof databaseConnection> | undefined;
+  try {
+    transport = databaseConnection(config);
+  } catch {
+    blockers.push('database-transport-not-authorized-or-invalid');
+  }
   if (!loopback && config.DB_SSL !== 'true')
     blockers.push('remote-database-without-tls');
-  if (config.NODE_ENV === 'production' && config.DB_SSL !== 'true')
+  if (
+    config.NODE_ENV === 'production' &&
+    config.DB_SSL !== 'true' &&
+    !(transport && config.DB_TRANSPORT === 'hostinger-local-tcp')
+  )
     blockers.push('production-database-without-tls');
   const report: Record<string, any> = {
     configurationOnly: !args.includes('--database'),
+    databaseTransportPolicyAccepted: Boolean(transport),
+    localDatabaseException:
+      config.DB_TRANSPORT === 'hostinger-local-tcp'
+        ? transport
+          ? 'approved-local-plaintext'
+          : 'blocked-pending-evidence'
+        : 'not-requested',
     blockers,
     redirectConfiguredInApplication: config.ENFORCE_HTTPS === 'true',
     keyFilePermissions: !keyFile
@@ -129,6 +146,7 @@ async function main() {
   }
   if (args.includes('--database')) {
     if (
+      !transport ||
       !config.DB_HOST ||
       !config.DB_NAME ||
       !config.DB_USER ||
@@ -136,13 +154,11 @@ async function main() {
     )
       throw new Error('DATABASE_CONFIG_INVALID');
     const connection = await mysql.createConnection({
-      host: config.DB_HOST,
-      port: Number(config.DB_PORT || 3306),
+      ...transport,
       database: config.DB_NAME,
       user: config.DB_USER,
       password: config.DB_PASSWORD || config.DB_PASS,
       connectTimeout: 5000,
-      ssl: databaseTls(config, true),
     });
     try {
       await connection.query("SET time_zone = '+00:00'");
