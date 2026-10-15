@@ -19,5 +19,9 @@ export interface PaymentWorkflow {
     body: Record<string, unknown>,
   ): Promise<PaymentResponse>;
   status(token: string, paymentId: string): Promise<PaymentResponse>;
-  webhook(provider: string, body: Record<string, unknown>): Promise<void>;
+  webhook(
+    provider: string,
+    body: Record<string, unknown>,
+    request?: import('../../../src/security/paymentWebhooks.ts').WebhookRequest,
+  ): Promise<{ status: number } | void>;
 }

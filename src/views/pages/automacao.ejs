@@ -113,7 +113,7 @@
             <input
               type="checkbox"
               class="switch"
-              onchange="this.form.requestSubmit()"
+              data-submit-on-change=""
               <%= ativa ? 'checked' : '' %>
               aria-label="Ativar regra"
             />
@@ -122,7 +122,7 @@
             method="post"
             action="/automacao"
             class="auto-dispatch-form"
-            onsubmit="return confirm('Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo.');"
+            data-confirm="Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo."
           >
             <%- csrfInput %>
             <input type="hidden" name="action" value="dispatch_regra" />
@@ -524,7 +524,7 @@
     </div>
   </div>
 </div>
-<script>
+<script nonce="<%= locals.cspNonce || '' %>">
 (function () {
   // Abas de página (Regras / Disparos)
   document.querySelectorAll('[data-auto-tab]').forEach(function (tab) {

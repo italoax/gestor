@@ -73,6 +73,9 @@ export const loadSitePage = cache(async () => {
     throw new Error('Resposta inválida do backend.');
   return {
     ...readSiteDocument(data.html),
+    trustedScriptNonce: response.headers
+      .get('content-security-policy')
+      ?.match(/'nonce-([^']+)'/)?.[1],
     status: data.status,
     path: pageUrl.pathname,
   };

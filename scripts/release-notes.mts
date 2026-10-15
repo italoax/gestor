@@ -7,7 +7,7 @@ export function readReleaseNotes(root = projectRoot) {
   try {
     const history = execFileSync(
       'git',
-      ['log', '-10', '--format=%H%x00%cI%x00%s%x00%b%x1e'],
+      ['log', '-1', '--format=%H%x00%cI%x00%s%x00%b%x1e'],
       { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     )
       .split('\x1e')

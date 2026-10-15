@@ -7,5 +7,6 @@ declare module 'express-session' {
     cliente?: { id: number; revision: string; viaLink?: boolean };
     csrfToken?: string;
     cacheRevision?: number;
+    security?: import('../services/sessionSecurity.ts').SessionSecurity;
   }
 }

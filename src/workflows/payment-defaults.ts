@@ -1,5 +1,5 @@
 import { createPaymentWorkflow } from '../services/paymentWorkflow.ts';
-import { execute, queryOne } from '../db/mysql.ts';
+import { execute, queryOne, queryRows, withTransaction } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
 import {
   configDoProvider,
@@ -16,6 +16,8 @@ export function createDefaultPaymentWorkflow() {
   return createPaymentWorkflow({
     execute,
     queryOne,
+    queryRows,
+    withTransaction,
     env,
     configDoProvider,
     escolherProvedor,

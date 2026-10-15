@@ -1,3 +1,5 @@
+import { safeError } from '../security/safeError.ts';
+import { automationsEnabled } from '../security/automationPolicy.ts';
 import crypto from 'node:crypto';
 import {
   workflowResult,
@@ -12,10 +14,10 @@ export function createCronWorkflow({
   return {
     run: (input) =>
       workflowResult(input, async (reply) => {
-        if (env.localMode)
+        if (!automationsEnabled(env))
           return reply.status(403).json({
             ok: false,
-            error: 'Automações desativadas no modo local.',
+            error: 'Automações desativadas pela configuração do ambiente.',
           });
         // Validação timing-safe do token — bate o tamanho primeiro pra não vazar info.
         const received = String(
@@ -52,7 +54,7 @@ export function createCronWorkflow({
             statusPostados: statusResult.postados ?? 0,
           });
         } catch (error) {
-          console.error('[cron] Falha na execução:', error);
+          console.error('[cron] Falha na execução:', safeError(error));
           reply
             .status(500)
             .json({ ok: false, error: 'Erro ao executar as automações.' });

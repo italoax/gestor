@@ -238,11 +238,7 @@
       >
       <form method="get" action="/dashboard" class="dist-period">
         <span class="dist-period-label">⛛ Período</span>
-        <select
-          name="periodo"
-          onchange="this.form.requestSubmit()"
-          aria-label="Período"
-        >
+        <select name="periodo" data-submit-on-change="" aria-label="Período">
           <option value="mes" <%= periodo === 'mes' ? 'selected' : '' %>>Este Mês</option>
           <option value="anterior" <%= periodo === 'anterior' ? 'selected' : '' %>>Mês Anterior</option>
           <option value="todos" <%= periodo === 'todos' ? 'selected' : '' %>>Todos</option>
@@ -591,16 +587,13 @@
     </div>
   </div>
 </div>
-<script
-  data-nav-once
-  src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
-></script>
-<script>window.__dashData = <%- chart.replace(/</g, '\\u003c') %>;</script>
-<script src="<%= assetUrl('/assets/js/dashboard-charts.js') %>"></script>
-<script>window.__geoData = <%- geo.replace(/</g, '\\u003c') %>;</script>
-<script src="<%= assetUrl('/assets/js/dashboard-maps.js') %>"></script>
+<script nonce="<%= locals.cspNonce || '' %>" data-nav-once src="<%= assetUrl('/assets/js/vendor/chart.umd.js') %>"></script>
+<script nonce="<%= locals.cspNonce || '' %>">window.__dashData = <%- chart.replace(/</g, '\\u003c') %>;</script>
+<script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/dashboard-charts.js') %>"></script>
+<script nonce="<%= locals.cspNonce || '' %>">window.__geoData = <%- geo.replace(/</g, '\\u003c') %>;</script>
+<script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/dashboard-maps.js') %>"></script>
 
-<script>
+<script nonce="<%= locals.cspNonce || '' %>">
 (function () {
   document.querySelectorAll('[data-bar-percent]').forEach(bar => {
     const percent = Number(bar.dataset.barPercent);

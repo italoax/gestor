@@ -9,7 +9,7 @@ declare const Chart: {
   defaults: { color: string; font: { family: string } };
 };
 
-declare module 'https://cdn.jsdelivr.net/npm/@svg-maps/brazil/+esm' {
+declare module '/assets/js/vendor/maps/brazil.js' {
   const map: {
     label: string;
     viewBox: string;
@@ -17,7 +17,7 @@ declare module 'https://cdn.jsdelivr.net/npm/@svg-maps/brazil/+esm' {
   };
   export default map;
 }
-declare module 'https://cdn.jsdelivr.net/npm/@svg-maps/world/+esm' {
+declare module '/assets/js/vendor/maps/world.js' {
   const map: {
     label: string;
     viewBox: string;

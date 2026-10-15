@@ -93,8 +93,12 @@ function ProviderEditor({
                   className="input"
                   type="password"
                   name={`creds_${provider.id}_${name}`}
-                  defaultValue={provider.credentials[name] || ''}
-                  placeholder={placeholder || ''}
+                  defaultValue=""
+                  placeholder={
+                    provider.configuredFields?.[name]
+                      ? 'Configurada. Em branco mantém a atual.'
+                      : placeholder || ''
+                  }
                   autoComplete="off"
                   data-1p-ignore="true"
                   data-lpignore="true"
@@ -103,6 +107,14 @@ function ProviderEditor({
               )}
             </label>
           ))}
+          {provider.configurado && (
+            <label className="field full">
+              <span>
+                <input type="checkbox" name="remover_credenciais" value="1" />{' '}
+                Remover credenciais salvas
+              </span>
+            </label>
+          )}
           <label className="switch-field full">
             <span>
               <strong>Ativar este provedor</strong>

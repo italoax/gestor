@@ -82,7 +82,11 @@ export class PaymentsController {
       .split('/')
       .at(-1)!
       .toLowerCase();
-    await this.payments.webhook(provider, request.body ?? {});
-    return response.sendStatus(200);
+    const result = await this.payments.webhook(provider, request.body ?? {}, {
+      headers: request.headers,
+      query: request.query,
+      rawBody: (request as any).rawBody,
+    });
+    return response.sendStatus(result ? result.status : 503);
   }
 }

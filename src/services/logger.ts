@@ -1,3 +1,4 @@
+import { safeError } from '../security/safeError.ts';
 // Logger estruturado minimalista (sem dependencia externa).
 // Formato: [2026-07-04 17:30:00 -03] [INFO ] [tag] mensagem {meta}
 // Nivel controlado por LOG_LEVEL (debug|info|warn|error), default "info".
@@ -26,7 +27,11 @@ function agora() {
 }
 function formatarMeta(meta) {
   if (meta === undefined || meta === null) return '';
-  if (meta instanceof Error) return ` ${meta.stack ?? meta.message}`;
+  if (
+    meta instanceof Error ||
+    (meta && typeof meta === 'object' && ('sql' in meta || 'stack' in meta))
+  )
+    return ` ${JSON.stringify(safeError(meta))}`;
   if (typeof meta === 'string') return ` ${meta}`;
   try {
     return ` ${JSON.stringify(meta)}`;

@@ -69,6 +69,42 @@ export function AccountScreen({ data }: { data?: any }) {
             <h2 className="section-title">Minha Conta</h2>
           </div>
           <div className="card account-card">
+            <section id="seguranca-sessoes" className="account-section">
+              <h3>Segurança e sessões</h3>
+              <p>
+                Confirme sua senha para operações sensíveis ou encerre todos os
+                acessos da sua conta.
+              </p>
+              <form
+                method="post"
+                action="/minha-conta/confirmar"
+                className="form-grid account-form-grid"
+              >
+                <CsrfInput token={data.page.csrfToken} />
+                <label className="field full">
+                  Senha atual
+                  <input
+                    className="input"
+                    type="password"
+                    name="current_password"
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+                <div className="modal-actions full">
+                  <button className="btn btn-primary" type="submit">
+                    Confirmar identidade
+                  </button>
+                  <button
+                    className="btn btn-muted"
+                    type="submit"
+                    formAction="/minha-conta/sessoes/revogar"
+                  >
+                    Encerrar todas as sessões
+                  </button>
+                </div>
+              </form>
+            </section>
             <form
               method="post"
               action="/minha-conta"
@@ -105,12 +141,12 @@ export function AccountScreen({ data }: { data?: any }) {
                 />
               </label>
               <label className="field">
-                Nova senha
+                Nova senha (mínimo de 15 caracteres)
                 <input
                   className="input"
                   type="password"
                   name="password"
-                  minLength={8}
+                  minLength={15}
                   {...noPasswordManager}
                 />
               </label>

@@ -9,13 +9,14 @@ export function createAccountWorkflow({
   queryRows,
   invalidarPixConfig,
   toNullableString,
+  auditSecurity = async (..._args: any[]) => {},
 }) {
   return {
     profile: (input) =>
       workflowResult(input, async (reply) => {
         try {
           const user = await queryOne(
-            `SELECT id, name, username, email, password_hash AS passwordHash,
+            `SELECT id, name, username, email,
               pix_chave AS pixChave, pix_nome AS pixNome, pix_tipo AS pixTipo
          FROM users WHERE id = :id LIMIT 1`,
             { id: input.session.user.id },
@@ -40,6 +41,10 @@ export function createAccountWorkflow({
             { id, pixChave, pixNome, pixTipo },
           );
           invalidarPixConfig(id); // limpa o cache pra a mudanca valer na proxima mensagem
+          await auditSecurity('credentials.changed', {
+            userId: id,
+            reason: 'pix',
+          });
           input.flash(
             'success',
             'Chave PIX salva. Use a tag {pix} nas mensagens.',
@@ -77,8 +82,11 @@ export function createAccountWorkflow({
               return reply.redirect('/minha-conta');
             }
           }
-          if (!name || !username) {
-            input.flash('error', 'Nome e usuário são obrigatórios.');
+          if (!name || !username || name.length > 120 || username.length > 60) {
+            input.flash(
+              'error',
+              'Informe nome (até 120 caracteres) e usuário (até 60 caracteres).',
+            );
             return reply.redirect('/minha-conta');
           }
           const existingUser = await queryOne(
@@ -91,13 +99,13 @@ export function createAccountWorkflow({
           }
           if (password) {
             if (
-              password.length < 8 ||
+              Array.from(password).length < 15 ||
               Buffer.byteLength(password, 'utf8') > 72 ||
               password !== passwordConfirm
             ) {
               input.flash(
                 'error',
-                'A nova senha deve ter pelo menos 8 caracteres, no máximo 72 bytes e confirmação igual.',
+                'A nova senha deve ter pelo menos 15 caracteres, no máximo 72 bytes e confirmação igual.',
               );
               return reply.redirect('/minha-conta');
             }
@@ -114,6 +122,20 @@ export function createAccountWorkflow({
           }
           // Preserva isAdmin da sessao (senao o menu Admin some ao editar o perfil).
           input.session.user = { ...input.session.user, id, name, username };
+          if (password || username !== account.username)
+            await auditSecurity('credentials.changed', {
+              userId: id,
+              reason: password ? 'password' : 'username',
+            });
+          console.info(
+            JSON.stringify({
+              event: 'account.updated',
+              at: new Date().toISOString(),
+              userId: id,
+              passwordChanged: Boolean(password),
+              usernameChanged: username !== account.username,
+            }),
+          );
           input.flash('success', 'Conta atualizada.');
           return reply.redirect('/minha-conta');
         } catch (error) {
@@ -185,11 +207,14 @@ export function createAccountWorkflow({
             .replace(/[:.]/g, '-')
             .slice(0, 19);
           const filename = `gestor-backup-${userId}-${stamp}.json`;
+          reply.setHeader('Cache-Control', 'no-store');
+          reply.setHeader('Referrer-Policy', 'no-referrer');
           reply.setHeader('Content-Type', 'application/json; charset=utf-8');
           reply.setHeader(
             'Content-Disposition',
             `attachment; filename="${filename}"`,
           );
+          await auditSecurity('backup.exported', { userId, reason: 'account' });
           reply.send(
             JSON.stringify(
               {

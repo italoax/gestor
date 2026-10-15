@@ -1,12 +1,18 @@
-import { execute, queryRows } from './mysql.ts';
-import { ensureCobrancasEnviosSchema } from './cobrancasEnviosSchema.ts';
-let schemaReady = null;
+import { db } from './mysql.ts';
+import { migrateCobrancasEnviosSchema } from './cobrancasEnviosSchema.ts';
+import {
+  dataVault,
+  openStoredSecret,
+  sealStoredSecret,
+} from '../security/storedSecrets.ts';
+
 // Colunas novas da tabela `clientes` (adicionadas após o CREATE original).
 // Definidas aqui e aplicadas via ALTER só nas que faltam (compatível com MySQL e MariaDB,
 // que não compartilham o mesmo suporte a "ADD COLUMN IF NOT EXISTS").
 // Configurações de integração de pagamento ficam direto na tabela users (1:1).
 // Cada usuário do painel pluga a própria conta Mercado Pago.
 const usersNovasColunas = [
+  ['session_version', 'INT UNSIGNED NOT NULL DEFAULT 0'],
   ['mensagem_pix_confirmado_id', 'INT NULL'],
   // Preferência da renovação manual, compartilhada entre dispositivos da conta.
   ['mensagem_pagamento_padrao_id', 'INT NULL'],
@@ -104,6 +110,7 @@ const planosNovasColunas = [
 ];
 const mensagensNovasColunas = [['descricao', 'VARCHAR(255) NULL']];
 const pagamentosNovasColunas = [
+  ['external_reference', 'VARCHAR(200) NULL'],
   ['provider', "VARCHAR(40) NOT NULL DEFAULT 'mercadopago'"],
   ['renovacao_periodos', 'INT NOT NULL DEFAULT 1'],
   ['renovacao_dados', 'TEXT NULL'],
@@ -131,7 +138,7 @@ const cobrancasNovasColunas = [
   ['filtro_arquivados', 'VARCHAR(20) NULL'],
 ];
 // Aplica ALTER só nas colunas que faltam (compatível com MySQL e MariaDB).
-async function migrarColunas(tabela, colunas) {
+async function migrarColunas(tabela, colunas, { execute, queryRows }) {
   const existentes = await queryRows(
     `SELECT COLUMN_NAME FROM information_schema.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :tabela`,
@@ -148,6 +155,16 @@ async function migrarColunas(tabela, colunas) {
   }
 }
 const statements = [
+  `CREATE TABLE IF NOT EXISTS security_rate_limits (
+    bucket VARCHAR(40) NOT NULL, key_hash CHAR(64) NOT NULL, hits INT UNSIGNED NOT NULL DEFAULT 0,
+    reset_at BIGINT UNSIGNED NOT NULL, PRIMARY KEY (bucket, key_hash), KEY idx_security_rate_expiry (reset_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=ascii`,
+  `CREATE TABLE IF NOT EXISTS security_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    event VARCHAR(60) NOT NULL, severity VARCHAR(12) NOT NULL, user_id INT NULL,
+    source_hash CHAR(64) NULL, reason VARCHAR(60) NULL, count_value INT UNSIGNED NULL,
+    KEY idx_security_events_created (created_at), KEY idx_security_events_user (user_id, created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   `CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(120) NOT NULL,
@@ -158,6 +175,12 @@ const statements = [
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_username (username),
     UNIQUE KEY uq_users_email (email)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS auth_login_attempts (
+    user_id INT PRIMARY KEY,
+    attempts INT UNSIGNED NOT NULL DEFAULT 0,
+    reset_at BIGINT UNSIGNED NOT NULL,
+    CONSTRAINT fk_auth_login_attempts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS planos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -414,7 +437,7 @@ const statements = [
     cliente_id INT NOT NULL,
     valor DECIMAL(12,2) NOT NULL,
     descricao VARCHAR(255) NULL,
-    mp_payment_id VARCHAR(40) NULL,
+    mp_payment_id VARCHAR(200) NULL,
     mp_qr_text TEXT NULL,
     mp_qr_base64 MEDIUMTEXT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -498,66 +521,129 @@ const statements = [
     CONSTRAINT fk_integracoes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 ];
-export function ensureDatabaseSchema() {
-  if (!schemaReady) {
-    schemaReady = (async () => {
-      for (const statement of statements) {
-        await execute(statement);
-      }
-      await migrarColunas('clientes', clientesNovasColunas);
-      await migrarColunas('servidores', servidoresNovasColunas);
-      await migrarColunas('planos', planosNovasColunas);
-      await migrarColunas('mensagens', mensagensNovasColunas);
-      await migrarColunas('cobrancas', cobrancasNovasColunas);
-      await migrarColunas('whatsapp_status', whatsappStatusNovasColunas);
-      await migrarColunas('users', usersNovasColunas);
-      await migrarColunas('pagamentos', pagamentosNovasColunas);
-      await migrarColunas('notificacoes', [
-        ['pagamento_id', 'INT NULL UNIQUE'],
-      ]);
-      await ensureCobrancasEnviosSchema();
-      // Migração: se o usuário tinha mp_access_token na tabela users (esquema antigo)
-      // e ainda não tem config em payment_provider_configs, copia pra lá.
-      // Idempotente — INSERT IGNORE não duplica se a config já existir.
-      await execute(`INSERT IGNORE INTO payment_provider_configs (user_id, provider, credenciais, ativo)
-         SELECT id, 'mercadopago', JSON_OBJECT('access_token', mp_access_token), 1
-           FROM users
-          WHERE mp_access_token IS NOT NULL AND mp_access_token <> ''`).catch(
-        () => undefined,
+function schemaQueries(connection) {
+  return {
+    execute: async (sql, params = {}) =>
+      (await connection.execute(sql, params))[0],
+    queryRows: async (sql, params = {}) =>
+      (await connection.query(sql, params))[0],
+  };
+}
+export async function applyStructuralSchema(connection) {
+  const { execute, queryRows } = schemaQueries(connection);
+  for (const statement of statements) {
+    await execute(statement);
+  }
+  await migrarColunas('clientes', clientesNovasColunas, { execute, queryRows });
+  await migrarColunas('servidores', servidoresNovasColunas, {
+    execute,
+    queryRows,
+  });
+  await migrarColunas('planos', planosNovasColunas, { execute, queryRows });
+  await migrarColunas('mensagens', mensagensNovasColunas, {
+    execute,
+    queryRows,
+  });
+  await migrarColunas('cobrancas', cobrancasNovasColunas, {
+    execute,
+    queryRows,
+  });
+  await migrarColunas('whatsapp_status', whatsappStatusNovasColunas, {
+    execute,
+    queryRows,
+  });
+  await migrarColunas('users', usersNovasColunas, { execute, queryRows });
+  {
+    for (const [table, column, definition, minLength] of [
+      ['clientes', 'senha', 'TEXT NULL', 65535],
+      ['users', 'mp_access_token', 'TEXT NULL', 65535],
+      ['pagamentos', 'mp_payment_id', 'VARCHAR(200) NULL', 200],
+    ]) {
+      const info = await queryRows(
+        'SELECT CHARACTER_MAXIMUM_LENGTH AS maxLength FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column',
+        { table, column },
       );
-      // E define mercadopago como provider_padrao pra quem só tinha MP configurado.
-      await execute(`UPDATE users SET provider_padrao = 'mercadopago'
-          WHERE provider_padrao IS NULL AND mp_access_token IS NOT NULL AND mp_access_token <> ''`).catch(
-        () => undefined,
-      );
-      // Seed do plano padrao: um unico plano mensal. O front oferece seletor
-      // de duracao (1/3/6/12 meses) que multiplica valor e validade na hora
-      // de gerar o PIX.
-      const planosExistentes = await queryRows(
-        `SELECT COUNT(*) AS total FROM assinatura_planos`,
-      );
-      if (Number(planosExistentes[0]?.total ?? 0) === 0) {
-        await execute(`INSERT INTO assinatura_planos (nome, preco, descricao, dias_validade, ativo, ordem) VALUES
+      if (Number(info[0]?.maxLength) < Number(minLength))
+        await execute(
+          `ALTER TABLE \`${table}\` MODIFY \`${column}\` ${definition}`,
+        );
+    }
+  }
+  await migrarColunas('pagamentos', pagamentosNovasColunas, {
+    execute,
+    queryRows,
+  });
+  await migrarColunas('notificacoes', [['pagamento_id', 'INT NULL UNIQUE']], {
+    execute,
+    queryRows,
+  });
+  await migrateCobrancasEnviosSchema(connection);
+  await connection.query(
+    `CREATE TABLE IF NOT EXISTS sessions (session_id VARCHAR(128) COLLATE utf8mb4_bin NOT NULL PRIMARY KEY, expires INT UNSIGNED NOT NULL, data MEDIUMTEXT COLLATE utf8mb4_bin) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`,
+  );
+}
+// Somente o CLI explícito pode chamar transformações comerciais legadas.
+export async function applyLegacyBusinessMigration(connection) {
+  const { execute, queryRows } = schemaQueries(connection);
+  const legacyPayments = await queryRows(
+    "SELECT id, mp_access_token AS token FROM users WHERE mp_access_token IS NOT NULL AND mp_access_token <> ''",
+  );
+  for (const user of legacyPayments) {
+    const token = openStoredSecret(
+      String(user.token),
+      'payment-legacy',
+      user.id,
+    );
+    await execute(
+      "INSERT IGNORE INTO payment_provider_configs (user_id, provider, credenciais, ativo) VALUES (:id, 'mercadopago', :credentials, 1)",
+      {
+        id: user.id,
+        credentials: sealStoredSecret(
+          JSON.stringify({ access_token: token }),
+          'payment:mercadopago',
+          user.id,
+        ),
+      },
+    );
+  }
+  // E define mercadopago como provider_padrao pra quem só tinha MP configurado.
+  await execute(`UPDATE users SET provider_padrao = 'mercadopago'
+          WHERE provider_padrao IS NULL AND mp_access_token IS NOT NULL AND mp_access_token <> ''`);
+  // Seed do plano padrao: um unico plano mensal. O front oferece seletor
+  // de duracao (1/3/6/12 meses) que multiplica valor e validade na hora
+  // de gerar o PIX.
+  const planosExistentes = await queryRows(
+    `SELECT COUNT(*) AS total FROM assinatura_planos`,
+  );
+  if (Number(planosExistentes[0]?.total ?? 0) === 0) {
+    await execute(`INSERT INTO assinatura_planos (nome, preco, descricao, dias_validade, ativo, ordem) VALUES
              ('Acesso completo', 29.99, 'Acesso a todas as funcionalidades do painel.', 30, 1, 1)`);
-      } else {
-        // Migracao pra instalacoes que ja rodaram o seed antigo dos 3 planos:
-        // desativa Basico e Enterprise (mantem registros pra historico) e
-        // renomeia Pro pra "Acesso completo". So aplica se os nomes ainda
-        // estiverem como seedados originalmente (preserva customizacoes).
-        await execute(`UPDATE assinatura_planos SET ativo = 0
-            WHERE nome IN ('Basico', 'Enterprise')`).catch(() => undefined);
-        await execute(`UPDATE assinatura_planos SET nome = 'Acesso completo',
+  } else {
+    // Migracao pra instalacoes que ja rodaram o seed antigo dos 3 planos:
+    // desativa Basico e Enterprise (mantem registros pra historico) e
+    // renomeia Pro pra "Acesso completo". So aplica se os nomes ainda
+    // estiverem como seedados originalmente (preserva customizacoes).
+    await execute(`UPDATE assinatura_planos SET ativo = 0
+            WHERE nome IN ('Basico', 'Enterprise')`);
+    await execute(`UPDATE assinatura_planos SET nome = 'Acesso completo',
                   descricao = 'Acesso a todas as funcionalidades do painel.',
                   preco = 29.99
-            WHERE nome IN ('Pro', 'Acesso completo') AND preco IN (50.00, 30.00)`).catch(
-          () => undefined,
-        );
-      }
-      // Migracao: usuarios existentes sem vencimento ganham 3 dias de trial
-      // a partir de hoje (so quem ainda nao tem nada setado).
-      await execute(`UPDATE users SET assinatura_vencimento = DATE_ADD(CURDATE(), INTERVAL 3 DAY)
-          WHERE assinatura_vencimento IS NULL`).catch(() => undefined);
-    })();
+            WHERE nome IN ('Pro', 'Acesso completo') AND preco IN (50.00, 30.00)`);
   }
-  return schemaReady;
+  // Migracao: usuarios existentes sem vencimento ganham 3 dias de trial
+  // a partir de hoje (so quem ainda nao tem nada setado).
+  await execute(`UPDATE users SET assinatura_vencimento = DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+          WHERE assinatura_vencimento IS NULL`);
 }
+
+export const structuralDefinition = JSON.stringify([
+  statements,
+  clientesNovasColunas,
+  servidoresNovasColunas,
+  planosNovasColunas,
+  mensagensNovasColunas,
+  cobrancasNovasColunas,
+  whatsappStatusNovasColunas,
+  usersNovasColunas,
+  pagamentosNovasColunas,
+]);

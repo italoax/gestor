@@ -1,5 +1,6 @@
 // Fluxo de negocio compartilhado pelos controllers Nest e pela entrada Express.
 // As dependencias sao injetadas; importar este modulo nao abre banco ou servicos.
+import { protectIptvPassword } from '../security/storedSecrets.ts';
 export function createClientMutationWorkflow({
   crypto,
   execute,
@@ -136,7 +137,7 @@ export function createClientMutationWorkflow({
                   {
                     apiUrl: integ.apiUrl,
                     username: integ.username,
-                    password: decryptSecret(integ.senhaEnc || ''),
+                    password: decryptSecret(integ.senhaEnc || '', userId),
                   },
                   item.idPainel,
                   planoMap.packageId,
@@ -424,7 +425,7 @@ export function createClientMutationWorkflow({
                 {
                   apiUrl: integ.apiUrl,
                   username: integ.username,
-                  password: decryptSecret(String(integ.senhaEnc ?? '')),
+                  password: decryptSecret(String(integ.senhaEnc ?? ''), userId),
                 },
                 customerId,
                 packageId,
@@ -512,8 +513,20 @@ export function createClientMutationWorkflow({
       }
       if (action === 'send_whatsapp') {
         const sessaoEscolhida = String(body.dispositivo ?? '').trim();
+        const dispositivo = sessaoEscolhida
+          ? (
+              await queryRows(
+                'SELECT sessao FROM whatsapp_devices WHERE sessao = :sessao AND user_id = :userId LIMIT 1',
+                { sessao: sessaoEscolhida, userId },
+              )
+            )[0]
+          : null;
+        if (sessaoEscolhida && !dispositivo) {
+          flash('modal-error', 'Dispositivo indisponível para esta conta.');
+          return redirect('/clientes');
+        }
         const sessao =
-          sessaoEscolhida || (await sessaoWhatsappPrincipal(userId));
+          dispositivo?.sessao || (await sessaoWhatsappPrincipal(userId));
         if (!sessao) {
           flash(
             'modal-error',
@@ -573,6 +586,10 @@ export function createClientMutationWorkflow({
         return redirect('/clientes');
       }
       const vencimento = normalizeDateInput(body.vencimento);
+      if (String(body.senha ?? '').length > 190) {
+        flash('modal-error', 'A senha IPTV deve ter no máximo 190 caracteres.');
+        return redirect('/clientes');
+      }
       const pagoEm = normalizeDateInput(body.pago_em);
       const data: Record<string, any> = {
         id,
@@ -593,7 +610,7 @@ export function createClientMutationWorkflow({
         custoPagamento: toNumber(body.custo_pagamento),
         observacaoPagamento: toNullableString(body.observacao_pagamento),
         // Campos novos (aba Dados/Plano do modelo)
-        senha: toNullableString(body.senha),
+        senha: protectIptvPassword(toNullableString(body.senha), userId),
         idPainel: toNullableString(body.id_painel),
         email: toNullableString(body.email),
         captacao: toNullableString(body.captacao),
@@ -677,7 +694,7 @@ export function createClientMutationWorkflow({
              forma_pagamento = COALESCE(:formaPagamento, forma_pagamento),
              custo_pagamento = COALESCE(:custoPagamentoOrNull, custo_pagamento),
              observacao_pagamento = COALESCE(:observacaoPagamento, observacao_pagamento),
-             senha = :senha, id_painel = COALESCE(:idPainel, id_painel), email = COALESCE(:email, email), captacao = :captacao,
+             senha = IF(:limparSenha = 1, NULL, COALESCE(:senha, senha)), id_painel = COALESCE(:idPainel, id_painel), email = COALESCE(:email, email), captacao = :captacao,
              telefone_secundario = :telefoneSecundario, observacoes = :observacoes, data_inicio = :dataInicio,
              hora_vencimento = :horaVencimento,
              pontos_fidelidade = COALESCE(:pontosFidelidadeOrNull, pontos_fidelidade),
@@ -686,6 +703,7 @@ export function createClientMutationWorkflow({
           WHERE id = :id AND user_id = :userId`,
           {
             ...data,
+            limparSenha: body.limpar_senha === '1' ? 1 : 0,
             planoAdicional,
             pontosFidelidadeOrNull:
               body.pontos_fidelidade === undefined

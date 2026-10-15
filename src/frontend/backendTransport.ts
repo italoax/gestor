@@ -96,7 +96,11 @@ export function proxyBackend(
   backendUrl: string,
   socketPath: string,
 ) {
-  const url = new URL(request.url || '/', backendUrl);
+  // Um request-target absoluto nunca pode trocar o destino interno por um host externo.
+  const incoming = new URL(request.url || '/', 'http://gestor.local');
+  const url = new URL(backendUrl);
+  url.pathname = incoming.pathname;
+  url.search = incoming.search;
   const { client, agent } = transport(url);
   const headers = { ...request.headers };
   delete headers.connection;

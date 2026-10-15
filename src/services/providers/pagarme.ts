@@ -100,7 +100,9 @@ export const pagarMeProvider = {
     const j = await r.json();
     if (!r.ok) throw new Error(`Pagar.me: ${j.message || `HTTP ${r.status}`}`);
     return {
-      id: paymentId,
+      id: String(j.id ?? ''),
+      currency: j.currency || 'BRL',
+      externalReference: j.order?.code,
       status: String(j.status ?? 'unknown').toLowerCase(),
       amount: Number(j.amount ?? 0) / 100,
       pagoEm: j.paid_at ?? null,

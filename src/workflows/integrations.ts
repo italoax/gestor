@@ -3,6 +3,7 @@ import {
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
 export function createIntegrationsWorkflow({
+  auditSecurity = async (..._args: any[]) => {},
   execute,
   queryOne,
   queryRows,
@@ -41,6 +42,10 @@ export function createIntegrationsWorkflow({
               { id, userId },
             );
             input.flash('success', 'Integração removida.');
+            await auditSecurity('credentials.changed', {
+              userId,
+              reason: 'integration_removed',
+            });
             return reply.redirect('/integracoes');
           }
           // Testa a conexão: loga no painel com as credenciais salvas. Mostra
@@ -55,7 +60,7 @@ export function createIntegrationsWorkflow({
               input.flash('error', 'Integração não encontrada.');
               return reply.redirect('/integracoes');
             }
-            const senha = decryptSecret(String(row.senhaEnc ?? ''));
+            const senha = decryptSecret(String(row.senhaEnc ?? ''), userId);
             const result = await sigmaLogin({
               apiUrl: row.apiUrl,
               username: row.username,
@@ -100,7 +105,7 @@ export function createIntegrationsWorkflow({
                   nome,
                   apiUrl,
                   username,
-                  senhaEnc: encryptSecret(senha),
+                  senhaEnc: encryptSecret(senha, userId),
                   status,
                   id,
                   userId,
@@ -115,6 +120,10 @@ export function createIntegrationsWorkflow({
               );
             }
             input.flash('success', 'Integração atualizada.');
+            await auditSecurity('credentials.changed', {
+              userId,
+              reason: 'integration',
+            });
             return reply.redirect('/integracoes');
           }
           // create_integracao (padrão)
@@ -131,11 +140,15 @@ export function createIntegrationsWorkflow({
               nome,
               apiUrl,
               username,
-              senhaEnc: encryptSecret(senha),
+              senhaEnc: encryptSecret(senha, userId),
               status,
             },
           );
           input.flash('success', 'Integração adicionada.');
+          await auditSecurity('credentials.changed', {
+            userId,
+            reason: 'integration',
+          });
           return reply.redirect('/integracoes');
         } catch (error) {
           raiseWorkflowError(error);

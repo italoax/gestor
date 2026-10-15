@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
+import { contentSecurityPolicy } from '../src/security/contentSecurityPolicy.ts';
+import { verifiedOrigin } from '../src/security/proxyTrust.ts';
 import {
   isSitePage,
   isUnknownPageNavigation,
 } from '../src/frontend/pageRoutes.ts';
 
 export function proxy(request) {
+  const origin = verifiedOrigin(request.headers, process.env.SESSION_SECRET);
+  const nonce = randomBytes(18).toString('base64');
+  const csp = contentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV !== 'production',
+  );
   if (
     isUnknownPageNavigation(
       request.nextUrl.pathname,
@@ -29,22 +38,40 @@ export function proxy(request) {
     destination.pathname = request.nextUrl.pathname;
     destination.search = request.nextUrl.search;
     const headers = new Headers(request.headers);
+    headers.delete('x-forwarded-for');
+    headers.delete('x-forwarded-proto');
+    if (origin) {
+      headers.set('x-forwarded-for', origin.ip);
+      headers.set('x-forwarded-proto', origin.protocol);
+    }
+    headers.delete('x-gestor-origin-signature');
     headers.delete('x-gestor-page');
     headers.delete('x-gestor-page-url');
     headers.set(
       'x-forwarded-proto',
-      request.headers.get('x-forwarded-proto') ||
-        request.nextUrl.protocol.slice(0, -1),
+      origin?.protocol ||
+        new URL(process.env.APP_URL || request.url).protocol.slice(0, -1),
     );
     return NextResponse.rewrite(destination, { request: { headers } });
   }
   const headers = new Headers(request.headers);
+  headers.delete('x-forwarded-for');
+  if (origin) headers.set('x-forwarded-for', origin.ip);
+  headers.set(
+    'x-forwarded-proto',
+    origin?.protocol ||
+      new URL(process.env.APP_URL || request.url).protocol.slice(0, -1),
+  );
+  headers.delete('x-gestor-origin-signature');
+  headers.set('x-nonce', nonce);
+  headers.set('Content-Security-Policy', csp);
   headers.delete('x-gestor-page');
   headers.set(
     'x-gestor-page-url',
     request.nextUrl.pathname + request.nextUrl.search,
   );
   const response = NextResponse.next({ request: { headers } });
+  response.headers.set('Content-Security-Policy', csp);
   response.headers.set('Cache-Control', 'private, no-store');
   if (request.nextUrl.pathname !== '/')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');

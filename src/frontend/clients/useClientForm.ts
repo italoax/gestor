@@ -154,7 +154,6 @@ export function useClientForm() {
       valor: 'valor',
       telas: 'telas',
       forma_pagamento: 'formaPagamento',
-      senha: 'senha',
       id_painel: 'idPainel',
       email: 'email',
       captacao: 'captacao',

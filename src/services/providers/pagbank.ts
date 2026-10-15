@@ -102,7 +102,9 @@ export const pagBankProvider = {
     );
     const charge = order.charges?.[0];
     return {
-      id: paymentId,
+      id: String(order.id ?? ''),
+      currency: charge?.amount?.currency,
+      externalReference: order.reference_id,
       status: String(charge?.status ?? 'unknown').toLowerCase(),
       amount: Number(charge?.amount?.value ?? 0) / 100,
       pagoEm: charge?.paid_at ?? null,

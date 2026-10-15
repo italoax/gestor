@@ -220,7 +220,7 @@
       </main>
       <footer class="portal-footer">ixstreaming · Área do cliente</footer>
     </div>
-    <script src="<%= assetUrl('/assets/js/portal-login.js') %>" defer></script>
-    <script src="<%= assetUrl('/assets/js/portal-pix.js') %>" defer></script>
+    <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/portal-login.js') %>" defer></script>
+    <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/portal-pix.js') %>" defer></script>
   </body>
 </html>

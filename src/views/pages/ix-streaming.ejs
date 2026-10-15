@@ -29,7 +29,7 @@
     />
     <meta property="og:image:alt" content="Logo IX Streaming" />
     <meta name="twitter:card" content="summary" />
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"IX Streaming","alternateName":"IX TV","url":"https://ixstreaming.com.br/","logo":"https://ixstreaming.com.br/assets/images/ixlogo.png"}</script>
+    <script nonce="<%= locals.cspNonce || '' %>" type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"IX Streaming","alternateName":"IX TV","url":"https://ixstreaming.com.br/","logo":"https://ixstreaming.com.br/assets/images/ixlogo.png"}</script>
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/ix-streaming.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/visual-effects.css') %>" />
@@ -618,7 +618,7 @@
       </div>
       <iframe title="Área do cliente ixstreaming" data-client-frame></iframe>
     </dialog>
-    <script src="<%= assetUrl('/assets/js/landing-portal.js') %>" defer></script>
-    <script src="<%= assetUrl('/assets/js/visual-effects.js') %>" defer></script>
+    <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/landing-portal.js') %>" defer></script>
+    <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/visual-effects.js') %>" defer></script>
   </body>
 </html>

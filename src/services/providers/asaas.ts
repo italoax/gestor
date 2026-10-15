@@ -35,7 +35,7 @@ async function authedJson(token, url, init) {
 // pagador por customer — sem isso, vira "cliente avulso" e fica difícil filtrar.
 async function ensureCustomer(token, base, params) {
   // Tenta achar customer existente pelo externalReference. Asaas suporta o filtro.
-  const extRef = params.externalReference || '';
+  const extRef = params.customerReference || params.externalReference || '';
   if (extRef) {
     const found = await authedJson(
       token,
@@ -107,7 +107,9 @@ export const asaasProvider = {
       },
     );
     return {
-      id: String(j.id ?? paymentId),
+      id: String(j.id ?? ''),
+      currency: j.currency || 'BRL',
+      externalReference: j.externalReference,
       status: String(j.status ?? 'unknown').toLowerCase(),
       amount: Number(j.value ?? 0),
       pagoEm: j.paymentDate || j.confirmedDate || j.clientPaymentDate || null,

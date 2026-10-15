@@ -3,6 +3,37 @@
     <h2 class="section-title"> Minha Conta </h2>
   </div>
   <div class="card account-card">
+    <section id="seguranca-sessoes"
+      ><h3>Seguran?a e sess?es</h3
+      ><p
+        >Confirme sua senha para opera??es sens?veis ou encerre todos os
+        acessos.</p
+      >
+      <form
+        method="post"
+        action="/minha-conta/confirmar"
+        class="form-grid account-form-grid"
+        ><%- csrfInput %>
+        <label class="field full"
+          >Senha atual<input
+            class="input"
+            type="password"
+            name="current_password"
+            autocomplete="current-password"
+            required
+        /></label>
+        <div class="modal-actions full"
+          ><button class="btn btn-primary" type="submit"
+            >Confirmar identidade</button
+          ><button
+            class="btn btn-muted"
+            type="submit"
+            formaction="/minha-conta/sessoes/revogar"
+            >Encerrar todas as sess?es</button
+          ></div
+        >
+      </form>
+    </section>
     <form
       method="post"
       class="form-grid account-form-grid"
@@ -42,12 +73,12 @@
         />
       </label>
       <label class="field">
-        Nova senha
+        Nova senha (mínimo de 15 caracteres)
         <input
           class="input"
           type="password"
           name="password"
-          minlength="8"
+          minlength="15"
           autocomplete="off"
           data-1p-ignore
           data-lpignore="true"
@@ -150,7 +181,7 @@
         >
       </div>
     </div>
-    <script>
+    <script nonce="<%= locals.cspNonce || '' %>">
     (function () {
       var msg = document.getElementById('push-state-msg');
       var btnOn = document.getElementById('btn-push-on');

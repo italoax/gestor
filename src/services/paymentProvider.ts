@@ -36,6 +36,10 @@ import { openPixProvider } from './providers/openpix.ts';
 import { pagBankProvider } from './providers/pagbank.ts';
 import { pagarMeProvider } from './providers/pagarme.ts';
 import { queryRows, queryOne, execute } from '../db/mysql.ts';
+import {
+  openStoredSecret,
+  sealStoredSecret,
+} from '../security/storedSecrets.ts';
 // Registry. Adicionar provedor = importar e colocar aqui.
 // `as PaymentProvider` no pagbank/pagarme porque o `name` está tipado como `never`
 // (workaround pra cada arquivo não precisar conhecer a união completa).
@@ -62,9 +66,14 @@ export async function carregarConfigsDoUsuario(userId) {
     { userId },
   );
   return rows.map((r) => {
+    const json = openStoredSecret(
+      String(r.credenciais || '{}'),
+      `payment:${r.provider}`,
+      userId,
+    );
     let creds: Record<string, any> = {};
     try {
-      creds = JSON.parse(r.credenciais || '{}');
+      creds = JSON.parse(json);
     } catch {
       /* JSON corrompido — trata como vazio */
     }
@@ -79,7 +88,11 @@ export async function salvarConfig(userId, provider, credenciais, ativo) {
     {
       userId,
       provider,
-      credenciais: JSON.stringify(credenciais),
+      credenciais: sealStoredSecret(
+        JSON.stringify(credenciais),
+        `payment:${provider}`,
+        userId,
+      ),
       ativo: ativo ? 1 : 0,
     },
   );

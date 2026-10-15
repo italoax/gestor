@@ -326,7 +326,6 @@ export function ClientRow({
               data-telas={c.telas}
               data-creditos={c.creditosGastos || 0}
               data-forma-pagamento={c.formaPagamento || ''}
-              data-senha={c.senha || ''}
               data-id-painel={c.idPainel || ''}
               data-email={c.email || ''}
               data-captacao={c.captacao || ''}

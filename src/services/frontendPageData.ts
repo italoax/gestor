@@ -197,10 +197,12 @@ export function nativePageData(
               data.credPorProvider?.[provider] &&
               Object.keys(data.credPorProvider[provider]).length,
             ),
-            // Estes campos já eram preenchidos na tela EJS do proprietário autenticado.
-            credentials: pick(
-              data.credPorProvider?.[provider],
-              paymentProviders[provider].fields.map(([name]) => name),
+            credentials: pick(data.credPorProvider?.[provider], ['ambiente']),
+            configuredFields: Object.fromEntries(
+              paymentProviders[provider].fields.map(([name]) => [
+                name,
+                Boolean(data.credPorProvider?.[provider]?.[name]),
+              ]),
             ),
           })),
       };

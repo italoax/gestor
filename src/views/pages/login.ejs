@@ -88,4 +88,4 @@
     </div>
   </section>
 </main>
-<script src="<%= assetUrl('/assets/js/login.js') %>" defer></script>
+<script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/login.js') %>" defer></script>

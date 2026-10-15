@@ -1,4 +1,5 @@
 import { queryRows, execute, queryOne } from '../db/mysql.ts';
+import { recordSecurityEvent } from '../security/runtimeSecurity.ts';
 import { appTodayIso } from '../services/dates.ts';
 import { resumirAcessos } from '../services/dashboardAcessos.ts';
 import {
@@ -82,6 +83,7 @@ export function createDefaultFeatures() {
       ufFromTelefone,
     }),
     account: createAccountWorkflow({
+      auditSecurity: recordSecurityEvent,
       bcrypt,
       execute,
       queryOne,
@@ -130,6 +132,7 @@ export function createDefaultFeatures() {
       statusHistoryData,
     }),
     'payment-settings': createPaymentSettingsWorkflow({
+      auditSecurity: recordSecurityEvent,
       execute,
       queryOne,
       queryRows,
@@ -140,6 +143,7 @@ export function createDefaultFeatures() {
       PROVIDER_NOMES,
     }),
     integrations: createIntegrationsWorkflow({
+      auditSecurity: recordSecurityEvent,
       execute,
       queryOne,
       queryRows,

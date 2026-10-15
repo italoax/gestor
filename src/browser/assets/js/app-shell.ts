@@ -20,6 +20,26 @@ window.__gestorInitShell = function () {
       ...(typeof options === 'boolean' ? { capture: options } : options),
       signal: lifecycle.signal,
     });
+  on(document, 'change', (event) => {
+    if (event.target?.matches('[data-submit-on-change]'))
+      event.target.form?.requestSubmit();
+  });
+  const confirmAction = (event) => {
+    if (event.gestorConfirmationHandled) return;
+    const element =
+      event.type === 'submit'
+        ? event.target
+        : event.target?.closest('[data-confirm]');
+    if (
+      !element?.dataset.confirm ||
+      (event.type === 'click' && element.tagName === 'FORM')
+    )
+      return;
+    event.gestorConfirmationHandled = true;
+    if (!window.confirm(element.dataset.confirm)) event.preventDefault();
+  };
+  on(document, 'click', confirmAction);
+  on(document, 'submit', confirmAction);
   const setTimeout = (callback: () => void, delay: number) => {
     if (lifecycle.signal.aborted) return;
     const timer = window.setTimeout(() => {

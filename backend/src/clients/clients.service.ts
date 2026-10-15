@@ -31,7 +31,7 @@ export class ClientsService {
                 creditos_gastos AS creditosGastos, pago_em AS pagoEm, valor_pago AS valorPago,
                 forma_pagamento AS formaPagamento, custo_pagamento AS custoPagamento,
                 observacao_pagamento AS observacaoPagamento,
-                senha, id_painel AS idPainel, email, captacao, aniversario, link_m3u AS linkM3u,
+                id_painel AS idPainel, email, captacao, aniversario, link_m3u AS linkM3u,
                 time_cliente AS timeCliente, telefone_secundario AS telefoneSecundario, observacoes,
                 data_inicio AS dataInicio, hora_vencimento AS horaVencimento,
                 pontos_fidelidade AS pontosFidelidade,

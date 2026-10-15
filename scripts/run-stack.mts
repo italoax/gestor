@@ -12,7 +12,14 @@ import { createInternalSockets } from '../src/frontend/internalSockets.ts';
 import { requestInternal } from '../src/frontend/backendTransport.ts';
 
 export async function runStack(listener?: PublicListener) {
-  dotenv.config({ quiet: true });
+  const configuration = dotenv.config({
+    quiet: true,
+    path: process.env.GESTOR_ENV_FILE || '.env',
+  });
+  if (process.env.GESTOR_ENV_FILE && configuration.error)
+    throw new Error(
+      'Não foi possível carregar a configuração explícita do ambiente.',
+    );
   const root = projectRoot;
   const development = process.argv.includes('--dev');
   const sockets = development ? undefined : createInternalSockets();
@@ -41,7 +48,7 @@ export async function runStack(listener?: PublicListener) {
     NEXT_BACKEND_URL: backendUrl,
     WORKER_URL: `http://127.0.0.1:${workerPort}`,
     WORKER_PORT: String(workerPort),
-    RUN_AUTOMATIONS: 'false',
+    RUN_AUTOMATIONS: process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false',
     NEXT_FRONTEND_ENABLED: 'true',
     BACKEND_SOCKET: sockets?.backend,
     WORKER_SOCKET: sockets?.worker,
@@ -258,6 +265,10 @@ export async function runStack(listener?: PublicListener) {
                 'backend/src/worker.ts',
               ]
             : ['dist/runtime/backend/src/worker.js'],
+          {
+            RUN_AUTOMATIONS:
+              process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false',
+          },
         );
         if (!development) {
           const endpoint = await waitForEndpoint(worker, 'Worker');

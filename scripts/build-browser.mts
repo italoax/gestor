@@ -3,8 +3,26 @@ import path from 'node:path';
 import { build, context, type BuildOptions } from 'esbuild';
 import { projectRoot } from '../src/config/paths.ts';
 import { writeReleaseNotes } from './release-notes.mts';
+import { copyFileSync, mkdirSync } from 'node:fs';
 
 writeReleaseNotes();
+const vendorDirectory = path.join(projectRoot, 'public/assets/js/vendor');
+mkdirSync(path.join(vendorDirectory, 'maps'), { recursive: true });
+copyFileSync(
+  path.join(projectRoot, 'node_modules/chart.js/dist/chart.umd.js'),
+  path.join(vendorDirectory, 'chart.umd.js'),
+);
+for (const map of ['brazil', 'world'])
+  await build({
+    stdin: {
+      contents: `import map from '@svg-maps/${map}'; export default map;`,
+      resolveDir: projectRoot,
+    },
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    outfile: path.join(vendorDirectory, 'maps', `${map}.js`),
+  });
 
 function sources(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

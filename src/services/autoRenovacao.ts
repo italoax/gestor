@@ -1,3 +1,4 @@
+import { safeError } from '../security/safeError.ts';
 import { withTransaction, queryOne } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
 import { appNowSql, appTodayIso } from './dates.ts';
@@ -17,7 +18,7 @@ export async function verificarCreditosServidor(
   _depois,
 ) {
   await sincronizarAlertasCreditos(userId).catch((error) =>
-    console.warn('[creditos] alerta falhou:', error),
+    console.warn('[creditos] alerta falhou:', safeError(error)),
   );
 }
 // O plano conta em meses de calendário? Aceita "Mes", "Mês" e "Meses" — o form
@@ -281,7 +282,7 @@ export async function renovarClienteAutomatico(
       if (sessao?.sessao) {
         const result = await enviarMensagemModeloComRetry(
           sessao.sessao,
-          { ...cliente, vencimento: novoVencIso },
+          { ...cliente, userId, vencimento: novoVencIso },
           {
             mensagem: msg.mensagem,
             mediaTipo: msg.mediaTipo,

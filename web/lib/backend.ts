@@ -11,6 +11,11 @@ export async function loadClientsPage(archived) {
       headers: {
         cookie: requestHeaders.get('cookie') || '',
         Accept: 'application/json',
+        'x-gestor-page': '1',
+        ...(requestHeaders.get('x-forwarded-for')
+          ? { 'x-forwarded-for': requestHeaders.get('x-forwarded-for') }
+          : {}),
+        'x-forwarded-proto': requestHeaders.get('x-forwarded-proto') || 'http',
       },
       signal: AbortSignal.timeout(15000),
     },

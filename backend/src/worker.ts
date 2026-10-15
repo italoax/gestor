@@ -1,7 +1,10 @@
+import { safeError } from '../../src/security/safeError.ts';
+import { startEnabledAutomations } from '../../src/security/automationPolicy.ts';
 import express from 'express';
 import { createWorker } from './create-worker.ts';
 import { env } from '../../src/config/env.ts';
 import { db } from '../../src/db/mysql.ts';
+import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
 import { createDefaultLocalCronWorkflow } from '../../src/workflows/defaults.ts';
 import {
   startCobrancasCron,
@@ -23,13 +26,11 @@ try {
     handleError: createErrorHandler(env.nodeEnv),
     initialize: async () => {
       await db.query('SELECT 1');
+      if (!env.localMode) await verifyDatabaseSchema(db);
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
-      if (!env.localMode) {
-        startCobrancasCron();
-        startStatusCron();
-      }
+      startEnabledAutomations(env, startCobrancasCron, startStatusCron);
     },
     async stopAutomations() {
       await Promise.all([stopCobrancasCron(), stopStatusCron()]);
@@ -51,6 +52,11 @@ try {
       ? '[Worker] Automações prontas no canal interno.'
       : `[Worker] Automações prontas na porta ${address?.port ?? env.workerPort}.`,
   );
+  console.log(
+    env.runAutomations && !env.localMode
+      ? '[Worker] Automações explicitamente habilitadas.'
+      : '[Worker] Automações desativadas; nenhum timer iniciado.',
+  );
 } catch (error) {
   const databaseLimit =
     (error as { code?: string })?.code === 'ER_USER_LIMIT_REACHED';
@@ -58,7 +64,7 @@ try {
     console.error(
       '[Worker] MySQL atingiu um limite de recursos. As automações não puderam iniciar; verifique a cota na hospedagem.',
     );
-  else console.error('Erro ao iniciar o worker NestJS:', error);
+  else console.error('Erro ao iniciar o worker NestJS:', safeError(error));
   if (worker) await worker.close();
   else await db.end();
   process.exit(databaseLimit ? 78 : 1);

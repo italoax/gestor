@@ -1,3 +1,4 @@
+import { safeError } from '../security/safeError.ts';
 import {
   createServer,
   type IncomingMessage,
@@ -19,7 +20,10 @@ export function openPublicServer(port: number, hostname = '0.0.0.0') {
     void Promise.resolve()
       .then(() => handler!(request, response))
       .catch((error) => {
-        console.error('Erro ao atender a requisição do site:', error);
+        console.error(
+          'Erro ao atender a requisição do site:',
+          safeError(error),
+        );
         if (response.headersSent) response.destroy();
         else {
           response.statusCode = 500;

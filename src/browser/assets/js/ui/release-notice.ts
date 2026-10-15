@@ -66,12 +66,30 @@ export async function initReleaseNotice(
         'release-notice-meta',
       );
       if (typeof entry.description === 'string' && entry.description.trim()) {
-        appendText(
-          parent,
-          'div',
-          entry.description,
-          'release-notice-description',
-        );
+        const description = document.createElement('div');
+        description.className = 'release-notice-description';
+        for (const block of entry.description.trim().split(/\r?\n\s*\r?\n/)) {
+          const section = document.createElement('section');
+          let list: HTMLUListElement | null = null;
+          const lines = block.split(/\r?\n/);
+          for (const [index, line] of lines.entries()) {
+            const item = line.match(/^\s*[-*•]\s+(.+)$/);
+            if (item) {
+              if (!list) {
+                list = document.createElement('ul');
+                section.append(list);
+              }
+              appendText(list, 'li', item[1]);
+            } else {
+              list = null;
+              const heading =
+                index === 0 && /^\s*[-*•]\s+/.test(lines[1] || '');
+              appendText(section, heading ? 'h5' : 'p', line);
+            }
+          }
+          description.append(section);
+        }
+        parent.append(description);
       }
     };
     const current = dialog.querySelector('[data-release-current]');
@@ -87,29 +105,6 @@ export async function initReleaseNotice(
       const list = document.createElement('ul');
       for (const change of changes.slice(1)) appendText(list, 'li', change);
       if (list.children.length) current.append(list);
-    }
-    const previous = Array.isArray(release.history)
-      ? release.history
-          .slice(1)
-          .filter((entry: any) => entry && typeof entry.title === 'string')
-      : [];
-    if (previous.length) {
-      const history = document.createElement('section');
-      history.className = 'release-notice-history';
-      appendText(history, 'h4', 'Atualizações anteriores');
-      appendText(
-        history,
-        'p',
-        'Abra cada atualização para conferir todos os detalhes.',
-        'release-notice-meta',
-      );
-      for (const entry of previous) {
-        const details = document.createElement('details');
-        appendText(details, 'summary', entry.title);
-        appendDetails(details, entry);
-        history.append(details);
-      }
-      dialog.querySelector('.modal-body').append(history);
     }
     let trigger: HTMLElement | null = null;
     let timer: number | undefined;

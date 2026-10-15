@@ -7,6 +7,7 @@ export interface WhatsappResult {
 }
 
 import { env } from '../config/env.ts';
+import { revealIptvPassword } from '../security/storedSecrets.ts';
 import { normalizeBrazilPhone } from '../shared/index.ts';
 import { tokenDoCliente, urlPagamentoDoCliente } from './linkCliente.ts';
 import { caminhoPagamento } from './linkPagamentoUrl.ts';
@@ -180,7 +181,7 @@ export function montarMensagem(template, cliente) {
     primeiro_nome: nomeCompleto.split(/\s+/)[0] ?? '',
     cliente: nomeCompleto,
     saudacao,
-    senha: String(cliente.senha ?? ''),
+    senha: revealIptvPassword(cliente.senha, cliente.user_id ?? cliente.userId),
     vencimento,
     valor,
     plano: String(cliente.plano ?? ''),

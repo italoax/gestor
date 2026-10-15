@@ -22,8 +22,12 @@ export class PaymentsService {
   status(token: string, paymentId: string) {
     return this.workflow.status(token, paymentId);
   }
-  webhook(provider: string, body: Record<string, unknown>) {
-    return this.workflow.webhook(provider, body);
+  webhook(
+    provider: string,
+    body: Record<string, unknown>,
+    request?: import('../../../src/security/paymentWebhooks.ts').WebhookRequest,
+  ) {
+    return this.workflow.webhook(provider, body, request);
   }
   confirm(userId: number, paymentId: string) {
     if (!this.runtime.confirmPayment)

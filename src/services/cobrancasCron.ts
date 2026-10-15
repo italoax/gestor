@@ -1,3 +1,4 @@
+import { automationsEnabled } from '../security/automationPolicy.ts';
 import type { RowDataPacket } from 'mysql2/promise';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { queryRows, queryOne, execute, withTransaction } from '../db/mysql.ts';
@@ -58,7 +59,8 @@ function delayEntreEnvios(minOverride, maxOverride) {
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
 }
 export function startCobrancasCron() {
-  if (env.localMode || shutdownSignal.signal.aborted || timer) return;
+  if (!automationsEnabled(env) || shutdownSignal.signal.aborted || timer)
+    return;
   timer = setInterval(() => {
     void executarCobrancasAutomaticas().catch((error) =>
       logger.error('erro no cron de cobranças', error),
@@ -66,7 +68,8 @@ export function startCobrancasCron() {
   }, 60000);
 }
 export async function executarCobrancasAutomaticas() {
-  if (env.localMode || shutdownSignal.signal.aborted) return { skipped: true };
+  if (!automationsEnabled(env) || shutdownSignal.signal.aborted)
+    return { skipped: true };
   // Lock unificado: cron interno e endpoint /__cron/cobrancas chamam essa função;
   // sem o check aqui, os dois podiam rodar ao mesmo tempo e duplicar envios.
   if (cronRodando) return { skipped: true };

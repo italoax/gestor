@@ -16,6 +16,9 @@ import {
 } from './middleware/frontendPages.ts';
 import { installNativeRouteMiddleware } from './middleware/nativeRoutes.ts';
 import { exposeFrontendAction } from './middleware/frontendActions.ts';
+import { createSessionSecurity } from './middleware/sessionSecurity.ts';
+import { queryOne } from './db/mysql.ts';
+import { recordSecurityEvent } from './security/runtimeSecurity.ts';
 
 // Monta o aplicativo sem abrir a porta HTTP nem iniciar automações.
 // O Nest controla a inicialização e o encerramento do processo.
@@ -23,6 +26,7 @@ export function createApplication({
   runtimeEnv = env,
   sessionStoreFactory,
   nativeRouteMiddleware = installNativeRouteMiddleware,
+  sessionUserLookup = queryOne,
 }: Record<string, any> = {}) {
   const app = express();
   const development = runtimeEnv.nodeEnv === 'development';
@@ -37,6 +41,14 @@ export function createApplication({
   const routes = express.Router();
 
   routes.use(createSessionMiddleware(runtimeEnv, sessionStoreFactory));
+  routes.use(
+    createSessionSecurity(
+      runtimeEnv,
+      sessionUserLookup,
+      Date.now,
+      recordSecurityEvent,
+    ),
+  );
   routes.use(prepareFrontendSession);
   routes.use(flash());
   routes.use(exposeFrontendPage);

@@ -3,6 +3,7 @@ import {
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
 import { requestInternal } from '../frontend/backendTransport.ts';
+import { automationsEnabled } from '../security/automationPolicy.ts';
 export function createWorkerProxyWorkflow({
   env,
   fetch: requestFetch = (url, options) =>
@@ -13,6 +14,10 @@ export function createWorkerProxyWorkflow({
   return {
     run: (input) =>
       workflowResult(input, async (reply) => {
+        if (!automationsEnabled(env))
+          return reply
+            .status(403)
+            .json({ ok: false, error: 'Automações desativadas.' });
         try {
           const destination = new URL('/__cron/cobrancas', env.workerUrl);
           if (input.query.token)

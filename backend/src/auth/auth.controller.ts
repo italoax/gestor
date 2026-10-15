@@ -11,6 +11,7 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.ts';
 import type { PanelUser } from './auth.types.ts';
 import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
+import { startSessionSecurity } from '../../../src/services/sessionSecurity.ts';
 interface AuthRequest extends Request {
   session: Request['session'] & {
     user?: PanelUser;
@@ -42,28 +43,31 @@ export class AuthController {
     const username = String(request.body?.username ?? '').trim(),
       password = String(request.body?.password ?? '');
     const user = await this.auth.authenticate(username, password);
-    this.auth.recordAttempt(
-      username,
-      user,
-      request.ip,
-      request.get('user-agent') ?? '',
-    );
     if (!user) {
+      this.auth.recordAttempt(username, null, request.ip, '');
       request.flash('error', 'Usuário ou senha inválidos.');
       return response.redirect('/login');
     }
-    const maxAge = this.auth.cookieMaxAge(request.body?.remember);
+    const maxAge = user.isAdmin
+      ? 8 * 3600_000
+      : this.auth.cookieMaxAge(request.body?.remember);
     await new Promise<void>((resolve, reject) =>
       request.session.regenerate((error) =>
         error ? reject(error) : resolve(),
       ),
     );
-    request.session.user = user;
+    const { credentialRevision, ...identity } = user;
+    request.session.user = identity;
+    request.session.security = startSessionSecurity(
+      credentialRevision,
+      !user.isAdmin && Boolean(maxAge),
+    );
     request.session.cookie.maxAge = maxAge;
     await new Promise<void>((resolve, reject) =>
       request.session.save((error) => (error ? reject(error) : resolve())),
     );
     response.locals.loginSucceeded = true;
+    this.auth.recordAttempt(username, user, request.ip, '');
     return response.redirect('/dashboard');
   }
   @Get('register')
@@ -76,9 +80,10 @@ export class AuthController {
   }
   @Post('logout')
   async logout(@Req() request: AuthRequest, @Res() response: Response) {
-    await new Promise<void>((resolve) =>
-      request.session.destroy(() => resolve()),
+    await new Promise<void>((resolve, reject) =>
+      request.session.destroy((error) => (error ? reject(error) : resolve())),
     );
+    response.clearCookie('ixstreaming.painel.sid', { path: '/' });
     return response.redirect('/login');
   }
 }

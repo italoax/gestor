@@ -7,10 +7,12 @@ export function SitePageControllers({
   scripts,
   bodyAttributes,
   path,
+  trustedScriptNonce,
 }: {
   scripts?: any;
   bodyAttributes?: any;
   path?: string;
+  trustedScriptNonce?: string;
 }) {
   const [error, setError] = useState('');
   useLayoutEffect(() => {
@@ -31,6 +33,7 @@ export function SitePageControllers({
     };
     document.addEventListener('change', change);
     const confirmAction = (event) => {
+      if (event.gestorConfirmationHandled) return;
       const element =
         event.type === 'submit'
           ? (event.target as HTMLElement)
@@ -38,8 +41,10 @@ export function SitePageControllers({
               '[data-confirm]',
             ) as HTMLElement);
       if (event.type === 'click' && element?.tagName === 'FORM') return;
-      if (element?.dataset.confirm && !window.confirm(element.dataset.confirm))
-        event.preventDefault();
+      if (element?.dataset.confirm) {
+        event.gestorConfirmationHandled = true;
+        if (!window.confirm(element.dataset.confirm)) event.preventDefault();
+      }
     };
     document.addEventListener('click', confirmAction);
     document.addEventListener('submit', confirmAction);
@@ -79,6 +84,14 @@ export function SitePageControllers({
             document.head.append(script);
           });
         } else {
+          if (
+            process.env.NODE_ENV === 'production' &&
+            (!trustedScriptNonce || attributes.nonce !== trustedScriptNonce)
+          )
+            continue;
+          script.nonce =
+            (document.getElementById('restore-theme') as HTMLScriptElement)
+              ?.nonce || '';
           script.textContent = code;
           document.head.append(script);
         }
@@ -103,7 +116,7 @@ export function SitePageControllers({
       window.__gestorAbort?.abort();
       nodes.forEach((node) => node.remove());
     };
-  }, [scripts, path]);
+  }, [scripts, path, trustedScriptNonce]);
   return error ? (
     <div className="form-alert error" role="alert">
       {error}{' '}

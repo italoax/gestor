@@ -13,6 +13,7 @@ export const db = mysql.createPool({
   // Compression is unnecessary here; keep the compressed protocol disabled.
   compress: false,
   port: env.db.port,
+  ssl: env.db.ssl,
   waitForConnections: true,
   connectionLimit: env.localMode ? 2 : 10,
   queueLimit: 100,

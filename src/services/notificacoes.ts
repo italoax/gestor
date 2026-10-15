@@ -1,3 +1,4 @@
+import { safeError } from '../security/safeError.ts';
 import type { RowDataPacket } from 'mysql2/promise';
 import { execute, queryOne, queryRows, withTransaction } from '../db/mysql.ts';
 import { enviarPushParaUsuario } from './push.ts';
@@ -119,7 +120,7 @@ export async function sincronizarAlertasCreditos(userId) {
   await Promise.all(
     pushes.map((push) =>
       enviarPushParaUsuario(userId, push).catch((error) =>
-        console.warn('[creditos] push falhou:', error),
+        console.warn('[creditos] push falhou:', safeError(error)),
       ),
     ),
   );

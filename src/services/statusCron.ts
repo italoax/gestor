@@ -1,3 +1,5 @@
+import { automationsEnabled } from '../security/automationPolicy.ts';
+import { safeError } from '../security/safeError.ts';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { execute, queryRows } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
@@ -14,17 +16,17 @@ export async function stopStatusCron() {
   while (rodando) await sleep(50);
 }
 export function startStatusCron() {
-  if (env.localMode || stopping || timer) return;
+  if (!automationsEnabled(env) || stopping || timer) return;
   // A cada 30s: barato e dá precisão suficiente. Não precisa ser ao segundo —
   // status agendado para 14:30 publica entre 14:30 e 14:30:30.
   timer = setInterval(() => {
     void executarAgendados().catch((error) =>
-      console.error('Erro no cron de status:', error),
+      console.error('Erro no cron de status:', safeError(error)),
     );
   }, 30000);
 }
 export async function executarAgendados() {
-  if (env.localMode || stopping) return { skipped: true };
+  if (!automationsEnabled(env) || stopping) return { skipped: true };
   if (rodando) return { skipped: true };
   rodando = true;
   try {

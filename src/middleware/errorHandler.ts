@@ -1,8 +1,10 @@
+import { safeError } from '../security/safeError.ts';
 export function createErrorHandler(nodeEnv) {
   return (err, _req, res, _next) => {
-    // O erro completo (com stack e mensagem crua do banco/integração) SEMPRE vai
-    // pro log do servidor — é lá que se diagnostica.
-    console.error(err);
+    // Erros de banco/provedores podem conter SQL e credenciais. Registre somente códigos permitidos.
+    console.error(
+      JSON.stringify({ event: 'request.failed', ...safeError(err) }),
+    );
     if (res.headersSent) return _next(err);
     // Pro usuário: em produção, mensagem genérica. Mostrar a mensagem crua vazava
     // detalhes internos (nome de tabela/coluna num erro de MySQL, path de arquivo,

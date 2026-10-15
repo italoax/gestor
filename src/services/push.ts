@@ -1,4 +1,5 @@
 import webpush from 'web-push';
+import { safeError } from '../security/safeError.ts';
 import { execute, queryRows } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
 import { publicHttpsAgent, publicHttpsUrl } from './publicNetwork.ts';
@@ -65,10 +66,7 @@ export async function enviarPushParaUsuario(userId, payload) {
             id: s.id,
           });
         } else {
-          console.warn(
-            `[push] falha endpoint=${s.endpoint.slice(0, 60)}... status=${status}:`,
-            error,
-          );
+          console.warn(`[push] falha status=${status}:`, safeError(error));
         }
       }
     }),

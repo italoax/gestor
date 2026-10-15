@@ -281,8 +281,8 @@
             class="input"
             type="password"
             name="creds_<%= p %>_<%= c.name %>"
-            placeholder="<%= c.placeholder || '' %>"
-            value="<%= (credPorProvider[p] || {})[c.name] || '' %>"
+            placeholder="<%= (credPorProvider[p] || {})[c.name] ? 'Configurada. Em branco mantém a atual.' : c.placeholder || '' %>"
+            value=""
             autocomplete="off"
             data-1p-ignore
             data-lpignore="true"
@@ -291,6 +291,12 @@
           <% } %>
         </label>
         <% }) %>
+        <label class="field full"
+          ><span
+            ><input type="checkbox" name="remover_credenciais" value="1" />
+            Remover credenciais salvas</span
+          ></label
+        >
         <label class="switch-field full">
           <span
             ><strong>Ativar este provedor</strong
@@ -319,7 +325,7 @@
 </div>
 <% }) %>
 
-<script>
+<script nonce="<%= locals.cspNonce || '' %>">
 (function () {
   document.querySelectorAll('[data-card-accent]').forEach(card => {
     const color = card.dataset.cardAccent;

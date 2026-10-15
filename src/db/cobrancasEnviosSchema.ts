@@ -2,13 +2,24 @@ import { execute, queryRows } from './mysql.ts';
 let ready = null;
 export function ensureCobrancasEnviosSchema() {
   if (!ready)
-    ready = migrar().catch((error) => {
+    ready = verifyCobrancasSchema().catch((error) => {
       ready = null;
       throw error;
     });
   return ready;
 }
-async function migrar() {
+async function verifyCobrancasSchema() {
+  const columns = await queryRows(
+    "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cobrancas_envios' AND COLUMN_NAME='acesso_chave'",
+  );
+  if (!columns.length)
+    throw new Error(
+      'Schema de cobranças incompatível. Execute a migração explícita.',
+    );
+}
+export async function migrateCobrancasEnviosSchema(connection) {
+  const execute = async (sql) => (await connection.execute(sql))[0];
+  const queryRows = async (sql) => (await connection.query(sql))[0];
   await execute(`CREATE TABLE IF NOT EXISTS cobrancas_envios (
     id INT AUTO_INCREMENT PRIMARY KEY, cobranca_id INT NOT NULL, cliente_id INT NOT NULL,
     acesso_chave VARCHAR(64) NOT NULL DEFAULT 'principal', data_envio DATE NOT NULL,

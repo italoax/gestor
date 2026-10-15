@@ -74,7 +74,9 @@ export const openPixProvider = {
     );
     const c = j.charge;
     return {
-      id: paymentId,
+      id: String(c?.correlationID ?? ''),
+      currency: c?.currency || 'BRL',
+      externalReference: c?.correlationID,
       status: String(c?.status ?? 'unknown').toLowerCase(),
       amount: Number(c?.value ?? 0) / 100, // centavos → reais
       pagoEm: c?.paidAt ?? null,

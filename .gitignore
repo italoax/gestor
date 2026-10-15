@@ -34,3 +34,8 @@ sessions/
 
 # Arquivos enviados pelos usuários em runtime
 /public/uploads/
+
+# Chaves de dados e configurações operacionais da etapa de segurança
+/secrets/
+*.keyring.json
+*.security.env

@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/modals.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-ui.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/visual-effects.css') %>" />
-    <script>(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
+    <script nonce="<%= locals.cspNonce || '' %>">(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
   </head>
   <%
     // Layout tolerante: se algum render chegar aqui sem ter passado por exposeLocals
@@ -126,7 +126,7 @@
               <span class="wa-dot"></span>
               <span class="wa-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></span>
             </a>
-            <script>
+            <script nonce="<%= locals.cspNonce || '' %>">
                 // Restaura antes da primeira pintura para não piscar ao navegar.
                 (function () {
                   try {

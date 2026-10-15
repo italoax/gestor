@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import { revealIptvPassword } from '../security/storedSecrets.ts';
+import { startSessionSecurity } from '../services/sessionSecurity.ts';
 import {
   workflowResult,
   raiseWorkflowError,
@@ -18,7 +20,7 @@ export function createPortalWorkflow({
       .update(
         JSON.stringify([
           cliente.user,
-          cliente.senha,
+          revealIptvPassword(cliente.senha, cliente.user_id),
           cliente.pagamento_curto || null,
         ]),
       )
@@ -37,7 +39,7 @@ export function createPortalWorkflow({
           const alias = String(input.query.acesso ?? '');
           const cliente = /^[A-Za-z0-9_-]{16}$/.test(alias)
             ? await queryOne(
-                'SELECT id, user, senha, pagamento_curto FROM clientes WHERE pagamento_curto = :alias AND arquivado = 0 AND portal_bloqueado = 0 LIMIT 1',
+                'SELECT id, user_id, user, senha, pagamento_curto FROM clientes WHERE pagamento_curto = :alias AND arquivado = 0 AND portal_bloqueado = 0 LIMIT 1',
                 { alias },
               )
             : null;
@@ -53,6 +55,7 @@ export function createPortalWorkflow({
               viaLink: true,
             };
             input.session.cookie.maxAge = 8 * 60 * 60 * 1000;
+            input.session.security = startSessionSecurity();
             await new Promise<void>((resolve, reject) =>
               input.session.save((err) => (err ? reject(err) : resolve())),
             );
@@ -96,7 +99,7 @@ export function createPortalWorkflow({
           const candidates =
             login.length <= 120
               ? await queryRows(
-                  'SELECT id, user, senha, pagamento_curto, arquivado, portal_bloqueado FROM clientes WHERE user = :login',
+                  'SELECT id, user_id, user, senha, pagamento_curto, arquivado, portal_bloqueado FROM clientes WHERE user = :login',
                   { login },
                 )
               : [];
@@ -108,7 +111,12 @@ export function createPortalWorkflow({
           const matches =
             password.length <= 190
               ? enabled.filter(
-                  (c) => c.senha && sameSecret(String(c.senha), password),
+                  (c) =>
+                    c.senha &&
+                    sameSecret(
+                      revealIptvPassword(c.senha, c.user_id),
+                      password,
+                    ),
                 )
               : [];
           if (matches.length !== 1)
@@ -124,6 +132,7 @@ export function createPortalWorkflow({
             revision: revision(cliente),
           };
           input.session.cookie.maxAge = 8 * 60 * 60 * 1000;
+          input.session.security = startSessionSecurity();
           await new Promise<void>((resolve, reject) =>
             input.session.save((err) => (err ? reject(err) : resolve())),
           );

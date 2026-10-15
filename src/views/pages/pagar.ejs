@@ -166,7 +166,7 @@
         >
       </div>
     </div>
-    <script>
+    <script nonce="<%= locals.cspNonce || '' %>">
     (function () {
       const TOKEN = <%- JSON.stringify(cliente.pagamentoToken).replace(/</g, '\\u003c') %>;
       let pagamentoId = <%- pagamento ? pagamento.id : 'null' %>;

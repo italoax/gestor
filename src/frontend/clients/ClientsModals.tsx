@@ -275,7 +275,9 @@ export const ClientsModals = memo(function ClientsModals({
                   />
                 </label>
                 <div className="field password-field" data-password-field="">
-                  <label htmlFor="cliente-senha">Senha</label>
+                  <label htmlFor="cliente-senha">
+                    {clientForm.editing ? 'Nova senha IPTV' : 'Senha'}
+                  </label>
                   <div className="password-control">
                     <input
                       id="cliente-senha"
@@ -284,6 +286,12 @@ export const ClientsModals = memo(function ClientsModals({
                       }
                       type="password"
                       name="senha"
+                      maxLength={190}
+                      placeholder={
+                        clientForm.editing
+                          ? 'Em branco mantém a senha atual'
+                          : undefined
+                      }
                       autoComplete="off"
                       data-1p-ignore=""
                       data-lpignore="true"
@@ -317,6 +325,12 @@ export const ClientsModals = memo(function ClientsModals({
                     role="status"
                     aria-live="polite"
                   ></span>
+                  {clientForm.editing && (
+                    <label>
+                      <input type="checkbox" name="limpar_senha" value="1" />{' '}
+                      Remover a senha atual
+                    </label>
+                  )}
                 </div>
 
                 <label className="field full">

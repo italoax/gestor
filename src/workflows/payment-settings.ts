@@ -3,6 +3,7 @@ import {
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
 export function createPaymentSettingsWorkflow({
+  auditSecurity = async (..._args: any[]) => {},
   execute,
   queryOne,
   queryRows,
@@ -36,7 +37,12 @@ export function createPaymentSettingsWorkflow({
           const credPorProvider: Record<string, any> = {};
           const ativoPorProvider: Record<string, any> = {};
           for (const c of configs) {
-            credPorProvider[c.provider] = c.credenciais;
+            credPorProvider[c.provider] = Object.fromEntries(
+              Object.entries(c.credenciais).map(([name, value]) => [
+                name,
+                name === 'ambiente' ? value : Boolean(value),
+              ]),
+            );
             ativoPorProvider[c.provider] = c.ativo;
           }
           reply.render('pages/integracao-pagamento', {
@@ -103,19 +109,30 @@ export function createPaymentSettingsWorkflow({
             input.flash('error', 'Provedor inválido.');
             return reply.redirect('/integracao-pagamento');
           }
+          const existing = (await carregarConfigsDoUsuario(userId)).find(
+            (c) => c.provider === provider,
+          );
+          const remove = input.body.remover_credenciais === '1';
           const credenciais: Record<string, any> = {};
           let temAlgo = false;
           for (const campo of SCHEMAS[provider]) {
-            const v = String(
+            const submitted = String(
               input.body[`creds_${provider}_${campo}`] ?? '',
             ).trim();
+            const v = remove
+              ? ''
+              : submitted || existing?.credenciais?.[campo] || '';
             if (v) {
               credenciais[campo] = v;
-              temAlgo = true;
+              if (campo !== 'ambiente') temAlgo = true;
             }
           }
           const ativo = input.body[`ativo_${provider}`] === '1' && temAlgo;
           await salvarConfig(userId, provider, credenciais, ativo);
+          await auditSecurity('credentials.changed', {
+            userId,
+            reason: 'payment_provider',
+          });
           input.flash('success', `${provider} ${ativo ? 'ativado' : 'salvo'}.`);
           return reply.redirect('/integracao-pagamento');
         } catch (error) {

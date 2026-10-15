@@ -33,6 +33,7 @@ export default async function SitePage() {
       {page.head}
       {page.content}
       <SitePageControllers
+        trustedScriptNonce={page.trustedScriptNonce}
         scripts={page.scripts}
         bodyAttributes={page.bodyAttributes}
         path={page.path}

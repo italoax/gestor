@@ -124,8 +124,8 @@
 
     if (elBR) {
       try {
-        const mod =
-          await import('https://cdn.jsdelivr.net/npm/@svg-maps/brazil/+esm');
+        const source = '/assets/js/vendor/maps/brazil.js';
+        const mod = await import(source);
         renderMap(elBR, mod.default, geo.estados || {}, codeUF);
       } catch (e) {
         fallback(elBR);
@@ -133,8 +133,8 @@
     }
     if (elW) {
       try {
-        const mod =
-          await import('https://cdn.jsdelivr.net/npm/@svg-maps/world/+esm');
+        const source = '/assets/js/vendor/maps/world.js';
+        const mod = await import(source);
         renderMap(elW, mod.default, geo.paises || {}, codePais);
       } catch (e) {
         fallback(elW);

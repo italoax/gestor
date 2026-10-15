@@ -62,7 +62,7 @@
               class="switch"
               name="bloqueio_chamadas"
               value="1"
-              onchange="this.form.requestSubmit()"
+              data-submit-on-change=""
               <%= d.bloqueioChamadas ? 'checked' : '' %>
               aria-label="Bloqueio de chamadas"
             />
@@ -152,7 +152,7 @@
     </div>
   </div>
 </div>
-<script>
+<script nonce="<%= locals.cspNonce || '' %>">
 (function () {
   var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };
 

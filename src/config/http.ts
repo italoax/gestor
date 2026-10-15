@@ -4,47 +4,51 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import expressLayouts from 'express-ejs-layouts';
+import { trustedProxyAddresses } from '../security/proxyTrust.ts';
+import { randomBytes } from 'node:crypto';
+import { contentSecurityPolicy } from '../security/contentSecurityPolicy.ts';
 
 export function configureHttp(app, root, env) {
   app.locals.nextFrontendEnabled = env.nextFrontendEnabled;
   // Hostinger/Cloudflare terminam o HTTPS antes do Node.
   // Sem trust proxy, o express-session não envia cookie `secure` em produção,
   // então o login redireciona para /dashboard mas a sessão não fica salva.
-  app.set('trust proxy', 1);
+  const trustedProxies = trustedProxyAddresses(
+    env.trustedProxyCidrs || 'loopback',
+  );
+  // Socket Unix/named pipe é transporte local explícito, sem remoteAddress TCP.
+  app.set('trust proxy', (address) =>
+    address ? trustedProxies(address) : Boolean(process.env.BACKEND_SOCKET),
+  );
+  app.disable('x-powered-by');
   app.set('view engine', 'ejs');
   app.set('views', path.join(root, 'src/views'));
   app.set('layout', 'layouts/main');
   app.use(expressLayouts);
-  // CSP pragmática: permite scripts/estilos inline (o projeto usa `style=` e algumas
-  // chamadas inline) mas bloqueia scripts de domínios desconhecidos. Reduz superfície
-  // de XSS (atacante não consegue carregar JS de evil.com) sem quebrar o painel atual.
-  // Em dev fica desligada pra não atrapalhar hot-reload.
+  app.use((_req, res, next) => {
+    res.locals.cspNonce = randomBytes(18).toString('base64');
+    if (env.nodeEnv === 'production')
+      res.setHeader(
+        'Content-Security-Policy',
+        contentSecurityPolicy(res.locals.cspNonce),
+      );
+    next();
+  });
+  // A CSP com nonce foi aplicada acima. Helmet mantém os demais cabeçalhos;
+  // estilos inline continuam permitidos por compatibilidade com o painel.
   app.use(
     helmet({
-      contentSecurityPolicy:
+      strictTransportSecurity:
         env.nodeEnv === 'production'
-          ? {
-              useDefaults: true,
-              directives: {
-                defaultSrc: ["'self'"],
-                scriptSrc: [
-                  "'self'",
-                  "'unsafe-inline'",
-                  'https://cdn.jsdelivr.net',
-                  'https://static.cloudflareinsights.com',
-                ],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-                mediaSrc: ["'self'", 'data:', 'blob:', 'https:'],
-                connectSrc: ["'self'", 'https://cloudflareinsights.com'],
-                fontSrc: ["'self'", 'data:'],
-                frameAncestors: ["'self'"],
-                formAction: ["'self'"],
-              },
-            }
+          ? { maxAge: 31536000, includeSubDomains: false }
           : false,
+      contentSecurityPolicy: false,
     }),
   );
+  app.use((_req, res, next) => {
+    res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
   // Comprime respostas com gzip — HTML/CSS/JS encolhem ~70%. Especialmente
   // importante em hospedagem compartilhada com largura de banda limitada.
   app.use(compression());
@@ -58,7 +62,14 @@ export function configureHttp(app, root, env) {
     }),
   );
   app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
+  app.use(
+    express.json({
+      verify: (req, _res, buffer) => {
+        if (/^\/webhook\//.test(req.url || ''))
+          (req as any).rawBody = Buffer.from(buffer);
+      },
+    }),
+  );
   // Apenas a pagina comercial deve aparecer nos resultados de busca.
   app.use((req, res, next) => {
     if (

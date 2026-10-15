@@ -1,18 +1,22 @@
 import crypto from 'node:crypto';
 import { env } from '../config/env.ts';
-// Criptografia simétrica (AES-256-GCM) para guardar segredos no banco — hoje a
-// senha do painel Sigma da integração. NUNCA guardamos senha em texto puro.
-//
-// A chave de 32 bytes é derivada do SESSION_SECRET (SHA-256), pra não exigir uma
-// env var nova no deploy. Em produção o SESSION_SECRET já é forte (>=32 chars,
-// validado no env.js). Se o SESSION_SECRET mudar, os segredos antigos ficam
-// ilegíveis (decrypt devolve "") — basta recadastrar a integração.
+import {
+  dataVault,
+  encryptionWrites,
+  openStoredSecret,
+} from '../security/storedSecrets.ts';
+import { isProtectedSecret } from '../security/secretVault.ts';
+// O formato v2 usa chaves independentes e versionadas, com contexto por conta.
+// A chave derivada de SESSION_SECRET permanece exclusivamente para compatibilidade
+// com integra??es legadas durante o rollout. N?o a rotacione antes de migr?-las.
 const KEY = crypto
   .createHash('sha256')
   .update(String(env.sessionSecret))
   .digest();
 // Formato do valor guardado: base64(iv).base64(authTag).base64(ciphertext)
-export function encryptSecret(plain) {
+export function encryptSecret(plain, owner: unknown = 'legacy') {
+  if (encryptionWrites)
+    return dataVault!.seal(String(plain ?? ''), `integration:${owner}`);
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', KEY, iv);
   const enc = Buffer.concat([
@@ -26,8 +30,10 @@ export function encryptSecret(plain) {
     enc.toString('base64'),
   ].join('.');
 }
-export function decryptSecret(stored) {
+export function decryptSecret(stored, owner: unknown = 'legacy') {
   if (!stored) return '';
+  if (isProtectedSecret(stored))
+    return openStoredSecret(stored, 'integration', owner);
   const parts = String(stored).split('.');
   if (parts.length !== 3) return ''; // valor inválido/legado — trata como vazio
   try {
@@ -44,6 +50,8 @@ export function decryptSecret(stored) {
     ]);
     return dec.toString('utf8');
   } catch {
-    return ''; // chave errada / dado corrompido
+    throw new Error(
+      'Não foi possível abrir a credencial legada da integração.',
+    );
   }
 }

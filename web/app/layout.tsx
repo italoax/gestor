@@ -43,12 +43,12 @@ export default async function RootLayout({
   return (
     <html lang="pt-br" suppressHydrationWarning>
       <body className={bodyClass}>
-        <div
-          hidden
+        <script
+          id="restore-theme"
+          nonce={request.get('x-nonce') || undefined}
           dangerouslySetInnerHTML={{
-            // Executa na leitura do HTML, antes do conteúdo e da hidratação.
             __html:
-              '<script id="restore-theme">try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}</script>',
+              'try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}',
           }}
         />
         {children}

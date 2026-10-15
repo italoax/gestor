@@ -5,6 +5,10 @@ import { projectRoot } from '../config/paths.ts';
 import { openPublicServer, type PublicListener } from './publicServer.ts';
 import { proxyBackend } from './backendTransport.ts';
 import { isSitePage, isUnknownPageNavigation } from './pageRoutes.ts';
+import {
+  normalizePublicOrigin,
+  trustedProxyAddresses,
+} from '../security/proxyTrust.ts';
 
 export interface NextFrontendOptions {
   port: number;
@@ -60,8 +64,36 @@ export async function startNextFrontend({
     throw error;
   }
   const handle = app.getRequestHandler();
+  const trustedProxies = trustedProxyAddresses(
+    process.env.TRUSTED_PROXY_CIDRS || 'loopback',
+  );
   listener.setHandler((request, response) => {
+    normalizePublicOrigin(
+      request,
+      trustedProxies,
+      process.env.SESSION_SECRET,
+      process.env.BACKEND_SOCKET
+        ? new URL(process.env.APP_URL || backendUrl).protocol.slice(0, -1)
+        : undefined,
+    );
     const url = new URL(request.url || '/', 'http://gestor.local');
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.ENFORCE_HTTPS === 'true' &&
+      request.headers['x-forwarded-proto'] !== 'https'
+    ) {
+      const secure = new URL(process.env.APP_URL || '');
+      if (secure.protocol !== 'https:')
+        throw new Error('APP_URL HTTPS é obrigatória para redirecionar.');
+      secure.pathname = url.pathname;
+      secure.search = url.search;
+      response.writeHead(308, {
+        Location: secure.href,
+        'Cache-Control': 'no-store',
+      });
+      response.end();
+      return;
+    }
     if (
       isUnknownPageNavigation(
         url.pathname,

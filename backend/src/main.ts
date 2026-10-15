@@ -1,5 +1,8 @@
+import { safeError } from '../../src/security/safeError.ts';
 import { listarRenovacoesPendentes } from '../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
+import { createLoginAttempts } from '../../src/services/loginAttempts.ts';
+import { recordSecurityEvent } from '../../src/security/runtimeSecurity.ts';
 import {
   createDefaultFeatures,
   createDefaultCronWorkflow,
@@ -17,7 +20,7 @@ import { aplicativosConfig } from '../../src/config/catalogs.ts';
 import { dispositivosConfig } from '../../src/config/catalogs.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 import { closeSessionStores } from '../../src/db/sessionStore.ts';
-import { ensureDatabaseSchema } from '../../src/db/schema.ts';
+import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
 import {
   startCobrancasCron,
   stopCobrancasCron,
@@ -33,7 +36,16 @@ try {
   backend = await createBackend({
     application,
     features: { ...createDefaultFeatures(), cron: createDefaultCronWorkflow() },
-    auth: { queryOne, comparePassword: bcrypt.compare },
+    auth: {
+      queryOne,
+      comparePassword: bcrypt.compare,
+      loginAttempts: createLoginAttempts({
+        execute,
+        queryOne,
+        audit: recordSecurityEvent,
+      }),
+      auditSecurity: recordSecurityEvent,
+    },
     payments: createDefaultPaymentWorkflow(),
     confirmPayment: createDefaultPaymentConfirmation(),
     catalogs: {
@@ -63,14 +75,11 @@ try {
         console.log(
           'Modo local: automações e migrações desativadas; sessões em memória.',
         );
-      } else await ensureDatabaseSchema();
+      } else await verifyDatabaseSchema(db);
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
-      if (env.runAutomations) {
-        startCobrancasCron();
-        startStatusCron();
-      }
+      // O worker é o único dono dos timers; o backend apenas encaminha o cron.
     },
     async stopAutomations() {
       await Promise.all([stopCobrancasCron(), stopStatusCron()]);
@@ -110,7 +119,7 @@ try {
     console.error(
       '[Backend] MySQL atingiu um limite de recursos. Se for o limite de conexões por hora, aguarde a renovação da cota ou solicite a liberação à hospedagem.',
     );
-  else console.error('Erro ao iniciar o Gestor NestJS:', error);
+  else console.error('Erro ao iniciar o Gestor NestJS:', safeError(error));
   try {
     if (backend) await backend.close();
     else {
@@ -119,7 +128,7 @@ try {
       await db.end();
     }
   } catch (cleanupError) {
-    console.error('Erro ao encerrar após falha:', cleanupError);
+    console.error('Erro ao encerrar após falha:', safeError(cleanupError));
   }
   process.exit(databaseLimit ? 78 : 1);
 }

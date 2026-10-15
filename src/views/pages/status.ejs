@@ -264,7 +264,7 @@
   </div>
 </div>
 <% } %>
-<script>
+<script nonce="<%= locals.cspNonce || '' %>">
 (function() {
   const controller = new AbortController();
   let stopped = false, timer, previous = '';

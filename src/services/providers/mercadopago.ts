@@ -88,7 +88,9 @@ export const mercadoPagoProvider = {
     // Prefere o status do payment quando disponivel — mais granular que o da
     // order (que so distingue created/processed/expired).
     return {
-      id: String(j.id ?? orderId),
+      id: String(j.id ?? ''),
+      currency: j.currency_id || j.currency || payment?.currency_id || 'BRL',
+      externalReference: j.external_reference,
       status: String(payment?.status ?? j.status ?? 'unknown'),
       amount: Number(payment?.amount ?? j.total_amount ?? 0),
       pagoEm: payment?.date_approved ?? null,

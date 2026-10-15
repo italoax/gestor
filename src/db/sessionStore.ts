@@ -19,10 +19,11 @@ export function createSessionStore() {
     user: env.db.user,
     password: env.db.password,
     database: env.db.name,
+    ssl: env.db.ssl,
     connectionLimit: 3,
     queueLimit: 30,
     // The store does not forward compression options; mysql2 defaults to disabled.
-    createDatabaseTable: true,
+    createDatabaseTable: false,
     charset: 'utf8mb4_unicode_ci',
     // Remove sessões expiradas a cada 15 min.
     clearExpired: true,

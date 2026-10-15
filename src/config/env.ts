@@ -1,5 +1,13 @@
+import { databaseTls } from '../security/databaseTls.ts';
 import dotenv from 'dotenv';
-dotenv.config({ quiet: true });
+const configuration = dotenv.config({
+  quiet: true,
+  path: process.env.GESTOR_ENV_FILE || '.env',
+});
+if (process.env.GESTOR_ENV_FILE && configuration.error)
+  throw new Error(
+    'Não foi possível carregar a configuração explícita do ambiente.',
+  );
 const DEV_SESSION_SECRET = 'dev-secret-change-me';
 const nodeEnv = process.env.NODE_ENV ?? 'development';
 const sessionSecret = process.env.SESSION_SECRET ?? DEV_SESSION_SECRET;
@@ -19,6 +27,32 @@ if (
 const cookieSecure = process.env.COOKIE_SECURE
   ? process.env.COOKIE_SECURE === 'true' || process.env.COOKIE_SECURE === '1'
   : nodeEnv === 'production';
+if (
+  nodeEnv === 'production' &&
+  (!cookieSecure || process.env.LOCAL_MODE === 'true')
+) {
+  throw new Error('Produção exige COOKIE_SECURE=true e LOCAL_MODE desativado.');
+}
+const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+if (nodeEnv === 'production') {
+  try {
+    const url = new URL(appUrl);
+    if (url.protocol !== 'https:' || url.username || url.password)
+      throw new Error();
+  } catch {
+    throw new Error(
+      'APP_URL deve ser uma URL HTTPS válida, sem credenciais, em produção.',
+    );
+  }
+}
+function duration(name: string, fallback: number) {
+  const value = Number(process.env[name] ?? fallback);
+  if (!Number.isSafeInteger(value) || value < 60_000)
+    throw new Error(
+      `${name} deve conter milissegundos inteiros (mínimo 60000).`,
+    );
+  return value;
+}
 export const env = {
   localMode: process.env.LOCAL_MODE === 'true',
   nextFrontendEnabled: process.env.NEXT_FRONTEND_ENABLED === 'true',
@@ -28,9 +62,19 @@ export const env = {
   nodeEnv,
   port: Number(process.env.PORT ?? 3000),
   host: process.env.HOST || undefined,
-  appUrl: process.env.APP_URL ?? 'http://localhost:3000',
+  appUrl,
   sessionSecret,
   cookieSecure,
+  trustedProxyCidrs: process.env.TRUSTED_PROXY_CIDRS || 'loopback',
+  sessionIdleMs: duration('SESSION_IDLE_MS', 30 * 60_000),
+  sessionAdminIdleMs: duration('SESSION_ADMIN_IDLE_MS', 15 * 60_000),
+  sessionAdminAbsoluteMs: duration('SESSION_ADMIN_ABSOLUTE_MS', 8 * 3600_000),
+  sessionAbsoluteMs: duration('SESSION_ABSOLUTE_MS', 12 * 3600_000),
+  sessionRememberIdleMs: duration('SESSION_REMEMBER_IDLE_MS', 7 * 86400_000),
+  sessionRememberAbsoluteMs: duration(
+    'SESSION_REMEMBER_ABSOLUTE_MS',
+    30 * 86400_000,
+  ),
   // Token usado pelo endpoint público de cron (/__cron/cobrancas) — pra cron externo
   // (Hostinger/cron-job.org) acordar o processo e disparar a execução.
   cronToken: process.env.CRON_TOKEN ?? '',
@@ -40,6 +84,7 @@ export const env = {
     user: process.env.DB_USER ?? '',
     password: process.env.DB_PASSWORD || process.env.DB_PASS || '',
     port: Number(process.env.DB_PORT ?? 3306),
+    ssl: databaseTls(process.env),
   },
   whatsapp: {
     defaultCountry: process.env.WA_DEFAULT_COUNTRY ?? '55',
