@@ -584,6 +584,40 @@ try {
     "INSERT INTO assinatura_planos (nome,preco,descricao,dias_validade,ativo,ordem) VALUES ('Basico',50,'keep',30,1,1)",
   );
   const beforeStartup = (await conn.query('SELECT * FROM users'))[0];
+  // Reproduce the legacy schema found through metadata, using ONLY this
+  // disposable loopback schema and synthetic rows. No real dump is loaded.
+  assert.equal(credentials.host, '127.0.0.1');
+  assert.ok(schemaDb.startsWith('gestor_security_'));
+  for (const table of [
+    'schema_migrations',
+    'auth_login_attempts',
+    'security_events',
+    'security_rate_limits',
+  ])
+    await conn.query(`DROP TABLE \`${table}\``);
+  await conn.query(
+    'ALTER TABLE users DROP COLUMN session_version, MODIFY mp_access_token VARCHAR(255) NULL',
+  );
+  await conn.query('ALTER TABLE clientes MODIFY senha VARCHAR(190) NULL');
+  await conn.query(
+    'ALTER TABLE pagamentos DROP COLUMN external_reference, MODIFY mp_payment_id VARCHAR(40) NULL',
+  );
+  await assert.rejects(verifyDatabaseSchema(conn), {
+    code: 'ER_NO_SUCH_TABLE',
+  });
+  const reviewedSql = readFileSync('SECURITY-SCHEMA-RECOVERY.sql', 'utf8');
+  const recoveryStatements = reviewedSql
+    .replace(/^--.*$/gm, '')
+    .split(';')
+    .map((sql) => sql.trim())
+    .filter(Boolean);
+  assert.equal(recoveryStatements.length, 10);
+  for (const sql of recoveryStatements) await conn.query(sql);
+  await verifyDatabaseSchema(conn);
+  assert.deepEqual((await conn.query('SELECT * FROM users'))[0], beforeStartup);
+  console.log(
+    'PASS: SQL revisado recupera schema legado ficticio sem schema_migrations; valores de usuarios permanecem identicos.',
+  );
   for (let i = 0; i < 3; i++) {
     await verifyDatabaseSchema(conn);
     await runSchemaMigrations(conn);
