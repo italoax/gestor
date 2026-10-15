@@ -1,4 +1,5 @@
-import { CsrfInput } from './ui.tsx';
+import { CsrfInput, Icon } from './ui.tsx';
+import { opcoesRenovacao } from '../../services/renovacaoOpcoes.ts';
 import { formatDateBr, formatMoney } from '../../services/format.ts';
 import { addRenewalPeriod, renewalBase } from './renewalModel.ts';
 
@@ -42,12 +43,14 @@ function Modal({
   titleId,
   children,
   footer,
+  summary,
 }: {
   id?: any;
   title?: React.ReactNode;
   titleId?: string;
   children?: React.ReactNode;
   footer?: React.ReactNode;
+  summary?: React.ReactNode;
 }) {
   return (
     <div
@@ -70,6 +73,7 @@ function Modal({
         </div>
         {children}
         <div className="modal-footer">
+          {summary}
           <button className="btn btn-muted" type="button" data-close-modal="">
             Cancelar
           </button>
@@ -152,8 +156,9 @@ export function RenewalModals({
           ))}
         </select>
         <small>
-          Mensagem enviada pelo WhatsApp após salvar. A última escolha vale para
-          todos os dispositivos da sua conta.
+          {kind === 'multi'
+            ? 'Enviada pelo WhatsApp após salvar. A escolha fica salva na sua conta.'
+            : 'Mensagem enviada pelo WhatsApp após salvar. A última escolha vale para todos os dispositivos da sua conta.'}
         </small>
         {preference.pending && (
           <small role="status">Sincronizando mensagem…</small>
@@ -182,6 +187,20 @@ export function RenewalModals({
   const option = group?.opcoes.find(
     (o) => Number(o.periodos) === Number(multi.periodos),
   );
+  const itemDuration = (item, count) =>
+    opcoesRenovacao(item, item.valor).find(
+      (entry) => entry.periodos === Number(count),
+    )?.label;
+  const durationLabel = (count) => {
+    const labels = [
+      ...new Set<string>(
+        group.dados.itens.map((item) => itemDuration(item, count)),
+      ),
+    ];
+    return labels.length === 1 && labels[0]
+      ? labels[0]
+      : `${count} ${Number(count) === 1 ? 'período' : 'períodos'} por servidor`;
+  };
   const missingCatalog = single.id && (!single.plano || !single.servidor);
   return (
     <>
@@ -411,6 +430,22 @@ export function RenewalModals({
       <Modal
         id="modal-renovar-planos"
         title="Renovar servidores"
+        summary={
+          <div className="renewal-total" aria-live="polite" aria-atomic="true">
+            <div>
+              <strong>Total da renovação</strong>
+              <small>
+                {group?.dados.itens.length || 0}{' '}
+                {group?.dados.itens.length === 1
+                  ? 'servidor selecionado'
+                  : 'servidores selecionados'}
+              </small>
+            </div>
+            <strong data-multi-total="">
+              {option ? formatMoney(option.valor) : '—'}
+            </strong>
+          </div>
+        }
         footer={
           <button
             className="btn btn-primary"
@@ -442,8 +477,22 @@ export function RenewalModals({
           <input type="hidden" name="action" value="renovar_planos" />
           <input type="hidden" name="id" value={multi.id} />
           <input type="hidden" name="chave" value={multi.chave} />
-          <p data-multi-nome="">{multi.nome}</p>
-          <p data-multi-erro="" role="alert">
+          <div className="renewal-customer">
+            <span className="renewal-customer-icon">
+              <Icon name="users" />
+            </span>
+            <div>
+              <small>Renovação de assinatura</small>
+              <strong data-multi-nome="">{multi.nome}</strong>
+            </div>
+          </div>
+          <p
+            data-multi-erro=""
+            role="alert"
+            hidden={
+              !multi.loading && !multi.error && !Object.keys(multiErrors).length
+            }
+          >
             {multi.loading
               ? 'Carregando planos…'
               : multi.error ||
@@ -456,7 +505,7 @@ export function RenewalModals({
               formId={multiId}
               full
               name="selecao"
-              label="Quais servidores deseja renovar?"
+              label="Servidores para renovar"
               error={multiErrors.selecao}
             >
               <select
@@ -483,27 +532,49 @@ export function RenewalModals({
               >
                 {group?.opcoes.map((o) => (
                   <option key={o.periodos} value={o.periodos}>
-                    {o.label}
+                    {durationLabel(o.periodos)} · {formatMoney(o.valor)}
                   </option>
                 ))}
               </select>
             </Field>
-            <div className="field full" data-multi-resumo="">
+            <div
+              className="field full renewal-summary"
+              data-multi-resumo=""
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              {option && <h4>Resumo da renovação</h4>}
               {option &&
                 group.dados.itens.map((item, index) => (
-                  <p key={`${item.servidor}-${index}`}>
-                    {item.plano} — {item.servidor} —{' '}
-                    {formatMoney(item.valor * option.periodos)} — novo
-                    vencimento:{' '}
-                    {formatDateBr(
-                      addRenewalPeriod(
-                        renewalBase(item.vencimento),
-                        item.periodo,
-                        item.tipo,
-                        option.periodos,
-                      ),
-                    )}
-                  </p>
+                  <article
+                    className="renewal-server"
+                    key={`${item.servidor}-${index}`}
+                  >
+                    <div className="renewal-server-heading">
+                      <strong>{item.servidor}</strong>
+                      <strong>
+                        {formatMoney(item.valor * option.periodos)}
+                      </strong>
+                    </div>
+                    <p className="renewal-server-plan">
+                      {item.plano} · {itemDuration(item, option.periodos)}
+                    </p>
+                    <div className="renewal-server-date">
+                      <span>
+                        <Icon name="calendar" /> Novo vencimento
+                      </span>
+                      <strong>
+                        {formatDateBr(
+                          addRenewalPeriod(
+                            renewalBase(item.vencimento),
+                            item.periodo,
+                            item.tipo,
+                            option.periodos,
+                          ),
+                        )}
+                      </strong>
+                    </div>
+                  </article>
                 ))}
             </div>
             <Field
@@ -519,17 +590,8 @@ export function RenewalModals({
             </Field>
             {message('multi')}
           </div>
-          <p>
-            <strong>
-              Total:{' '}
-              <span data-multi-total="">
-                {option ? formatMoney(option.valor) : '—'}
-              </span>
-            </strong>
-          </p>
-          <p className="muted">
-            Cada plano mantém seu valor. O vencimento será contado a partir da
-            validade atual ou de hoje, caso já esteja vencido.
+          <p className="muted renewal-note">
+            A renovação começa no vencimento atual. Se já venceu, começa hoje.
           </p>
         </form>
       </Modal>

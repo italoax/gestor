@@ -132,7 +132,7 @@
                   try {
                     var chip = document.querySelector('[data-wa-chip]');
                     var state = JSON.parse(sessionStorage.getItem(chip.dataset.waStateKey) || 'null');
-                    if (!state || typeof state.connected !== 'boolean' || Date.now() - state.at > 120000 || !Number.isFinite(state.at)) return;
+                    if (!state || state.connected !== true || Date.now() - state.at > 120000 || !Number.isFinite(state.at)) return;
                     chip.classList.add(state.connected ? 'is-on' : 'is-off');
                     chip.title = state.connected ? 'WhatsApp conectado' : 'WhatsApp desconectado';
                     chip.setAttribute('aria-label', chip.title);

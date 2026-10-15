@@ -7951,7 +7951,8 @@ a:focus-visible {
     font-size: 16px !important;
   }
   /* Botao renovar com destaque */
-  .page-clientes .cli-table .cli-ico-btn.open-payment {
+  .page-clientes .cli-table .cli-ico-btn.open-payment,
+  .page-clientes .cli-table .cli-ico-btn.open-multi-payment {
     background: linear-gradient(
       135deg,
       var(--primary),
@@ -8843,7 +8844,7 @@ tr.tx-row:focus-visible {
   /* Form grid em 1 coluna no mobile pra preencher mais facil */
   .modal .form-grid {
     grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    gap: 16px;
   }
   .modal .field.full {
     grid-column: 1 / -1;

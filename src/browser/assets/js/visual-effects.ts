@@ -78,8 +78,9 @@
     );
   };
   prepare();
-  // PJAX replaces the main content; batch updates without watching attributes.
-  const content = document.querySelector('.app-content') as HTMLElement;
+  // O Next pode substituir o próprio main ao trocar de rota.
+  // Observe o body para preparar também os elementos da próxima tela.
+  const content = document.body;
   if (content) {
     let queued = false;
     new MutationObserver((records) => {

@@ -6,6 +6,11 @@ export function PanelStyles() {
     'panel-ui',
     'visual-effects',
   ].map((name) => (
-    <link key={name} rel="stylesheet" href={`/assets/css/${name}.css`} />
+    <link
+      key={name}
+      rel="stylesheet"
+      href={`/assets/css/${name}.css`}
+      precedence="panel"
+    />
   ));
 }

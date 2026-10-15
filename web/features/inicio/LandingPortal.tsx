@@ -88,7 +88,6 @@ function PortalDialog({
       const isLogin = !!(doc.querySelector('.portal-login') as HTMLElement);
       setLogin(isLogin);
       if (isLogin) {
-        doc.body.classList.add('portal-embedded-login');
         const main = doc.querySelector('.portal-main') as HTMLElement;
         if (main) {
           const resize = () => {
@@ -147,7 +146,7 @@ function PortalDialog({
       </div>
       <iframe
         ref={frame}
-        src="/area-cliente"
+        src="/area-cliente?embedded=1"
         title="Área do cliente ixstreaming"
         data-client-frame
         onLoad={loaded}

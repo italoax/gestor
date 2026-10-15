@@ -267,7 +267,7 @@ export function AccountScreen({ data }: { data?: any }) {
             )}
           </div>
         </div>
-        <LegacyControllers revision="minha-conta" nativeNavigation />
+        <LegacyControllers revision={data} />
       </PanelShell>
     </>
   );

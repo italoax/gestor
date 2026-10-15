@@ -53,8 +53,14 @@ export function createWhatsappWorkflow({
     const rawStatus = String(
       json.status ??
         json.state ??
-        (json.connected ? 'conectado' : 'desconectado'),
-    ).toLowerCase();
+        (json.connected === true
+          ? 'conectado'
+          : json.connected === false
+            ? 'desconectado'
+            : 'desconhecido'),
+    )
+      .trim()
+      .toLowerCase();
     const status = [
       'connected',
       'open',
@@ -94,7 +100,7 @@ export function createWhatsappWorkflow({
       typeof pairingValue === 'string' && pairingValue.trim()
         ? pairingValue.trim()
         : undefined;
-    const connected = Boolean(json.connected || status === 'conectado');
+    const connected = json.connected === true || status === 'conectado';
     const hasUsableQr = Boolean(qrCode) && !pairingCode;
     const hasPairing = Boolean(pairingCode) && !connected;
     // Número conectado (devolvido como dígitos puros pelo microserviço).
@@ -225,6 +231,7 @@ export function createWhatsappWorkflow({
       'GET',
       session,
     );
+    if (qrState.connected) return qrState;
     if (qrState.qrCode)
       return {
         ...state,

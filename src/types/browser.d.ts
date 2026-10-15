@@ -10,6 +10,8 @@ declare global {
     __geoData?: any;
     __gestorAbort?: AbortController;
     __gestorInitPage?: () => void;
+    __gestorInitShell?: () => void;
+    __gestorShellAbort?: AbortController;
     __gestorVisualEffects?: any;
     __waSessoesInterval?: any;
     csrfFetch?: typeof fetch;

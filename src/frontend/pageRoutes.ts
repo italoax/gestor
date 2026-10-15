@@ -28,6 +28,16 @@ export function isSitePage(pathname) {
   return pages.has(path) || /^\/(pagar|p|em-breve)\/[^/]+\/?$/.test(path);
 }
 
+export function isPanelPage(pathname: string) {
+  const path = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname;
+  return (
+    (pages.has(path) &&
+      !['/', '/login', '/register'].includes(path) &&
+      !path.startsWith('/area-cliente')) ||
+    /^\/em-breve\/[^/]+$/.test(path)
+  );
+}
+
 export function isUnknownPageNavigation(
   pathname: string,
   method: string,

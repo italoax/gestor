@@ -1,7 +1,7 @@
 import { ClientRow } from './ClientRow.tsx';
 import { Fragment } from 'react';
 import { Icon } from './ui.tsx';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   formatMoney,
   statusByVencimento as getStatus,
@@ -31,6 +31,12 @@ export function ClientsList({
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState({ column: 'status', direction: 'desc' });
   const [selected, setSelected] = useState(new Set());
+  useEffect(() => {
+    const ids = new Set(clientes.map((client) => client.id));
+    setSelected(
+      (previous) => new Set([...previous].filter((id) => ids.has(id))),
+    );
+  }, [clientes]);
   const clientesOrdenados = useMemo(
     () => sortClients(clientes, sort, sortNow),
     [clientes, sort, sortNow],

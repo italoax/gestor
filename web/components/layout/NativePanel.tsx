@@ -20,7 +20,7 @@ export function NativePanel({
         <SiteNotice success={data.success} error={data.error} />
         {children}
       </PanelShell>
-      <LegacyControllers revision={path} nativeNavigation />
+      <LegacyControllers revision={data} />
     </>
   );
 }

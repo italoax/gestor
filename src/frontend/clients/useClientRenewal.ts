@@ -73,6 +73,22 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     return preferenceClient.current;
   };
   useEffect(() => {
+    const finished = (event: Event) => {
+      const kind =
+        event.target === singleRef.current
+          ? 'single'
+          : event.target === multiRef.current
+            ? 'multi'
+            : undefined;
+      if (!kind) return;
+      submittingRef.current = { ...submittingRef.current, [kind]: false };
+      setSubmitting(submittingRef.current);
+    };
+    document.addEventListener('gestor:submit-finished', finished);
+    return () =>
+      document.removeEventListener('gestor:submit-finished', finished);
+  }, []);
+  useEffect(() => {
     const onFocus = () => {
       const open = ['modal-add-pagamento', 'modal-renovar-planos'].some(
         (id) =>

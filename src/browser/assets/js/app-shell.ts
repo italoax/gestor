@@ -1,8 +1,48 @@
+import {
+  advanceWhatsappIndicator,
+  type WhatsappIndicator,
+} from '../../../frontend/whatsappIndicator.js';
 import { initReleaseNotice } from './ui/release-notice.js';
 
-(function () {
+window.__gestorInitShell = function () {
+  window.__gestorShellAbort?.abort();
   const lifecycle = new AbortController();
-  document.addEventListener('gestor:before-swap', () => lifecycle.abort(), { once: true });
+  window.__gestorShellAbort = lifecycle;
+  const timeouts = new Set<number>();
+  const intervals = new Set<number>();
+  const on = (
+    target: EventTarget,
+    type: string,
+    handler: (event: any) => void,
+    options: AddEventListenerOptions | boolean = {},
+  ) =>
+    target.addEventListener(type, handler, {
+      ...(typeof options === 'boolean' ? { capture: options } : options),
+      signal: lifecycle.signal,
+    });
+  const setTimeout = (callback: () => void, delay: number) => {
+    if (lifecycle.signal.aborted) return;
+    const timer = window.setTimeout(() => {
+      timeouts.delete(timer);
+      if (!lifecycle.signal.aborted) callback();
+    }, delay);
+    timeouts.add(timer);
+    return timer;
+  };
+  const setInterval = (callback: () => void, delay: number) => {
+    const timer = window.setInterval(callback, delay);
+    intervals.add(timer);
+    return timer;
+  };
+  lifecycle.signal.addEventListener(
+    'abort',
+    () => {
+      timeouts.forEach((timer) => window.clearTimeout(timer));
+      intervals.forEach((timer) => window.clearInterval(timer));
+    },
+    { once: true },
+  );
+  on(document, 'gestor:before-swap', () => lifecycle.abort());
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
   var shell = document.querySelector('[data-shell]') as HTMLElement;
   void initReleaseNotice(shell, lifecycle.signal);
@@ -104,12 +144,12 @@ import { initReleaseNotice } from './ui/release-notice.js';
     setMobileMenu(false);
   }
   menuButtons.forEach(function (button) {
-    button.addEventListener('click', function () {
+    on(button, 'click', function () {
       if (shell) setMobileMenu(!shell.classList.contains('sidebar-open'));
     });
   });
-  if (backdrop) backdrop.addEventListener('click', closeMobile);
-  document.addEventListener('keydown', function (event) {
+  if (backdrop) on(backdrop, 'click', closeMobile);
+  on(document, 'keydown', function (event) {
     if (event.key === 'Escape') closeMobile();
   });
   function updateDock(event?: Event & { detail?: { url?: string } }) {
@@ -130,9 +170,9 @@ import { initReleaseNotice } from './ui/release-notice.js';
     });
   }
   updateDock();
-  document.addEventListener('gestor:navigated', updateDock);
-  document.addEventListener('gestor:navigation-start', updateDock);
-  document.addEventListener('gestor:navigation-finished', updateDock);
+  on(document, 'gestor:navigated', updateDock);
+  on(document, 'gestor:navigation-start', updateDock);
+  on(document, 'gestor:navigation-finished', updateDock);
 
   var accountWrap = document.querySelector(
     '[data-account-menu-wrap]',
@@ -148,14 +188,14 @@ import { initReleaseNotice } from './ui/release-notice.js';
     accountMenu.hidden = true;
     accountToggle.setAttribute('aria-expanded', 'false');
   }
-  document.addEventListener('gestor:before-swap', closeAccountMenu);
+  on(document, 'gestor:before-swap', closeAccountMenu);
   if (accountToggle && accountMenu) {
-    accountToggle.addEventListener('click', function () {
+    on(accountToggle, 'click', function () {
       var open = accountMenu.hidden;
       accountMenu.hidden = !open;
       accountToggle.setAttribute('aria-expanded', String(open));
     });
-    document.addEventListener('click', function (event) {
+    on(document, 'click', function (event) {
       if (
         !accountWrap.contains(event.target as HTMLElement) ||
         ((event.target as HTMLElement).closest(
@@ -164,13 +204,13 @@ import { initReleaseNotice } from './ui/release-notice.js';
       )
         closeAccountMenu();
     });
-    document.addEventListener('keydown', function (event) {
+    on(document, 'keydown', function (event) {
       if (event.key === 'Escape' && !accountMenu.hidden) {
         closeAccountMenu();
         accountToggle.focus();
       }
     });
-    document.addEventListener('focusin', function (event) {
+    on(document, 'focusin', function (event) {
       if (!accountWrap.contains(event.target as HTMLElement))
         closeAccountMenu();
     });
@@ -181,7 +221,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
     '[data-dismiss-banner]',
   ) as HTMLElement;
   if (bannerClose) {
-    bannerClose.addEventListener('click', function () {
+    on(bannerClose, 'click', function () {
       var banner = bannerClose.closest('.dash-banner') as HTMLElement;
       if (banner) banner.remove();
     });
@@ -189,7 +229,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
 
   // Atalho Ctrl+K para a busca
   var search = document.querySelector('[data-global-search]') as HTMLElement;
-  document.addEventListener('keydown', function (e) {
+  on(document, 'keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
       e.preventDefault();
       if (search) search.focus();
@@ -200,6 +240,28 @@ import { initReleaseNotice } from './ui/release-notice.js';
   // tooltip com o número conectado. Atualiza a cada 30s pra refletir
   // reconexões/desconexões. Sem texto "on/off" exibido — só a bolinha.
   var waChip = document.querySelector('[data-wa-chip]') as HTMLElement;
+  let waState: WhatsappIndicator = { disconnectedChecks: 0 };
+  try {
+    const cached = JSON.parse(
+      sessionStorage.getItem(waChip?.dataset.waStateKey) || 'null',
+    );
+    if (
+      cached?.connected === true &&
+      Number.isFinite(cached.at) &&
+      Date.now() - cached.at >= 0 &&
+      Date.now() - cached.at < 120000
+    ) {
+      waState = {
+        connected: true,
+        disconnectedChecks: 0,
+        deviceId: cached.deviceId,
+      };
+      waChip.classList.add('is-on');
+      waChip.classList.remove('is-off');
+      waChip.title = 'WhatsApp conectado';
+      waChip.setAttribute('aria-label', waChip.title);
+    }
+  } catch {}
   function formatarNumeroWa(num) {
     var d = String(num || '').replace(/\D+/g, '');
     if (!d) return '';
@@ -232,28 +294,45 @@ import { initReleaseNotice } from './ui/release-notice.js';
     return fetch('/whatsapp/status', {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
+      signal: AbortSignal.any([lifecycle.signal, AbortSignal.timeout(20000)]),
     })
       .then(function (r) {
         window.gestorPolling.recordResponse(r);
-        return r.ok ? r.json() : null;
+        return r.ok && !r.redirected ? r.json() : null;
       })
       .then(function (s) {
-        if (!s) return; // resposta invalida — nao muda o estado
-        // Erros e respostas incompletas não confirmam uma desconexão.
-        var connected = s.connected === true || s.status === 'conectado';
-        if (
-          !connected &&
-          ['desconectado', 'qr', 'iniciando'].indexOf(s.status) === -1
-        )
+        if (lifecycle.signal.aborted) return;
+        if (!s) {
+          waState = { ...waState, disconnectedChecks: 0 };
           return;
+        }
+        // Erros e respostas incompletas não confirmam uma desconexão.
+        waState = advanceWhatsappIndicator(waState, s);
+        if (waState.disconnectedChecks === 1) setTimeout(atualizarWaChip, 1500);
+        const connected = waState.connected;
+        if (connected === undefined) {
+          waChip.classList.remove('is-on', 'is-off');
+          waChip.title = 'Verificando a conexão do WhatsApp';
+          waChip.setAttribute('aria-label', waChip.title);
+          return;
+        }
         waChip.classList.toggle('is-on', connected);
         waChip.classList.toggle('is-off', !connected);
-        try {
-          sessionStorage.setItem(
-            waChip.dataset.waStateKey,
-            JSON.stringify({ connected: connected, at: Date.now() }),
-          );
-        } catch (e) {}
+        if (
+          s.connected === true ||
+          s.status === 'conectado' ||
+          waState.disconnectedChecks >= 2
+        )
+          try {
+            sessionStorage.setItem(
+              waChip.dataset.waStateKey,
+              JSON.stringify({
+                connected: connected,
+                at: Date.now(),
+                deviceId: waState.deviceId,
+              }),
+            );
+          } catch (e) {}
         if (connected && s.number) {
           var fmt = formatarNumeroWa(s.number);
           waChip.title =
@@ -269,6 +348,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
         waChip.setAttribute('aria-label', waChip.title);
       })
       .catch(function () {
+        waState = { ...waState, disconnectedChecks: 0 };
         /* rede off — nao mexe no estado, evita falso "desconectado" */
       })
       .then(function () {
@@ -294,15 +374,15 @@ import { initReleaseNotice } from './ui/release-notice.js';
     }
     waSchedule();
     // Refetch quando o user volta pra aba (mobile: troca de app).
-    document.addEventListener('visibilitychange', function () {
+    on(document, 'visibilitychange', function () {
       if (document.visibilityState === 'visible') atualizarWaChip();
     });
-    window.addEventListener('focus', atualizarWaChip);
-    window.addEventListener('pageshow', atualizarWaChip);
+    on(window, 'focus', atualizarWaChip);
+    on(window, 'pageshow', atualizarWaChip);
   }
 
   // Copiar ID do cliente (botão ⧉ na tabela)
-  document.addEventListener('click', function (e) {
+  on(document, 'click', function (e) {
     var btn = (e.target as HTMLElement).closest('[data-copy]') as HTMLElement;
     if (!btn) return;
     e.preventDefault();
@@ -323,7 +403,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
     ) as NodeListOf<HTMLInputElement>
   ).forEach(function (master) {
     if (master.closest('[data-react-page]') as HTMLElement) return;
-    master.addEventListener('change', function () {
+    on(master, 'change', function () {
       var scope = (master.closest('table') as HTMLElement) || document;
       (
         scope.querySelectorAll(
@@ -351,7 +431,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
         if (b) b.setAttribute('aria-expanded', 'false');
       });
     }
-    document.addEventListener('click', function (e) {
+    on(document, 'click', function (e) {
       var trigger = (e.target as HTMLElement).closest(
         '.cli-menu-btn',
       ) as HTMLElement;
@@ -452,15 +532,15 @@ import { initReleaseNotice } from './ui/release-notice.js';
       }
       closeAllMenus();
     });
-    window.addEventListener('scroll', closeAllMenus, true);
-    window.addEventListener('resize', closeAllMenus);
-    document.addEventListener('keydown', function (e) {
+    on(window, 'scroll', closeAllMenus, true);
+    on(window, 'resize', closeAllMenus);
+    on(document, 'keydown', function (e) {
       if (e.key === 'Escape') closeAllMenus();
     });
   })();
 
   // -------- Sino de notificações --------
-  document.addEventListener('click', async function (event) {
+  on(document, 'click', async function (event) {
     var button = (event.target as HTMLElement).closest(
       '[data-confirm-renovacao]',
     ) as HTMLInputElement;
@@ -663,21 +743,21 @@ import { initReleaseNotice } from './ui/release-notice.js';
       toggle.setAttribute('aria-expanded', 'false');
       state.open = false;
     }
-    toggle.addEventListener('click', function (e) {
+    on(toggle, 'click', function (e) {
       e.stopPropagation();
       if (state.open) fechar();
       else abrir();
     });
-    document.addEventListener('click', function (e) {
+    on(document, 'click', function (e) {
       if (state.open && !wrap.contains(e.target as HTMLElement)) fechar();
     });
-    document.addEventListener('keydown', function (e) {
+    on(document, 'keydown', function (e) {
       if (e.key === 'Escape' && state.open) fechar();
     });
-    document.addEventListener('gestor:before-swap', fechar);
-    document.addEventListener('gestor:navigated', carregar);
+    on(document, 'gestor:before-swap', fechar);
+    on(document, 'gestor:navigated', carregar);
 
-    list.addEventListener('click', function (e) {
+    on(list, 'click', function (e) {
       var del = (e.target as HTMLElement).closest(
         '[data-notif-del]',
       ) as HTMLElement;
@@ -714,7 +794,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
         // deixa o browser navegar normal
       }
     });
-    clearBtn.addEventListener('click', function () {
+    on(clearBtn, 'click', function () {
       if (!state.items.length) return;
       if (!confirm('Limpar os avisos? As renovações pendentes serão mantidas.'))
         return;
@@ -731,7 +811,7 @@ import { initReleaseNotice } from './ui/release-notice.js';
     state.intervalo = setInterval(function () {
       if (document.visibilityState === 'visible') carregar();
     }, 60000);
-    document.addEventListener('visibilitychange', function () {
+    on(document, 'visibilitychange', function () {
       if (document.visibilityState === 'visible') carregar();
     });
   })();
@@ -835,4 +915,5 @@ import { initReleaseNotice } from './ui/release-notice.js';
       return 'available';
     }
   };
-})();
+};
+window.__gestorInitShell();

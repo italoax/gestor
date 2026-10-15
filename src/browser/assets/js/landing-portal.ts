@@ -33,7 +33,7 @@
     dialog.setAttribute('aria-busy', 'true');
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    frame.src = '/area-cliente';
+    frame.src = '/area-cliente?embedded=1';
     dialog.showModal();
   });
   (
@@ -79,7 +79,6 @@
       dialog.classList.toggle('client-dialog-login', login);
       if (!login) dialog.style.height = '';
       if (login) {
-        doc.body.classList.add('portal-embedded-login');
         const resize = () => {
           if (!dialog.open || frame.contentDocument !== doc) return;
           const height = Math.ceil(

@@ -188,6 +188,7 @@ async function initGestor() {
         ? (document.getElementById(formId) as HTMLFormElement)
         : (btn.closest('form') as HTMLFormElement);
       if (!form) return;
+      if (form.closest('[data-ajax-panel]')) return;
       if (!form.hasAttribute('novalidate') && !form.checkValidity()) return;
       // CRITICO: NAO usar btn.disabled = true aqui. Se marcar disabled na fase
       // capture, o browser cancela a acao default (submit do form) porque ve o

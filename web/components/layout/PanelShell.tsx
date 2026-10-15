@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.tsx';
+import { PanelInteractions } from './PanelInteractions.tsx';
 
 const menu = [
   ['Dashboard', '/dashboard', 'chart'],
@@ -25,21 +26,31 @@ export function PanelShell({
   const currentPath = data.currentPath || '/clientes';
   const isActive = (href) =>
     currentPath === href || currentPath.startsWith(href + '/');
-  const ClientDockLink = currentPath === '/clientes' ? Link : 'a';
   return (
-    <div className="app-shell" data-shell="">
+    <div className="app-shell" data-shell="" data-ajax-panel="">
+      <PanelInteractions path={currentPath} />
       <aside className="sidebar" data-sidebar="">
         <a
           className="sidebar-brand sidebar-brand-custom"
           href="/dashboard"
           aria-label="ixstreaming - Dashboard"
         >
-          <span className="sidebar-brand-image">
+          <span
+            className="sidebar-brand-image"
+            style={{
+              display: 'block',
+              position: 'relative',
+              width: 180,
+              maxWidth: '100%',
+              aspectRatio: '300 / 145',
+              overflow: 'hidden',
+            }}
+          >
             <img
               src="/assets/images/ixlogo.png"
               alt="ixstreaming"
-              width="1280"
-              height="1280"
+              width="243"
+              height="243"
             />
           </span>
         </a>
@@ -58,14 +69,10 @@ export function PanelShell({
               href,
               'aria-current': isActive(href) ? ('page' as const) : undefined,
             };
-            return href === '/clientes' && currentPath === '/clientes' ? (
+            return (
               <Link key={href} prefetch={false} {...props}>
                 {content}
               </Link>
-            ) : (
-              <a key={href} {...props}>
-                {content}
-              </a>
             );
           })}
         </nav>
@@ -204,16 +211,16 @@ export function PanelShell({
           <Icon name="chart" />
           <span>Dashboard</span>
         </a>
-        <ClientDockLink
+        <Link
           href="/clientes"
-          {...(currentPath === '/clientes' ? { prefetch: false } : {})}
+          prefetch={false}
           data-dock-link=""
           className={isActive('/clientes') ? 'is-active' : undefined}
           aria-current={isActive('/clientes') ? 'page' : undefined}
         >
           <Icon name="users" />
           <span>Clientes</span>
-        </ClientDockLink>
+        </Link>
         <a href="/automacao" data-dock-link="">
           <Icon name="bolt" />
           <span>Automação</span>

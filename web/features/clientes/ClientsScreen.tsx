@@ -21,7 +21,7 @@ export function ClientsScreen({ data }: { data?: any }) {
           error={data.error}
         />
         <div data-react-page="clientes" id="next-clientes-root">
-          <ClientsPage key={data.page.now} data={data.page} />
+          <ClientsPage data={data.page} />
         </div>
         <LegacyControllers revision={data.page.now} />
         <div hidden>

@@ -280,29 +280,29 @@ h2 {
   }
 }
 
-.portal-embedded-login {
+.portal-embedded-login:has(.portal-login) {
   min-height: 0;
   background: var(--panel);
 }
-.portal-embedded-login .portal-wrap {
+.portal-embedded-login:has(.portal-login) .portal-wrap {
   width: 100%;
 }
-.portal-embedded-login .portal-header,
-.portal-embedded-login .portal-footer,
-.portal-embedded-login .portal-help {
+.portal-embedded-login:has(.portal-login) .portal-header,
+.portal-embedded-login:has(.portal-login) .portal-footer,
+.portal-embedded-login:has(.portal-login) .portal-help {
   display: none;
 }
-.portal-embedded-login .portal-main {
+.portal-embedded-login:has(.portal-login) .portal-main {
   padding: 0;
 }
-.portal-embedded-login .portal-login {
+.portal-embedded-login:has(.portal-login) .portal-login {
   max-width: none;
   margin: 0;
   border: 0;
   border-radius: 0;
   padding: 32px 28px 28px;
 }
-.portal-embedded-login .portal-alert {
+.portal-embedded-login:has(.portal-login) .portal-alert {
   margin: 0;
   padding-right: 48px;
   border-radius: 0;

@@ -20,6 +20,12 @@ export function NativeDialog({
   const titleId = useId();
   useEffect(() => {
     const element = dialog.current;
+    const saved = () => onClose?.();
+    element.addEventListener('gestor:submit-success', saved);
+    return () => element.removeEventListener('gestor:submit-success', saved);
+  }, [onClose]);
+  useEffect(() => {
+    const element = dialog.current;
     const trigger = document.activeElement as HTMLElement;
     element.showModal();
     document.body.classList.add('modal-open');

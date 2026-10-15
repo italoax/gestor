@@ -15,6 +15,7 @@ import {
   exposeFrontendPage,
 } from './middleware/frontendPages.ts';
 import { installNativeRouteMiddleware } from './middleware/nativeRoutes.ts';
+import { exposeFrontendAction } from './middleware/frontendActions.ts';
 
 // Monta o aplicativo sem abrir a porta HTTP nem iniciar automações.
 // O Nest controla a inicialização e o encerramento do processo.
@@ -39,6 +40,7 @@ export function createApplication({
   routes.use(prepareFrontendSession);
   routes.use(flash());
   routes.use(exposeFrontendPage);
+  routes.use(exposeFrontendAction);
   // CSRF pode renderizar uma página de erro; seus locals já precisam existir.
   routes.use(exposeLocals);
   routes.use(csrfMiddleware);

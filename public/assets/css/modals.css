@@ -1,4 +1,9 @@
 /* Padrão compartilhado por formulários, detalhes, avisos e conexão WhatsApp. */
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) {
+  --modal-body-padding: 24px;
+  --modal-header-padding: 18px 24px;
+  --modal-footer-padding: 16px 24px;
+}
 html.modal-open,
 html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   overflow: hidden;
@@ -203,19 +208,24 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 .modal-overlay .modal::before {
   display: none;
 }
-.modal-overlay .modal-header {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-header {
   flex: 0 0 auto;
   position: relative;
-  padding: 16px 20px;
+  padding: var(--modal-header-padding);
   gap: 16px;
   background: var(--surface);
 }
-.modal-overlay .modal-header h3 {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-header
+  h3 {
+  margin: 0;
   font-size: 18px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.modal-overlay .modal-close {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-close {
   display: grid;
   place-items: center;
   flex: 0 0 44px;
@@ -227,11 +237,12 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   background: var(--surface-2);
   color: var(--text);
 }
-.modal-overlay .modal-body {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-body {
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  padding: 20px;
+  padding: var(--modal-body-padding);
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -239,26 +250,30 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   scroll-padding-block: 16px;
   overflow-wrap: anywhere;
 }
-.modal-overlay .modal-footer {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-footer {
   flex: 0 0 auto;
   position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  padding: 14px 20px;
+  padding: var(--modal-footer-padding);
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
-.modal-overlay .modal-actions {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
   margin-top: 20px;
 }
-.modal-overlay :is(.modal-footer, .modal-actions) .btn {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  :is(.modal-footer, .modal-actions)
+  .btn {
   min-height: 44px;
   min-width: 0;
   white-space: normal;
@@ -266,8 +281,10 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   justify-content: center;
   line-height: 1.4;
 }
-.modal-overlay .modal-tabs,
-.modal-overlay .tabs-bar {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-tabs,
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .tabs-bar {
   position: relative;
   flex: 0 0 auto;
   display: flex;
@@ -279,7 +296,7 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
-.modal-overlay .tab-btn {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) .tab-btn {
   min-height: 40px;
   flex: 1 1 auto;
   padding: 8px 12px;
@@ -287,22 +304,25 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   border-radius: 10px;
   color: var(--muted);
 }
-.modal-overlay .tab-btn.active {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .tab-btn.active {
   color: var(--text);
   background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
 }
-.modal-overlay .form-grid {
-  gap: 16px;
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .form-grid {
+  gap: 18px 16px;
 }
-.modal-overlay .field {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) .field {
   min-width: 0;
   gap: 7px;
 }
-.modal-overlay .field {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) .field {
   align-content: start;
 }
-.modal-overlay .plano-info {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .plano-info {
   display: block;
   line-height: 1.6;
 }
@@ -334,6 +354,13 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   box-shadow: none;
   outline: none;
 }
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .password-control
+  .input {
+  min-height: 0;
+  height: 100%;
+  padding-block: 0;
+}
 .password-control button {
   display: grid;
   place-items: center;
@@ -358,41 +385,73 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 [data-password-feedback]:empty {
   display: none;
 }
-.modal-overlay .field > span:first-child {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .field
+  > span:first-child {
+  margin: 0;
   color: var(--text);
   font-weight: 500;
 }
-.modal-overlay .field small {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .field
+  small {
   line-height: 1.5;
+  font-size: 12px;
 }
-.modal-overlay .input {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) .input {
   min-width: 0;
   max-width: 100%;
   min-height: 44px;
+  padding: 10px 12px;
 }
-.modal-overlay textarea.input {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  textarea.input {
   min-height: 104px;
   resize: vertical;
 }
-.modal-overlay :is(button, a, input, select, textarea):focus-visible {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  :is(button, a, input, select, textarea):focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
 }
-.modal-overlay .form-alert {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .form-alert {
   margin: 0 0 16px;
   line-height: 1.6;
 }
-.modal-overlay .form-alert:last-child {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .form-alert:last-child {
   margin-bottom: 0;
 }
-.modal-overlay .form-alert p {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .form-alert
+  p {
   margin: 0;
 }
-.modal-overlay .form-alert p + p {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .form-alert
+  p
+  + p {
   margin-top: 10px;
 }
-.modal-overlay .modal-error:empty {
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-error:empty {
   display: none;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .field-error:empty {
+  display: none;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-body
+  > p {
+  margin: 0 0 16px;
+  line-height: 1.6;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-body
+  > p:last-child {
+  margin-bottom: 0;
 }
 .modal-overlay.open .modal {
   animation: dialog-enter 160ms ease-out !important;
@@ -408,6 +467,11 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   }
 }
 @media (max-width: 600px) {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) {
+    --modal-body-padding: 16px;
+    --modal-header-padding: 14px 16px;
+    --modal-footer-padding: 14px 16px;
+  }
   .modal-overlay {
     padding: max(10px, env(safe-area-inset-top))
       max(10px, env(safe-area-inset-right))
@@ -425,38 +489,50 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
     border: 1px solid var(--border);
     align-self: center;
   }
-  .modal-overlay .modal-header {
-    padding: 12px 14px;
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .modal-header {
+    padding: var(--modal-header-padding);
     gap: 10px;
   }
-  .modal-overlay .modal-header h3 {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .modal-header
+    h3 {
     font-size: 17px;
   }
-  .modal-overlay .modal-body {
-    padding: 16px;
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .modal-body {
+    padding: var(--modal-body-padding);
     scrollbar-gutter: auto;
   }
-  .modal-overlay .modal-footer {
-    padding: 12px 14px;
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .modal-footer {
+    padding: var(--modal-footer-padding);
   }
-  .modal-overlay :is(.modal-footer, .modal-actions) .btn {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    :is(.modal-footer, .modal-actions)
+    .btn {
     flex: 1 1 120px;
     min-height: 46px;
     padding: 10px 12px;
   }
-  .modal-overlay .modal-tabs,
-  .modal-overlay .tabs-bar {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .modal-tabs,
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .tabs-bar {
     padding: 10px 14px;
   }
-  .modal-overlay .tab-btn {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .tab-btn {
     flex-basis: calc(50% - 6px);
     font-size: 13px;
   }
-  .modal-overlay .input {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) .input {
     font-size: 16px !important;
   }
-  .modal-overlay .form-grid {
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+    .form-grid {
     grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -607,210 +683,17 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   font-weight: 600;
 }
 
-/* Modais da aba Clientes: menos espaço entre os campos e seções. */
+/* Larguras específicas; o espaçamento segue o padrão compartilhado. */
 .modal-overlay.client-modal .modal {
-  --dialog-width: 460px;
+  --dialog-width: 560px;
 }
 .modal-overlay.client-modal .modal-lg {
-  --dialog-width: 620px;
+  --dialog-width: 760px;
 }
 .modal-overlay.client-modal .modal-sm {
-  --dialog-width: 360px;
-}
-.modal-overlay.client-modal .modal-header {
-  padding: 6px 12px;
-  gap: 10px;
-}
-.modal-overlay.client-modal .modal-header h3 {
-  font-size: 15px;
-  margin: 0;
-}
-.modal-overlay.client-modal .modal-body {
-  padding: 10px 12px;
-}
-.modal-overlay.client-modal .modal-footer {
-  padding: 6px 12px;
-  gap: 8px;
-}
-.modal-overlay.client-modal .modal-tabs {
-  padding: 4px 12px;
-  gap: 3px;
-}
-.modal-overlay.client-modal .tab-btn {
-  padding: 5px 8px;
-}
-.modal-overlay.client-modal .form-grid {
-  gap: 7px 10px;
-}
-.modal-overlay.client-modal .field {
-  gap: 3px;
-}
-.modal-overlay.client-modal .field small {
-  font-size: 11px;
-  line-height: 1.3;
-}
-.modal-overlay.client-modal .input {
-  padding: 5px 8px;
-  min-height: 34px;
-  font-size: 13px;
-  line-height: 1.35;
-}
-.modal-overlay.client-modal textarea.input {
-  min-height: 64px;
-}
-.modal-overlay.client-modal .form-alert {
-  margin-bottom: 7px;
-  padding: 10px 12px;
-  line-height: 1.45;
-}
-.client-modal .server-picker {
-  padding: 8px;
-}
-.client-modal .server-access-card {
-  padding: 8px;
-  margin: 7px 0;
-}
-.client-modal .server-access-card h4,
-.client-modal [data-adicional-titulo] {
-  margin-bottom: 7px;
-}
-.client-modal .server-total {
-  padding: 7px 9px;
-  margin: 7px 0;
-}
-.client-modal .server-total strong {
-  font-size: 16px;
-}
-.client-modal .server-extra,
-.client-modal .server-extra > .form-grid {
-  margin-top: 7px;
-}
-#modal-client-access.client-modal .modal-body {
-  padding: 10px 12px;
-}
-.client-modal .access-identity {
-  margin-bottom: 8px;
-  gap: 8px;
-}
-.client-modal .access-actions {
-  gap: 8px;
-}
-.client-modal .access-setting {
-  padding: 8px 0;
-}
-.client-modal .access-revoke {
-  padding: 8px;
-}
-.client-modal .access-revoke .btn {
-  margin-top: 6px;
-}
-.client-modal .access-notice {
-  margin-bottom: 7px;
-}
-@media (max-width: 600px) {
-  .modal-overlay.client-modal .modal-header,
-  .modal-overlay.client-modal .modal-footer {
-    padding: 8px 12px;
-  }
-  .modal-overlay.client-modal .modal-body,
-  #modal-client-access.client-modal .modal-body {
-    padding: 8px;
-  }
-  .modal-overlay.client-modal .modal-tabs {
-    padding: 6px 12px;
-  }
-  .modal-overlay.client-modal .input {
-    min-height: 40px;
-  }
-}
-
-/* Controles e cart?es menores dentro dos modais de Clientes. */
-.modal-overlay.client-modal .modal {
-  border-radius: 14px;
-}
-.modal-overlay.client-modal .modal-close {
-  flex-basis: 34px;
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 8px;
-}
-.modal-overlay.client-modal :is(.modal-footer, .modal-actions) .btn {
-  min-height: 34px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-.modal-overlay.client-modal .field {
-  font-size: 12px;
-}
-.modal-overlay.client-modal .tab-btn {
-  font-size: 12px;
-}
-.modal-overlay.client-modal .password-control button {
-  height: 34px;
-}
-.modal-overlay.client-modal .modal-body > p {
-  margin: 6px 0;
-  font-size: 12px;
-  line-height: 1.4;
-}
-.client-modal .server-options {
-  gap: 5px;
-  margin-top: 8px;
-  max-height: 160px;
-}
-.client-modal .server-option {
-  min-height: 34px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
-.client-modal .cli-apps-card {
-  padding: 8px;
-  gap: 7px;
-  border-radius: 8px;
-}
-.client-modal .cli-apps-card + .cli-apps-card {
-  margin-top: 8px;
-}
-.client-modal .switch-field {
-  padding: 7px 9px;
-  gap: 7px;
-}
-.client-modal .switch-field strong {
-  font-size: 12px;
-}
-#modal-client-access.client-modal .access-dialog {
   --dialog-width: 400px;
 }
-.client-modal .access-identity h3 {
-  font-size: 16px;
-  margin-bottom: 3px;
-}
-.client-modal .access-setting p,
-.client-modal .access-revoke p {
-  line-height: 1.35;
-  margin-top: 3px;
-}
-@media (max-width: 600px) {
-  .modal-overlay.client-modal .tab-btn {
-    flex-basis: auto;
-    flex-grow: 1;
-    min-height: 40px;
-  }
-  .modal-overlay.client-modal .password-control button {
-    height: 40px;
-  }
-  .modal-overlay.client-modal .modal-close {
-    flex-basis: 40px;
-    width: 40px !important;
-    height: 40px !important;
-  }
-  .modal-overlay.client-modal :is(.modal-footer, .modal-actions) .btn {
-    min-height: 40px;
-  }
-  .client-modal .server-option {
-    min-height: 40px;
-  }
-}
+
 dialog:is(.react-catalog-dialog, .react-dialog)::backdrop {
   background: rgb(0 0 0 / 58%);
   backdrop-filter: blur(5px);
@@ -818,11 +701,9 @@ dialog:is(.react-catalog-dialog, .react-dialog)::backdrop {
 dialog:is(.react-catalog-dialog, .react-dialog):not([open]) {
   display: none;
 }
-dialog:is(.react-catalog-dialog, .react-dialog) .modal-body {
-  padding: 20px;
-}
-dialog:is(.react-catalog-dialog, .react-dialog) .modal-footer {
-  padding: 14px 20px;
+dialog:is(.react-catalog-dialog, .react-dialog)[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 dialog.release-notice {

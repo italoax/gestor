@@ -24,14 +24,21 @@ export default async function RootLayout({
   children?: React.ReactNode;
 }) {
   const request = await headers();
-  const path = (request.get('x-gestor-page-url') || '/').split('?')[0];
+  const pageUrl = new URL(
+    request.get('x-gestor-page-url') || '/',
+    'http://gestor.local',
+  );
+  const path = pageUrl.pathname;
   const bodyClass =
     path === '/'
       ? 'site-effects'
       : path === '/login' || path === '/register'
         ? 'login-page'
         : path.startsWith('/area-cliente') || /^\/(pagar|p)\//.test(path)
-          ? ''
+          ? path === '/area-cliente' &&
+            pageUrl.searchParams.get('embedded') === '1'
+            ? 'portal-embedded-login'
+            : ''
           : 'page-app';
   return (
     <html lang="pt-br" suppressHydrationWarning>

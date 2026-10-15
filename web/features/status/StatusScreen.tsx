@@ -4,6 +4,8 @@ import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import { useRouter } from 'next/navigation';
+import { postPanelAction } from '../../../src/frontend/panelAction.ts';
 
 const colors = [
   ['#075E54', 'Verde escuro'],
@@ -76,6 +78,7 @@ function StatusEditor({
   token?: string;
   onClose?: (...args: any[]) => any;
 }) {
+  const router = useRouter();
   const [type, setType] = useState(item?.tipo || 'text');
   const [text, setText] = useState(item?.texto || '');
   const [color, setColor] = useState(
@@ -144,22 +147,14 @@ function StatusEditor({
     setError('');
     controller.current = new AbortController();
     try {
-      const response = await fetch('/status', {
-        method: 'POST',
-        body: payload,
-        headers: { 'x-csrf-token': token },
-        redirect: 'manual',
+      const result = await postPanelAction('/status', payload, {
+        csrfToken: token,
         signal: controller.current.signal,
       });
-      if (response.type === 'opaqueredirect') {
-        location.assign('/status');
-        return;
-      }
-      throw new Error(
-        response.status === 403
-          ? 'Sua sessão expirou. Recarregue a página e tente novamente.'
-          : 'Não foi possível salvar o status. Tente novamente.',
-      );
+      if (result.redirect === '/login') return router.replace('/login');
+      if (!result.ok) throw new Error(result.errors.join(' '));
+      onClose();
+      router.refresh();
     } catch (failure) {
       if (controller.current.signal.aborted) return;
       pending.current = false;
@@ -408,6 +403,7 @@ export function StatusScreen({ data }: { data?: any }) {
   const [history, setHistory] = useState(data.historico);
   const [editor, setEditor] = useState(null);
   const [error, setError] = useState('');
+  useEffect(() => setHistory(data.historico), [data.historico]);
   useEffect(() => {
     const controller = new AbortController();
     let timer;

@@ -171,10 +171,18 @@ export async function runStack(listener?: PublicListener) {
     // A consulta de saúde ao MySQL não deve impedir a preparação do Next.js.
     let ready = !development;
     let lastHealthError: unknown;
-    for (let attempt = 0; development && attempt < 30 && !stopping; attempt++) {
+    // A primeira transformação do tsx e a conexão ao MySQL podem levar mais
+    // de 15 segundos. Use o mesmo prazo de inicialização da produção.
+    const healthDeadline = performance.now() + 60000;
+    while (development && performance.now() < healthDeadline && !stopping) {
       try {
         const response = await fetch(`${backendUrl}/healthz`, {
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(
+            Math.max(
+              1,
+              Math.min(6000, Math.ceil(healthDeadline - performance.now())),
+            ),
+          ),
           redirect: 'error',
         });
         if (response.ok) {
@@ -191,13 +199,15 @@ export async function runStack(listener?: PublicListener) {
         // Reporte a falha somente se o backend não ficar pronto no prazo.
         lastHealthError = error;
       }
-      await sleep(500);
+      await sleep(
+        Math.max(0, Math.min(500, healthDeadline - performance.now())),
+      );
     }
     if (!ready) {
       if (stopping) return;
       console.error('Falha ao consultar a saúde do backend:', lastHealthError);
       console.error(
-        'O backend não ficou disponível. Consulte o erro de inicialização acima.',
+        'O backend não ficou disponível em 60 segundos. Consulte o erro de inicialização acima.',
       );
       await shutdown(1);
     } else {

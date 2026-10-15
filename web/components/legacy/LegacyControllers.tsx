@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 const modules = [
   'ui/modals',
@@ -34,34 +33,10 @@ function loadScript(path) {
   return loaded;
 }
 
-export function LegacyControllers({
-  revision,
-  nativeNavigation = false,
-}: {
-  revision?: any;
-  nativeNavigation?: boolean;
-}) {
-  const router = useRouter();
+export function LegacyControllers({ revision }: { revision?: any }) {
   const [error, setError] = useState('');
   useEffect(() => {
     let cancelled = false;
-    window.gestorNavigate = async (href) => {
-      const url = new URL(href, location.href);
-      if (
-        !nativeNavigation &&
-        url.origin === location.origin &&
-        url.pathname === '/clientes'
-      ) {
-        if (url.pathname + url.search === location.pathname + location.search)
-          router.refresh();
-        else router.push(url.pathname + url.search + url.hash);
-        return true;
-      }
-      location.assign(url.href);
-      return true;
-    };
-    window.gestorRefresh = () =>
-      nativeNavigation ? location.reload() : router.refresh();
     async function initialize() {
       for (const module of modules) await loadScript(module);
       if (cancelled) return;
@@ -69,7 +44,10 @@ export function LegacyControllers({
       await loadScript('main');
       if (cancelled) return;
       if (alreadyInitialized) await window.__gestorInitPage();
+      const shellInitialized = Boolean(window.__gestorInitShell);
       await loadScript('app-shell');
+      if (cancelled) return;
+      if (shellInitialized) window.__gestorInitShell();
       await loadScript('visual-effects');
       if (!cancelled) setError('');
     }
@@ -83,7 +61,7 @@ export function LegacyControllers({
       document.body.classList.remove('modal-open');
       document.documentElement.classList.remove('modal-open');
     };
-  }, [revision, router, nativeNavigation]);
+  }, [revision]);
   return error ? (
     <div className="form-alert error" role="alert">
       {error}

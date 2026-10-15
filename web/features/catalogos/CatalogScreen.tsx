@@ -4,6 +4,7 @@ import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { PanelStyles } from '../../components/layout/PanelStyles.tsx';
 import { PanelShell, SiteNotice } from '../../components/layout/PanelShell.tsx';
 import { LegacyControllers } from '../../components/legacy/LegacyControllers.tsx';
+import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 
 const configs = {
   planos: {
@@ -59,24 +60,13 @@ function DeleteForm({
   item?: any;
   token?: string;
 }) {
-  const submitted = useRef(false);
-  useEffect(() => {
-    const reset = () => {
-      submitted.current = false;
-    };
-    window.addEventListener('pageshow', reset);
-    return () => window.removeEventListener('pageshow', reset);
-  }, []);
+  const submit = useNativeSubmit(`Deseja apagar ${item.nome}?`);
   return (
     <form
       className="action-form disp-del-form"
       method="post"
       action={`/${catalog}`}
-      onSubmit={(event) => {
-        if (submitted.current || !window.confirm(`Deseja apagar ${item.nome}?`))
-          event.preventDefault();
-        else submitted.current = true;
-      }}
+      onSubmit={submit}
     >
       <CsrfInput token={token} />
       <input
@@ -111,17 +101,13 @@ function CatalogEditor({
 }) {
   const config = configs[catalog];
   const dialog = useRef(null);
-  const submitted = useRef(false);
+  const submit = useNativeSubmit();
   const [tipo, setTipo] = useState(item?.tipo || 'Dias');
   const [periodo, setPeriodo] = useState(item?.periodo ?? 30);
   const [creditos, setCreditos] = useState(item?.creditos ?? 1);
   useEffect(() => {
     const element = dialog.current;
     const trigger = document.activeElement as HTMLElement;
-    const reset = () => {
-      submitted.current = false;
-    };
-    window.addEventListener('pageshow', reset);
     element.showModal();
     document.body.classList.add('modal-open');
     if (focusCredit) {
@@ -133,11 +119,15 @@ function CatalogEditor({
     }
     return () => {
       element.close();
-      window.removeEventListener('pageshow', reset);
       document.body.classList.remove('modal-open');
       if (trigger?.isConnected) trigger.focus();
     };
   }, [focusCredit]);
+  useEffect(() => {
+    const element = dialog.current;
+    element.addEventListener('gestor:submit-success', onClose);
+    return () => element.removeEventListener('gestor:submit-success', onClose);
+  }, [onClose]);
   function field(label, name, value, props: Record<string, any> = {}) {
     return (
       <label className="field">
@@ -190,10 +180,7 @@ function CatalogEditor({
         id="react-catalog-form"
         className="modal-body"
         data-native-submit="1"
-        onSubmit={(event) => {
-          if (submitted.current) event.preventDefault();
-          else submitted.current = true;
-        }}
+        onSubmit={submit}
       >
         <CsrfInput token={token} />
         <input
@@ -636,7 +623,7 @@ export function CatalogScreen({ data }: { data?: any }) {
           />
         )}
       </PanelShell>
-      <LegacyControllers revision={catalog} nativeNavigation />
+      <LegacyControllers revision={data} />
     </>
   );
 }

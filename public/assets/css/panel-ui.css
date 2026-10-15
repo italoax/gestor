@@ -2888,3 +2888,122 @@
     height: 18px;
   }
 }
+.page-app #modal-renovar-planos .modal {
+  width: min(520px, calc(100vw - 24px));
+}
+.page-app #modal-renovar-planos .modal-body {
+  padding: var(--modal-body-padding);
+}
+.page-app #modal-renovar-planos .renewal-customer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.page-app #modal-renovar-planos .renewal-customer-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+.page-app #modal-renovar-planos .renewal-customer small,
+.page-app #modal-renovar-planos .renewal-total small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+.page-app #modal-renovar-planos [data-multi-nome] {
+  display: block;
+  font-size: 18px;
+}
+.page-app #modal-renovar-planos .form-grid {
+  gap: 16px;
+}
+.page-app #modal-renovar-planos .field-error:empty {
+  display: none;
+}
+.page-app #modal-renovar-planos .renewal-summary {
+  gap: 10px;
+}
+.page-app #modal-renovar-planos .renewal-summary h4 {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.page-app #modal-renovar-planos .renewal-server {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border, var(--line, #39333f));
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.page-app #modal-renovar-planos .renewal-server-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 14px;
+}
+.page-app #modal-renovar-planos .renewal-server-heading > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.page-app #modal-renovar-planos .renewal-server-heading > :last-child {
+  white-space: nowrap;
+}
+.page-app #modal-renovar-planos .renewal-server-plan {
+  margin: 5px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.page-app #modal-renovar-planos .renewal-server-date {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border, var(--line, #39333f));
+  font-size: 12px;
+}
+.page-app #modal-renovar-planos .renewal-server-date span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.page-app #modal-renovar-planos .renewal-server-date .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+.page-app #modal-renovar-planos .renewal-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 0 100%;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border, var(--line, #39333f));
+}
+.page-app #modal-renovar-planos .modal-footer {
+  padding: var(--modal-footer-padding);
+  gap: 12px;
+}
+.page-app #modal-renovar-planos .renewal-total small {
+  margin: 4px 0 0;
+}
+.page-app #modal-renovar-planos [data-multi-total] {
+  font-size: 25px;
+  letter-spacing: -0.7px;
+  white-space: nowrap;
+}
+.page-app #modal-renovar-planos .renewal-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
