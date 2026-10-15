@@ -42,7 +42,9 @@
     "start:frontend": "next start web --port 3000",
     "build:browser": "node --import tsx scripts/build-browser.mts",
     "typecheck": "node --import tsx scripts/check-types.mts",
-    "test:security:hosting": "node --import tsx scripts/run-isolated-tests.mts scripts/security-hosting.test.mts"
+    "test:security:hosting": "node --import tsx scripts/run-isolated-tests.mts scripts/security-hosting.test.mts",
+    "security:database:tls": "node --import tsx scripts/security-database-tls.mts",
+    "test:security:database:tls": "node --import tsx scripts/run-isolated-tests.mts scripts/security-database-tls.test.mts"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.3",

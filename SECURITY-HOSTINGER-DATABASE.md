@@ -1,5 +1,7 @@
 # Banco de dados Hostinger — ajuste posterior à Segurança 3.1
 
+> Evidência posterior: o [diagnóstico TLS autorizado de 15/10/2026](SECURITY-DATABASE-TLS-DIAGNOSTIC.md) validou cadeia e hostname de `srv1182.hstgr.io:3306` a partir do computador local. Isso permite preparar TLS remoto sem exceção local; a configuração e o runtime da hospedagem ainda precisam de validação autorizada. O restante deste documento registra as pendências existentes antes desse ensaio.
+
 ## Parecer e alcance
 
 **Implantação permanece bloqueada.** A configuração documentada pelo suporte, `localhost:3306`, sem TLS confirmado, não é aceita pela política padrão de produção. O suporte a uma exceção TCP local foi preparado, mas **nenhum ambiente está autorizado no código entregue**. Alterar apenas o `.env` não desbloqueia essa conexão.
