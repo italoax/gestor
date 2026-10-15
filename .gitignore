@@ -4,6 +4,7 @@ web/.next/
 public/assets/js/react/
 /public/assets/js/
 /public/sw.js
+/public/updates.json
 /web/next-env.d.ts
 *.tsbuildinfo
 .env

@@ -824,3 +824,74 @@ dialog:is(.react-catalog-dialog, .react-dialog) .modal-body {
 dialog:is(.react-catalog-dialog, .react-dialog) .modal-footer {
   padding: 14px 20px;
 }
+
+dialog.release-notice {
+  width: min(720px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 0;
+  margin: auto;
+  color: var(--text);
+}
+dialog.release-notice[open] {
+  display: flex;
+  flex-direction: column;
+}
+.release-notice .release-notice-meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 16px;
+}
+.release-notice :is(.modal-header, .modal-footer) {
+  flex-shrink: 0;
+}
+.release-notice .modal-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.release-notice h4 {
+  font-size: 18px;
+  margin: 8px 0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.release-notice-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.release-notice-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.release-notice-history {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  margin-top: 24px;
+}
+.release-notice-history details {
+  border-top: 1px solid var(--border);
+  padding: 14px 0;
+}
+.release-notice-history summary {
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.release-notice-history details[open] summary {
+  margin-bottom: 12px;
+}
+.release-notice ul {
+  padding-left: 22px;
+  margin-bottom: 0;
+}
+.release-notice li {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.release-notice li + li {
+  margin-top: 10px;
+}

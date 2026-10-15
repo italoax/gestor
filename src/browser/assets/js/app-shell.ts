@@ -1,6 +1,11 @@
+import { initReleaseNotice } from './ui/release-notice.js';
+
 (function () {
+  const lifecycle = new AbortController();
+  document.addEventListener('gestor:before-swap', () => lifecycle.abort(), { once: true });
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
   var shell = document.querySelector('[data-shell]') as HTMLElement;
+  void initReleaseNotice(shell, lifecycle.signal);
 
   // Um bloqueio de tráfego pausa todas as consultas automáticas da aba.
   window.gestorPolling =
