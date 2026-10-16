@@ -9,6 +9,8 @@ import { removerStatusExpirados } from './statusRetention.ts';
 let timer = null;
 let rodando = false;
 let stopping = false;
+const sessionCooldowns = new Map<string, number>();
+const STATUS_INTERVAL_MS = 5000;
 export async function stopStatusCron() {
   stopping = true;
   if (timer) clearInterval(timer);
@@ -31,6 +33,9 @@ export async function executarAgendados() {
   rodando = true;
   try {
     await removerStatusExpirados();
+    for (const [session, until] of sessionCooldowns) {
+      if (until <= Date.now()) sessionCooldowns.delete(session);
+    }
     // Pega todos os agendados vencidos (agendado_para <= NOW). Faz JOIN pra trazer
     // a sessão WhatsApp principal do dono junto, evitando 2 queries por linha.
     const due =
@@ -45,6 +50,9 @@ export async function executarAgendados() {
         LIMIT 20`);
     let postados = 0;
     for (let row of due) {
+      if (stopping) break;
+      const waitMs = (sessionCooldowns.get(row.sessao) ?? 0) - Date.now();
+      if (waitMs > 0) await sleep(waitMs);
       if (stopping) break;
       // Marca como "publicando" antes de tentar — proteção extra contra dupla
       // publicação se um tick atrasou e outro pegou a mesma linha.
@@ -158,6 +166,9 @@ export async function executarAgendados() {
           url: '/status',
           pushTag: `status-${row.id}`,
         }).catch(() => undefined);
+      } finally {
+        // Evita uma rajada de stories da mesma conta quando vencem juntos.
+        sessionCooldowns.set(row.sessao, Date.now() + STATUS_INTERVAL_MS);
       }
     }
     return { postados };

@@ -490,15 +490,6 @@ export function StatusScreen({ data }: { data?: any }) {
           {!history.length && (
             <div className="status-empty">
               <p>Nenhum status publicado ainda.</p>
-              {data.temWhatsapp && (
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={() => setEditor({ item: null })}
-                >
-                  Publicar primeiro status
-                </button>
-              )}
             </div>
           )}
           <div className="status-list">

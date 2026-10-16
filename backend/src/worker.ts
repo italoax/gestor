@@ -1,4 +1,5 @@
 import { safeError } from '../../src/security/safeError.ts';
+import { stopWhenSupervisorExits } from '../../src/services/supervisorLifecycle.ts';
 import { startEnabledAutomations } from '../../src/security/automationPolicy.ts';
 import express from 'express';
 import { createWorker } from './create-worker.ts';
@@ -40,6 +41,7 @@ try {
     closeDatabase: () => db.end(),
   });
   worker.enableShutdownHooks(['SIGINT', 'SIGTERM']);
+  stopWhenSupervisorExits();
   if (process.env.WORKER_SOCKET) await worker.listen(process.env.WORKER_SOCKET);
   else await worker.listen(env.workerPort, '127.0.0.1');
   const address = worker.getHttpServer().address();

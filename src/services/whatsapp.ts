@@ -4,6 +4,7 @@ export interface WhatsappResult {
   status?: number;
   response?: string | Record<string, any> | null;
   messageId?: string;
+  retrySafe?: boolean;
 }
 
 import { env } from '../config/env.ts';
@@ -94,8 +95,20 @@ async function jsonRequest(
     return { ok: true, status: response.status, response: data, messageId };
   } catch (error) {
     const aborted = error instanceof Error && error.name === 'AbortError';
+    // Somente falhas ao abrir a conexão garantem que o POST não foi enviado.
+    // Timeout de resposta e conexão interrompida podem esconder um envio aceito.
+    const code =
+      error instanceof Error
+        ? String((error.cause as { code?: string } | undefined)?.code ?? '')
+        : '';
     return {
       ok: false,
+      retrySafe: [
+        'ECONNREFUSED',
+        'ENOTFOUND',
+        'EAI_AGAIN',
+        'UND_ERR_CONNECT_TIMEOUT',
+      ].includes(code),
       error: aborted
         ? `Timeout: a API do WhatsApp não respondeu em ${timeoutMs / 1000}s.`
         : traduzirErroWhatsapp(error),
@@ -316,7 +329,22 @@ export async function postarStatus(sessao, payload, token?: string) {
     body.mediaUrl = resolverUrlMidia(String(payload.mediaUrl ?? ''));
     if (payload.caption) body.caption = payload.caption;
   }
-  return jsonRequest(url, body, 'POST', sessionHeaders(token), 180000);
+  for (let attempt = 0; ; attempt++) {
+    const result = await jsonRequest(
+      url,
+      body,
+      'POST',
+      sessionHeaders(token),
+      180000,
+    );
+    // Esta resposta do serviço ocorre antes de obter o socket e publicar.
+    const disconnected =
+      result.status === 500 &&
+      result.error?.startsWith('WhatsApp não conectado.');
+    if (result.ok || attempt >= 3 || (!result.retrySafe && !disconnected))
+      return result;
+    await sleep(6000);
+  }
 }
 export async function enviarMensagemModelo(
   sessao,

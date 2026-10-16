@@ -1,4 +1,5 @@
 import { safeError } from '../../src/security/safeError.ts';
+import { stopWhenSupervisorExits } from '../../src/services/supervisorLifecycle.ts';
 import { listarRenovacoesPendentes } from '../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
 import { createLoginAttempts } from '../../src/services/loginAttempts.ts';
@@ -97,6 +98,7 @@ try {
     }
   });
   backend.enableShutdownHooks(['SIGINT', 'SIGTERM']);
+  stopWhenSupervisorExits();
   if (process.env.BACKEND_SOCKET)
     await backend.listen(process.env.BACKEND_SOCKET);
   else
