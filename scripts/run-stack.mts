@@ -10,6 +10,7 @@ import { projectRoot } from '../src/config/paths.ts';
 import { startNextFrontend } from '../src/frontend/serveNext.ts';
 import { createInternalSockets } from '../src/frontend/internalSockets.ts';
 import { requestInternal } from '../src/frontend/backendTransport.ts';
+import { safeError } from '../src/security/safeError.ts';
 
 export async function runStack(listener?: PublicListener) {
   const configuration = dotenv.config({
@@ -22,6 +23,9 @@ export async function runStack(listener?: PublicListener) {
     );
   const root = projectRoot;
   const development = process.argv.includes('--dev');
+  const localMode = process.env.LOCAL_MODE ?? (development ? 'true' : 'false');
+  const workerEnabled =
+    localMode !== 'true' && process.env.RUN_AUTOMATIONS === 'true';
   const sockets = development ? undefined : createInternalSockets();
   const publicPort = Number(
     process.env.FRONTEND_PORT || (development ? 80 : process.env.PORT || 3000),
@@ -43,28 +47,50 @@ export async function runStack(listener?: PublicListener) {
     NODE_ENV: development ? 'development' : 'production',
     // O desenvolvimento não precisa migrar o banco remoto, gravar sessões
     // no MySQL nem abrir um segundo pool para automações.
-    LOCAL_MODE: process.env.LOCAL_MODE ?? (development ? 'true' : 'false'),
+    LOCAL_MODE: localMode,
     APP_URL: development ? localUrl : process.env.APP_URL || localUrl,
     NEXT_BACKEND_URL: backendUrl,
-    WORKER_URL: `http://127.0.0.1:${workerPort}`,
+    WORKER_URL: workerEnabled ? `http://127.0.0.1:${workerPort}` : '',
     WORKER_PORT: String(workerPort),
     RUN_AUTOMATIONS: process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false',
     NEXT_FRONTEND_ENABLED: 'true',
     BACKEND_SOCKET: sockets?.backend,
-    WORKER_SOCKET: sockets?.worker,
+    WORKER_SOCKET: workerEnabled ? sockets?.worker : undefined,
   };
   if (!development)
     listener ??= openPublicServer(
       publicPort,
       process.env.FRONTEND_HOST || '0.0.0.0',
     );
-  const children: ChildProcess[] = [];
+  const children = new Set<ChildProcess>();
   let frontend: Awaited<ReturnType<typeof startNextFrontend>> | undefined;
   let stopping = false;
+  let workerReady = false;
+  let workerRetryTimer: NodeJS.Timeout | undefined;
+  let workerRetries = 0;
+  function runtimeLog(event: string, details: Record<string, unknown> = {}) {
+    console.log(
+      '[Runtime]',
+      JSON.stringify({
+        event,
+        pid: process.pid,
+        parentPid: process.ppid,
+        uptimeSeconds: Math.round(process.uptime()),
+        rssMiB: Math.round(process.memoryUsage().rss / 1048576),
+        ...details,
+      }),
+    );
+  }
+  runtimeLog('start', { workerEnabled });
+  process.once('exit', (code) => runtimeLog('exit', { code }));
+  process.on('uncaughtExceptionMonitor', (error, origin) =>
+    runtimeLog('fatal-error', { ...safeError(error), origin }),
+  );
   function launch(
     name: string,
     args: string[],
     extraEnv: Partial<NodeJS.ProcessEnv> = {},
+    options: { critical?: boolean; onFailure?: () => void } = {},
   ) {
     const child = spawn(process.execPath, args, {
       cwd: root,
@@ -72,22 +98,52 @@ export async function runStack(listener?: PublicListener) {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       windowsHide: true,
     });
-    children.push(child);
+    children.add(child);
+    runtimeLog('child.started', { name, childPid: child.pid });
+    let failureReported = false;
+    function failed() {
+      if (stopping || failureReported) return;
+      failureReported = true;
+      if (options.critical !== false) void shutdown(1, `child-failed:${name}`);
+      else options.onFailure?.();
+    }
     child.once('error', (error) => {
-      console.error(`${name}: ${error.message}`);
-      void shutdown(1);
+      runtimeLog('child.error', {
+        name,
+        childPid: child.pid,
+        ...safeError(error),
+      });
+      if (!child.pid) {
+        children.delete(child);
+        failed();
+      } else if (options.critical === false) {
+        // Só agenda a substituição após o processo anterior realmente sair.
+        child.kill('SIGTERM');
+      } else failed();
     });
-    child.once('exit', (code) => {
+    child.once('exit', (code, signal) => {
+      children.delete(child);
+      runtimeLog('child.exit', {
+        name,
+        childPid: child.pid,
+        code,
+        signal,
+        expected: stopping,
+      });
       if (!stopping) {
-        console.error(`${name} encerrou (${code}).`);
-        void shutdown(code || 1);
+        console.error(
+          `${name} encerrou (PID ${child.pid}; código ${code}; sinal ${signal || 'nenhum'}).`,
+        );
+        failed();
       }
     });
     return child;
   }
-  async function shutdown(code = 0) {
+  async function shutdown(code = 0, reason = 'shutdown') {
     if (stopping) return;
     stopping = true;
+    clearTimeout(workerRetryTimer);
+    runtimeLog('shutdown', { code, reason });
     process.exitCode = code;
     await Promise.all([
       listener
@@ -98,7 +154,7 @@ export async function runStack(listener?: PublicListener) {
       frontend
         ?.close()
         .catch((error) => console.error('Erro ao encerrar o site:', error)),
-      ...children.map(
+      ...[...children].map(
         (child) =>
           new Promise<void>((resolve) => {
             if (child.exitCode !== null || child.signalCode !== null)
@@ -117,8 +173,80 @@ export async function runStack(listener?: PublicListener) {
     ]);
     sockets?.close();
   }
-  process.on('SIGINT', () => void shutdown(0));
-  process.on('SIGTERM', () => void shutdown(0));
+  process.on('SIGINT', () => void shutdown(0, 'SIGINT'));
+  process.on('SIGTERM', () => void shutdown(0, 'SIGTERM'));
+
+  function scheduleWorkerRetry() {
+    workerReady = false;
+    if (stopping || workerRetryTimer) return;
+    const delay = [5000, 15000, 60000][workerRetries];
+    if (delay === undefined) {
+      runtimeLog('worker.unavailable', { retries: workerRetries });
+      console.error(
+        'Worker indisponível após 3 novas tentativas; o site continua ativo. Verifique os logs antes de reiniciar as automações.',
+      );
+      return;
+    }
+    workerRetries++;
+    runtimeLog('worker.retry', { attempt: workerRetries, delayMs: delay });
+    workerRetryTimer = setTimeout(function retryWorker() {
+      workerRetryTimer = undefined;
+      void startWorker();
+    }, delay);
+  }
+  async function startWorker() {
+    if (stopping) return;
+    let worker: ChildProcess | undefined;
+    try {
+      worker = launch(
+        'Worker',
+        development
+          ? [
+              'node_modules/tsx/dist/cli.mjs',
+              'watch',
+              '--tsconfig',
+              'backend/tsconfig.json',
+              'backend/src/worker.ts',
+            ]
+          : ['dist/runtime/backend/src/worker.js'],
+        {},
+        { critical: false, onFailure: scheduleWorkerRetry },
+      );
+      if (!development) {
+        const endpoint = await waitForEndpoint(worker, 'Worker');
+        if (stopping) return;
+        if (!endpoint?.port && !endpoint?.socketPath) {
+          if (
+            worker.exitCode === null &&
+            worker.signalCode === null &&
+            worker.pid
+          )
+            worker.kill('SIGTERM');
+          return;
+        }
+        await new Promise<void>((resolve, reject) =>
+          backend.send(
+            {
+              type: 'worker-url',
+              url: endpoint.socketPath
+                ? 'http://127.0.0.1'
+                : 'http://127.0.0.1:' + endpoint.port,
+            },
+            (error) => (error ? reject(error) : resolve()),
+          ),
+        );
+      }
+      if (stopping || worker.exitCode !== null || worker.signalCode !== null)
+        return;
+      workerReady = true;
+      runtimeLog('worker.ready', { childPid: worker.pid });
+    } catch (error) {
+      runtimeLog('worker.start-failed', safeError(error));
+      if (worker) worker.kill('SIGTERM');
+      else scheduleWorkerRetry();
+    }
+  }
+  let backend: ChildProcess;
 
   try {
     if (listener) await listener.ready;
@@ -138,7 +266,7 @@ export async function runStack(listener?: PublicListener) {
       ]);
     } else await import('./verify-build.mts');
     if (stopping) return;
-    const backend = launch(
+    backend = launch(
       'Backend',
       development
         ? [
@@ -253,52 +381,18 @@ export async function runStack(listener?: PublicListener) {
           'Inicialização: interface Next.js pronta; site disponível.',
         );
       }
-      if (runtimeEnv.LOCAL_MODE !== 'true') {
-        const worker = launch(
-          'Worker',
-          development
-            ? [
-                'node_modules/tsx/dist/cli.mjs',
-                'watch',
-                '--tsconfig',
-                'backend/tsconfig.json',
-                'backend/src/worker.ts',
-              ]
-            : ['dist/runtime/backend/src/worker.js'],
-          {
-            RUN_AUTOMATIONS:
-              process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false',
-          },
-        );
-        if (!development) {
-          const endpoint = await waitForEndpoint(worker, 'Worker');
-          const port = endpoint?.port;
-          if ((!port && !endpoint?.socketPath) || stopping) {
-            await shutdown(1);
-            return;
-          }
-          await new Promise<void>((resolve, reject) =>
-            backend.send(
-              {
-                type: 'worker-url',
-                url: endpoint.socketPath
-                  ? 'http://127.0.0.1'
-                  : 'http://127.0.0.1:' + port,
-              },
-              (error) => (error ? reject(error) : resolve()),
-            ),
-          );
-        }
-      }
+      if (workerEnabled) await startWorker();
       if (!stopping)
         console.log(
-          runtimeEnv.LOCAL_MODE === 'true'
-            ? `Gestor: ${runtimeEnv.APP_URL} — Next.js e NestJS; automações desativadas no modo local.`
-            : `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker ativos.`,
+          !workerEnabled
+            ? `Gestor: ${runtimeEnv.APP_URL} — Next.js e NestJS; automações desativadas pela configuração, worker não iniciado.`
+            : workerReady
+              ? `Gestor: ${runtimeEnv.APP_URL} — Next.js, NestJS e worker ativos.`
+              : `Gestor: ${runtimeEnv.APP_URL} — site ativo; worker indisponível, consulte os logs.`,
         );
     }
   } catch (error) {
-    await shutdown(1);
+    await shutdown(1, 'startup-failed');
     throw error;
   }
 }

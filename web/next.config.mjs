@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+// Configuração em JavaScript para dispensar o compilador SWC na inicialização.
 export default {
   poweredByHeader: false,
   // A hospedagem compartilha CPUs; evite criar 27 processos de compilação.

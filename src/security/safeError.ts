@@ -7,6 +7,10 @@ const names = new Set([
   'TimeoutError',
 ]);
 const codes = new Set([
+  'EAGAIN',
+  'EMFILE',
+  'ENFILE',
+  'ENOMEM',
   'ECONNRESET',
   'ECONNREFUSED',
   'ETIMEDOUT',
@@ -14,6 +18,9 @@ const codes = new Set([
   'EACCES',
   'ENOENT',
   'ER_ACCESS_DENIED_ERROR',
+  'ER_USER_LIMIT_REACHED',
+  'ER_CON_COUNT_ERROR',
+  'ER_TOO_MANY_USER_CONNECTIONS',
   'ER_BAD_DB_ERROR',
   'ER_NO_SUCH_TABLE',
   'ER_DATA_TOO_LONG',

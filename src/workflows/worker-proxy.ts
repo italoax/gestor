@@ -1,7 +1,5 @@
-import {
-  workflowResult,
-  raiseWorkflowError,
-} from '../services/workflowReply.ts';
+import { workflowResult } from '../services/workflowReply.ts';
+import { safeError } from '../security/safeError.ts';
 import { requestInternal } from '../frontend/backendTransport.ts';
 import { automationsEnabled } from '../security/automationPolicy.ts';
 export function createWorkerProxyWorkflow({
@@ -31,7 +29,11 @@ export function createWorkerProxyWorkflow({
             .status(response.status)
             .json(await response.json());
         } catch (error) {
-          raiseWorkflowError(error);
+          console.error('[cron] Worker indisponível:', safeError(error));
+          reply.status(503).json({
+            ok: false,
+            error: 'Serviço de automações temporariamente indisponível.',
+          });
         }
       }),
   };
