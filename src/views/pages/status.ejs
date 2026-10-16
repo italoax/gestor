@@ -281,7 +281,7 @@
     if (stopped) return;
     try {
       if (!document.hidden && (!window.gestorPolling || window.gestorPolling.canFetch())) {
-        const response = await fetch('/status/historico', { signal: controller.signal, headers: { Accept: 'text/html' }, cache: 'no-store' });
+        const response = await fetch('/status/historico', { signal: controller.signal, headers: { Accept: 'text/html', 'X-Gestor-Background': '1' }, cache: 'no-store' });
         window.gestorPolling?.recordResponse(response);
         if (response.ok && !response.redirected) {
           const html = await response.text();

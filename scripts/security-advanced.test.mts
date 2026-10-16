@@ -136,8 +136,8 @@ test('invalid forwarding chains are ignored and admin sessions have bounded shor
     },
   });
   assert.deepEqual(origin, { ip: '127.0.0.1', protocol: 'http' });
-  assert.equal(sessionLimits({}, false, true, true).idle, 15 * 60_000);
-  assert.equal(sessionLimits({}, false, true, true).absolute, 8 * 3600_000);
+  assert.equal(sessionLimits({}, false, true).idle, 60 * 60_000);
+  assert.equal(sessionLimits({}, false, true).absolute, 8 * 3600_000);
   assert.notEqual(
     credentialRevision({ id: 1, sessionVersion: 0 }),
     credentialRevision({ id: 1, sessionVersion: 1 }),

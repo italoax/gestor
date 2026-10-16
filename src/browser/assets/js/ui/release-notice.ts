@@ -1,12 +1,18 @@
-// Mantém o aviso fechado nas trocas de página. Um novo acesso/reload volta a exibi-lo.
-const dismissed = new Set<string>();
+// O identificador muda apenas após autenticar, nunca em reloads ou novas versões.
+const shownLogins = new Set<string>();
+const storageKey = 'gestor-release-notice-login';
 
 export async function initReleaseNotice(
   shell: HTMLElement,
   signal: AbortSignal,
 ) {
   if (!shell || signal.aborted) return;
+  const loginId = shell.dataset.releaseLogin;
+  if (!loginId) return;
+  const alreadyShown = () =>
+    shownLogins.has(loginId) || localStorage.getItem(storageKey) === loginId;
   try {
+    if (alreadyShown()) return;
     const response = await fetch('/updates.json', {
       cache: 'no-store',
       signal,
@@ -17,7 +23,7 @@ export async function initReleaseNotice(
       signal.aborted ||
       !shell.isConnected ||
       typeof release.version !== 'string' ||
-      dismissed.has(release.version) ||
+      alreadyShown() ||
       !Array.isArray(release.changes)
     )
       return;
@@ -114,7 +120,6 @@ export async function initReleaseNotice(
       dialog.remove();
     };
     const close = () => {
-      dismissed.add(release.version);
       cleanup();
       if (trigger?.isConnected) trigger.focus();
     };
@@ -128,6 +133,12 @@ export async function initReleaseNotice(
     signal.addEventListener('abort', cleanup, { once: true });
     const show = () => {
       if (signal.aborted || !shell.isConnected) return cleanup();
+      // Outra aba ou inicialização pode ter exibido o aviso enquanto aguardávamos.
+      try {
+        if (alreadyShown()) return cleanup();
+      } catch {
+        return cleanup();
+      }
       // Aguarda avisos de formulário/login antes de apresentar as novidades.
       if (document.querySelector('.modal-overlay.open, dialog[open]')) {
         timer = window.setTimeout(show, 300);
@@ -136,6 +147,12 @@ export async function initReleaseNotice(
       trigger = document.activeElement as HTMLElement;
       document.body.append(dialog);
       dialog.showModal();
+      shownLogins.add(loginId);
+      try {
+        localStorage.setItem(storageKey, loginId);
+      } catch {
+        // Se o armazenamento ficar indisponível, mantém a marca em memória.
+      }
     };
     timer = window.setTimeout(show, 500);
   } catch {

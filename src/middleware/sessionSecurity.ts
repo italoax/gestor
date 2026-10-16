@@ -21,7 +21,6 @@ export function createSessionSecurity(
       const limits = sessionLimits(
         config,
         portal,
-        security?.remember,
         !portal && Boolean(identity.isAdmin),
       );
       const expire = async (reason: string) => {
@@ -82,10 +81,16 @@ export function createSessionSecurity(
       }
       // Polling automático não prolonga indefinidamente uma sessão sem interação.
       const active =
-        !['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
-        req.get('x-gestor-page') === '1' ||
-        (req.get('accept') || '').includes('text/html');
+        req.get('x-gestor-background') !== '1' &&
+        (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
+          req.get('x-gestor-page') === '1' ||
+          (req.get('accept') || '').includes('text/html'));
       if (active) security.lastActiveAt = time;
+      if (!portal)
+        req.session.cookie.maxAge = Math.min(
+          limits.idle,
+          limits.absolute - (time - security.authenticatedAt),
+        );
       next();
     } catch (error) {
       // Uma falha de banco nunca libera uma identidade que não foi verificada.

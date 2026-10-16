@@ -38,6 +38,12 @@ export function nativePageData(
   options: Record<string, any> = {},
 ) {
   const data = { ...locals, ...options };
+  const page = {
+    csrfToken: data.csrfToken,
+    ...(data.releaseNoticeLoginId
+      ? { releaseNoticeLoginId: data.releaseNoticeLoginId }
+      : {}),
+  };
   if (view === 'pages/ix-streaming')
     return {
       view,
@@ -132,7 +138,7 @@ export function nativePageData(
       catalog,
       title: data.title,
       subtitle: data.subtitle || '',
-      page: { csrfToken: data.csrfToken },
+      page,
       user: pick(data.user, ['id', 'name', 'isAdmin']),
       success: Array.isArray(data.success) ? data.success : [],
       error: Array.isArray(data.error) ? data.error : [],
@@ -157,7 +163,7 @@ export function nativePageData(
       view,
       title: data.title,
       subtitle: data.subtitle || '',
-      page: { csrfToken: data.csrfToken },
+      page,
       user: pick(data.user, ['id', 'name', 'isAdmin']),
       success: Array.isArray(data.success) ? data.success : [],
       error: Array.isArray(data.error) ? data.error : [],
@@ -329,7 +335,7 @@ export function nativePageData(
     view,
     title: 'Minha Conta',
     subtitle: '',
-    page: { csrfToken: data.csrfToken },
+    page,
     user: pick(data.user, ['id', 'name', 'isAdmin']),
     success: Array.isArray(data.success) ? data.success : [],
     error: Array.isArray(data.error) ? data.error : [],

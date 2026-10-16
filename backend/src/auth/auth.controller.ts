@@ -11,7 +11,10 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.ts';
 import type { PanelUser } from './auth.types.ts';
 import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
-import { startSessionSecurity } from '../../../src/services/sessionSecurity.ts';
+import {
+  PANEL_SESSION_IDLE_MS,
+  startSessionSecurity,
+} from '../../../src/services/sessionSecurity.ts';
 interface AuthRequest extends Request {
   session: Request['session'] & {
     user?: PanelUser;
@@ -48,9 +51,6 @@ export class AuthController {
       request.flash('error', 'Usuário ou senha inválidos.');
       return response.redirect('/login');
     }
-    const maxAge = user.isAdmin
-      ? 8 * 3600_000
-      : this.auth.cookieMaxAge(request.body?.remember);
     await new Promise<void>((resolve, reject) =>
       request.session.regenerate((error) =>
         error ? reject(error) : resolve(),
@@ -58,11 +58,8 @@ export class AuthController {
     );
     const { credentialRevision, ...identity } = user;
     request.session.user = identity;
-    request.session.security = startSessionSecurity(
-      credentialRevision,
-      !user.isAdmin && Boolean(maxAge),
-    );
-    request.session.cookie.maxAge = maxAge;
+    request.session.security = startSessionSecurity(credentialRevision);
+    request.session.cookie.maxAge = PANEL_SESSION_IDLE_MS;
     await new Promise<void>((resolve, reject) =>
       request.session.save((error) => (error ? reject(error) : resolve())),
     );

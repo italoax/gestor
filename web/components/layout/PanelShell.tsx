@@ -27,7 +27,12 @@ export function PanelShell({
   const isActive = (href) =>
     currentPath === href || currentPath.startsWith(href + '/');
   return (
-    <div className="app-shell" data-shell="" data-ajax-panel="">
+    <div
+      className="app-shell"
+      data-shell=""
+      data-ajax-panel=""
+      data-release-login={data.page.releaseNoticeLoginId || undefined}
+    >
       <PanelInteractions path={currentPath} />
       <aside className="sidebar" data-sidebar="">
         <a

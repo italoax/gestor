@@ -1,10 +1,12 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+
+export const PANEL_SESSION_IDLE_MS = 60 * 60_000;
 
 export interface SessionSecurity {
   authenticatedAt: number;
   lastActiveAt: number;
   credentialRevision?: string;
-  remember?: boolean;
+  loginNoticeId?: string;
   recentAuthAt?: number;
 }
 
@@ -28,16 +30,13 @@ export function credentialRevision(user: {
     .digest('hex');
 }
 
-export function startSessionSecurity(
-  credential?: string,
-  remember = false,
-): SessionSecurity {
+export function startSessionSecurity(credential?: string): SessionSecurity {
   const now = Date.now();
   return {
     authenticatedAt: now,
     lastActiveAt: now,
     credentialRevision: credential,
-    remember,
+    loginNoticeId: randomUUID(),
     recentAuthAt: now,
   };
 }
@@ -45,23 +44,18 @@ export function startSessionSecurity(
 export function sessionLimits(
   config: Record<string, any>,
   portal = false,
-  remember = false,
   admin = false,
 ) {
   return {
     idle: admin
-      ? (config.sessionAdminIdleMs ?? 15 * 60_000)
+      ? (config.sessionAdminIdleMs ?? PANEL_SESSION_IDLE_MS)
       : portal
         ? 30 * 60_000
-        : remember
-          ? (config.sessionRememberIdleMs ?? 7 * 86400_000)
-          : (config.sessionIdleMs ?? 30 * 60_000),
+        : (config.sessionIdleMs ?? PANEL_SESSION_IDLE_MS),
     absolute: admin
       ? (config.sessionAdminAbsoluteMs ?? 8 * 3600_000)
       : portal
         ? 8 * 3600_000
-        : remember
-          ? (config.sessionRememberAbsoluteMs ?? 30 * 86400_000)
-          : (config.sessionAbsoluteMs ?? 12 * 3600_000),
+        : (config.sessionAbsoluteMs ?? 12 * 3600_000),
   };
 }

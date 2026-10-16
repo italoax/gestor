@@ -167,13 +167,15 @@ test('session timeouts, credential revocation and database outages are enforced 
       credentialRevision: credentialRevision(user),
     };
     if (req.query.legacy) delete req.session.security;
+    if (req.query.remember)
+      Object.assign(req.session.security, { remember: true });
     res.json({ ok: true });
   });
   app.use(
     createSessionSecurity(
       {
-        sessionIdleMs: 60_000,
-        sessionAbsoluteMs: 180_000,
+        sessionIdleMs: 60 * 60_000,
+        sessionAbsoluteMs: 180 * 60_000,
         cookieSecure: false,
       },
       async () => {
@@ -192,19 +194,24 @@ test('session timeouts, credential revocation and database outages are enforced 
     (await fetch(base + '/seed' + query)).headers
       .get('set-cookie')!
       .split(';')[0];
-  const get = (cookie, accept = 'application/json') =>
+  const get = (cookie, accept = 'application/json', headers = {}) =>
     fetch(base + '/api/private', {
-      headers: { cookie, accept },
+      headers: { cookie, accept, ...headers },
       redirect: 'manual',
     });
-  let cookie = await seed();
-  time += 59_000;
+  let cookie = await seed('?remember=1');
+  time += 59 * 60_000;
   assert.equal((await get(cookie)).status, 200);
-  time += 1000;
+  time += 30_000;
+  assert.equal(
+    (await get(cookie, 'text/html', { 'x-gestor-background': '1' })).status,
+    200,
+  );
+  time += 30_000;
   assert.equal(
     (await get(cookie)).status,
     401,
-    'Polling did not renew activity',
+    'JSON and HTML polling did not extend the one-hour idle timeout, even for old remembered sessions',
   );
   assert.equal(
     (await get(cookie)).status,
@@ -213,10 +220,10 @@ test('session timeouts, credential revocation and database outages are enforced 
   );
   cookie = await seed();
   for (let i = 0; i < 3; i++) {
-    time += 50_000;
+    time += 50 * 60_000;
     assert.equal((await get(cookie, 'text/html')).status, 200);
   }
-  time += 30_000;
+  time += 30 * 60_000;
   assert.equal(
     (await get(cookie)).status,
     401,
@@ -250,7 +257,7 @@ test('session timeouts, credential revocation and database outages are enforced 
   );
 });
 
-test('credential revisions cover username, password and privileges; remember and portal policies remain bounded', () => {
+test('credential revisions cover username, password and privileges; panel and portal policies remain bounded', () => {
   for (const change of [
     { username: 'renamed' },
     { passwordHash: 'changed' },
@@ -264,9 +271,10 @@ test('credential revisions cover username, password and privileges; remember and
     credentialRevision(row),
     credentialRevision({ ...row, isAdmin: '0' }),
   );
-  assert.equal(sessionLimits({}, false, false).idle, 30 * 60_000);
-  assert.equal(sessionLimits({}, false, true).absolute, 30 * 86400_000);
-  assert.equal(sessionLimits({}, true, true).absolute, 8 * 3600_000);
+  assert.equal(sessionLimits({}, false, false).idle, 60 * 60_000);
+  assert.equal(sessionLimits({}, false, true).idle, 60 * 60_000);
+  assert.equal(sessionLimits({}, false, false).absolute, 12 * 3600_000);
+  assert.equal(sessionLimits({}, true).absolute, 8 * 3600_000);
 });
 
 test('upload validation rejects SVG, HTML disguised as PNG, MIME mismatch and oversized files', async (t) => {

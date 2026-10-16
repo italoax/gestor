@@ -28,8 +28,8 @@ export function createSessionStore() {
     // Remove sessões expiradas a cada 15 min.
     clearExpired: true,
     checkExpirationInterval: 15 * 60 * 1000,
-    // 30 dias, alinhado ao "lembrar de mim" do login.
-    expiration: 30 * 24 * 60 * 60 * 1000,
+    // Fallback para sessões sem cookie persistente; logins usam seu maxAge.
+    expiration: 8 * 60 * 60 * 1000,
   });
   stores.add(store);
   return store;

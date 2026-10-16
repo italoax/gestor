@@ -169,10 +169,6 @@ export function LoginScreen({ data }: { data?: any }) {
               </div>
             </label>
             <div className="login-row">
-              <label className="login-check">
-                <input type="checkbox" name="remember" />
-                <span>Manter conectado</span>
-              </label>
               <a className="login-link" href="#">
                 Esqueceu a senha?
               </a>

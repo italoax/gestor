@@ -13,6 +13,7 @@ export function createSessionMiddleware(
     secret: env.sessionSecret,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
       path: '/',
       httpOnly: true,

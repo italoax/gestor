@@ -71,6 +71,9 @@ export function createAdminAuthorization(
 export const requireAdmin = createAdminAuthorization();
 export function exposeLocals(req, res, next) {
   res.locals.user = req.session.user ?? null;
+  res.locals.releaseNoticeLoginId = req.session.user
+    ? req.session.security?.loginNoticeId || ''
+    : '';
   res.locals.currentPath = req.path;
   res.locals.success = req.flash('success');
   res.locals.error = req.flash('error');

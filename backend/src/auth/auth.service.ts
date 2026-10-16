@@ -48,13 +48,6 @@ export class AuthService {
       credentialRevision: credentialRevision(user),
     };
   }
-  cookieMaxAge(remember: unknown) {
-    return ['1', 'true', 'on', 'yes', 'sim'].includes(
-      String(remember ?? '').toLowerCase(),
-    )
-      ? 1000 * 60 * 60 * 24 * 30
-      : undefined;
-  }
   recordAttempt(
     username: string,
     user: PanelUser | null,

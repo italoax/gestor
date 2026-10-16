@@ -1,4 +1,5 @@
 import { databaseConnection } from '../security/databaseTls.ts';
+import { PANEL_SESSION_IDLE_MS } from '../services/sessionSecurity.ts';
 import dotenv from 'dotenv';
 const configuration = dotenv.config({
   quiet: true,
@@ -66,15 +67,10 @@ export const env = {
   sessionSecret,
   cookieSecure,
   trustedProxyCidrs: process.env.TRUSTED_PROXY_CIDRS || 'loopback',
-  sessionIdleMs: duration('SESSION_IDLE_MS', 30 * 60_000),
-  sessionAdminIdleMs: duration('SESSION_ADMIN_IDLE_MS', 15 * 60_000),
+  sessionIdleMs: duration('SESSION_IDLE_MS', PANEL_SESSION_IDLE_MS),
+  sessionAdminIdleMs: duration('SESSION_ADMIN_IDLE_MS', PANEL_SESSION_IDLE_MS),
   sessionAdminAbsoluteMs: duration('SESSION_ADMIN_ABSOLUTE_MS', 8 * 3600_000),
   sessionAbsoluteMs: duration('SESSION_ABSOLUTE_MS', 12 * 3600_000),
-  sessionRememberIdleMs: duration('SESSION_REMEMBER_IDLE_MS', 7 * 86400_000),
-  sessionRememberAbsoluteMs: duration(
-    'SESSION_REMEMBER_ABSOLUTE_MS',
-    30 * 86400_000,
-  ),
   // Token usado pelo endpoint público de cron (/__cron/cobrancas) — pra cron externo
   // (Hostinger/cron-job.org) acordar o processo e disparar a execução.
   cronToken: process.env.CRON_TOKEN ?? '',
