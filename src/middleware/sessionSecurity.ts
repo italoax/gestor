@@ -80,15 +80,26 @@ export function createSessionSecurity(
         req.session.user.isAdmin = Boolean(Number(user.isAdmin));
       }
       // Polling automático não prolonga indefinidamente uma sessão sem interação.
+      const heartbeat = req.path === '/api/session/activity';
       const active =
+        !heartbeat &&
         req.get('x-gestor-background') !== '1' &&
         (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) ||
           req.get('x-gestor-page') === '1' ||
           (req.get('accept') || '').includes('text/html'));
       if (active) security.lastActiveAt = time;
+      if (!portal) {
+        res.locals.sessionIdleMs = limits.idle;
+        res.locals.sessionAbsoluteExpiresAt =
+          security.authenticatedAt + limits.absolute;
+        res.locals.sessionExpiresAt = Math.min(
+          security.lastActiveAt + limits.idle,
+          security.authenticatedAt + limits.absolute,
+        );
+      }
       if (!portal)
         req.session.cookie.maxAge = Math.min(
-          limits.idle,
+          limits.idle - (time - security.lastActiveAt),
           limits.absolute - (time - security.authenticatedAt),
         );
       next();

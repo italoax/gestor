@@ -45,6 +45,7 @@ export class ClientsController {
         page: createClientPageData({
           ...page,
           csrfToken: response.locals.csrfToken,
+          sessionExpiresAt: response.locals.sessionExpiresAt,
         }),
         user: { id, name, isAdmin: Boolean(isAdmin) },
         title: page.title,

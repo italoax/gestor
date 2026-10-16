@@ -62,7 +62,12 @@
       // Item Admin so aparece pro dono do sistema (is_admin na sessao).
       function isActive(href) { return currentPath === href || currentPath.startsWith(href + '/'); }
     %>
-    <div class="app-shell" data-shell data-release-login="<%= locals.releaseNoticeLoginId || '' %>">
+    <div
+      class="app-shell"
+      data-shell
+      data-release-login="<%= locals.releaseNoticeLoginId || '' %>"
+      data-session-expires-at="<%= locals.sessionExpiresAt || '' %>"
+    >
       <aside class="sidebar" data-sidebar>
         <a
           class="sidebar-brand sidebar-brand-custom"

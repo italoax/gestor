@@ -159,7 +159,7 @@ test('session timeouts, credential revocation and database outages are enforced 
       id: 7,
       name: 'Test',
       username: 'test',
-      isAdmin: false,
+      isAdmin: Boolean(Number(user.isAdmin)),
     };
     req.session.security = {
       authenticatedAt: time,
@@ -174,7 +174,7 @@ test('session timeouts, credential revocation and database outages are enforced 
   app.use(
     createSessionSecurity(
       {
-        sessionIdleMs: 60 * 60_000,
+        sessionIdleMs: 5 * 60_000,
         sessionAbsoluteMs: 180 * 60_000,
         cookieSecure: false,
       },
@@ -200,7 +200,7 @@ test('session timeouts, credential revocation and database outages are enforced 
       redirect: 'manual',
     });
   let cookie = await seed('?remember=1');
-  time += 59 * 60_000;
+  time += 4 * 60_000;
   assert.equal((await get(cookie)).status, 200);
   time += 30_000;
   assert.equal(
@@ -211,24 +211,28 @@ test('session timeouts, credential revocation and database outages are enforced 
   assert.equal(
     (await get(cookie)).status,
     401,
-    'JSON and HTML polling did not extend the one-hour idle timeout, even for old remembered sessions',
+    'JSON and HTML polling did not extend the five-minute idle timeout, even for old remembered sessions',
   );
   assert.equal(
     (await get(cookie)).status,
     401,
     'Expired cookie cannot be reused',
   );
-  cookie = await seed();
-  for (let i = 0; i < 3; i++) {
-    time += 50 * 60_000;
-    assert.equal((await get(cookie, 'text/html')).status, 200);
+  for (const admin of [0, 1]) {
+    user.isAdmin = admin;
+    cookie = await seed();
+    for (let i = 0; i < 20; i++) {
+      time += 4 * 60_000;
+      assert.equal((await get(cookie, 'text/html')).status, 200);
+    }
+    time += 5 * 60_000;
+    assert.equal(
+      (await get(cookie, 'text/html')).status,
+      401,
+      'Active use lasts beyond one hour, but five minutes without interaction expires the session',
+    );
   }
-  time += 30 * 60_000;
-  assert.equal(
-    (await get(cookie)).status,
-    401,
-    'Absolute limit survives activity',
-  );
+  user.isAdmin = 0;
   cookie = await seed();
   user.passwordHash = 'replacement-hash';
   assert.equal(
@@ -271,8 +275,8 @@ test('credential revisions cover username, password and privileges; panel and po
     credentialRevision(row),
     credentialRevision({ ...row, isAdmin: '0' }),
   );
-  assert.equal(sessionLimits({}, false, false).idle, 60 * 60_000);
-  assert.equal(sessionLimits({}, false, true).idle, 60 * 60_000);
+  assert.equal(sessionLimits({}, false, false).idle, 5 * 60_000);
+  assert.equal(sessionLimits({}, false, true).idle, 5 * 60_000);
   assert.equal(sessionLimits({}, false, false).absolute, 12 * 3600_000);
   assert.equal(sessionLimits({}, true).absolute, 8 * 3600_000);
 });

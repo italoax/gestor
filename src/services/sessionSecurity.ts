@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-export const PANEL_SESSION_IDLE_MS = 60 * 60_000;
+export const PANEL_SESSION_IDLE_MS = 5 * 60_000;
 
 export interface SessionSecurity {
   authenticatedAt: number;
@@ -47,11 +47,13 @@ export function sessionLimits(
   admin = false,
 ) {
   return {
-    idle: admin
-      ? (config.sessionAdminIdleMs ?? PANEL_SESSION_IDLE_MS)
-      : portal
-        ? 30 * 60_000
-        : (config.sessionIdleMs ?? PANEL_SESSION_IDLE_MS),
+    idle: portal
+      ? 30 * 60_000
+      : Math.min(
+          (admin ? config.sessionAdminIdleMs : config.sessionIdleMs) ??
+            PANEL_SESSION_IDLE_MS,
+          PANEL_SESSION_IDLE_MS,
+        ),
     absolute: admin
       ? (config.sessionAdminAbsoluteMs ?? 8 * 3600_000)
       : portal

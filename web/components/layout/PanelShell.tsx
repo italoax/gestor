@@ -32,6 +32,7 @@ export function PanelShell({
       data-shell=""
       data-ajax-panel=""
       data-release-login={data.page.releaseNoticeLoginId || undefined}
+      data-session-expires-at={data.page.sessionExpiresAt || undefined}
     >
       <PanelInteractions path={currentPath} />
       <aside className="sidebar" data-sidebar="">

@@ -3,6 +3,7 @@ import {
   type WhatsappIndicator,
 } from '../../../frontend/whatsappIndicator.js';
 import { initReleaseNotice } from './ui/release-notice.js';
+import { initSessionActivity } from './ui/session-activity.js';
 
 window.__gestorInitShell = function () {
   window.__gestorShellAbort?.abort();
@@ -66,6 +67,7 @@ window.__gestorInitShell = function () {
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
   var shell = document.querySelector('[data-shell]') as HTMLElement;
   void initReleaseNotice(shell, lifecycle.signal);
+  initSessionActivity(shell, lifecycle.signal);
 
   // Um bloqueio de tráfego pausa todas as consultas automáticas da aba.
   window.gestorPolling =

@@ -67,6 +67,9 @@ export function createClientPageData(
       noticeSuccess: locals.noticeSuccess || [],
       noticeError: locals.noticeError || [],
       csrfToken: locals.csrfToken || '',
+      sessionExpiresAt: Number.isFinite(locals.sessionExpiresAt)
+        ? locals.sessionExpiresAt
+        : undefined,
       verArquivados: Boolean(locals.verArquivados),
       now: now.toISOString(),
     }),

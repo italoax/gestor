@@ -40,6 +40,9 @@ export function nativePageData(
   const data = { ...locals, ...options };
   const page = {
     csrfToken: data.csrfToken,
+    ...(Number.isFinite(data.sessionExpiresAt)
+      ? { sessionExpiresAt: data.sessionExpiresAt }
+      : {}),
     ...(data.releaseNoticeLoginId
       ? { releaseNoticeLoginId: data.releaseNoticeLoginId }
       : {}),
