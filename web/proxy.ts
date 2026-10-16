@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'node:crypto';
+import { noStoreHeaders } from '../src/config/cache.ts';
 import { contentSecurityPolicy } from '../src/security/contentSecurityPolicy.ts';
 import { verifiedOrigin } from '../src/security/proxyTrust.ts';
 import {
@@ -21,7 +22,9 @@ export function proxy(request) {
       request.headers.get('accept') || '',
     )
   )
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/', request.url), {
+      headers: noStoreHeaders,
+    });
   // Os formulários continuam sendo validados e gravados pelo Express.
   if (
     !isSitePage(request.nextUrl.pathname) ||
@@ -52,7 +55,10 @@ export function proxy(request) {
       origin?.protocol ||
         new URL(process.env.APP_URL || request.url).protocol.slice(0, -1),
     );
-    return NextResponse.rewrite(destination, { request: { headers } });
+    return NextResponse.rewrite(destination, {
+      request: { headers },
+      headers: noStoreHeaders,
+    });
   }
   const headers = new Headers(request.headers);
   headers.delete('x-forwarded-for');
@@ -72,7 +78,8 @@ export function proxy(request) {
   );
   const response = NextResponse.next({ request: { headers } });
   response.headers.set('Content-Security-Policy', csp);
-  response.headers.set('Cache-Control', 'private, no-store');
+  for (const [key, value] of Object.entries(noStoreHeaders))
+    response.headers.set(key, value);
   if (request.nextUrl.pathname !== '/')
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   if (/^\/(area-cliente|pagar|p)(\/|$)/.test(request.nextUrl.pathname))

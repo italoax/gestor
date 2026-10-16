@@ -11,6 +11,10 @@ import { startNextFrontend } from '../src/frontend/serveNext.ts';
 import { createInternalSockets } from '../src/frontend/internalSockets.ts';
 import { requestInternal } from '../src/frontend/backendTransport.ts';
 import { safeError } from '../src/security/safeError.ts';
+import {
+  childProcessResources,
+  currentThreadCount,
+} from '../src/config/processResources.ts';
 
 export async function runStack(listener?: PublicListener) {
   const configuration = dotenv.config({
@@ -57,6 +61,10 @@ export async function runStack(listener?: PublicListener) {
     BACKEND_SOCKET: sockets?.backend,
     WORKER_SOCKET: workerEnabled ? sockets?.worker : undefined,
   };
+  const resources = childProcessResources(runtimeEnv);
+  Object.assign(runtimeEnv, resources.env);
+  // Bibliotecas nativas carregadas depois deste ponto também recebem o limite.
+  process.env.RAYON_NUM_THREADS = runtimeEnv.RAYON_NUM_THREADS;
   if (!development)
     listener ??= openPublicServer(
       publicPort,
@@ -77,11 +85,12 @@ export async function runStack(listener?: PublicListener) {
         parentPid: process.ppid,
         uptimeSeconds: Math.round(process.uptime()),
         rssMiB: Math.round(process.memoryUsage().rss / 1048576),
+        threads: currentThreadCount(),
         ...details,
       }),
     );
   }
-  runtimeLog('start', { workerEnabled });
+  runtimeLog('start', { workerEnabled, childThreadLimits: resources.limits });
   process.once('exit', (code) => runtimeLog('exit', { code }));
   process.on('uncaughtExceptionMonitor', (error, origin) =>
     runtimeLog('fatal-error', { ...safeError(error), origin }),
@@ -92,7 +101,7 @@ export async function runStack(listener?: PublicListener) {
     extraEnv: Partial<NodeJS.ProcessEnv> = {},
     options: { critical?: boolean; onFailure?: () => void } = {},
   ) {
-    const child = spawn(process.execPath, args, {
+    const child = spawn(process.execPath, [...resources.nodeArgs, ...args], {
       cwd: root,
       env: { ...runtimeEnv, ...extraEnv },
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],

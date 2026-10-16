@@ -1,5 +1,6 @@
 import express from 'express';
 import { createAssetVersions } from '../services/assetVersions.ts';
+import { noStoreHeaders } from '../config/cache.ts';
 
 export function installAssets(
   app,
@@ -18,22 +19,22 @@ export function installAssets(
   }
   // Essas rotas precedem express.static para servir versões sincronizadas.
   app.get('/sw.js', (_req, res) => {
-    res.type('js').set('Cache-Control', 'no-cache').send(assets.workerSource);
+    res.type('js').set(noStoreHeaders).send(assets.workerSource);
   });
   app.get('/manifest.json', (_req, res) => {
     res
       .type('application/manifest+json')
-      .set('Cache-Control', 'no-cache')
+      .set(noStoreHeaders)
       .send(assets.manifestSource);
   });
-  // URLs com hash invalidam o cache automaticamente; ETag também revalida assets
-  // acessados sem versão. O worker permanece em /sw.js para atualizar instalações.
+  // Mantém os hashes nas URLs e impede armazenamento HTTP mesmo sem versão.
   app.use(
     express.static(publicRoot, {
-      etag: true,
-      lastModified: true,
+      etag: false,
+      lastModified: false,
       setHeaders(res) {
-        res.setHeader('Cache-Control', 'no-cache');
+        for (const [key, value] of Object.entries(noStoreHeaders))
+          res.setHeader(key, value);
       },
     }),
   );

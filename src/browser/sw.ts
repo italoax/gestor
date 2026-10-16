@@ -1,12 +1,4 @@
-// Service worker do ixstreaming.
-// Estratégia: cache mínimo do app shell + handler de push notification.
-// Não faço offline-first do conteúdo dinâmico — o gestor precisa de banco/WhatsApp
-// pra fazer qualquer coisa, então cachear formulários seria enganoso.
-
-// Configuração injetada pelo servidor a partir dos hashes dos arquivos.
-// Alterações nos assets ou neste worker renovam o cache automaticamente.
-// Se a hospedagem servir o arquivo estático sem passar pelo Node, mantém
-// notificações e deixa as requisições com o navegador, sem cache sem versão.
+// Service worker: rede sem cache HTTP, aviso offline e notificações push.
 declare const self: ServiceWorkerGlobalScope & {
   __GESTOR_ASSETS__?: { cacheName?: string; appShell?: string[] };
 };
@@ -28,11 +20,11 @@ self.addEventListener('install', (event) => {
         return;
       }
       const cache = await caches.open(CACHE);
-      // addAll falha se algum item 404 — fazemos individual com try pra não quebrar tudo.
+      // Apenas o aviso offline é público e seguro para guardar localmente.
       await Promise.all(
-        APP_SHELL.map(async (url) => {
+        APP_SHELL.filter((url) => url === OFFLINE_ASSET).map(async (url) => {
           try {
-            await cache.add(url);
+            await cache.add(new Request(url, { cache: 'no-store' }));
           } catch {
             /* ignora */
           }
@@ -49,7 +41,9 @@ self.addEventListener('activate', (event) => {
       if (CACHE) {
         const keys = await caches.keys();
         await Promise.all(
-          keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)),
+          keys
+            .filter((k) => k.startsWith('gestor-') && k !== CACHE)
+            .map((k) => caches.delete(k)),
         );
       }
       await self.clients.claim();
@@ -57,15 +51,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Stale-while-revalidate só pros assets estáticos. HTML/POST sempre vão pra rede.
+// HTML vem da rede; somente o aviso offline pode vir do Cache Storage.
 self.addEventListener('fetch', (event) => {
   if (!CACHE) return;
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  // DEV (localhost): nunca serve do cache — editar main.js/css e recarregar
-  // mostra a versao nova na hora, sem rebuild nem hard refresh. Producao intacta.
+  // Em desenvolvimento, deixa o navegador buscar tudo diretamente.
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
     return;
   // Navegacao (abrir uma pagina): network-first. Se a rede falhar (offline),
@@ -75,7 +68,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
-          return await fetch(req);
+          return await fetch(req, { cache: 'no-store' });
         } catch {
           const cache = await caches.open(CACHE);
           return (
@@ -87,31 +80,9 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-  // Só cacheia /assets/* e /icons/* — resto sempre fresco.
-  if (
-    !url.pathname.startsWith('/assets/') &&
-    !url.pathname.startsWith('/icons/')
-  )
-    return;
-  event.respondWith(
-    (async () => {
-      const cache = await caches.open(CACHE);
-      const cached = await cache.match(req);
-      const fetched = fetch(req)
-        .then((resp) => {
-          if (resp.ok) cache.put(req, resp.clone());
-          return resp;
-        })
-        .catch((error: unknown) => {
-          if (cached) return cached;
-          throw error;
-        });
-      return cached || fetched;
-    })(),
-  );
+  // Assets e APIs seguem diretamente para a rede, sem Cache Storage.
 });
 
-// Push notification recebida — exibe notificação do sistema.
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   let data: Record<string, any> = {};

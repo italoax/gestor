@@ -7,6 +7,7 @@ import expressLayouts from 'express-ejs-layouts';
 import { trustedProxyAddresses } from '../security/proxyTrust.ts';
 import { randomBytes } from 'node:crypto';
 import { contentSecurityPolicy } from '../security/contentSecurityPolicy.ts';
+import { noStoreHeaders } from './cache.ts';
 
 export function configureHttp(app, root, env) {
   app.locals.nextFrontendEnabled = env.nextFrontendEnabled;
@@ -21,6 +22,11 @@ export function configureHttp(app, root, env) {
     address ? trustedProxies(address) : Boolean(process.env.BACKEND_SOCKET),
   );
   app.disable('x-powered-by');
+  app.disable('etag');
+  app.use((_req, res, next) => {
+    res.set(noStoreHeaders);
+    next();
+  });
   app.set('view engine', 'ejs');
   app.set('views', path.join(root, 'src/views'));
   app.set('layout', 'layouts/main');

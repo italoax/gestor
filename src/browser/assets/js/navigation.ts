@@ -22,53 +22,6 @@
     controller,
     saving = false;
   let currentUrl = location.href;
-  const dockPages = new Map();
-  function prefetchDock(link) {
-    if (saving || document.hidden || navigator.connection?.saveData) return;
-    const url = new URL(link.href, location.href);
-    if (isNextPage(url)) return;
-    if (url.origin !== location.origin || url.href === location.href) return;
-    const existing = dockPages.get(url.href);
-    if (existing && Date.now() - existing.at < 5000) return;
-    const page: { at: number; result?: Promise<any> } = { at: Date.now() };
-    page.result = fetch(url.href, {
-      cache: 'no-store',
-      headers: { Accept: 'text/html' },
-      signal: AbortSignal.timeout(8000),
-    })
-      .then(async (response) => {
-        if (
-          !response.ok ||
-          !response.headers.get('Content-Type')?.includes('text/html')
-        )
-          return null;
-        return { response, html: await response.text() };
-      })
-      .catch(() => null);
-    dockPages.set(url.href, page);
-  }
-  function warmDock() {
-    if (matchMedia('(max-width: 900px)').matches) {
-      (
-        document.querySelectorAll('[data-dock-link]') as NodeListOf<HTMLElement>
-      ).forEach(prefetchDock);
-    }
-  }
-  for (const eventName of ['pointerover', 'pointerdown', 'focusin']) {
-    document.addEventListener(
-      eventName,
-      (event) => {
-        const link = (event.target as HTMLInputElement).closest(
-          '[data-dock-link]',
-        ) as HTMLAnchorElement;
-        if (link) prefetchDock(link);
-      },
-      { passive: true },
-    );
-  }
-  if (window.requestIdleCallback)
-    requestIdleCallback(warmDock, { timeout: 1500 });
-  else setTimeout(warmDock, 300);
   const notice = document.createElement('div');
   notice.className = 'navigation-notice';
   notice.setAttribute('role', 'status');
@@ -170,7 +123,6 @@
       keepScroll = false,
       scrollY,
       pop = false,
-      dock = false,
     }: Record<string, any> = {},
   ) {
     const destination = new URL(url, location.href);
@@ -188,7 +140,6 @@
       return false;
     }
     const mutation = method !== 'GET';
-    if (mutation) dockPages.clear();
     saving = mutation;
     controller?.abort();
     controller = new AbortController();
@@ -206,33 +157,23 @@
     let pageApplied = false;
     let responseStatus;
     try {
-      const prepared =
-        dock && !mutation ? dockPages.get(destination.href) : null;
-      dockPages.delete(destination.href);
-      const cached =
-        prepared && Date.now() - prepared.at < 5000
-          ? await prepared.result
-          : null;
-      if (token !== sequence) return false;
-      const response =
-        cached?.response ||
-        (await fetch(destination.href, {
-          method,
-          body,
-          signal: controller.signal,
-          redirect: 'follow',
-          cache: 'no-store',
-          headers: {
-            Accept: 'text/html',
-            ...(mutation
-              ? {
-                  'x-csrf-token': String(
-                    body?.get('_csrf') || window.getCsrfToken?.() || '',
-                  ),
-                }
-              : {}),
-          },
-        }));
+      const response = await fetch(destination.href, {
+        method,
+        body,
+        signal: controller.signal,
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: {
+          Accept: 'text/html',
+          ...(mutation
+            ? {
+                'x-csrf-token': String(
+                  body?.get('_csrf') || window.getCsrfToken?.() || '',
+                ),
+              }
+            : {}),
+        },
+      });
       responseStatus = response.status;
       if (response.status === 429)
         throw new Error(
@@ -242,7 +183,7 @@
         throw new Error(
           'O servidor não conseguiu carregar a página. Tente novamente em instantes.',
         );
-      const html = cached?.html ?? (await response.text());
+      const html = await response.text();
       if (token !== sequence) return false;
       if (!response.headers.get('Content-Type')?.includes('text/html'))
         throw new Error('Resposta inesperada');
@@ -397,7 +338,7 @@
     )
       return;
     event.preventDefault();
-    navigate(url.href, { dock: link.hasAttribute('data-dock-link') });
+    navigate(url.href);
   });
 
   document.addEventListener('submit', async (event) => {

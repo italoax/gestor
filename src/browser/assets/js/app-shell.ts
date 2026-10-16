@@ -842,6 +842,10 @@ window.__gestorInitShell = function () {
   // Service worker é obrigatório pro Chrome oferecer "Instalar app". Push
   // notification não é registrado automaticamente — o user precisa pedir via
   // window.pushSubscribe() (botão na conta) pra abrir o popup de permissão.
+  // Ao restaurar uma página pelo histórico, busca um documento atual.
+  on(window, 'pageshow', function (event: PageTransitionEvent) {
+    if (event.persisted) window.location.reload();
+  });
   if ('serviceWorker' in navigator) {
     var workerScript = document.querySelector(
       'script[data-service-worker-url]',
@@ -851,6 +855,16 @@ window.__gestorInitShell = function () {
       : '/sw.js';
     navigator.serviceWorker
       .register(workerUrl, { updateViaCache: 'none' })
+      .then(function (registration) {
+        if (lifecycle.signal.aborted) return;
+        const updateWorker = function () {
+          if (document.visibilityState === 'visible')
+            registration.update().catch(function () {});
+        };
+        on(document, 'visibilitychange', updateWorker);
+        setInterval(updateWorker, 60000);
+        updateWorker();
+      })
       .catch(function () {
         /* ignora — site segue funcionando */
       });
