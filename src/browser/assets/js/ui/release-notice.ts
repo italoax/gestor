@@ -38,17 +38,7 @@ export async function initReleaseNotice(
     dialog.setAttribute('aria-labelledby', 'release-notice-title');
     // As mensagens do Git são inseridas como texto, nunca como HTML.
     dialog.innerHTML =
-      '<div class="modal-header"><h3 id="release-notice-title">Novidades do painel</h3><button class="modal-close" type="button" aria-label="Fechar">×</button></div><div class="modal-body"><section data-release-current aria-label="Última atualização"></section></div><div class="modal-footer"><button class="btn btn-primary" type="button">Entendi</button></div>';
-    const formatDate = (value: unknown) => {
-      const date = typeof value === 'string' ? new Date(value) : null;
-      return date && Number.isFinite(date.getTime())
-        ? date.toLocaleString('pt-BR', {
-            timeZone: 'America/Sao_Paulo',
-            dateStyle: 'long',
-            timeStyle: 'short',
-          })
-        : '';
-    };
+      '<div class="modal-header"><h3 id="release-notice-title">Atualização do painel</h3><button class="modal-close" type="button" aria-label="Fechar">×</button></div><div class="modal-body"><section data-release-current aria-label="Atualização"></section></div><div class="modal-footer"><button class="btn btn-primary" type="button">OK</button></div>';
     const appendText = (
       parent: Element,
       tag: string,
@@ -62,15 +52,6 @@ export async function initReleaseNotice(
       return element;
     };
     const appendDetails = (parent: Element, entry: any) => {
-      const date = formatDate(entry.date);
-      appendText(
-        parent,
-        'p',
-        [entry.category, date]
-          .filter((text) => typeof text === 'string' && text)
-          .join(' · '),
-        'release-notice-meta',
-      );
       if (typeof entry.description === 'string' && entry.description.trim()) {
         const description = document.createElement('div');
         description.className = 'release-notice-description';
@@ -99,7 +80,6 @@ export async function initReleaseNotice(
       }
     };
     const current = dialog.querySelector('[data-release-current]');
-    appendText(current, 'span', 'Última atualização', 'release-notice-label');
     appendText(
       current,
       'h4',

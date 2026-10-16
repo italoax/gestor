@@ -485,6 +485,16 @@ export function AutomationScreen({ data }: { data?: any }) {
                         {item.recebedores || 0} clientes
                       </button>
                     </div>
+                    {item.envioHoje && (
+                      <div
+                        className="auto-delivery"
+                        data-state={item.envioHoje.estado}
+                        aria-label="Envio de hoje"
+                      >
+                        <strong>{item.envioHoje.rotulo}</strong>
+                        <span>{item.envioHoje.detalhe}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="auto-rule-actions">
@@ -507,14 +517,16 @@ export function AutomationScreen({ data }: { data?: any }) {
                     item={item}
                     token={data.page.csrfToken}
                     action="dispatch_regra"
-                    confirm="Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo."
+                    confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
                   >
                     <button
-                      className="cli-ico-btn"
+                      className="btn btn-muted auto-force-send"
                       type="submit"
-                      aria-label={`Disparar ${item.titulo}`}
+                      aria-label={`Forçar envio: ${item.titulo}`}
+                      data-loading-text="Enviando pendentes..."
                     >
                       <Icon name="bolt" />
+                      Forçar envio
                     </button>
                   </ActionForm>
                   <button
@@ -571,11 +583,22 @@ export function AutomationScreen({ data }: { data?: any }) {
                     <td>
                       {row.status === 'enviado'
                         ? 'Enviado'
-                        : row.status === 'erro'
-                          ? 'Erro'
-                          : 'Pendente'}
+                        : row.status === 'nao_enviado'
+                          ? 'Não enviado'
+                          : row.status === 'incerto'
+                            ? 'Sem confirmação'
+                            : row.status === 'erro'
+                              ? 'Erro'
+                              : 'Pendente'}
                     </td>
-                    <td>{row.status === 'erro' ? row.erro || 'Falha' : '-'}</td>
+                    <td>
+                      {row.status === 'incerto'
+                        ? 'Confira no WhatsApp antes de qualquer nova tentativa. ' +
+                          (row.erro || '')
+                        : row.status === 'erro' || row.status === 'nao_enviado'
+                          ? row.erro || 'Falha'
+                          : '-'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

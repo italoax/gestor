@@ -103,6 +103,16 @@
                 clientes</button
               >
             </div>
+            <% if (r.envioHoje) { %>
+            <div
+              class="auto-delivery"
+              data-state="<%= r.envioHoje.estado %>"
+              aria-label="Envio de hoje"
+            >
+              <strong><%= r.envioHoje.rotulo %></strong>
+              <span><%= r.envioHoje.detalhe %></span>
+            </div>
+            <% } %>
           </div>
         </div>
         <div class="auto-rule-actions">
@@ -122,13 +132,17 @@
             method="post"
             action="/automacao"
             class="auto-dispatch-form"
-            data-confirm="Disparar essa regra agora? Clientes que já receberam hoje não serão notificados de novo."
+            data-confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
           >
             <%- csrfInput %>
             <input type="hidden" name="action" value="dispatch_regra" />
             <input type="hidden" name="id" value="<%= r.id %>" />
-            <button class="cli-ico-btn" type="submit" title="Disparar agora"
-              >▶</button
+            <button
+              class="btn btn-muted auto-force-send"
+              type="submit"
+              title="Forçar envio dos pendentes"
+              data-loading-text="Enviando pendentes..."
+              >Forçar envio</button
             >
           </form>
           <button
@@ -210,10 +224,10 @@
               </td>
               <td
                 ><span class="badge <%= d.status==='enviado'?'badge-green':d.status==='erro'?'badge-red':'badge-muted' %>"
-                  ><%= d.status==='enviado'?'Enviado':d.status==='erro'?'Erro':'Pendente' %></span
+                  ><%= d.status==='enviado'?'Enviado':d.status==='nao_enviado'?'Não enviado':d.status==='incerto'?'Sem confirmação':d.status==='erro'?'Erro':'Pendente' %></span
                 ></td
               >
-              <td class="muted"><%= d.status==='erro'?(d.erro||'Falha'):'-' %></td>
+              <td class="muted"><%= d.status==='incerto'?'Confira no WhatsApp antes de qualquer nova tentativa. ' + (d.erro||''):['erro','nao_enviado'].includes(d.status)?(d.erro||'Falha'):'-' %></td>
             </tr>
             <% }) %>
           </tbody>

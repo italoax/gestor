@@ -1,4 +1,11 @@
 <div class="container page-status">
+  <% if (typeof agendamentoAtivo !== 'undefined' && !agendamentoAtivo) { %>
+  <div class="form-alert error" role="alert">
+    <strong>Envio automático de status desativado.</strong>
+    Os agendamentos estão salvos, mas não serão publicados até o administrador
+    reativar o serviço de envio.
+  </div>
+  <% } %>
   <% if (!temWhatsapp) { %>
   <div class="cli-empty">
     <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></div>

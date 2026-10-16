@@ -1,8 +1,10 @@
+import { automationsEnabled } from '../security/automationPolicy.ts';
 import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
 export function createStatusWorkflow({
+  env,
   execute,
   queryRows,
   toNullableString,
@@ -95,6 +97,7 @@ export function createStatusWorkflow({
               'Publique stories no seu WhatsApp pra promoções, avisos e novidades.',
             historico,
             temWhatsapp: Boolean(sessao),
+            agendamentoAtivo: automationsEnabled(env),
           });
         } catch (error) {
           raiseWorkflowError(error);

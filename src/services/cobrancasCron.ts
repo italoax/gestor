@@ -189,6 +189,7 @@ async function executarCobrancasAutomaticasInterno() {
         reservados.map((r) => r.id),
         result.ok,
         result.error,
+        !result.ok && result.retrySafe !== true,
       );
       // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
       // Pausa a regra (status 'Pausada' não bate no WHERE do cron) pra não
@@ -224,6 +225,13 @@ async function executarCobrancasAutomaticasInterno() {
 // cobrancas_envios — então clientes que já receberam hoje por essa regra não
 // recebem duas vezes (segura contra cliques duplos no botão).
 export async function dispararRegraManual(userId, regraId) {
+  if (
+    !Number.isSafeInteger(Number(userId)) ||
+    Number(userId) <= 0 ||
+    !Number.isSafeInteger(Number(regraId)) ||
+    Number(regraId) <= 0
+  )
+    return { ok: false, error: 'Regra inválida.' };
   await ensureCobrancasEnviosTable();
   const cobranca = await queryOne(
     `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
@@ -277,6 +285,8 @@ export async function dispararRegraManual(userId, regraId) {
   }
   let tentativasNestaCobranca = 0;
   let enviadosNestaCobranca = 0;
+  let falhas = 0;
+  let semConfirmacao = 0;
   let falhasSeguidas = 0;
   let circuitBreaker = false;
   for (const grupo of clientes) {
@@ -322,11 +332,14 @@ export async function dispararRegraManual(userId, regraId) {
       reservados.map((r) => r.id),
       result.ok,
       result.error,
+      !result.ok && result.retrySafe !== true,
     );
     if (result.ok) {
       enviadosNestaCobranca += 1;
       falhasSeguidas = 0;
     } else {
+      falhas += 1;
+      if (result.retrySafe !== true) semConfirmacao += 1;
       falhasSeguidas += 1;
       if (falhasSeguidas >= 5) {
         circuitBreaker = true;
@@ -344,12 +357,17 @@ export async function dispararRegraManual(userId, regraId) {
     { id: cobranca.id, ultimaExecucao: appNowSql(now) },
   );
   return {
-    ok: !circuitBreaker,
+    ok: !circuitBreaker && falhas === 0,
     enviados: enviadosNestaCobranca,
+    falhas,
+    semConfirmacao,
+    bloqueados: clientes.length - tentativasNestaCobranca,
     elegiveis: clientes.length,
     error: circuitBreaker
       ? 'Regra pausada: 5 falhas seguidas de envio. Reative depois de checar a conexão do WhatsApp.'
-      : undefined,
+      : falhas > 0
+        ? `${enviadosNestaCobranca} mensagem(ns) enviada(s); ${falhas} sem envio confirmado. ${semConfirmacao > 0 ? 'Confira os envios sem confirmação no WhatsApp; eles não serão repetidos automaticamente.' : 'Reconecte o WhatsApp e tente recuperar os pendentes novamente.'}`
+        : undefined,
   };
 }
 async function reservarGrupoCobranca(cobranca, clientes, now) {
@@ -405,12 +423,12 @@ export async function reservarEnvioCobranca(
     { cobrancaId, clienteId, acessoChave, dataEnvio },
   );
   if (insert.affectedRows > 0) return insert.insertId;
-  // Já houve tentativa hoje: só re-tenta se a anterior falhou (status 'erro').
-  // Nunca reenvia para quem já recebeu ('enviado').
+  // Só recupera falhas comprovadamente anteriores ao envio. Erros antigos sem
+  // essa garantia, envios confirmados e tentativas em andamento ficam bloqueados.
   const retry = await executar(
     `UPDATE cobrancas_envios SET status = 'pendente', erro = NULL
       WHERE cobranca_id = :cobrancaId AND cliente_id = :clienteId AND acesso_chave = :acessoChave
-        AND data_envio = :dataEnvio AND status = 'erro'`,
+        AND data_envio = :dataEnvio AND status = 'nao_enviado'`,
     { cobrancaId, clienteId, acessoChave, dataEnvio },
   );
   if (retry.affectedRows === 0) return 0;
@@ -421,10 +439,11 @@ export async function reservarEnvioCobranca(
   );
   return row?.id ?? 0;
 }
-async function finalizarGrupoCobranca(ids, enviado, erro) {
-  if (ids.length === 1) return finalizarEnvioCobranca(ids[0], enviado, erro);
+async function finalizarGrupoCobranca(ids, enviado, erro, incerto = false) {
+  if (ids.length === 1)
+    return finalizarEnvioCobranca(ids[0], enviado, erro, incerto);
   const params = {
-    status: enviado ? 'enviado' : 'erro',
+    status: enviado ? 'enviado' : incerto ? 'incerto' : 'nao_enviado',
     erro: enviado
       ? null
       : String(erro || 'Falha ao enviar mensagem').slice(0, 2000),
@@ -440,14 +459,19 @@ async function finalizarGrupoCobranca(ids, enviado, erro) {
     params,
   );
 }
-export async function finalizarEnvioCobranca(reservaId, enviado, erro) {
+export async function finalizarEnvioCobranca(
+  reservaId,
+  enviado,
+  erro,
+  incerto = false,
+) {
   await execute(
     `UPDATE cobrancas_envios
         SET status = :status, erro = :erro
       WHERE id = :reservaId`,
     {
       reservaId,
-      status: enviado ? 'enviado' : 'erro',
+      status: enviado ? 'enviado' : incerto ? 'incerto' : 'nao_enviado',
       erro: enviado
         ? null
         : String(erro || 'Falha ao enviar mensagem').slice(0, 2000),

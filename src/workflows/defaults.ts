@@ -125,6 +125,7 @@ export function createDefaultFeatures() {
       ensureCobrancasEnviosTable,
     }),
     status: createStatusWorkflow({
+      env,
       execute,
       queryRows,
       toNullableString,

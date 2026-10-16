@@ -444,6 +444,13 @@ export function StatusScreen({ data }: { data?: any }) {
   return (
     <NativePanel data={data} path="/status">
       <div className="container page-status" data-react-page="status">
+        {data.agendamentoAtivo === false && (
+          <div className="form-alert error" role="alert">
+            <strong>Envio automático de status desativado.</strong> Os
+            agendamentos estão salvos, mas não serão publicados até o
+            administrador reativar o serviço de envio.
+          </div>
+        )}
         {data.temWhatsapp ? (
           <div className="section-header">
             <div>

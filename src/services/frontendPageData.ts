@@ -235,6 +235,7 @@ export function nativePageData(
       return {
         ...base,
         temWhatsapp: Boolean(data.temWhatsapp),
+        agendamentoAtivo: data.agendamentoAtivo === true,
         historico: statusHistoryData(data.historico || []),
       };
     if (view === 'pages/automacao')
@@ -246,8 +247,8 @@ export function nativePageData(
           'mensagensHoje',
           'entrega',
         ]),
-        regras: (data.regras || []).map((item) =>
-          pick(item, [
+        regras: (data.regras || []).map((item) => ({
+          ...pick(item, [
             'id',
             'titulo',
             'descricao',
@@ -270,7 +271,10 @@ export function nativePageData(
             'filtroArquivados',
             'recebedores',
           ]),
-        ),
+          envioHoje: item.envioHoje
+            ? pick(item.envioHoje, ['estado', 'rotulo', 'detalhe'])
+            : null,
+        })),
         disparos: (data.disparos || []).map((item) =>
           pick(item, [
             'id',

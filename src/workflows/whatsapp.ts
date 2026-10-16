@@ -290,7 +290,7 @@ export function createWhatsappWorkflow({
           const [devices, envios] = await Promise.all([
             listarDevices(userId),
             queryRows(
-              `SELECT COALESCE(SUM(ce.status='enviado'),0) AS enviados, COALESCE(SUM(ce.status='erro'),0) AS erros
+              `SELECT COALESCE(SUM(ce.status='enviado'),0) AS enviados, COALESCE(SUM(ce.status IN ('erro', 'nao_enviado', 'incerto')),0) AS erros
            FROM cobrancas_envios ce JOIN cobrancas c ON c.id = ce.cobranca_id
           WHERE c.user_id = :userId AND ce.data_envio = :today`,
               { userId, today },

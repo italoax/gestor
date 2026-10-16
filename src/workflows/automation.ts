@@ -1,3 +1,5 @@
+import { regraPorVencimento } from '../services/cobrancaDestinatarios.ts';
+import { resumirEnviosCobranca } from '../services/cobrancaResumo.ts';
 import {
   workflowResult,
   raiseWorkflowError,
@@ -27,17 +29,37 @@ export function createAutomationWorkflow({
     if (t === 'apos cadastro') return `${d} dia(s) após cadastro`;
     return 'Todos os clientes';
   }
-  async function contarRecebedores(userId, regra, today) {
+  async function carregarEnvioHoje(userId, regra, today, historicoHoje) {
     const { from, params } = consultaDestinatariosCobranca(
       userId,
       regra,
       today,
     );
-    const r = await queryRows(
-      `SELECT COUNT(DISTINCT id) AS total ${from}`,
-      params,
+    const rows = await queryRows(
+      `SELECT alvo.id AS clienteId, COUNT(*) AS acessos,
+              SUM(ce.status = 'enviado') AS enviados,
+              SUM(ce.status IN ('erro', 'nao_enviado')) AS falhas,
+              SUM(ce.status = 'pendente') AS emEnvio,
+              SUM(ce.status = 'incerto') AS semConfirmacao
+         FROM (SELECT id, acessoChave ${from}) alvo
+         LEFT JOIN cobrancas_envios ce
+           ON ce.cobranca_id = :regraId AND ce.cliente_id = alvo.id
+          AND ce.acesso_chave = ${regraPorVencimento(regra) ? 'alvo.acessoChave' : "'principal'"}
+          AND ce.data_envio = :today
+        GROUP BY alvo.id`,
+      { ...params, regraId: regra.id },
     );
-    return Number(r[0]?.total ?? 0);
+    // Uma renovação pode retirar um cliente dos elegíveis depois do envio.
+    // Conserva a confirmação de hoje sem confundi-la com novos destinatários.
+    const clientes = new Map(rows.map((row) => [String(row.clienteId), row]));
+    for (const row of historicoHoje) {
+      if (!clientes.has(String(row.clienteId)))
+        clientes.set(String(row.clienteId), row);
+    }
+    return {
+      ...resumirEnviosCobranca([...clientes.values()]),
+      recebedores: rows.length,
+    };
   }
   const REGRAS_PADRAO = [
     {
@@ -142,7 +164,7 @@ export function createAutomationWorkflow({
           const today = appTodayIso();
           const [
             regrasRows,
-            statsEntrega,
+            enviosHoje,
             disparos,
             clientesCount,
             planos,
@@ -161,9 +183,15 @@ export function createAutomationWorkflow({
               { userId },
             ),
             queryRows(
-              `SELECT COALESCE(SUM(ce.status = 'enviado'), 0) AS enviados, COALESCE(SUM(ce.status = 'erro'), 0) AS erros
+              `SELECT ce.cobranca_id AS regraId, ce.cliente_id AS clienteId,
+                COUNT(*) AS acessos,
+                SUM(ce.status = 'enviado') AS enviados,
+                SUM(ce.status IN ('erro', 'nao_enviado')) AS falhas,
+                SUM(ce.status = 'pendente') AS emEnvio,
+                SUM(ce.status = 'incerto') AS semConfirmacao
            FROM cobrancas_envios ce JOIN cobrancas c ON c.id = ce.cobranca_id
-          WHERE c.user_id = :userId AND ce.data_envio = :today`,
+          WHERE c.user_id = :userId AND ce.data_envio = :today
+          GROUP BY ce.cobranca_id, ce.cliente_id`,
               { userId, today },
             ),
             queryRows(
@@ -203,18 +231,41 @@ export function createAutomationWorkflow({
               { userId },
             ),
           ]);
+          const enviosPorRegra = new Map<string, typeof enviosHoje>();
+          for (const envio of enviosHoje) {
+            const key = String(envio.regraId);
+            const rows = enviosPorRegra.get(key) || [];
+            rows.push(envio);
+            enviosPorRegra.set(key, rows);
+          }
           const regras = await Promise.all(
-            regrasRows.map(async (r) => ({
-              ...r,
-              recebedores: await contarRecebedores(userId, r, today),
-              diasSemanaLista: String(r.diasSemana ?? '')
-                .split(',')
-                .map((x) => x.trim())
-                .filter(Boolean),
-            })),
+            regrasRows.map(async (r) => {
+              const envioHoje = await carregarEnvioHoje(
+                userId,
+                r,
+                today,
+                enviosPorRegra.get(String(r.id)) || [],
+              );
+              return {
+                ...r,
+                recebedores: envioHoje.recebedores,
+                envioHoje,
+                diasSemanaLista: String(r.diasSemana ?? '')
+                  .split(',')
+                  .map((x) => x.trim())
+                  .filter(Boolean),
+              };
+            }),
           );
-          const enviados = Number(statsEntrega[0]?.enviados ?? 0);
-          const erros = Number(statsEntrega[0]?.erros ?? 0);
+          const enviados = enviosHoje.reduce(
+            (total, row) => total + Number(row.enviados || 0),
+            0,
+          );
+          const erros = enviosHoje.reduce(
+            (total, row) =>
+              total + Number(row.falhas || 0) + Number(row.semConfirmacao || 0),
+            0,
+          );
           const stats = {
             regras: regras.length,
             ativas: regras.filter((r) => r.status === 'Ativo').length,
@@ -281,7 +332,7 @@ export function createAutomationWorkflow({
             } else if (resultado.enviados === 0) {
               input.flash(
                 'error',
-                `Nenhuma mensagem enviada: ${resultado.elegiveis} cliente(s) já receberam essa regra hoje.`,
+                'Nenhuma mensagem repetida: os envios de hoje já foram confirmados, estão em andamento ou exigem conferência no WhatsApp.',
               );
             } else {
               input.flash(

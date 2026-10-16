@@ -21,11 +21,14 @@ export function startStatusCron() {
   if (!automationsEnabled(env) || stopping || timer) return;
   // A cada 30s: barato e dá precisão suficiente. Não precisa ser ao segundo —
   // status agendado para 14:30 publica entre 14:30 e 14:30:30.
-  timer = setInterval(() => {
+  const tick = () => {
     void executarAgendados().catch((error) =>
       console.error('Erro no cron de status:', safeError(error)),
     );
-  }, 30000);
+  };
+  timer = setInterval(tick, 30000);
+  // Retoma também os agendamentos vencidos enquanto o serviço estava parado.
+  tick();
 }
 export async function executarAgendados() {
   if (!automationsEnabled(env) || stopping) return { skipped: true };
@@ -36,7 +39,8 @@ export async function executarAgendados() {
     for (const [session, until] of sessionCooldowns) {
       if (until <= Date.now()) sessionCooldowns.delete(session);
     }
-    // Pega todos os agendados vencidos (agendado_para <= NOW). Faz JOIN pra trazer
+    // As datas são gravadas em UTC; a comparação independe do fuso do MySQL.
+    // Pega todos os agendados vencidos. Faz JOIN pra trazer
     // a sessão WhatsApp principal do dono junto, evitando 2 queries por linha.
     const due =
       await queryRows(`SELECT s.id, s.user_id AS userId, s.tipo, s.texto, s.cor_fundo AS corFundo, s.fonte,
@@ -45,7 +49,7 @@ export async function executarAgendados() {
                 WHERE user_id = s.user_id
                 ORDER BY principal DESC, id ASC LIMIT 1) AS sessao
          FROM whatsapp_status s
-        WHERE s.status = 'agendado' AND s.agendado_para <= NOW()
+        WHERE s.status = 'agendado' AND s.agendado_para <= UTC_TIMESTAMP()
         ORDER BY s.agendado_para ASC, s.id ASC
         LIMIT 20`);
     let postados = 0;
@@ -57,7 +61,7 @@ export async function executarAgendados() {
       // Marca como "publicando" antes de tentar — proteção extra contra dupla
       // publicação se um tick atrasou e outro pegou a mesma linha.
       const reservado = await execute(
-        "UPDATE whatsapp_status SET status = 'publicando' WHERE id = :id AND status = 'agendado' AND agendado_para <= NOW()",
+        "UPDATE whatsapp_status SET status = 'publicando' WHERE id = :id AND status = 'agendado' AND agendado_para <= UTC_TIMESTAMP()",
         { id: row.id },
       );
       if (reservado.affectedRows === 0) continue;

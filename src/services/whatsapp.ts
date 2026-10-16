@@ -80,13 +80,18 @@ async function jsonRequest(
       (typeof data === 'object' && data !== null && data.ok === false)
     ) {
       const json = typeof data === 'object' && data !== null ? data : {};
+      const error =
+        traduzirErroWhatsapp(json.error ?? json.lastError) ||
+        `Erro HTTP ${response.status}`;
       return {
         ok: false,
         status: response.status,
         response: data,
-        error:
-          traduzirErroWhatsapp(json.error ?? json.lastError) ||
-          `Erro HTTP ${response.status}`,
+        error,
+        retrySafe:
+          [400, 401, 403, 404, 422].includes(response.status) ||
+          (response.status === 500 &&
+            error.startsWith('WhatsApp não conectado.')),
       };
     }
     const json = typeof data === 'object' && data !== null ? data : null;
@@ -250,7 +255,8 @@ export async function enviarTexto(sessao, telefone, mensagem, token) {
     env.whatsapp.sessionSendTextPath,
     sessao || env.whatsapp.sessionNameDefault,
   );
-  if (!url) return { ok: false, error: 'WA_SESSION_API_URL ausente.' };
+  if (!url)
+    return { ok: false, retrySafe: true, error: 'WA_SESSION_API_URL ausente.' };
   return jsonRequest(
     url,
     {
@@ -276,7 +282,8 @@ export async function enviarMidia(
     env.whatsapp.sessionSendMediaPath,
     sessao || env.whatsapp.sessionNameDefault,
   );
-  if (!url) return { ok: false, error: 'WA_SESSION_API_URL ausente.' };
+  if (!url)
+    return { ok: false, retrySafe: true, error: 'WA_SESSION_API_URL ausente.' };
   return jsonRequest(
     url,
     {
@@ -297,7 +304,8 @@ export async function enviarAudio(sessao, telefone, urlAudio, token) {
     env.whatsapp.sessionSendAudioPath,
     sessao || env.whatsapp.sessionNameDefault,
   );
-  if (!url) return { ok: false, error: 'WA_SESSION_API_URL ausente.' };
+  if (!url)
+    return { ok: false, retrySafe: true, error: 'WA_SESSION_API_URL ausente.' };
   return jsonRequest(
     url,
     {
@@ -316,7 +324,8 @@ export async function postarStatus(sessao, payload, token?: string) {
     '/api/status/send',
     sessao || env.whatsapp.sessionNameDefault,
   );
-  if (!url) return { ok: false, error: 'WA_SESSION_API_URL ausente.' };
+  if (!url)
+    return { ok: false, retrySafe: true, error: 'WA_SESSION_API_URL ausente.' };
   const body: Record<string, any> = {
     session: sessao || env.whatsapp.sessionNameDefault,
     type: payload.type,
@@ -337,11 +346,7 @@ export async function postarStatus(sessao, payload, token?: string) {
       sessionHeaders(token),
       180000,
     );
-    // Esta resposta do serviço ocorre antes de obter o socket e publicar.
-    const disconnected =
-      result.status === 500 &&
-      result.error?.startsWith('WhatsApp não conectado.');
-    if (result.ok || attempt >= 3 || (!result.retrySafe && !disconnected))
+    if (result.ok || attempt >= 3 || !erroDeConexaoTransiente(result))
       return result;
     await sleep(6000);
   }
@@ -365,7 +370,11 @@ export async function enviarMensagemModelo(
   ) {
     const url = await urlPagamentoDoCliente(Number(cliente.id));
     if (!url)
-      return { ok: false, error: 'Não foi possível gerar o link do cliente.' };
+      return {
+        ok: false,
+        retrySafe: true,
+        error: 'Não foi possível gerar o link do cliente.',
+      };
     clienteFinal.linkPagamentoCurto = url;
   }
   if (
@@ -381,6 +390,7 @@ export async function enviarMensagemModelo(
     if (!pagamentoToken)
       return {
         ok: false,
+        retrySafe: true,
         error: 'Não foi possível gerar o link de renovação deste cliente.',
       };
     clienteFinal.pagamentoToken = pagamentoToken;
@@ -409,11 +419,13 @@ export async function enviarMensagemModelo(
 // Erros transientes do microserviço Baileys: tipicamente acontecem nos primeiros
 // segundos após uma reconexão, enquanto o socket ainda está estabilizando.
 // A mensagem seguinte costuma passar — então retry vale a pena.
-function erroDeConexaoTransiente(error) {
-  if (!error) return false;
-  const msg = error.toLowerCase();
-  return /n[aã]o conectado|not connected|session not found|socket|disconnected|connection closed|qr code/i.test(
-    msg,
+function erroDeConexaoTransiente(result: WhatsappResult) {
+  // Só repetir quando sabemos que a API ainda não aceitou a mensagem.
+  return (
+    result.retrySafe === true &&
+    (result.status === 500 ||
+      (result.status === undefined &&
+        result.error === 'Não foi possível conectar à API do WhatsApp.'))
   );
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -446,7 +458,7 @@ export async function enviarMensagemModeloComRetry(
     );
     if (result.ok) return result;
     ultimoResult = result;
-    if (!erroDeConexaoTransiente(result.error)) return result;
+    if (!erroDeConexaoTransiente(result)) return result;
     if (tentativa < maxTentativas) await sleep(6000);
   }
   return ultimoResult;
