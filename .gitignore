@@ -26,6 +26,14 @@ sessions/
 
 # Testes mantidos somente neste computador
 /test/
+/scripts/*.test.mts
+/scripts/run-isolated-tests.mts
+/scripts/security-local-db.mts
+/scripts/security-compatibility-child.mts
+/scripts/security-csp.browser.mts
+
+# SQL pontual gerado para uma recuperacao ja aplicada
+/SECURITY-SCHEMA-RECOVERY.sql
 
 # Documentação e controle local de deploy não fazem parte do site
 /docs/
