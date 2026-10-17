@@ -3075,3 +3075,88 @@
   font-size: 12px;
   line-height: 1.6;
 }
+.page-app .campaigns .section-header {
+  align-items: flex-start;
+  gap: 16px;
+}
+.page-app .campaigns .section-header h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.page-app .campaign-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 10rem;
+  overflow: auto;
+}
+.page-app .campaign-message {
+  min-height: 140px;
+  resize: vertical;
+}
+.page-app #scheduled-message-form .auto-form-section {
+  display: grid;
+  gap: 12px;
+}
+.page-app #scheduled-message-form .auto-form-section :is(h4, p) {
+  margin: 0;
+}
+.page-app .campaign-count {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.page-app .campaign-days {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+.page-app .campaign-days legend {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.page-app .campaign-selection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0;
+}
+.page-app .campaign-clients {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.page-app .campaign-client {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.page-app .campaign-client:last-child {
+  border-bottom: 0;
+}
+.page-app .campaign-client input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+}
+.page-app .campaign-client span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.page-app .campaign-client small {
+  color: var(--muted);
+}
+.page-app .auto-tab {
+  white-space: normal;
+}

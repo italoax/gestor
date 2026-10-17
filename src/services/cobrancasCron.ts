@@ -18,6 +18,11 @@ import {
 } from './cobrancaDestinatarios.ts';
 import { getPixConfig } from './pixConfig.ts';
 import { createLogger } from './logger.ts';
+import {
+  lerCampanha,
+  campanhaPodeExecutar,
+  dataReservaCampanha,
+} from './campanhas.ts';
 const logger = createLogger('cron-cobrancas');
 let timer = null;
 // Lock global compartilhado pelo cron interno (setInterval) e pelo endpoint
@@ -92,6 +97,7 @@ async function executarCobrancasAutomaticasInterno() {
             c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
             c.filtro_arquivados AS filtroArquivados,
             c.rodape_antiban AS rodapeAntiban, c.envio_lotes AS envioLotes, c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa,
+            c.campanha_config AS campanhaConfig,
             m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
        FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
       WHERE c.automatica = 1 AND c.status = 'Ativo'`,
@@ -99,11 +105,37 @@ async function executarCobrancasAutomaticasInterno() {
   );
   for (const cobranca of cobrancas) {
     if (shutdownSignal.signal.aborted) return { skipped: true };
-    // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
-    if (cobranca.horaEnvio && hhmm < String(cobranca.horaEnvio).slice(0, 5))
+    let campanha;
+    try {
+      campanha = lerCampanha(cobranca.campanhaConfig);
+    } catch (error) {
+      logger.error('configuração de campanha inválida', error);
+      await execute(
+        "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId",
+        { id: cobranca.id, userId: cobranca.userId },
+      );
       continue;
-    if (!deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
-    if (cobranca.jaRodouHoje) continue;
+    }
+    const unico = campanha?.modo === 'unico';
+    if (
+      unico &&
+      !campanhaPodeExecutar(
+        campanha,
+        today,
+        hhmm,
+        String(cobranca.horaEnvio).slice(0, 5),
+      )
+    )
+      continue;
+    // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
+    if (
+      !unico &&
+      cobranca.horaEnvio &&
+      hhmm < String(cobranca.horaEnvio).slice(0, 5)
+    )
+      continue;
+    if (!unico && !deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
+    if (!unico && cobranca.jaRodouHoje) continue;
     const { from, params } = consultaDestinatariosCobranca(
       cobranca.userId,
       cobranca,
@@ -138,6 +170,7 @@ async function executarCobrancasAutomaticasInterno() {
     let enviadosNestaCobranca = 0;
     let falhasSeguidas = 0;
     let circuitBreaker = false;
+    let interrompida = false;
     for (const grupo of clientes) {
       if (shutdownSignal.signal.aborted) return { skipped: true };
       // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
@@ -154,6 +187,21 @@ async function executarCobrancasAutomaticasInterno() {
         }
       }
       if (shutdownSignal.signal.aborted) return { skipped: true };
+      if (campanha) {
+        const atual = await queryOne(
+          'SELECT status, campanha_config AS campanhaConfig FROM cobrancas WHERE id=:id AND user_id=:userId',
+          { id: cobranca.id, userId: cobranca.userId },
+        );
+        if (
+          !atual ||
+          atual.status !== 'Ativo' ||
+          JSON.stringify(lerCampanha(atual.campanhaConfig)) !==
+            JSON.stringify(campanha)
+        ) {
+          interrompida = true;
+          break;
+        }
+      }
       const reservados = await reservarGrupoCobranca(
         cobranca,
         grupo.acessosCobranca,
@@ -169,6 +217,7 @@ async function executarCobrancasAutomaticasInterno() {
       // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
       // então não precisamos de rodapé anti-ban — o conteúdo nunca é idêntico entre clientes.
       const mensagemBase =
+        campanha?.mensagem ||
         cobranca.mensagem ||
         'Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.';
       const result = await enviarMensagemModeloComRetry(
@@ -178,8 +227,8 @@ async function executarCobrancasAutomaticasInterno() {
           mensagem: regraPorVencimento(cobranca)
             ? mensagemCobrancaPorAcesso(mensagemBase, cliente)
             : mensagemBase,
-          mediaTipo: cobranca.mediaTipo,
-          mediaPath: cobranca.mediaPath,
+          mediaTipo: campanha ? null : cobranca.mediaTipo,
+          mediaPath: campanha ? null : cobranca.mediaPath,
         },
         undefined,
         undefined,
@@ -213,6 +262,20 @@ async function executarCobrancasAutomaticasInterno() {
       );
     }
     if (shutdownSignal.signal.aborted) return { skipped: true };
+    if (interrompida) continue;
+    if (unico) {
+      await execute(
+        `UPDATE cobrancas SET
+        status=IF((SELECT COUNT(*) FROM cobrancas_envios WHERE cobranca_id=:id AND data_envio=:data AND status='enviado')=:total,'Concluído','Pausada'),
+        automatica=0 WHERE id=:id AND user_id=:userId AND status='Ativo'`,
+        {
+          id: cobranca.id,
+          userId: cobranca.userId,
+          data: campanha.data,
+          total: clientes.length,
+        },
+      );
+    }
     await execute(
       'UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id',
       { id: cobranca.id, ultimaExecucao: appNowSql(now) },
@@ -239,6 +302,7 @@ export async function dispararRegraManual(userId, regraId) {
             c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
             c.filtro_arquivados AS filtroArquivados,
             c.rodape_antiban AS rodapeAntiban, c.envio_lotes AS envioLotes, c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa,
+            c.campanha_config AS campanhaConfig,
             m.mensagem, m.media_tipo AS mediaTipo, m.media_path AS mediaPath
        FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
       WHERE c.id = :regraId AND c.user_id = :userId
@@ -246,6 +310,11 @@ export async function dispararRegraManual(userId, regraId) {
     { regraId, userId },
   );
   if (!cobranca) return { ok: false, error: 'Regra não encontrada.' };
+  if (cobranca.campanhaConfig != null)
+    return {
+      ok: false,
+      error: 'Este envio segue o agendamento da aba Envios automáticos.',
+    };
   const now = new Date();
   const { from, params } = consultaDestinatariosCobranca(
     userId,
@@ -383,11 +452,28 @@ async function reservarGrupoCobranca(cobranca, clientes, now) {
         now,
         chave,
         conn,
+        dataReservaCampanha(cobranca.campanhaConfig, appTodayIso(now)),
       );
       if (id) reservas.push({ id, cliente });
     }
     return reservas;
   };
+  const campanha = lerCampanha(cobranca.campanhaConfig);
+  if (campanha)
+    return withTransaction(async (conn) => {
+      const [rows] = await conn.query<RowDataPacket[]>(
+        'SELECT status, campanha_config AS campanhaConfig FROM cobrancas WHERE id=:id AND user_id=:userId FOR UPDATE',
+        { id: cobranca.id, userId: cobranca.userId },
+      );
+      if (
+        !rows.length ||
+        rows[0].status !== 'Ativo' ||
+        JSON.stringify(lerCampanha(rows[0].campanhaConfig)) !==
+          JSON.stringify(campanha)
+      )
+        return [];
+      return reservar(conn);
+    });
   if (clientes.length === 1) return reservar();
   // Reserva todos os acessos juntos antes do envio, inclusive em disparos simultâneos.
   return withTransaction(async (conn) => {
@@ -408,9 +494,10 @@ export async function reservarEnvioCobranca(
   now = new Date(),
   acessoChave = 'principal',
   conn,
+  dataReferencia?: string,
 ) {
   await ensureCobrancasEnviosTable();
-  const dataEnvio = appTodayIso(now);
+  const dataEnvio = dataReferencia || appTodayIso(now);
   const executar = conn
     ? async (sql, params) => (await conn.execute(sql, params))[0]
     : execute;

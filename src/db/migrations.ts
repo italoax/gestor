@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
 import {
+  campaignSchemaVersion,
+  campaignSchemaChecksum,
+  applyCampaignSchema,
+} from './campaignSchema.ts';
+import {
   applyStructuralSchema,
   applyLegacyBusinessMigration,
   structuralDefinition,
@@ -20,6 +25,17 @@ export async function verifyDatabaseSchema(connection) {
       'Schema incompatível. Execute e aprove a migração explícita antes de iniciar.',
     );
   // No DDL, seed, or commercial update during startup.
+  const [campaigns] = await connection.query(
+    'SELECT checksum FROM schema_migrations WHERE version = ?',
+    [campaignSchemaVersion],
+  );
+  if (
+    campaigns.length !== 1 ||
+    campaigns[0].checksum !== campaignSchemaChecksum
+  )
+    throw new Error(
+      'Schema de envios automáticos incompatível. Execute a migração explícita antes de iniciar.',
+    );
   await connection.query('SELECT session_id FROM sessions LIMIT 0');
   await connection.query('SELECT session_version FROM users LIMIT 0');
   await connection.query('SELECT external_reference FROM pagamentos LIMIT 0');
@@ -60,6 +76,11 @@ export async function runSchemaMigrations(
       );
     };
     await apply(schemaVersion, checksum, applyStructuralSchema);
+    await apply(
+      campaignSchemaVersion,
+      campaignSchemaChecksum,
+      applyCampaignSchema,
+    );
     if (business) {
       await connection.beginTransaction();
       try {

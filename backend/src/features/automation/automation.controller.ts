@@ -41,4 +41,11 @@ export class AutomationController {
       await this.service.recipients(workflowInput(request, response)),
     );
   }
+  @Get('/automacao/clientes')
+  async clients(@Req() request: Request, @Res() response: Response) {
+    sendWorkflowResponse(
+      response,
+      await this.service.clients(workflowInput(request, response)),
+    );
+  }
 }

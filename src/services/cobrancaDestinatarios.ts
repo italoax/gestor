@@ -20,6 +20,14 @@ export function consultaDestinatariosCobranca(userId, regra, today) {
   const tipo = String(regra.tipo).toLowerCase().trim();
   const params: Record<string, unknown> = { userId, today };
   let where = "user_id = :userId AND status = 'Ativo'";
+  const campanha = lerCampanha(regra.campanhaConfig);
+  if (campanha) {
+    const ids = campanha.clientesIds.map((id, index) => {
+      params['campanhaCliente' + index] = id;
+      return ':campanhaCliente' + index;
+    });
+    where += ` AND id IN (${ids.join(',')})`;
+  }
   const arquivados = String(regra.filtroArquivados || '')
     .toLowerCase()
     .trim();
@@ -115,3 +123,4 @@ export function mensagemCobrancaPorAcesso(template, cliente) {
   }
   return template;
 }
+import { lerCampanha } from './campanhas.ts';

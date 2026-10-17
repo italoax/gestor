@@ -4,6 +4,8 @@ import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import { useSearchParams } from 'next/navigation';
+import { ScheduledMessages } from './ScheduledMessages.tsx';
 
 const triggers = [
   ['Todos', 'Todos os clientes'],
@@ -392,7 +394,10 @@ function Recipients({
   );
 }
 export function AutomationScreen({ data }: { data?: any }) {
-  const [tab, setTab] = useState('regras');
+  const params = useSearchParams();
+  const [tab, setTab] = useState(
+    params?.get('aba') === 'envios' ? 'envios' : 'regras',
+  );
   const [editor, setEditor] = useState(null);
   const [recipients, setRecipients] = useState(null);
   return (
@@ -416,7 +421,7 @@ export function AutomationScreen({ data }: { data?: any }) {
         </div>
         <div className="auto-tabs">
           <>
-            {['regras', 'disparos'].map((value) => (
+            {['regras', 'envios', 'disparos'].map((value) => (
               <button
                 type="button"
                 key={value}
@@ -424,11 +429,16 @@ export function AutomationScreen({ data }: { data?: any }) {
                 aria-pressed={tab === value}
                 onClick={() => setTab(value)}
               >
-                {value === 'regras' ? 'Regras' : 'Disparos'}
+                {value === 'regras'
+                  ? 'Regras'
+                  : value === 'envios'
+                    ? 'Envios automáticos'
+                    : 'Disparos'}
               </button>
             ))}
           </>
           <button
+            hidden={tab === 'envios'}
             type="button"
             className="btn btn-primary auto-new"
             onClick={() => setEditor({ item: null })}
@@ -436,124 +446,130 @@ export function AutomationScreen({ data }: { data?: any }) {
             Nova regra
           </button>
         </div>
-        {tab === 'regras' ? (
+        {tab === 'envios' ? (
+          <ScheduledMessages data={data} />
+        ) : tab === 'regras' ? (
           <div className="auto-list">
-            {!data.regras.length && (
+            {!data.regras.some((item) => !item.campanha) && (
               <div className="cli-empty">Nenhuma regra cadastrada.</div>
             )}
-            {data.regras.map((item) => (
-              <article
-                className={`auto-rule ${item.status === 'Ativo' ? 'is-on' : ''}`}
-                key={item.id}
-                data-rule-item={item.id}
-              >
-                <div className="auto-rule-main">
-                  <Icon name="bolt" />
-                  <div className="auto-rule-body">
-                    <div className="auto-rule-top">
-                      <strong>{item.titulo}</strong>
-                      <small>{item.descricao}</small>
-                    </div>
-                    <span className="auto-badge">
-                      {triggers.find(
-                        ([value]) =>
-                          value.toLowerCase() === item.tipo?.toLowerCase(),
-                      )?.[1] || 'Todos os clientes'}
-                    </span>
-                    <div className="auto-rule-preview">
-                      {(item.mensagemTexto || 'Sem template vinculado')
-                        .replace(/\s+/g, ' ')
-                        .slice(0, 90)}
-                    </div>
-                    <div className="auto-rule-foot">
-                      <span>
-                        Arquivo:{' '}
-                        {item.filtroArquivados === 'todos'
-                          ? 'Todos'
-                          : item.filtroArquivados || 'Não arquivado'}
-                      </span>
-                      <span>
-                        {item.status === 'Ativo'
-                          ? 'Regra ativada'
-                          : 'Regra desativada'}
-                      </span>
-                      <button
-                        type="button"
-                        className="auto-receb-link"
-                        onClick={() => setRecipients(item)}
-                      >
-                        {item.recebedores || 0} clientes
-                      </button>
-                    </div>
-                    {item.envioHoje && (
-                      <div
-                        className="auto-delivery"
-                        data-state={item.envioHoje.estado}
-                        aria-label="Envio de hoje"
-                      >
-                        <strong>{item.envioHoje.rotulo}</strong>
-                        <span>{item.envioHoje.detalhe}</span>
+            {data.regras
+              .filter((item) => !item.campanha)
+              .map((item) => (
+                <article
+                  className={`auto-rule ${item.status === 'Ativo' ? 'is-on' : ''}`}
+                  key={item.id}
+                  data-rule-item={item.id}
+                >
+                  <div className="auto-rule-main">
+                    <Icon name="bolt" />
+                    <div className="auto-rule-body">
+                      <div className="auto-rule-top">
+                        <strong>{item.titulo}</strong>
+                        <small>{item.descricao}</small>
                       </div>
-                    )}
+                      <span className="auto-badge">
+                        {triggers.find(
+                          ([value]) =>
+                            value.toLowerCase() === item.tipo?.toLowerCase(),
+                        )?.[1] || 'Todos os clientes'}
+                      </span>
+                      <div className="auto-rule-preview">
+                        {(item.mensagemTexto || 'Sem template vinculado')
+                          .replace(/\s+/g, ' ')
+                          .slice(0, 90)}
+                      </div>
+                      <div className="auto-rule-foot">
+                        <span>
+                          Arquivo:{' '}
+                          {item.filtroArquivados === 'todos'
+                            ? 'Todos'
+                            : item.filtroArquivados || 'Não arquivado'}
+                        </span>
+                        <span>
+                          {item.status === 'Ativo'
+                            ? 'Regra ativada'
+                            : 'Regra desativada'}
+                        </span>
+                        <button
+                          type="button"
+                          className="auto-receb-link"
+                          onClick={() => setRecipients(item)}
+                        >
+                          {item.recebedores || 0} clientes
+                        </button>
+                      </div>
+                      {item.envioHoje && (
+                        <div
+                          className="auto-delivery"
+                          data-state={item.envioHoje.estado}
+                          aria-label="Envio de hoje"
+                        >
+                          <strong>{item.envioHoje.rotulo}</strong>
+                          <span>{item.envioHoje.detalhe}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="auto-rule-actions">
-                  <ActionForm
-                    item={item}
-                    token={data.page.csrfToken}
-                    action="toggle_regra"
-                  >
-                    <input
-                      type="checkbox"
-                      className="switch"
-                      aria-label={`Ativar regra ${item.titulo}`}
-                      defaultChecked={item.status === 'Ativo'}
-                      onChange={(event) =>
-                        (event.target as HTMLInputElement).form.requestSubmit()
-                      }
-                    />
-                  </ActionForm>
-                  <ActionForm
-                    item={item}
-                    token={data.page.csrfToken}
-                    action="dispatch_regra"
-                    confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
-                  >
-                    <button
-                      className="btn btn-muted auto-force-send"
-                      type="submit"
-                      aria-label={`Forçar envio: ${item.titulo}`}
-                      data-loading-text="Enviando pendentes..."
+                  <div className="auto-rule-actions">
+                    <ActionForm
+                      item={item}
+                      token={data.page.csrfToken}
+                      action="toggle_regra"
                     >
-                      <Icon name="bolt" />
-                      Forçar envio
-                    </button>
-                  </ActionForm>
-                  <button
-                    className="cli-ico-btn"
-                    type="button"
-                    aria-label={`Editar ${item.titulo}`}
-                    onClick={() => setEditor({ item })}
-                  >
-                    <Icon name="edit" />
-                  </button>
-                  <ActionForm
-                    item={item}
-                    token={data.page.csrfToken}
-                    action="delete_regra"
-                    confirm="Deseja apagar esta regra?"
-                  >
-                    <button
-                      className="cli-ico-btn danger"
-                      type="submit"
-                      aria-label={`Apagar ${item.titulo}`}
+                      <input
+                        type="checkbox"
+                        className="switch"
+                        aria-label={`Ativar regra ${item.titulo}`}
+                        defaultChecked={item.status === 'Ativo'}
+                        onChange={(event) =>
+                          (
+                            event.target as HTMLInputElement
+                          ).form.requestSubmit()
+                        }
+                      />
+                    </ActionForm>
+                    <ActionForm
+                      item={item}
+                      token={data.page.csrfToken}
+                      action="dispatch_regra"
+                      confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
                     >
-                      <Icon name="trash" />
+                      <button
+                        className="btn btn-muted auto-force-send"
+                        type="submit"
+                        aria-label={`Forçar envio: ${item.titulo}`}
+                        data-loading-text="Enviando pendentes..."
+                      >
+                        <Icon name="bolt" />
+                        Forçar envio
+                      </button>
+                    </ActionForm>
+                    <button
+                      className="cli-ico-btn"
+                      type="button"
+                      aria-label={`Editar ${item.titulo}`}
+                      onClick={() => setEditor({ item })}
+                    >
+                      <Icon name="edit" />
                     </button>
-                  </ActionForm>
-                </div>
-              </article>
-            ))}
+                    <ActionForm
+                      item={item}
+                      token={data.page.csrfToken}
+                      action="delete_regra"
+                      confirm="Deseja apagar esta regra?"
+                    >
+                      <button
+                        className="cli-ico-btn danger"
+                        type="submit"
+                        aria-label={`Apagar ${item.titulo}`}
+                      >
+                        <Icon name="trash" />
+                      </button>
+                    </ActionForm>
+                  </div>
+                </article>
+              ))}
           </div>
         ) : (
           <div className="table-wrapper">

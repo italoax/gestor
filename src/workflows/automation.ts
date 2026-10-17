@@ -1,13 +1,17 @@
 import { regraPorVencimento } from '../services/cobrancaDestinatarios.ts';
 import { resumirEnviosCobranca } from '../services/cobrancaResumo.ts';
+import { createCampaignActions } from './campaigns.ts';
+import { lerCampanha, dataReservaCampanha } from '../services/campanhas.ts';
 import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
 export function createAutomationWorkflow({
+  agendamentoAtivo = true,
   execute,
   queryOne,
   queryRows,
+  withTransaction,
   consultaDestinatariosCobranca,
   agruparAvisosCobranca,
   appTodayIso,
@@ -20,6 +24,12 @@ export function createAutomationWorkflow({
   marcarSemeado,
   seedMensagensPadrao,
 }) {
+  const campaigns = createCampaignActions({
+    queryRows,
+    queryOne,
+    execute,
+    withTransaction,
+  });
   function descricaoRegra(tipo, periodo) {
     const t = String(tipo).toLowerCase();
     const d = Math.abs(Number(periodo) || 0);
@@ -177,6 +187,7 @@ export function createAutomationWorkflow({
                 c.min_delay AS minDelay, c.max_delay AS maxDelay, c.envio_lotes AS envioLotes,
                 c.lote_tamanho AS loteTamanho, c.lote_pausa AS lotePausa, c.rodape_antiban AS rodapeAntiban,
                 c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano, c.filtro_arquivados AS filtroArquivados,
+                c.campanha_config AS campanhaConfig,
                 m.titulo AS mensagemTitulo, m.mensagem AS mensagemTexto
            FROM cobrancas c LEFT JOIN mensagens m ON m.id = c.mensagem_id AND m.user_id = c.user_id
           WHERE c.user_id = :userId ORDER BY c.id DESC`,
@@ -190,7 +201,9 @@ export function createAutomationWorkflow({
                 SUM(ce.status = 'pendente') AS emEnvio,
                 SUM(ce.status = 'incerto') AS semConfirmacao
            FROM cobrancas_envios ce JOIN cobrancas c ON c.id = ce.cobranca_id
-          WHERE c.user_id = :userId AND ce.data_envio = :today
+          WHERE c.user_id = :userId AND (ce.data_envio = :today OR
+            (JSON_UNQUOTE(JSON_EXTRACT(c.campanha_config, '$.modo')) = 'unico'
+             AND DATE(CONVERT_TZ(ce.updated_at, '+00:00', '-03:00')) = :today))
           GROUP BY ce.cobranca_id, ce.cliente_id`,
               { userId, today },
             ),
@@ -243,11 +256,12 @@ export function createAutomationWorkflow({
               const envioHoje = await carregarEnvioHoje(
                 userId,
                 r,
-                today,
+                dataReservaCampanha(r.campanhaConfig, today),
                 enviosPorRegra.get(String(r.id)) || [],
               );
               return {
                 ...r,
+                campanha: lerCampanha(r.campanhaConfig),
                 recebedores: envioHoje.recebedores,
                 envioHoje,
                 diasSemanaLista: String(r.diasSemana ?? '')
@@ -267,8 +281,9 @@ export function createAutomationWorkflow({
             0,
           );
           const stats = {
-            regras: regras.length,
-            ativas: regras.filter((r) => r.status === 'Ativo').length,
+            regras: regras.filter((r) => !r.campanha).length,
+            ativas: regras.filter((r) => !r.campanha && r.status === 'Ativo')
+              .length,
             mensagensHoje: enviados,
             entrega:
               enviados + erros > 0
@@ -276,6 +291,7 @@ export function createAutomationWorkflow({
                 : 0,
           };
           reply.render('pages/automacao', {
+            agendamentoAtivo,
             title: 'Automação',
             subtitle: 'Envie mensagens automáticas para seus clientes',
             stats,
@@ -298,6 +314,8 @@ export function createAutomationWorkflow({
         try {
           const userId = input.session.user.id;
           const action = String(input.body.action ?? '');
+          if (action.endsWith('_campanha'))
+            return campaigns.change(input, reply);
           const id = Number(input.body.id);
           if (action === 'delete_regra') {
             await execute(
@@ -415,13 +433,15 @@ export function createAutomationWorkflow({
           raiseWorkflowError(error);
         }
       }),
+    clients: (input) =>
+      workflowResult(input, (reply) => campaigns.clients(input, reply)),
     recipients: (input) =>
       workflowResult(input, async (reply) => {
         try {
           const userId = input.session.user.id;
           const id = Number(input.params.id);
           const regra = await queryOne(
-            'SELECT tipo, periodo, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano, filtro_arquivados AS filtroArquivados FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1',
+            'SELECT tipo, periodo, campanha_config AS campanhaConfig, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano, filtro_arquivados AS filtroArquivados FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1',
             { id, userId },
           );
           if (!regra) return reply.json({ ok: false, clientes: [] });

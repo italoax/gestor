@@ -1,4 +1,4 @@
-import { queryRows, execute, queryOne } from '../db/mysql.ts';
+import { queryRows, execute, queryOne, withTransaction } from '../db/mysql.ts';
 import { recordSecurityEvent } from '../security/runtimeSecurity.ts';
 import { appTodayIso } from '../services/dates.ts';
 import { resumirAcessos } from '../services/dashboardAcessos.ts';
@@ -26,6 +26,7 @@ import {
   seedMensagensPadrao,
 } from '../services/catalogSeeds.ts';
 import { env } from '../config/env.ts';
+import { automationsEnabled } from '../security/automationPolicy.ts';
 import { removerStatusExpirados } from '../services/statusRetention.ts';
 import { statusHistoryData } from '../services/frontendPageData.ts';
 import {
@@ -101,6 +102,8 @@ export function createDefaultFeatures() {
       toNumber,
     }),
     automation: createAutomationWorkflow({
+      agendamentoAtivo: automationsEnabled(env),
+      withTransaction,
       execute,
       queryOne,
       queryRows,

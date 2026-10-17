@@ -21,4 +21,9 @@ export class AutomationService {
     if (!action) throw new Error('Automation workflow unavailable.');
     return action(input);
   }
+  clients(input: WorkflowInput): Promise<WorkflowResponse> {
+    const action = this.runtime.features?.['automation']?.clients;
+    if (!action) throw new Error('Automation workflow unavailable.');
+    return action(input);
+  }
 }

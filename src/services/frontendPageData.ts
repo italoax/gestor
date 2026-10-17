@@ -241,6 +241,7 @@ export function nativePageData(
     if (view === 'pages/automacao')
       return {
         ...base,
+        agendamentoAtivo: data.agendamentoAtivo !== false,
         stats: pick(data.stats, [
           'regras',
           'ativas',
@@ -270,6 +271,7 @@ export function nativePageData(
             'filtroPlano',
             'filtroArquivados',
             'recebedores',
+            'campanha',
           ]),
           envioHoje: item.envioHoje
             ? pick(item.envioHoje, ['estado', 'rotulo', 'detalhe'])
