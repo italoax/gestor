@@ -16,6 +16,8 @@
 .editorconfig text eol=lf
 .gitignore text eol=lf
 .prettierignore text eol=lf
+.gitattributes text eol=lf
+.node-version text eol=lf
 
 *.png binary
 *.jpg binary

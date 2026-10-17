@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Painel Gestor em TypeScript, Next.js e NestJS.",
   "main": "dist/server.js",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "postinstall": "node --import tsx scripts/prepare-next.mts && node --import tsx scripts/prepare-flash.mts",
     "format": "node --import tsx scripts/format.mts",

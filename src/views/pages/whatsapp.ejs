@@ -200,21 +200,44 @@
     var n = 0; document.querySelectorAll('.wa-device').forEach(function (c) { if (c.dataset.connected === '1') n++; });
     var el = document.querySelector('[data-wa-conectados]'); if (el) el.textContent = n;
   }
+  var statusController = new AbortController();
+  var statusInflight = new Set();
+  function canPoll() {
+    return !disposed && !document.hidden && (!window.gestorPolling || window.gestorPolling.canFetch());
+  }
+  async function fetchStatus(id) {
+    if (!canPoll() || statusInflight.has(id)) return null;
+    statusInflight.add(id);
+    try {
+      var response = await fetch('/whatsapp/status?device=' + encodeURIComponent(id), {
+        headers: { Accept: 'application/json', 'X-Gestor-Background': '1' },
+        cache: 'no-store',
+        signal: AbortSignal.any([statusController.signal, AbortSignal.timeout(20000)])
+      });
+      window.gestorPolling?.recordResponse(response);
+      return response.ok && !response.redirected ? await response.json() : null;
+    } catch (_) {
+      return null;
+    } finally {
+      statusInflight.delete(id);
+    }
+  }
   function pollCards() {
+    if (!canPoll()) return;
     document.querySelectorAll('.wa-device').forEach(function (card) {
       var id = card.getAttribute('data-device-id');
-      fetch('/whatsapp/status?device=' + id, { headers: { Accept: 'application/json' } })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (st) { if (st) { atualizarCard(card, st); recontarConectados(); } })
+      if (id === deviceAtual && pollConnect) return;
+      fetchStatus(id)
+        .then(function (st) { if (st && !disposed) { atualizarCard(card, st); recontarConectados(); } })
         .catch(function () {});
     });
   }
-  pollCards();
-  var cardsTimer = setInterval(pollCards, 12000);
+  var cardsTimer = setInterval(pollCards, 30000);
   var refreshTimer;
   var disposed = false;
   document.addEventListener('gestor:before-swap', function () {
     disposed = true;
+    statusController.abort();
     clearInterval(cardsTimer);
     clearTimeout(refreshTimer);
     pararConnect();
@@ -229,6 +252,7 @@
   var aguardando = modal && modal.querySelector('[data-wa-aguardando]');
   var pollConnect = null;
   var deviceAtual = null;
+  pollCards();
 
   function mostrarEstado(st) {
     if (!modal || disposed || !modal.isConnected) return;
@@ -259,8 +283,7 @@
   function pararConnect() { if (pollConnect) { clearInterval(pollConnect); pollConnect = null; } }
   function pollStatusConnect() {
     if (!deviceAtual) return;
-    fetch('/whatsapp/status?device=' + deviceAtual, { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : null; })
+    fetchStatus(deviceAtual)
       .then(function (st) { if (st) mostrarEstado(st); }).catch(function () {});
   }
 

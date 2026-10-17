@@ -175,6 +175,7 @@
         },
       });
       responseStatus = response.status;
+      window.gestorPolling?.recordResponse(response);
       if (response.status === 429)
         throw new Error(
           'Muitas solicitações ao servidor. Aguarde um momento e tente novamente.',

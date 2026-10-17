@@ -12,6 +12,7 @@ import {
   aliasRateLimit,
   criarPixRateLimit,
   sensitiveRateLimit,
+  adminWriteRateLimit,
 } from './rateLimits.ts';
 import { statusUploadMiddleware } from './statusUpload.ts';
 
@@ -20,8 +21,8 @@ export function installNativeRouteMiddleware(app) {
   app.use(
     '/admin',
     requireAuth,
-    sensitiveRateLimit,
     createAdminAuthorization(queryOne, Date.now, recordSecurityEvent),
+    adminWriteRateLimit,
   );
   app.get(
     '/admin/security/events',
@@ -31,12 +32,10 @@ export function installNativeRouteMiddleware(app) {
         const events = await queryRows(
           'SELECT id, created_at AS createdAt, event, severity, user_id AS userId, source_hash AS sourceHash, reason, count_value AS count FROM security_events ORDER BY id DESC LIMIT 100',
         );
-        res
-          .set('Cache-Control', 'no-store')
-          .json({
-            events,
-            alerts: events.filter((e) => e.severity === 'alert'),
-          });
+        res.set('Cache-Control', 'no-store').json({
+          events,
+          alerts: events.filter((e) => e.severity === 'alert'),
+        });
       } catch (error) {
         next(error);
       }
