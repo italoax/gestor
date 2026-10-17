@@ -5,6 +5,7 @@ import type {
   ResultSetHeader,
 } from 'mysql2/promise';
 import { env } from '../config/env.ts';
+import { keepIdleConnectionsAlive } from './poolLifecycle.ts';
 export const db = mysql.createPool({
   host: env.db.host,
   user: env.db.user,
@@ -15,7 +16,7 @@ export const db = mysql.createPool({
   port: env.db.port,
   ssl: env.db.ssl,
   waitForConnections: true,
-  connectionLimit: env.localMode ? 2 : 10,
+  connectionLimit: env.localMode || env.nodeEnv === 'development' ? 2 : 10,
   queueLimit: 100,
   connectTimeout: 10000,
   namedPlaceholders: true,
@@ -29,6 +30,7 @@ export const db = mysql.createPool({
   timezone: 'Z',
   charset: 'utf8mb4',
 });
+keepIdleConnectionsAlive(db);
 // Garante que toda conexão nova da pool roda em UTC. Sem isso, CURRENT_TIMESTAMP
 // e a leitura de TIMESTAMP dependem do fuso do servidor MySQL (em hospedagem
 // compartilhada isso pode ser qualquer coisa), causando timestamps deslocados na

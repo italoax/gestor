@@ -1,8 +1,3 @@
-<%
-  const totalPlanos = planos.length;
-  const planosAtivos = planos.filter(p => p.ativo).length;
-  const clientesAtivos = planos.reduce((a, p) => a + Number(p.clientes || 0), 0);
-%>
 <div
   class="container page-planos ui-catalog"
   data-search-scope
@@ -10,38 +5,8 @@
   data-search-plural="planos"
   data-search-empty="Nenhum plano encontrado. Tente outra busca."
 >
-  <div class="ui-summary ui-summary-3">
-    <div class="cli-stat accent-blue">
-      <div
-        ><strong><%= totalPlanos %></strong
-        ><span>Total de Planos</span></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '📦' }) %></div>
-    </div>
-    <div class="cli-stat accent-green">
-      <div
-        ><strong class="pos"><%= planosAtivos %></strong
-        ><span>Planos Ativos</span></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '✅' }) %></div>
-    </div>
-    <div class="cli-stat accent-blue">
-      <div
-        ><strong><%= clientesAtivos %></strong
-        ><span>Clientes Ativos</span></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '👥' }) %></div>
-    </div>
-  </div>
   <div class="ui-toolbar plano-toolbar">
-    <input
-      class="input"
-      type="search"
-      placeholder="Buscar plano..."
-      aria-label="Buscar plano"
-      autocomplete="off"
-      data-search-input
-    />
+    <%- include('../partials/panel-search', { placeholder: 'Buscar plano...' }) %>
     <button
       class="btn btn-primary ui-new"
       type="button"
@@ -51,12 +16,13 @@
       Novo plano
     </button>
   </div>
-  <div class="ui-catalog-heading">
-    <h2
-      >Catálogo de planos <span><%= totalPlanos %></span></h2
-    >
-    <p data-search-results role="status" aria-live="polite" hidden></p>
-  </div>
+  <p
+    class="panel-search-results"
+    data-search-results
+    role="status"
+    aria-live="polite"
+    hidden
+  ></p>
   <% if (!planos.length) { %>
   <div class="cli-empty">
     <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📦' }) %></div>

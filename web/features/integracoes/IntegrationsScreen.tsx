@@ -154,9 +154,6 @@ export function IntegrationsScreen({ data }: { data?: any }) {
       <div className="container page-integracoes" data-react-page="integracoes">
         <div className="integ-head">
           <div>
-            <h2 className="section-title">
-              <Icon name="link" /> Integrações
-            </h2>
             <p className="muted">
               Conecte um painel IPTV para renovar seus clientes lá
               automaticamente ao renovar aqui.
@@ -169,22 +166,6 @@ export function IntegrationsScreen({ data }: { data?: any }) {
           >
             <Icon name="plus" /> Adicionar Integração
           </button>
-        </div>
-        <div className="ui-summary ui-summary-2">
-          {[
-            ['Sigma', sigmas.length, 'green'],
-            ['Total', data.integracoes.length, 'blue'],
-          ].map(([label, total, color]) => (
-            <div key={label} className={`cli-stat accent-${color}`}>
-              <div className="cli-stat-ico">
-                <Icon name="settings" />
-              </div>
-              <div>
-                <strong>{total}</strong>
-                <span>{label}</span>
-              </div>
-            </div>
-          ))}
         </div>
         <div className="card integ-card">
           <h3 className="integ-card-title">

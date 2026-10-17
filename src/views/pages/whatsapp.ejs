@@ -1,23 +1,4 @@
 <div class="container page-whatsapp" data-search-scope>
-  <div class="ui-summary ui-summary-2">
-    <div class="tx-stat">
-      <div
-        ><span>Mensagens Hoje</span
-        ><strong><%= stats.mensagensHoje %></strong></div
-      >
-      <div class="tx-stat-ico accent-purple"><%- include('../partials/ui-icon', { name: '💬' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Taxa de Entrega</span
-        ><strong><%= stats.entrega %>%</strong></div
-      >
-      <div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📈' }) %></div>
-    </div>
-  </div>
-  <div class="wa-head">
-    <h3>WhatsApp</h3>
-  </div>
   <% if (!devices.length) { %>
   <div class="cli-empty">
     <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '📱' }) %></div>

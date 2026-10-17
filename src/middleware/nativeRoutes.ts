@@ -27,7 +27,7 @@ export function installNativeRouteMiddleware(app) {
   app.get(
     '/admin/security/events',
     requireRecentAuthentication,
-    async (req, res, next) => {
+    async (_req, res, next) => {
       try {
         const events = await queryRows(
           'SELECT id, created_at AS createdAt, event, severity, user_id AS userId, source_hash AS sourceHash, reason, count_value AS count FROM security_events ORDER BY id DESC LIMIT 100',

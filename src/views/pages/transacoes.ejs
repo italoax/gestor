@@ -1,43 +1,5 @@
 <div class="container page-transacoes" data-search-scope>
-  <div class="ui-summary ui-summary-5">
-    <div class="tx-stat">
-      <div
-        ><span>Transações</span><strong><%= stats.total %></strong></div
-      >
-      <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '🔁' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Telas</span><strong><%= stats.telas %></strong></div
-      >
-      <div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '👁' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Créditos</span
-        ><strong class="<%= stats.creditos < 0 ? 'neg' : '' %>"><%= stats.creditos %></strong></div
-      >
-      <div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📉' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Receita</span
-        ><strong class="pos"><%= formatMoney(stats.receita) %></strong></div
-      >
-      <div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '💲' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Lucro</span
-        ><strong class="<%= stats.lucro < 0 ? 'neg' : 'pos' %>"><%= formatMoney(stats.lucro) %></strong></div
-      >
-      <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '📈' }) %></div>
-    </div>
-  </div>
   <div class="cli-table-card tx-card">
-    <div class="tx-toolbar">
-      <strong class="tx-title">Histórico de Transações</strong>
-    </div>
     <div class="table-wrapper">
       <table class="cli-table tx-table">
         <thead>

@@ -2,11 +2,9 @@ import { ClientRow } from './ClientRow.tsx';
 import { Fragment } from 'react';
 import { Icon } from './ui.tsx';
 import { useState, useMemo, useEffect } from 'react';
-import {
-  formatMoney,
-  statusByVencimento as getStatus,
-} from '../../services/format.ts';
+import { formatMoney } from '../../services/format.ts';
 import { normalizeSearch, sortClients } from './model.ts';
+import { PanelSearch } from '../components/PanelSearch.tsx';
 
 export function ClientsList({
   clientes,
@@ -26,8 +24,6 @@ export function ClientsList({
   verArquivados?: any;
 }) {
   const sortNow = useMemo(() => new Date(now), [now]);
-  const statusByVencimento = (status, vencimento) =>
-    getStatus(status, vencimento, sortNow);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState({ column: 'status', direction: 'desc' });
   const [selected, setSelected] = useState(new Set());
@@ -41,16 +37,6 @@ export function ClientsList({
     () => sortClients(clientes, sort, sortNow),
     [clientes, sort, sortNow],
   );
-  const cliTotal = clientes.length;
-  const cliAtivos = clientes.filter(
-    (c) =>
-      !['vencido', 'inativo'].includes(
-        statusByVencimento(c.status, c.vencimento).type,
-      ),
-  ).length;
-  const cliVencidos = clientes.filter(
-    (c) => statusByVencimento(c.status, c.vencimento).type === 'vencido',
-  ).length;
   const term = normalizeSearch(search);
   const matches = (c) =>
     !term ||
@@ -138,100 +124,16 @@ export function ClientsList({
           </section>
         </>
       ) : null}
-      <div className="ui-summary ui-summary-3">
-        <div className="cli-stat accent-blue">
-          <div className="cli-stat-ico">
-            <Icon name="👥" />
-          </div>
-          <div>
-            <strong>{cliTotal}</strong>
-            <span>Total</span>
-          </div>
-        </div>
-        <div className="cli-stat accent-green">
-          <div className="cli-stat-ico">
-            <Icon name="🧑‍🤝‍🧑" />
-          </div>
-          <div>
-            <strong>{cliAtivos}</strong>
-            <span>Ativos</span>
-          </div>
-        </div>
-        <div className="cli-stat accent-red">
-          <div className="cli-stat-ico">
-            <Icon name="⚠️" />
-          </div>
-          <div>
-            <strong>{cliVencidos}</strong>
-            <span>Vencidos</span>
-          </div>
-        </div>
-      </div>
       <div className="ui-toolbar">
         <div className="cliente-search">
-          <div
-            className="cli-search cliente-search-field"
-            role="search"
-            aria-label="Pesquisar clientes"
-          >
-            <svg
-              className="cliente-search-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="10.5" cy="10.5" r="6.5" />
-              <path d="m16 16 4 4" />
-            </svg>
-            <input
-              id="cliente-search-input"
-              className="input"
-              type="search"
-              placeholder="Buscar clientes..."
-              aria-label="Buscar clientes"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck="false"
-              enterKeyHint="search"
-              data-search-input=""
-              value={search}
-              onChange={(event) =>
-                setSearch((event.target as HTMLInputElement).value)
-              }
-            />
-            <button
-              className="cliente-search-clear"
-              type="button"
-              data-clear-search=""
-              aria-label="Limpar busca"
-              title="Limpar busca"
-              hidden={!search}
-              onClick={() => {
-                setSearch('');
-                (
-                  document.getElementById('cliente-search-input') as HTMLElement
-                )?.focus();
-              }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                aria-hidden="true"
-              >
-                <path d="m6 6 12 12M18 6 6 18" />
-              </svg>
-            </button>
-          </div>
+          <PanelSearch
+            id="cliente-search-input"
+            placeholder="Buscar clientes..."
+            label="Buscar clientes"
+            value={search}
+            onChange={setSearch}
+            legacySearch
+          />
           <div
             className="cliente-search-results"
             data-search-results=""

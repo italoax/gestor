@@ -52,7 +52,6 @@ export class AuthService {
     username: string,
     user: PanelUser | null,
     ip: string | undefined,
-    agent: string,
   ) {
     const logger = this.dependencies.logger ?? console;
     const event = JSON.stringify({

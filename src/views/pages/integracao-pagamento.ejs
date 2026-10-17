@@ -59,9 +59,7 @@
   };
 %>
 <%
-  const totalProvedores = providers.length;
   const ativosCount = providers.filter(p => ativoPorProvider[p]).length;
-  const configuradosCount = providers.filter(p => credPorProvider[p] && Object.keys(credPorProvider[p]).length > 0).length;
 %>
 <div class="container page-integracao-pag">
   <div class="ui-settings-grid">
@@ -134,28 +132,6 @@
         <button class="btn btn-primary" type="submit">Salvar mensagem</button>
       </form>
     </section>
-  </div>
-  <div class="ui-summary ui-summary-3">
-    <div class="cli-stat accent-blue">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '💳' }) %></div>
-      <div
-        ><strong><%= totalProvedores %></strong
-        ><span>Provedores PIX</span></div
-      >
-    </div>
-    <div class="cli-stat accent-green">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚡' }) %></div>
-      <div
-        ><strong class="pos"><%= ativosCount %></strong
-        ><span>Ativos</span></div
-      >
-    </div>
-    <div class="cli-stat accent-blue">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'settings' }) %></div>
-      <div
-        ><strong><%= configuradosCount %></strong><span>Configurados</span></div
-      >
-    </div>
   </div>
   <div class="int-pag-intro">
     <span class="int-pag-intro-ico">💡</span>

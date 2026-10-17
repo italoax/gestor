@@ -9,34 +9,6 @@
   }
 %>
 <div class="container page-automacao" data-search-scope>
-  <div class="ui-summary ui-summary-4">
-    <div class="tx-stat">
-      <div
-        ><span>Regras</span><strong><%= stats.regras %></strong></div
-      >
-      <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '⚡' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Ativas</span
-        ><strong class="pos"><%= stats.ativas %></strong></div
-      >
-      <div class="tx-stat-ico accent-green"><%- include('../partials/ui-icon', { name: '✅' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Mensagens hoje</span
-        ><strong><%= stats.mensagensHoje %></strong></div
-      >
-      <div class="tx-stat-ico accent-blue"><%- include('../partials/ui-icon', { name: '💬' }) %></div>
-    </div>
-    <div class="tx-stat">
-      <div
-        ><span>Entrega</span><strong><%= stats.entrega %>%</strong></div
-      >
-      <div class="tx-stat-ico accent-red"><%- include('../partials/ui-icon', { name: '📊' }) %></div>
-    </div>
-  </div>
   <div class="auto-tabs">
     <button class="auto-tab active" type="button" data-auto-tab="regras"
       ><%- include('../partials/ui-icon', { name: 'bolt' }) %>

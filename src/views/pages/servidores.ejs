@@ -1,6 +1,4 @@
 <%
-  const totalCreditos = servidores.reduce((a, s) => a + Number(s.creditos || 0), 0);
-  const totalClientes = servidores.reduce((a, s) => a + Number(s.clientesTotal || 0), 0);
   const formatCredits = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
   const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
 %>
@@ -11,37 +9,8 @@
   data-search-plural="servidores"
   data-search-empty="Nenhum servidor encontrado. Tente outra busca."
 >
-  <div class="ui-summary ui-summary-3">
-    <div class="cli-stat accent-blue">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🗄️' }) %></div>
-      <div
-        ><strong><%= servidores.length %></strong><span>Servidores</span></div
-      >
-    </div>
-    <div class="cli-stat accent-green">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '💳' }) %></div>
-      <div
-        ><strong><%= formatCredits(totalCreditos) %></strong
-        ><span>Créditos disponíveis</span></div
-      >
-    </div>
-    <div class="cli-stat accent-blue">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'users' }) %></div>
-      <div
-        ><strong><%= totalClientes %></strong
-        ><span>Acessos nos servidores</span></div
-      >
-    </div>
-  </div>
   <div class="ui-toolbar srv-toolbar">
-    <input
-      class="input srv-search"
-      type="search"
-      placeholder="Buscar servidor..."
-      aria-label="Buscar servidor"
-      autocomplete="off"
-      data-search-input
-    />
+    <%- include('../partials/panel-search', { placeholder: 'Buscar servidor...' }) %>
     <button
       class="btn btn-primary ui-new"
       type="button"
@@ -51,12 +20,13 @@
       Novo servidor
     </button>
   </div>
-  <div class="ui-catalog-heading">
-    <h2
-      >Catálogo de servidores <span><%= servidores.length %></span></h2
-    >
-    <p data-search-results role="status" aria-live="polite" hidden></p>
-  </div>
+  <p
+    class="panel-search-results"
+    data-search-results
+    role="status"
+    aria-live="polite"
+    hidden
+  ></p>
   <% if (!servidores.length) { %>
   <div class="cli-empty">
     <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '🗄️' }) %></div>

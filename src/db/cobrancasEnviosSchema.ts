@@ -1,4 +1,4 @@
-import { execute, queryRows } from './mysql.ts';
+import { queryRows } from './mysql.ts';
 let ready = null;
 export function ensureCobrancasEnviosSchema() {
   if (!ready)

@@ -47,7 +47,7 @@ export class AuthController {
       password = String(request.body?.password ?? '');
     const user = await this.auth.authenticate(username, password);
     if (!user) {
-      this.auth.recordAttempt(username, null, request.ip, '');
+      this.auth.recordAttempt(username, null, request.ip);
       request.flash('error', 'Usuário ou senha inválidos.');
       return response.redirect('/login');
     }
@@ -64,7 +64,7 @@ export class AuthController {
       request.session.save((error) => (error ? reject(error) : resolve())),
     );
     response.locals.loginSucceeded = true;
-    this.auth.recordAttempt(username, user, request.ip, '');
+    this.auth.recordAttempt(username, user, request.ip);
     return response.redirect('/dashboard');
   }
   @Get('register')

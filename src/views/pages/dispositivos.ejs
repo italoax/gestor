@@ -1,9 +1,3 @@
-<%
-  const totalDisp = dispositivos.length;
-  const dispAtivos = dispositivos.filter(d => String(d.status) !== 'Inativo').length;
-  const dispInativos = totalDisp - dispAtivos;
-
-%>
 <div
   class="container page-dispositivos ui-catalog"
   data-search-scope
@@ -11,36 +5,8 @@
   data-search-plural="dispositivos"
   data-search-empty="Nenhum dispositivo encontrado. Tente outro nome ou status."
 >
-  <div class="ui-summary ui-summary-3" aria-label="Resumo dos dispositivos">
-    <div class="cli-stat accent-blue">
-      <div
-        ><span>Total de dispositivos</span
-        ><strong><%= totalDisp %></strong></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
-    </div>
-    <div class="cli-stat accent-green">
-      <div
-        ><span>Ativos</span><strong><%= dispAtivos %></strong></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'check' }) %></div>
-    </div>
-    <div class="cli-stat accent-red">
-      <div
-        ><span>Inativos</span><strong><%= dispInativos %></strong></div
-      >
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: 'pause' }) %></div>
-    </div>
-  </div>
   <div class="ui-toolbar">
-    <input
-      class="input"
-      type="search"
-      placeholder="Buscar dispositivo..."
-      aria-label="Buscar dispositivo"
-      autocomplete="off"
-      data-search-input
-    />
+    <%- include('../partials/panel-search', { placeholder: 'Buscar dispositivo...' }) %>
     <button
       class="btn btn-primary disp-new"
       type="button"
@@ -49,13 +15,14 @@
       Novo dispositivo</button
     >
   </div>
-  <section class="disp-catalog" aria-labelledby="disp-catalog-title">
-    <div class="disp-catalog-heading">
-      <h2 id="disp-catalog-title"
-        >Catálogo de dispositivos <span><%= totalDisp %></span></h2
-      >
-      <p data-search-results role="status" aria-live="polite" hidden></p>
-    </div>
+  <section class="disp-catalog" aria-label="Dispositivos">
+    <p
+      class="panel-search-results"
+      data-search-results
+      role="status"
+      aria-live="polite"
+      hidden
+    ></p>
     <% if (!dispositivos.length) { %>
     <div class="cli-empty">
       <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>

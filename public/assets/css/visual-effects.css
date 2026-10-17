@@ -285,7 +285,7 @@ body.page-app .app-content .fx-spotlight {
     box-shadow 0.25s ease,
     translate 0.3s var(--fx-ease);
 }
-.page-app .ui-summary :is(.cli-stat-ico, .tx-stat-ico, .stat-icon) {
+.page-app .ui-summary :is(.stat-icon) {
   transition:
     rotate 0.35s var(--fx-ease),
     scale 0.35s var(--fx-ease);
@@ -368,11 +368,6 @@ body.page-app .app-content .fx-spotlight {
 .page-app .sidebar-link .ui-icon {
   transition: translate 0.25s var(--fx-ease);
 }
-.page-app .cli-search {
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
-}
 .page-app .cli-table tbody tr {
   transition: background-color 0.18s ease;
 }
@@ -421,10 +416,7 @@ body.page-app .app-content .fx-spotlight {
     border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
     box-shadow: 0 10px 30px #00000012;
   }
-  .page-app
-    .ui-summary
-    > div:hover
-    :is(.cli-stat-ico, .tx-stat-ico, .stat-icon) {
+  .page-app .ui-summary > div:hover :is(.stat-icon) {
     rotate: -6deg;
     scale: 1.07;
   }
@@ -526,8 +518,6 @@ html.fx-paused {
     .sidebar-link,
     .sidebar-link .ui-icon,
     .ui-summary > div,
-    .cli-stat-ico,
-    .tx-stat-ico,
     .stat-icon
   ) {
   transition: none !important;

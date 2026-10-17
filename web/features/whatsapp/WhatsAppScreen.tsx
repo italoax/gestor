@@ -322,25 +322,6 @@ export function WhatsAppScreen({ data }: { data?: any }) {
   return (
     <NativePanel data={data} path="/whatsapp">
       <div className="container page-whatsapp" data-react-page="whatsapp">
-        <div className="ui-summary ui-summary-2">
-          {[
-            ['Mensagens Hoje', data.stats.mensagensHoje, 'purple'],
-            ['Taxa de Entrega', `${data.stats.entrega}%`, 'red'],
-          ].map(([label, value, color]) => (
-            <div className="tx-stat" key={label}>
-              <div>
-                <span>{label}</span>
-                <strong>{value}</strong>
-              </div>
-              <div className={`tx-stat-ico accent-${color}`}>
-                <Icon name="chart" />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="wa-head">
-          <h3>WhatsApp</h3>
-        </div>
         {!data.devices.length ? (
           <div className="cli-empty">
             <h3>Conexão sendo preparada…</h3>

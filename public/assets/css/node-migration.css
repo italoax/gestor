@@ -3390,76 +3390,6 @@
   gap: 14px;
 }
 
-.cli-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-.cli-stat {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  position: relative;
-  overflow: hidden;
-}
-.cli-stat::after {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--accent, var(--primary));
-}
-.cli-stat-ico {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  font-size: 17px;
-  background: color-mix(
-    in srgb,
-    var(--accent, var(--primary)) 18%,
-    transparent
-  );
-}
-.cli-stat strong {
-  display: block;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1;
-}
-.cli-stat span {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.cli-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px 14px;
-}
-.cli-search-ico {
-  color: var(--muted);
-  font-size: 16px;
-}
-.cli-search .input {
-  border: none;
-  background: transparent;
-  padding-left: 0;
-}
-.cli-search .input:focus {
-  outline: none;
-}
-
 .cli-new-btn {
   width: 100%;
   justify-content: center;
@@ -3471,60 +3401,6 @@
   gap: 7px;
   min-width: 0;
 }
-.page-clientes .cliente-search-field {
-  min-height: 52px;
-  padding: 3px 6px 3px 14px;
-  gap: 10px;
-  border-radius: 14px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-.page-clientes .cliente-search-field:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
-}
-.cliente-search-icon {
-  flex: 0 0 20px;
-  color: var(--muted);
-}
-.cliente-search-field:focus-within .cliente-search-icon {
-  color: var(--primary);
-}
-.page-clientes .cliente-search-field .input {
-  flex: 1 1 0;
-  width: 0;
-  min-width: 0;
-  min-height: 44px;
-  padding: 10px 0;
-  font-size: 16px;
-  line-height: 1.4;
-}
-.cliente-search-field input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-}
-.cliente-search-clear {
-  display: grid;
-  place-items: center;
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-.cliente-search-clear:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.cliente-search-clear:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -3px;
-}
-.cliente-search-clear[hidden],
 .cliente-search-results[hidden] {
   display: none;
 }
@@ -3706,9 +3582,6 @@
 }
 
 @media (max-width: 720px) {
-  .cli-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .cli-secondary {
     grid-template-columns: 1fr;
   }
@@ -4298,46 +4171,7 @@
 
   /* ===== Página TRANSAÇÕES =====
      5 stats: 2 colunas + a 5ª (Lucro) ocupa linha cheia, fica destaque. */
-  .tx-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px;
-  }
-  .tx-stat {
-    padding: 12px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .tx-stat span {
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--muted);
-  }
-  .tx-stat strong {
-    font-size: 18px;
-    margin-top: 2px;
-  }
-  .tx-stat-ico {
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
-    flex: none;
-  }
   /* 5ª stat (Lucro) destacada em linha cheia. */
-  .tx-stats .tx-stat:nth-child(5) {
-    grid-column: 1 / -1;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--primary) 12%, var(--surface)),
-      var(--surface)
-    );
-    border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
-  }
-  .tx-stats .tx-stat:nth-child(5) strong {
-    font-size: 22px;
-  }
 
   /* Toolbar: título full, busca full na próxima linha, botões só essencial. */
   .tx-card {
@@ -4348,12 +4182,6 @@
     gap: 10px;
     flex-direction: column;
     align-items: stretch;
-  }
-  .tx-title {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--muted);
   }
   .tx-tools {
     width: 100%;
@@ -4418,45 +4246,7 @@
      3 stats em 2 cols + 3º (Clientes Ativos) full-width destacado, igual ao Lucro
      das transações. Os cards têm DOM invertido (texto antes do ícone), reposiciona
      com row + space-between. */
-  .plano-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px;
-  }
-  .plano-stats .cli-stat {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between;
-    text-align: left;
-    padding: 12px 14px;
-  }
-  .plano-stats .cli-stat > div:first-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    flex: 1;
-  }
-  .plano-stats .cli-stat strong {
-    font-size: 22px;
-  }
-  .plano-stats .cli-stat span {
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
   /* 3º card (Clientes Ativos) destacado em full-width. */
-  .plano-stats .cli-stat:nth-child(3) {
-    grid-column: 1 / -1;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--primary) 12%, var(--surface)),
-      var(--surface)
-    );
-    border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
-  }
-  .plano-stats .cli-stat:nth-child(3) strong {
-    font-size: 26px;
-  }
 
   /* Filtros e botão "Novo Plano": busca cheia, status + novo em uma linha 50/50. */
   .plano-filters {
@@ -4544,44 +4334,6 @@
 
   /* ===== Página APLICATIVOS =====
      5 stats: 2 cols + 5ª (Faturado em Apps) full-width destacada. */
-  .app-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px;
-  }
-  .app-stats .cli-stat {
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between;
-    text-align: left;
-    padding: 12px 14px;
-  }
-  .app-stats .cli-stat > div:first-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-    flex: 1;
-  }
-  .app-stats .cli-stat strong {
-    font-size: 20px;
-  }
-  .app-stats .cli-stat span {
-    font-size: 11.5px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .app-stats .cli-stat:nth-child(5) {
-    grid-column: 1 / -1;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--green) 14%, var(--surface)),
-      var(--surface)
-    );
-    border-color: color-mix(in srgb, var(--green) 30%, var(--border));
-  }
-  .app-stats .cli-stat:nth-child(5) strong {
-    font-size: 24px;
-  }
 
   /* ===== Página DISPOSITIVOS =====
      3 stats (Total/Ativos/Inativos): herda do .plano-stats (2 cols + 3ª full-width).
@@ -4754,73 +4506,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.tx-stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
-}
-.tx-stat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-.tx-stat > div:first-child {
-  min-width: 0;
-}
-.tx-stat strong {
-  overflow-wrap: anywhere;
-}
-.tx-stat span {
-  color: var(--muted);
-  font-size: 12.5px;
-}
-.tx-stat strong {
-  display: block;
-  font-size: 23px;
-  font-weight: 700;
-  color: var(--text);
-  margin-top: 4px;
-}
-.tx-stat strong.pos {
-  color: var(--green);
-}
-.tx-stat strong.neg {
-  color: var(--red);
-}
-.tx-stat-ico {
-  width: 40px;
-  height: 40px;
-  flex: none;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  font-size: 16px;
-  background: color-mix(
-    in srgb,
-    var(--accent, var(--primary)) 18%,
-    transparent
-  );
-}
-
-@media (max-width: 600px) {
-  .tx-stats .tx-stat {
-    padding: 12px;
-    gap: 8px;
-  }
-  .tx-stats .tx-stat strong {
-    font-size: 18px;
-  }
-  .tx-stats .tx-stat-ico {
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
-  }
-}
 
 .tx-card {
   padding: 0;
@@ -4833,10 +4518,6 @@
   padding: 16px;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
-}
-.tx-title {
-  color: var(--text);
-  font-size: 15px;
 }
 .tx-tools {
   display: flex;
@@ -4858,26 +4539,10 @@
   color: var(--green);
 }
 
-@media (max-width: 1100px) {
-  .tx-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 560px) {
-  .tx-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* ===== Servidores ===== */
 .page-servidores {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-.srv-top-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 .srv-actions-row {
@@ -5016,9 +4681,6 @@
 }
 
 @media (max-width: 560px) {
-  .srv-top-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .srv-grid {
     grid-template-columns: 1fr;
   }
@@ -5029,14 +4691,6 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-.plano-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-.plano-stats .cli-stat strong.pos {
-  color: var(--green);
 }
 .plano-filters {
   display: flex;
@@ -5192,14 +4846,6 @@
   flex-direction: column;
   gap: 14px;
 }
-.page-aplicativos .app-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.page-aplicativos .app-stats .cli-stat {
-  min-height: 96px;
-}
 .app-actions-row {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto;
@@ -5305,9 +4951,6 @@
   }
 }
 @media (max-width: 720px) {
-  .page-aplicativos .app-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .page-aplicativos .disp-grid {
     grid-template-columns: 1fr;
   }
@@ -5323,12 +4966,6 @@
 }
 .plano-info strong {
   color: var(--text);
-}
-
-@media (max-width: 720px) {
-  .plano-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* ===== Mensagens / Templates ===== */
@@ -5848,17 +5485,6 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-}
-.wa-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.wa-head h3 {
-  margin: 0;
-  color: var(--text);
-  font-size: 17px;
 }
 .wa-search {
   width: 100%;
@@ -6626,37 +6252,8 @@
 
   /* ---- Stats cards (Total / Ativos / Vencidos) ---- */
   /* Em vez de 2+1 órfão, força 3 cols compactos. Cabe bem mesmo em 360px. */
-  .cli-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .cli-stat {
-    padding: 12px 10px;
-    gap: 8px;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-  }
-  .cli-stat::after {
-    width: 3px;
-  }
-  .cli-stat-ico {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-  .cli-stat strong {
-    font-size: 20px;
-  }
-  .cli-stat span {
-    font-size: 11.5px;
-  }
 
   /* Aplicativos / planos / servidores stats — mesma lógica de manter 3 cols compactas. */
-  .app-stats,
-  .plano-stats,
-  .srv-top-stats,
-  .tx-stats,
   .wa-stats,
   .auto-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -6664,12 +6261,6 @@
   }
 
   /* ---- Busca ---- */
-  .cli-search {
-    padding: 4px 12px;
-  }
-  .cli-search .input {
-    font-size: 15px;
-  }
 
   /* ---- Botões secundários (Arquivados / Lixeira) ---- */
   /* Mantém 2 colunas em mobile — empilhado consome muito vertical. */
@@ -6775,23 +6366,6 @@
 }
 
 /* Telas muito pequenas (iPhone SE / Android antigo): mais compacto ainda. */
-@media (max-width: 380px) {
-  .cli-stat {
-    padding: 10px 8px;
-    gap: 6px;
-  }
-  .cli-stat strong {
-    font-size: 18px;
-  }
-  .cli-stat-ico {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
-  }
-  .cli-search {
-    padding: 2px 10px;
-  }
-}
 
 /* ===================================================================
    Polish global — botões, modais, forms, cards. Camada final pra
@@ -8091,14 +7665,12 @@ a:focus-visible {
 
 /* ============================================================
    FIX: focus-ring duplo em inputs dentro de wrappers de busca
-   O wrapper .cli-search/.tx-search/.topbar-search ja eh a "caixa".
+   O wrapper .tx-search/.topbar-search ja eh a "caixa".
    Inputs internos nao podem ter ring proprio — vira borda dupla.
    O wrapper recebe o anel via :focus-within.
    ============================================================ */
-.cli-search .input,
 .tx-search .input,
 .topbar-search .input,
-.cli-search input,
 .tx-search input,
 .topbar-search input {
   min-height: 0;
@@ -8108,10 +7680,8 @@ a:focus-visible {
   box-shadow: none !important;
   padding-left: 0;
 }
-.cli-search .input:focus,
 .tx-search .input:focus,
 .topbar-search .input:focus,
-.cli-search input:focus,
 .tx-search input:focus,
 .topbar-search input:focus {
   outline: none !important;
@@ -8120,7 +7690,6 @@ a:focus-visible {
 }
 
 /* O wrapper agora pega o foco-ring (visual unico, sem duplicidade) */
-.cli-search:focus-within,
 .tx-search:focus-within {
   border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);

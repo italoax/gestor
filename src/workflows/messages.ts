@@ -4,11 +4,8 @@ import {
 } from '../services/workflowReply.ts';
 export function createMessagesWorkflow({
   execute,
-  queryOne,
   queryRows,
-  boolField,
   toNullableString,
-  toNumber,
 }) {
   async function jaSemeou(userId, chave) {
     const rows = await queryRows(

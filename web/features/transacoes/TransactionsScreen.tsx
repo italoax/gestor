@@ -97,47 +97,10 @@ function TransactionDetails({
 
 export function TransactionsScreen({ data }: { data?: any }) {
   const [selected, setSelected] = useState(null);
-  const stats = [
-    ['Transações', data.stats.total, 'card'],
-    ['Telas', data.stats.telas, 'monitor'],
-    ['Créditos', data.stats.creditos, 'server'],
-    ['Receita', money(data.stats.receita), 'card'],
-    ['Lucro', money(data.stats.lucro), 'chart'],
-  ];
   return (
     <NativePanel data={data} path="/transacoes">
       <div className="container page-transacoes" data-react-page="transacoes">
-        <div className="ui-summary ui-summary-5">
-          {stats.map(([label, value, icon], index) => (
-            <div className="tx-stat" key={label}>
-              <div>
-                <span>{label}</span>
-                <strong
-                  className={
-                    index === 3
-                      ? 'pos'
-                      : index === 4
-                        ? Number(data.stats.lucro) < 0
-                          ? 'neg'
-                          : 'pos'
-                        : index === 2 && Number(data.stats.creditos) < 0
-                          ? 'neg'
-                          : ''
-                  }
-                >
-                  {value ?? 0}
-                </strong>
-              </div>
-              <div className="tx-stat-ico accent-blue">
-                <Icon name={icon} />
-              </div>
-            </div>
-          ))}
-        </div>
         <div className="cli-table-card tx-card">
-          <div className="tx-toolbar">
-            <strong className="tx-title">Histórico de Transações</strong>
-          </div>
           <div className="table-wrapper">
             <table className="cli-table tx-table">
               <thead>

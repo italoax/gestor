@@ -236,27 +236,6 @@ export function PaymentSettingsScreen({ data }: { data?: any }) {
             </SettingsForm>
           </section>
         </div>
-        <div className="ui-summary ui-summary-3">
-          {[
-            ['Provedores PIX', data.providers.length, 'blue'],
-            ['Ativos', active.length, 'green'],
-            [
-              'Configurados',
-              data.providers.filter((provider) => provider.configurado).length,
-              'blue',
-            ],
-          ].map(([label, value, color]) => (
-            <div className={`cli-stat accent-${color}`} key={label}>
-              <div className="cli-stat-ico">
-                <Icon name="card" />
-              </div>
-              <div>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            </div>
-          ))}
-        </div>
         <div className="int-pag-intro">
           <span className="int-pag-intro-ico">💡</span>
           <div>

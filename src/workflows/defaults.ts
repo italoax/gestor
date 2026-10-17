@@ -95,11 +95,8 @@ export function createDefaultFeatures() {
     transactions: createTransactionsWorkflow({ execute, queryRows }),
     messages: createMessagesWorkflow({
       execute,
-      queryOne,
       queryRows,
-      boolField,
       toNullableString,
-      toNumber,
     }),
     automation: createAutomationWorkflow({
       agendamentoAtivo: automationsEnabled(env),

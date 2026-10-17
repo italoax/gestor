@@ -22,14 +22,8 @@ import { dispositivosConfig } from '../../src/config/catalogs.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 import { closeSessionStores } from '../../src/db/sessionStore.ts';
 import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
-import {
-  startCobrancasCron,
-  stopCobrancasCron,
-} from '../../src/services/cobrancasCron.ts';
-import {
-  startStatusCron,
-  stopStatusCron,
-} from '../../src/services/statusCron.ts';
+import { stopCobrancasCron } from '../../src/services/cobrancasCron.ts';
+import { stopStatusCron } from '../../src/services/statusCron.ts';
 
 const { app: application, stopDevReload } = createApplication();
 let backend: Awaited<ReturnType<typeof createBackend>> | undefined;

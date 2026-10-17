@@ -1,10 +1,7 @@
 import { safeError } from '../security/safeError.ts';
 import { automationsEnabled } from '../security/automationPolicy.ts';
 import crypto from 'node:crypto';
-import {
-  workflowResult,
-  raiseWorkflowError,
-} from '../services/workflowReply.ts';
+import { workflowResult } from '../services/workflowReply.ts';
 export function createCronWorkflow({
   env,
   executarCobrancasAutomaticas,

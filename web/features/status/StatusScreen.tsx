@@ -454,7 +454,6 @@ export function StatusScreen({ data }: { data?: any }) {
         {data.temWhatsapp ? (
           <div className="section-header">
             <div>
-              <h2 className="status-page-title">Status WhatsApp</h2>
               <p className="muted">
                 Agende novidades, ofertas e avisos para o seu status.
               </p>
@@ -464,7 +463,7 @@ export function StatusScreen({ data }: { data?: any }) {
               type="button"
               onClick={() => setEditor({ item: null })}
             >
-              Nova publicação
+              <Icon name="plus" /> Nova publicação
             </button>
           </div>
         ) : (

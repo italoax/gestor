@@ -23,12 +23,6 @@ export function createDashboardWorkflow({
   const dashboardCache = dashboardState.cache;
   const DASHBOARD_CACHE_TTL_MS = 60000;
 
-  function invalidarDashboardCache(userId) {
-    dashboardState.revision += 1;
-    for (const key of dashboardCache.keys()) {
-      if (key.startsWith(`${userId}:`)) dashboardCache.delete(key);
-    }
-  }
   return {
     overview: (input) =>
       workflowResult(input, async (reply) => {

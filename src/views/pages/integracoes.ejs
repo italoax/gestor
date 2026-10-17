@@ -2,10 +2,6 @@
 <div class="container page-integracoes" data-search-scope>
   <div class="integ-head">
     <div>
-      <h2 class="section-title"
-        ><%- include('../partials/ui-icon', { name: 'link' }) %>
-        Integrações</h2
-      >
       <p class="muted"
         >Conecte um painel IPTV para renovar seus clientes lá automaticamente ao
         renovar aqui.</p
@@ -15,20 +11,6 @@
       ><%- include('../partials/ui-icon', { name: 'plus' }) %>
       Adicionar Integração</button
     >
-  </div>
-  <div class="ui-summary ui-summary-2">
-    <div class="cli-stat accent-green">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '⚙️' }) %></div>
-      <div
-        ><strong><%= sigmas.length %></strong><span>Sigma</span></div
-      >
-    </div>
-    <div class="cli-stat accent-blue">
-      <div class="cli-stat-ico"><%- include('../partials/ui-icon', { name: '🔗' }) %></div>
-      <div
-        ><strong><%= integracoes.length %></strong><span>Total</span></div
-      >
-    </div>
   </div>
   <div class="card integ-card">
     <h3 class="integ-card-title"
@@ -51,9 +33,7 @@
         <div class="integ-info">
           <div class="integ-info-top">
             <strong><%= i.nome %></strong>
-            <span class="badge <%= i.status === 'ativo' ? 'badge-green' : 'badge-muted' %>"
-              ><%= i.status === 'ativo' ? 'Ativo' : 'Inativo' %></span
-            >
+            <span class="badge <%= i.status === 'ativo' ? 'badge-green' : 'badge-muted' %>"><%= i.status === 'ativo' ? 'Ativo' : 'Inativo' %></span>
           </div>
           <small class="muted"
             ><%= i.apiUrl %>

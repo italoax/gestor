@@ -296,16 +296,6 @@ async function initGestor() {
   if (siteNotice) setModalState(siteNotice, true);
   modules.initClientAccess({ on, setModalState });
 
-  const showNoticeModal = (message, type = 'success') => {
-    const modal = document.getElementById('modal-notice') as HTMLElement;
-    const msg = document.getElementById('modal-notice-message') as HTMLElement;
-    if (!modal || !msg) return false;
-    msg.textContent = message;
-    msg.classList.remove('success', 'error');
-    msg.classList.add(type === 'error' ? 'error' : 'success');
-    setModalState(modal, true);
-    return true;
-  };
   const pendingNotice = document.querySelector(
     '#modal-notice[data-open-notice]',
   ) as HTMLElement;
@@ -618,20 +608,6 @@ async function initGestor() {
         custoTotalInput.value = total;
       }
     });
-  }
-
-  function showToast(message, type) {
-    const container = document.querySelector('.container') as HTMLElement;
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className =
-      'toast ' + (type === 'success' ? 'toast-success' : 'toast-error');
-    toast.setAttribute('role', 'alert');
-    toast.textContent = message;
-    container.prepend(toast);
-    setTimeout(() => {
-      toast.remove();
-    }, 4000);
   }
 
   // Limpa o poll da tela anterior (evita acumular intervals a cada navegacao pjax).

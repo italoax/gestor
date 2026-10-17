@@ -403,22 +403,6 @@ export function AutomationScreen({ data }: { data?: any }) {
   return (
     <NativePanel data={data} path="/automacao">
       <div className="container page-automacao" data-react-page="automacao">
-        <div className="ui-summary ui-summary-4">
-          {[
-            ['Regras', data.stats.regras],
-            ['Ativas', data.stats.ativas],
-            ['Mensagens hoje', data.stats.mensagensHoje],
-            ['Entrega', `${data.stats.entrega || 0}%`],
-          ].map(([label, value]) => (
-            <div className="tx-stat" key={label}>
-              <div>
-                <span>{label}</span>
-                <strong>{value ?? 0}</strong>
-              </div>
-              <Icon name="bolt" />
-            </div>
-          ))}
-        </div>
         <div className="auto-tabs">
           <>
             {['regras', 'envios', 'disparos'].map((value) => (

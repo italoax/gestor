@@ -65,9 +65,6 @@ export function AccountScreen({ data }: { data?: any }) {
       <PanelShell data={{ ...data, currentPath: '/minha-conta' }}>
         <SiteNotice success={data.success} error={data.error} />
         <div className="container page-account" data-react-page="minha-conta">
-          <div className="section-header">
-            <h2 className="section-title">Minha Conta</h2>
-          </div>
           <div className="card account-card">
             <section id="seguranca-sessoes" className="account-section">
               <h3>Segurança e sessões</h3>

@@ -1,5 +1,6 @@
 import http from 'node:http';
 import https from 'node:https';
+import { setTimeout as sleep } from 'node:timers/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 // Agentes próprios não herdam o proxy HTTP da hospedagem.
@@ -21,10 +22,7 @@ function failure(error: unknown, url: URL) {
     (error as NodeJS.ErrnoException)?.code ||
     (error as Error)?.name ||
     'UNKNOWN';
-  console.error('Falha na comunicação interna:', {
-    destino: url.origin,
-    codigo: code,
-  });
+  console.error(`Falha na comunicação interna (${code}): ${url.origin}.`);
   return new Error(`Backend interno indisponível (${code}).`, { cause: error });
 }
 
@@ -36,11 +34,10 @@ export interface InternalRequestOptions {
 }
 
 // Cada chamada usa a rede diretamente, sem cache ou redirecionamento automático.
-export function requestInternal(
-  input: string | URL,
+function sendInternal(
+  url: URL,
   options: InternalRequestOptions = {},
 ): Promise<Response> {
-  const url = new URL(input);
   const { client, agent } = transport(url);
   const headers = Object.fromEntries(new Headers(options.headers).entries());
   if (options.socketPath && !headers['x-forwarded-for'])
@@ -57,7 +54,7 @@ export function requestInternal(
       (response) => {
         const chunks: Buffer[] = [];
         response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-        response.on('error', (error) => reject(failure(error, url)));
+        response.on('error', reject);
         response.on('end', () => {
           const responseHeaders = new Headers();
           for (let index = 0; index < response.rawHeaders.length; index += 2)
@@ -75,19 +72,53 @@ export function requestInternal(
         });
       },
     );
-    request.on('error', (error) => reject(failure(error, url)));
+    request.on('error', reject);
     request.end();
   });
 }
 
-export function requestBackend(
+export function requestInternal(
   input: string | URL,
   options: InternalRequestOptions = {},
 ) {
-  return requestInternal(input, {
+  const url = new URL(input);
+  return sendInternal(url, options).catch((error) => {
+    throw failure(error, url);
+  });
+}
+
+export async function requestBackend(
+  input: string | URL,
+  options: InternalRequestOptions = {},
+) {
+  const url = new URL(input);
+  const settings: InternalRequestOptions = {
     ...options,
     socketPath: process.env.BACKEND_SOCKET || options.socketPath,
-  });
+    signal: options.signal || AbortSignal.timeout(options.timeout || 20000),
+  };
+  // Durante o reload local, a porta fecha por alguns instantes. Apenas estas
+  // leituras GET podem aguardar o backend; o proxy de POST nunca repete ações.
+  const retryDeadline =
+    performance.now() + (process.env.NODE_ENV === 'development' ? 5000 : 0);
+  for (;;) {
+    try {
+      return await sendInternal(url, settings);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException)?.code;
+      if (
+        !['ECONNREFUSED', 'ECONNRESET', 'EPIPE'].includes(code) ||
+        settings.signal.aborted ||
+        performance.now() + 250 > retryDeadline
+      )
+        throw failure(error, url);
+      try {
+        await sleep(250, undefined, { signal: settings.signal });
+      } catch (aborted) {
+        throw failure(aborted, url);
+      }
+    }
+  }
 }
 
 export function proxyBackend(

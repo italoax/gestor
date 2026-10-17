@@ -4,6 +4,7 @@ import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import { PanelSearch } from '../../../src/frontend/components/PanelSearch.tsx';
 
 const tags = [
   'saudacao',
@@ -311,15 +312,11 @@ export function MessagesScreen({ data }: { data?: any }) {
         data-react-page="mensagens"
       >
         <div className="ui-toolbar">
-          <input
-            type="search"
-            className="input"
+          <PanelSearch
             placeholder="Buscar template..."
-            aria-label="Buscar template"
+            label="Buscar template"
             value={search}
-            onChange={(event) =>
-              setSearch((event.target as HTMLInputElement).value)
-            }
+            onChange={setSearch}
           />
           <button
             className="btn btn-primary"
@@ -329,14 +326,14 @@ export function MessagesScreen({ data }: { data?: any }) {
             <Icon name="plus" /> Novo Template
           </button>
         </div>
-        <div className="ui-catalog-heading">
-          <h2>
-            Templates de mensagem <span>{data.mensagens.length}</span>
-          </h2>
-          <p role="status" aria-live="polite">
-            {search ? `${filtered.length} resultado(s)` : ''}
-          </p>
-        </div>
+        <p
+          className="panel-search-results"
+          role="status"
+          aria-live="polite"
+          hidden={!search.trim()}
+        >
+          {search.trim() && `${filtered.length} resultado(s)`}
+        </p>
         {!filtered.length && (
           <div className="cli-empty">
             <Icon name="message" />

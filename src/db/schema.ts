@@ -1,7 +1,5 @@
-import { db } from './mysql.ts';
 import { migrateCobrancasEnviosSchema } from './cobrancasEnviosSchema.ts';
 import {
-  dataVault,
   openStoredSecret,
   sealStoredSecret,
 } from '../security/storedSecrets.ts';

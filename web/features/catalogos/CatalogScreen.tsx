@@ -5,6 +5,7 @@ import { PanelStyles } from '../../components/layout/PanelStyles.tsx';
 import { PanelShell, SiteNotice } from '../../components/layout/PanelShell.tsx';
 import { LegacyControllers } from '../../components/legacy/LegacyControllers.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import { PanelSearch } from '../../../src/frontend/components/PanelSearch.tsx';
 
 const configs = {
   planos: {
@@ -386,37 +387,6 @@ export function CatalogScreen({ data }: { data?: any }) {
         .join(' '),
     ).includes(normalize(search.trim())),
   );
-  const stats =
-    catalog === 'servidores'
-      ? [
-          ['Servidores', items.length],
-          [
-            'Créditos disponíveis',
-            number(
-              items.reduce((sum, item) => sum + Number(item.creditos || 0), 0),
-            ),
-          ],
-          [
-            'Clientes',
-            items.reduce(
-              (sum, item) => sum + Number(item.clientesTotal || 0),
-              0,
-            ),
-          ],
-        ]
-      : [
-          ['Total', items.length],
-          ['Ativos', items.filter(active).length],
-          catalog === 'planos'
-            ? [
-                'Clientes ativos',
-                items.reduce(
-                  (sum, item) => sum + Number(item.clientes || 0),
-                  0,
-                ),
-              ]
-            : ['Inativos', items.filter((item) => !active(item)).length],
-        ];
   return (
     <>
       <PanelStyles />
@@ -427,32 +397,12 @@ export function CatalogScreen({ data }: { data?: any }) {
           className={`container page-${catalog} ui-catalog`}
           data-react-page={catalog}
         >
-          <div className="ui-summary ui-summary-3">
-            {stats.map(([label, value], index) => (
-              <div
-                className={`cli-stat accent-${['blue', 'green', 'red'][index]}`}
-                key={label}
-              >
-                <div>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-                <div className="cli-stat-ico">
-                  <Icon name={config.icon} />
-                </div>
-              </div>
-            ))}
-          </div>
           <div className="ui-toolbar">
-            <input
-              className="input"
-              type="search"
+            <PanelSearch
               placeholder={`Buscar ${config.singular}...`}
-              aria-label={`Buscar ${config.singular}`}
+              label={`Buscar ${config.singular}`}
               value={search}
-              onChange={(event) =>
-                setSearch((event.target as HTMLInputElement).value)
-              }
+              onChange={setSearch}
             />
             <button
               className="btn btn-primary"
@@ -462,11 +412,13 @@ export function CatalogScreen({ data }: { data?: any }) {
               <Icon name="plus" /> Novo {config.singular}
             </button>
           </div>
-          <h2>
-            Catálogo de {catalog} <span>{items.length}</span>
-          </h2>
-          <p role="status" aria-live="polite">
-            {search && `${filtered.length} resultado(s)`}
+          <p
+            className="panel-search-results"
+            role="status"
+            aria-live="polite"
+            hidden={!search.trim()}
+          >
+            {search.trim() && `${filtered.length} resultado(s)`}
           </p>
           {!filtered.length && (
             <div className="cli-empty">
