@@ -49,6 +49,24 @@ export function renewalBase(expiration, today = todayInSaoPaulo()) {
   return iso && iso > today ? iso : today;
 }
 
+export function multiRenewalDates(group, count) {
+  return Object.fromEntries(
+    (group?.dados.itens || []).map((item) => [
+      item.chave === 'principal'
+        ? 'vencimento_principal'
+        : 'vencimento_adicional',
+      formatDateBr(
+        addRenewalPeriod(
+          renewalBase(item.vencimento),
+          item.periodo,
+          item.tipo,
+          count,
+        ),
+      ),
+    ]),
+  );
+}
+
 export function calculateRenewal(single, plans, servers) {
   const plan =
     plans.find((p) => p.nome === single.plano) || single.originalPlan;

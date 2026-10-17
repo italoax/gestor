@@ -147,6 +147,23 @@ export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
     }
     if (!Number.isSafeInteger(periodos) || periodos < 1 || periodos > 12)
       throw new CreditosError('Quantidade de renovações inválida.');
+    const vencimentos = new Map();
+    // Datas manuais pertencem somente aos acessos selecionados no painel autenticado.
+    if (!pagamento)
+      for (const item of dados.itens) {
+        const informado =
+          item.chave === 'principal'
+            ? pedido.vencimentoPrincipal
+            : pedido.vencimentoAdicional;
+        if (informado === undefined) continue;
+        const vencimento =
+          typeof informado === 'string' ? normalizeDateInput(informado) : '';
+        if (!vencimento)
+          throw new CreditosError(
+            `Informe uma data de vencimento válida para ${item.servidor}.`,
+          );
+        vencimentos.set(item.chave, vencimento);
+      }
     const total =
       dados.itens.reduce(
         (soma, item) => soma + Math.round(item.valor * 100) * periodos,
@@ -201,12 +218,14 @@ export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
       await debitarCreditos(conn, userId, item.servidor, consumo);
       const custo = Number((Number(srv?.valor_cred || 0) * consumo).toFixed(2));
       const valor = (Math.round(item.valor * 100) * periodos) / 100;
-      const vencimento = novoVencimentoPlano(
-        String(atual.vencimento).slice(0, 10),
-        appTodayIso(),
-        item,
-        periodos,
-      );
+      const vencimento =
+        vencimentos.get(item.chave) ||
+        novoVencimentoPlano(
+          String(atual.vencimento).slice(0, 10),
+          appTodayIso(),
+          item,
+          periodos,
+        );
       custoTotal += custo;
       if (item.chave === 'principal') {
         await conn.execute(

@@ -114,6 +114,8 @@ export function createClientMutationWorkflow({
           periodos: Number(body.periodos),
           chave: String(body.chave),
           formaPagamento: String(body.forma_pagamento),
+          vencimentoPrincipal: body.vencimento_principal,
+          vencimentoAdicional: body.vencimento_adicional,
         });
         if (!resultado.duplicado) {
           await verificarCreditosServidor(userId, '', 0, 0);

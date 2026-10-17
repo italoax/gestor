@@ -1,7 +1,6 @@
 import { CsrfInput, Icon } from './ui.tsx';
 import { opcoesRenovacao } from '../../services/renovacaoOpcoes.ts';
-import { formatDateBr, formatMoney } from '../../services/format.ts';
-import { addRenewalPeriod, renewalBase } from './renewalModel.ts';
+import { formatMoney } from '../../services/format.ts';
 
 function Field({
   formId,
@@ -545,37 +544,54 @@ export function RenewalModals({
             >
               {option && <h4>Resumo da renovação</h4>}
               {option &&
-                group.dados.itens.map((item, index) => (
-                  <article
-                    className="renewal-server"
-                    key={`${item.servidor}-${index}`}
-                  >
-                    <div className="renewal-server-heading">
-                      <strong>{item.servidor}</strong>
-                      <strong>
-                        {formatMoney(item.valor * option.periodos)}
-                      </strong>
-                    </div>
-                    <p className="renewal-server-plan">
-                      {item.plano} · {itemDuration(item, option.periodos)}
-                    </p>
-                    <div className="renewal-server-date">
-                      <span>
-                        <Icon name="calendar" /> Novo vencimento
-                      </span>
-                      <strong>
-                        {formatDateBr(
-                          addRenewalPeriod(
-                            renewalBase(item.vencimento),
-                            item.periodo,
-                            item.tipo,
-                            option.periodos,
-                          ),
-                        )}
-                      </strong>
-                    </div>
-                  </article>
-                ))}
+                group.dados.itens.map((item, index) => {
+                  const dateName =
+                    item.chave === 'principal'
+                      ? 'vencimento_principal'
+                      : 'vencimento_adicional';
+                  return (
+                    <article
+                      className="renewal-server"
+                      key={`${item.servidor}-${index}`}
+                    >
+                      <div className="renewal-server-heading">
+                        <strong>{item.servidor}</strong>
+                        <strong>
+                          {formatMoney(item.valor * option.periodos)}
+                        </strong>
+                      </div>
+                      <p className="renewal-server-plan">
+                        {item.plano} · {itemDuration(item, option.periodos)}
+                      </p>
+                      <div className="renewal-server-date">
+                        <Field
+                          formId={multiId}
+                          name={dateName}
+                          label={
+                            <>
+                              <Icon name="calendar" /> Novo vencimento —{' '}
+                              {item.servidor}
+                            </>
+                          }
+                          error={multiErrors[dateName]}
+                          hint="Pode ajustar a data deste servidor. O valor e os créditos seguem a duração selecionada."
+                        >
+                          <input
+                            {...props(dateName, 'multi')}
+                            type="text"
+                            placeholder="dd/mm/aaaa"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={10}
+                            pattern="\d{2}/\d{2}/\d{4}"
+                            title="Use dd/mm/aaaa"
+                            data-date-mask=""
+                          />
+                        </Field>
+                      </div>
+                    </article>
+                  );
+                })}
             </div>
             <Field
               formId={multiId}
@@ -591,7 +607,9 @@ export function RenewalModals({
             {message('multi')}
           </div>
           <p className="muted renewal-note">
-            A renovação começa no vencimento atual. Se já venceu, começa hoje.
+            As datas são sugeridas a partir do vencimento atual ou de hoje, se
+            já venceu. Ao trocar os servidores ou a duração, as datas são
+            recalculadas.
           </p>
         </form>
       </Modal>

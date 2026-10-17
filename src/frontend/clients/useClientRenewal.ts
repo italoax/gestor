@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDateBr, normalizeDateInput } from '../../services/format.ts';
 import {
   calculateRenewal,
+  multiRenewalDates,
   renewalBase,
   todayInSaoPaulo,
 } from './renewalModel.ts';
@@ -33,6 +34,8 @@ const emptyMulti = {
   selecao: '',
   periodos: '',
   forma_pagamento: '',
+  vencimento_principal: '',
+  vencimento_adicional: '',
   loading: false,
   error: '',
 };
@@ -209,6 +212,10 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
         chave: data.chave,
         selecao: data.escolhas[0].selecao,
         periodos: String(data.escolhas[0].opcoes[0].periodos),
+        ...multiRenewalDates(
+          data.escolhas[0],
+          data.escolhas[0].opcoes[0].periodos,
+        ),
         loading: false,
       }));
     } catch (error) {
@@ -245,6 +252,14 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
         next.periodos = String(
           previous.escolhas.find((group) => group.selecao === value)?.opcoes[0]
             .periodos || '',
+        );
+      if (name === 'selecao' || name === 'periodos')
+        Object.assign(
+          next,
+          multiRenewalDates(
+            next.escolhas.find((group) => group.selecao === next.selecao),
+            next.periodos,
+          ),
         );
       return next;
     });
