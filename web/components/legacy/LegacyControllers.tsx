@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
 
 const scripts = new Map();
 function loadScript(path) {
   if (scripts.has(path)) return scripts.get(path);
   const loaded = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = `/assets/js/${path}.js`;
+    script.src = publicAssetUrl(`/assets/js/${path}.js`);
     script.onload = () => resolve();
     script.onerror = () => {
       scripts.delete(path);

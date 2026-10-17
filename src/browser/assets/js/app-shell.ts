@@ -5,6 +5,44 @@ import {
 import { initReleaseNotice } from './ui/release-notice.js';
 import { initSessionActivity } from './ui/session-activity.js';
 
+// Mantém as consultas do cabeçalho durante a navegação do mesmo documento.
+// A troca de tela não deve reiniciar requisições nem duplicar uma em andamento.
+const shellReads = new Map<
+  string,
+  { at: number; value?: any; pending?: Promise<any> }
+>();
+const whatsappSnapshots = new Map<
+  string,
+  { indicator: WhatsappIndicator; response: any }
+>();
+function readShellStatus(key: string, url: string, interval: number) {
+  const state = shellReads.get(key) || { at: 0 };
+  if (state.pending) return state.pending;
+  if (state.value && Date.now() - state.at < interval)
+    return Promise.resolve(state.value);
+  shellReads.set(key, state);
+  state.pending = fetch(url, {
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20000),
+  })
+    .then((response) => {
+      window.gestorPolling?.recordResponse(response);
+      if (!response.ok || response.redirected)
+        throw new Error('Consulta indisponível');
+      return response.json();
+    })
+    .then((value) => {
+      state.at = Date.now();
+      state.value = value;
+      return value;
+    })
+    .finally(() => {
+      state.pending = undefined;
+    });
+  return state.pending;
+}
+
 window.__gestorInitShell = function () {
   window.__gestorShellAbort?.abort();
   const lifecycle = new AbortController();
@@ -66,6 +104,10 @@ window.__gestorInitShell = function () {
   on(document, 'gestor:before-swap', () => lifecycle.abort());
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
   var shell = document.querySelector('[data-shell]') as HTMLElement;
+  const queryScope =
+    shell?.dataset.releaseLogin ||
+    document.querySelector<HTMLElement>('[data-wa-chip]')?.dataset.waStateKey ||
+    'panel';
   void initReleaseNotice(shell, lifecycle.signal);
   initSessionActivity(shell, lifecycle.signal);
 
@@ -262,7 +304,9 @@ window.__gestorInitShell = function () {
   // tooltip com o número conectado. Atualiza a cada 30s pra refletir
   // reconexões/desconexões. Sem texto "on/off" exibido — só a bolinha.
   var waChip = document.querySelector('[data-wa-chip]') as HTMLElement;
-  let waState: WhatsappIndicator = { disconnectedChecks: 0 };
+  const waQueryKey = queryScope + ':whatsapp';
+  let waState: WhatsappIndicator = whatsappSnapshots.get(waQueryKey)
+    ?.indicator || { disconnectedChecks: 0 };
   try {
     const cached = JSON.parse(
       sessionStorage.getItem(waChip?.dataset.waStateKey) || 'null',
@@ -309,19 +353,15 @@ window.__gestorInitShell = function () {
   //  - Refetch imediato em visibilitychange/focus/pageshow — cobre o caso
   //    do user voltar pra aba/app depois de ficar em outro app.
   var waFetchInflight = false;
-  function atualizarWaChip() {
+  function atualizarWaChip(refresh: boolean | Event = false) {
     if (!waChip || waFetchInflight || !window.gestorPolling.canFetch())
       return Promise.resolve();
     waFetchInflight = true;
-    return fetch('/whatsapp/status', {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      signal: AbortSignal.any([lifecycle.signal, AbortSignal.timeout(20000)]),
-    })
-      .then(function (r) {
-        window.gestorPolling.recordResponse(r);
-        return r.ok && !r.redirected ? r.json() : null;
-      })
+    return readShellStatus(
+      waQueryKey,
+      '/whatsapp/status',
+      refresh ? 1000 : 30000,
+    )
       .then(function (s) {
         if (lifecycle.signal.aborted) return;
         if (!s) {
@@ -329,8 +369,14 @@ window.__gestorInitShell = function () {
           return;
         }
         // Erros e respostas incompletas não confirmam uma desconexão.
-        waState = advanceWhatsappIndicator(waState, s);
-        if (waState.disconnectedChecks === 1) setTimeout(atualizarWaChip, 1500);
+        const snapshot = whatsappSnapshots.get(waQueryKey);
+        waState =
+          snapshot?.response === s
+            ? snapshot.indicator
+            : advanceWhatsappIndicator(snapshot?.indicator || waState, s);
+        whatsappSnapshots.set(waQueryKey, { indicator: waState, response: s });
+        if (waState.disconnectedChecks === 1)
+          setTimeout(() => atualizarWaChip(true), 1500);
         const connected = waState.connected;
         if (connected === undefined) {
           waChip.classList.remove('is-on', 'is-off');
@@ -370,6 +416,7 @@ window.__gestorInitShell = function () {
         waChip.setAttribute('aria-label', waChip.title);
       })
       .catch(function () {
+        if (lifecycle.signal.aborted) return;
         waState = { ...waState, disconnectedChecks: 0 };
         /* rede off — nao mexe no estado, evita falso "desconectado" */
       })
@@ -384,20 +431,20 @@ window.__gestorInitShell = function () {
       !waChip.classList.contains('is-on') &&
       !waChip.classList.contains('is-off')
     ) {
-      setTimeout(atualizarWaChip, 1500);
+      setTimeout(() => atualizarWaChip(true), 1500);
     }
   });
   // Consultas periódicas sem novas tentativas durante o bloqueio.
   if (waChip) {
     function waSchedule() {
       setTimeout(function () {
-        atualizarWaChip().finally(waSchedule);
+        atualizarWaChip(true).finally(waSchedule);
       }, 30000);
     }
     waSchedule();
     // Refetch quando o user volta pra aba (mobile: troca de app).
     on(document, 'visibilitychange', function () {
-      if (document.visibilityState === 'visible') atualizarWaChip();
+      if (document.visibilityState === 'visible') atualizarWaChip(true);
     });
     on(window, 'focus', atualizarWaChip);
     on(window, 'pageshow', atualizarWaChip);
@@ -706,21 +753,19 @@ window.__gestorInitShell = function () {
         })
         .join('');
     }
+    const notificationsKey = queryScope + ':notifications';
     var notificationsInflight = false;
-    function carregar() {
+    function carregar(refresh = false) {
       if (notificationsInflight || !window.gestorPolling.canFetch())
         return Promise.resolve(false);
       notificationsInflight = true;
-      return fetch('/notificacoes', {
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      })
-        .then(function (r) {
-          window.gestorPolling.recordResponse(r);
-          if (!r.ok) throw new Error('notifications');
-          return r.json();
-        })
+      return readShellStatus(
+        notificationsKey,
+        '/notificacoes',
+        refresh ? 1000 : 60000,
+      )
         .then(function (j) {
+          if (lifecycle.signal.aborted) return false;
           if (!j || !j.ok) throw new Error('notifications');
           state.items = j.items || [];
           pintarBadge(j.naoLidas || 0);
@@ -728,6 +773,7 @@ window.__gestorInitShell = function () {
           return true;
         })
         .catch(function () {
+          if (lifecycle.signal.aborted) return false;
           if (state.open)
             list.innerHTML =
               '<li class="notif-empty" role="status">Não foi possível carregar os alertas. Feche e abra o sino para tentar novamente.</li>';
@@ -743,13 +789,14 @@ window.__gestorInitShell = function () {
       toggle.setAttribute('aria-expanded', 'true');
       state.open = true;
       pintarLista();
-      carregar().then(function (loaded) {
+      carregar(true).then(function (loaded) {
         if (!loaded || !state.open) return;
         if (state.naoLidas > 0) {
           window
             .csrfFetch('/notificacoes/marcar-todas-lidas', { method: 'POST' })
             .then(function (r) {
               if (!r.ok) throw new Error('notifications');
+              shellReads.delete(notificationsKey);
               state.items.forEach(function (n) {
                 n.lida = 1;
               });
@@ -777,7 +824,7 @@ window.__gestorInitShell = function () {
       if (e.key === 'Escape' && state.open) fechar();
     });
     on(document, 'gestor:before-swap', fechar);
-    on(document, 'gestor:navigated', carregar);
+    on(document, 'gestor:navigated', () => carregar());
 
     on(list, 'click', function (e) {
       var del = (e.target as HTMLElement).closest(
@@ -791,6 +838,7 @@ window.__gestorInitShell = function () {
           .csrfFetch('/notificacoes/' + id + '/excluir', { method: 'POST' })
           .then(function (r) {
             if (!r.ok) throw new Error('notifications');
+            shellReads.delete(notificationsKey);
             state.items = state.items.filter(function (n) {
               return String(n.id) !== String(id);
             });
@@ -824,6 +872,7 @@ window.__gestorInitShell = function () {
         .csrfFetch('/notificacoes/limpar', { method: 'POST' })
         .then(function (r) {
           if (!r.ok) throw new Error('notifications');
+          shellReads.delete(notificationsKey);
           carregar();
         })
         .catch(function () {});
@@ -831,10 +880,10 @@ window.__gestorInitShell = function () {
 
     carregar();
     state.intervalo = setInterval(function () {
-      if (document.visibilityState === 'visible') carregar();
+      if (document.visibilityState === 'visible') carregar(true);
     }, 60000);
     on(document, 'visibilitychange', function () {
-      if (document.visibilityState === 'visible') carregar();
+      if (document.visibilityState === 'visible') carregar(true);
     });
   })();
 
@@ -846,7 +895,7 @@ window.__gestorInitShell = function () {
   on(window, 'pageshow', function (event: PageTransitionEvent) {
     if (event.persisted) window.location.reload();
   });
-  if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator && !window.__gestorPwaManaged) {
     var workerScript = document.querySelector(
       'script[data-service-worker-url]',
     ) as HTMLScriptElement;
@@ -879,9 +928,35 @@ window.__gestorInitShell = function () {
     return arr;
   }
 
+  function pushRegistration() {
+    return new Promise<ServiceWorkerRegistration>((resolve, reject) => {
+      const timer = window.setTimeout(
+        () =>
+          reject(
+            new Error('O aplicativo ainda não está pronto. Tente novamente.'),
+          ),
+        10000,
+      );
+      navigator.serviceWorker.ready.then(
+        (registration) => {
+          window.clearTimeout(timer);
+          resolve(registration);
+        },
+        (error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
+  }
+
   // Chamada por botão "Ativar notificações" em /minha-conta.
   window.pushSubscribe = async function () {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window)
+    ) {
       alert('Seu navegador não suporta notificações.');
       return false;
     }
@@ -891,14 +966,16 @@ window.__gestorInitShell = function () {
         alert('Permissão negada. Habilite nas configurações do navegador.');
         return false;
       }
-      var kr = await fetch('/push/public-key').then(function (r) {
+      var kr = await fetch('/push/public-key', {
+        signal: AbortSignal.timeout(15000),
+      }).then(function (r) {
         return r.json();
       });
       if (!kr.ok || !kr.enabled || !kr.key) {
         alert('Push não está configurado no servidor.');
         return false;
       }
-      var reg = await navigator.serviceWorker.ready;
+      var reg = await pushRegistration();
       var sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(kr.key),
@@ -907,6 +984,7 @@ window.__gestorInitShell = function () {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub.toJSON()),
+        signal: AbortSignal.timeout(15000),
       });
       var j = await r.json();
       if (!j.ok) {
@@ -923,16 +1001,17 @@ window.__gestorInitShell = function () {
   window.pushUnsubscribe = async function () {
     if (!('serviceWorker' in navigator)) return false;
     try {
-      var reg = await navigator.serviceWorker.ready;
+      var reg = await pushRegistration();
       var sub = await reg.pushManager.getSubscription();
       if (!sub) return true;
-      await window.csrfFetch('/push/unsubscribe', {
+      var response = await window.csrfFetch('/push/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint: sub.endpoint }),
+        signal: AbortSignal.timeout(15000),
       });
-      await sub.unsubscribe();
-      return true;
+      if (!response.ok || !(await response.json()).ok) return false;
+      return await sub.unsubscribe();
     } catch (e) {
       return false;
     }
@@ -940,11 +1019,15 @@ window.__gestorInitShell = function () {
 
   // Status atual: subscrito ou não? Pra UI mostrar o botão certo.
   window.pushStatus = async function () {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window))
+    if (
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window)
+    )
       return 'unsupported';
     if (Notification.permission === 'denied') return 'denied';
     try {
-      var reg = await navigator.serviceWorker.ready;
+      var reg = await pushRegistration();
       var sub = await reg.pushManager.getSubscription();
       return sub ? 'subscribed' : 'available';
     } catch {

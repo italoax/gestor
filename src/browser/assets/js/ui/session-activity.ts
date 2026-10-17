@@ -1,10 +1,33 @@
 // Somente interação real gera POST. A consulta de expiração é somente leitura.
+const activitySessions = new Map<
+  string,
+  { lastSentAt: number; interactionAt: number; sentInteractionAt: number }
+>();
+
 export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
   let expiresAt = Number(shell?.dataset.sessionExpiresAt);
   if (!Number.isFinite(expiresAt) || expiresAt <= 0 || signal.aborted) return;
   const minInterval = 30_000;
-  let lastInteractionAt = 0;
-  let lastSentAt = 0;
+  const login = shell.dataset.releaseLogin || 'panel';
+  const storageKey = 'gestor-session-activity:' + login;
+  const activity = activitySessions.get(login) || {
+    lastSentAt: 0,
+    interactionAt: 0,
+    sentInteractionAt: 0,
+  };
+  activitySessions.set(login, activity);
+  const lastSentAt = () => {
+    try {
+      const saved = Number(localStorage.getItem(storageKey));
+      if (Number.isFinite(saved) && saved > 0 && saved <= Date.now())
+        activity.lastSentAt = Math.max(activity.lastSentAt, saved);
+    } catch {
+      // Mantém o intervalo entre telas mesmo sem armazenamento disponível.
+    }
+    return activity.lastSentAt;
+  };
+  const canFetch = () =>
+    !document.hidden && (window.gestorPolling?.canFetch() ?? true);
   let sending = false;
   let checking = false;
   let expiryTimer: number | undefined;
@@ -15,6 +38,7 @@ export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
     if (!signal.aborted) expiryTimer = window.setTimeout(checkExpiry, delay);
   };
   const readResponse = async (response: Response) => {
+    window.gestorPolling?.recordResponse(response);
     if (signal.aborted) return;
     if (response.status === 401 || response.status === 403) {
       window.location.replace('/login');
@@ -31,6 +55,7 @@ export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
   };
   async function checkExpiry() {
     if (signal.aborted || checking) return;
+    if (!canFetch()) return armExpiry(minInterval);
     checking = true;
     try {
       // Outra aba pode estar em uso; confirme com o servidor antes de sair.
@@ -50,17 +75,30 @@ export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
       checking = false;
     }
   }
-  function queueActivity() {
+  function queueActivity(minDelay = 0) {
     if (signal.aborted || activityTimer !== undefined) return;
-    const delay = Math.max(0, minInterval - (Date.now() - lastSentAt));
+    const delay = Math.max(minDelay, minInterval - (Date.now() - lastSentAt()));
     activityTimer = window.setTimeout(sendActivity, delay);
   }
   async function sendActivity() {
     activityTimer = undefined;
-    if (signal.aborted || sending || !lastInteractionAt) return;
+    if (
+      signal.aborted ||
+      sending ||
+      activity.interactionAt <= activity.sentInteractionAt
+    )
+      return;
+    if (!canFetch()) return queueActivity(minInterval);
+    // Outra tela ou aba pode ter enviado enquanto este timer aguardava.
+    if (Date.now() - lastSentAt() < minInterval) return queueActivity();
     sending = true;
-    lastSentAt = Date.now();
-    const interactionAt = lastInteractionAt;
+    activity.lastSentAt = Date.now();
+    const interactionAt = activity.interactionAt;
+    activity.sentInteractionAt = interactionAt;
+    try {
+      // Somente o horário é compartilhado; não armazena dados da sessão.
+      localStorage.setItem(storageKey, String(activity.lastSentAt));
+    } catch {}
     try {
       await readResponse(
         await fetch('/api/session/activity', {
@@ -85,12 +123,12 @@ export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
       // O próximo gesto pode tentar novamente, respeitando o intervalo.
     } finally {
       sending = false;
-      if (lastInteractionAt > interactionAt) queueActivity();
+      if (activity.interactionAt > interactionAt) queueActivity();
     }
   }
   const onInteraction = (event: Event) => {
     if (!event.isTrusted || document.hidden || signal.aborted) return;
-    lastInteractionAt = Date.now();
+    activity.interactionAt = Date.now();
     queueActivity();
   };
   for (const type of [
@@ -120,4 +158,6 @@ export function initSessionActivity(shell: HTMLElement, signal: AbortSignal) {
     { once: true },
   );
   armExpiry();
+  // Uma navegação não apaga o último gesto nem reinicia a frequência de envio.
+  if (activity.interactionAt > activity.sentInteractionAt) queueActivity();
 }

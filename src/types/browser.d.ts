@@ -5,6 +5,7 @@ declare global {
     connection?: { saveData?: boolean; effectiveType?: string };
   }
   interface Window {
+    __gestorPwaManaged?: boolean;
     __dashData?: any;
     __devReload?: any;
     __geoData?: any;

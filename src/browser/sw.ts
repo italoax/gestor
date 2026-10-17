@@ -11,6 +11,9 @@ const OFFLINE_URL = '/offline.html';
 const OFFLINE_ASSET = APP_SHELL.find(
   (url) => url.split('?')[0] === OFFLINE_URL,
 );
+const OFFLINE_SCRIPT = APP_SHELL.find(
+  (url) => url.split('?')[0] === '/assets/js/offline.js',
+);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -20,17 +23,14 @@ self.addEventListener('install', (event) => {
         return;
       }
       const cache = await caches.open(CACHE);
-      // Apenas o aviso offline é público e seguro para guardar localmente.
+      // Apenas o aviso offline e seu controle publico ficam guardados.
       await Promise.all(
-        APP_SHELL.filter((url) => url === OFFLINE_ASSET).map(async (url) => {
-          try {
-            await cache.add(new Request(url, { cache: 'no-store' }));
-          } catch {
-            /* ignora */
-          }
-        }),
+        [OFFLINE_ASSET, OFFLINE_SCRIPT]
+          .filter((url): url is string => Boolean(url))
+          .map((url) => cache.add(new Request(url, { cache: 'no-store' }))),
       );
-      self.skipWaiting();
+      // A primeira instalacao pode assumir; atualizacoes aguardam o usuario.
+      if (!self.registration?.active) await self.skipWaiting();
     })(),
   );
 });
@@ -46,9 +46,14 @@ self.addEventListener('activate', (event) => {
             .map((k) => caches.delete(k)),
         );
       }
+      await self.registration?.navigationPreload?.enable().catch(() => {});
       await self.clients.claim();
     })(),
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
 });
 
 // HTML vem da rede; somente o aviso offline pode vir do Cache Storage.
@@ -58,9 +63,18 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
-  // Em desenvolvimento, deixa o navegador buscar tudo diretamente.
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  if (url.pathname === '/assets/js/offline.js') {
+    event.respondWith(
+      caches
+        .open(CACHE)
+        .then(
+          async (cache) =>
+            (await cache.match(OFFLINE_SCRIPT || '/assets/js/offline.js')) ||
+            fetch(req, { cache: 'no-store' }),
+        ),
+    );
     return;
+  }
   // Navegacao (abrir uma pagina): network-first. Se a rede falhar (offline),
   // serve a pagina offline em vez do erro do navegador. Nunca cacheia o HTML
   // dinamico — so o fallback offline sai do cache.
@@ -68,7 +82,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       (async () => {
         try {
-          return await fetch(req, { cache: 'no-store' });
+          return (
+            (await event.preloadResponse) ||
+            (await fetch(req, { cache: 'no-store' }))
+          );
         } catch {
           const cache = await caches.open(CACHE);
           return (
@@ -106,8 +123,16 @@ self.addEventListener('push', (event) => {
 // Click na notificação — abre/foca a aba do gestor na URL apontada.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target =
-    (event.notification.data && event.notification.data.url) || '/dashboard';
+  let target = new URL('/dashboard', self.location.origin);
+  try {
+    const requested = new URL(
+      event.notification.data?.url || '/dashboard',
+      self.location.origin,
+    );
+    if (requested.origin === self.location.origin) target = requested;
+  } catch {
+    /* Mantem o destino do painel. */
+  }
   event.waitUntil(
     (async () => {
       const all = await self.clients.matchAll({
@@ -117,16 +142,16 @@ self.addEventListener('notificationclick', (event) => {
       for (const c of all) {
         try {
           // Se já tem aba do gestor aberta, foca e navega.
-          if (c.url.startsWith(self.location.origin)) {
-            await c.focus();
-            if ('navigate' in c) await c.navigate(target);
+          if (new URL(c.url).origin === self.location.origin) {
+            const client = 'navigate' in c ? await c.navigate(target.href) : c;
+            await (client || c).focus();
             return;
           }
         } catch {
           /* ignora */
         }
       }
-      await self.clients.openWindow(target);
+      await self.clients.openWindow(target.href);
     })(),
   );
 });

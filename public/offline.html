@@ -9,14 +9,7 @@
     <title>Sem conexão — ixstreaming</title>
     <meta name="theme-color" content="#6366f1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script>
-      // Honra o tema salvo pelo app (mesma chave do painel), com fallback pro
-      // esquema do sistema. Roda antes do paint pra não piscar.
-      try {
-        var t = localStorage.getItem('gestor-theme');
-        if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
-      } catch (e) {}
-    </script>
+    <script src="/assets/js/offline.js" defer></script>
     <style>
       :root {
         --bg: #0b1220;
@@ -112,35 +105,10 @@
         O ixstreaming precisa de internet para carregar seus clientes, cobranças
         e mensagens. Verifique sua conexão e tente de novo.
       </p>
-      <button class="btn" type="button" id="retry">Tentar novamente</button>
+      <form id="retry-form">
+        <button class="btn" type="submit" id="retry">Tentar novamente</button>
+      </form>
       <div class="status" id="status" role="status" aria-live="polite"></div>
     </main>
-    <script>
-      var statusEl = document.getElementById('status');
-      var retryEl = document.getElementById('retry');
-
-      function recarregar() {
-        statusEl.textContent = 'Reconectando…';
-        // Volta pra rota anterior se o navegador guardou; senão, dashboard.
-        var destino = document.referrer && document.referrer.indexOf(location.origin) === 0
-          ? document.referrer
-          : '/dashboard';
-        location.replace(destino);
-      }
-
-      retryEl.addEventListener('click', recarregar);
-
-      // Volta sozinho assim que a conexão retornar.
-      window.addEventListener('online', function () {
-        statusEl.textContent = 'Conexão de volta! Recarregando…';
-        statusEl.classList.add('online');
-        setTimeout(recarregar, 600);
-      });
-
-      // Reflete o estado atual ao abrir.
-      if (navigator.onLine === false) {
-        statusEl.textContent = 'Você está offline.';
-      }
-    </script>
   </body>
 </html>

@@ -23,6 +23,9 @@ writeFileSync(
 );
 writeFileSync(new URL('sw.js', output), assets.workerSource);
 console.log('Versões automáticas dos assets geradas: ' + assets.cacheName);
+// A hospedagem pode servir arquivos públicos antes do Node. Uma nova versão
+// precisa de novas URLs também nas páginas e nos controladores do Next.
+process.env.NEXT_PUBLIC_ASSET_VERSION = assets.cacheName;
 execFileSync(
   process.execPath,
   ['node_modules/next/dist/bin/next', 'build', 'web', '--webpack'],

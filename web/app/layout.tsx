@@ -1,9 +1,11 @@
 import { headers } from 'next/headers';
+import { PwaProvider } from '../components/pwa/PwaProvider.tsx';
+import { publicAssetUrl } from '../lib/publicAssets.ts';
 
 export const metadata = {
   title: 'Gestor',
   robots: { index: false, follow: false },
-  manifest: '/manifest.json',
+  manifest: '/__pwa/manifest',
   appleWebApp: {
     capable: true,
     title: 'ixstreaming',
@@ -51,7 +53,12 @@ export default async function RootLayout({
               'try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}',
           }}
         />
-        {children}
+        <link
+          rel="stylesheet"
+          href={publicAssetUrl('/assets/css/pwa.css')}
+          precedence="pwa"
+        />
+        <PwaProvider>{children}</PwaProvider>
       </body>
     </html>
   );

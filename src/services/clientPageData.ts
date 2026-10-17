@@ -67,6 +67,7 @@ export function createClientPageData(
       noticeSuccess: locals.noticeSuccess || [],
       noticeError: locals.noticeError || [],
       csrfToken: locals.csrfToken || '',
+      releaseNoticeLoginId: locals.releaseNoticeLoginId || undefined,
       sessionExpiresAt: Number.isFinite(locals.sessionExpiresAt)
         ? locals.sessionExpiresAt
         : undefined,

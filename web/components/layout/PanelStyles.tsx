@@ -1,3 +1,5 @@
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
+
 export function PanelStyles() {
   const styles = [
     'style',
@@ -9,13 +11,17 @@ export function PanelStyles() {
     <link
       key={name}
       rel="stylesheet"
-      href={`/assets/css/${name}.css`}
+      href={publicAssetUrl(`/assets/css/${name}.css`)}
       precedence="panel"
     />
   ));
   return (
     <>
-      <link rel="preload" as="script" href="/assets/js/panel-runtime.js" />
+      <link
+        rel="preload"
+        as="script"
+        href={publicAssetUrl('/assets/js/panel-runtime.js')}
+      />
       {styles}
     </>
   );

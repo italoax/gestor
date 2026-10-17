@@ -9,7 +9,7 @@ export function installAssets(
 ) {
   let assets = createAssetVersions(publicRoot);
   app.locals.assetUrl = (url) => assets.assetUrl(url);
-  app.locals.serviceWorkerUrl = () => '/sw.js?v=' + assets.cacheName;
+  app.locals.serviceWorkerUrl = () => '/__pwa/worker?v=' + assets.cacheName;
   if (development) {
     app.use((req, _res, next) => {
       if (req.method === 'GET' && !/^\/(assets|icons|uploads)\//.test(req.path))
@@ -18,10 +18,16 @@ export function installAssets(
     });
   }
   // Essas rotas precedem express.static para servir versões sincronizadas.
-  app.get('/sw.js', (_req, res) => {
-    res.type('js').set(noStoreHeaders).send(assets.workerSource);
+  // O caminho sem extensão também passa pelo Node quando a hospedagem serve
+  // arquivos estáticos diretamente, preservando a configuração do worker.
+  app.get(['/sw.js', '/__pwa/worker'], (_req, res) => {
+    res
+      .type('js')
+      .set(noStoreHeaders)
+      .set('Service-Worker-Allowed', '/')
+      .send(assets.workerSource);
   });
-  app.get('/manifest.json', (_req, res) => {
+  app.get(['/manifest.json', '/__pwa/manifest'], (_req, res) => {
     res
       .type('application/manifest+json')
       .set(noStoreHeaders)

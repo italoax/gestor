@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
+import { PwaInstallButton } from '../pwa/PwaProvider.tsx';
 
 const menu = [
   ['Dashboard', '/dashboard', 'chart'],
@@ -206,6 +207,7 @@ export function PanelShell({
                   <Icon name="card" />
                   <span>Integração de pagamento</span>
                 </a>
+                <PwaInstallButton />
               </nav>
             </div>
           </div>
