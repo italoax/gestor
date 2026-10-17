@@ -208,25 +208,85 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     <InstallContext.Provider value={{ available, busy, install }}>
       {children}
       {(!online || update || message) && (
-        <aside className="pwa-status" aria-label="Aplicativo">
-          <span role="status">
-            {!online
-              ? 'Sem conexão. Reconecte para carregar ou salvar seus dados.'
-              : message || 'Uma atualização do aplicativo está disponível.'}
-          </span>
-          {online && update && (
-            <button type="button" onClick={applyUpdate} disabled={updating}>
-              {updating ? 'Atualizando…' : 'Atualizar'}
-            </button>
-          )}
-          {message && (
-            <button
-              type="button"
-              onClick={() => setMessage('')}
-              aria-label="Fechar aviso"
+        <aside
+          className="pwa-status"
+          data-state={!online ? 'offline' : message ? 'notice' : 'update'}
+          aria-label="Aplicativo"
+        >
+          <span className="pwa-status-icon" aria-hidden="true">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              ×
-            </button>
+              {!online ? (
+                <path d="m3 3 18 18M2 8a16 16 0 0 1 2-1m4-2a16 16 0 0 1 14 3M5 12a11 11 0 0 1 3-2m4-1a11 11 0 0 1 7 3m-11 4a6 6 0 0 1 7-1m-3 5h.01" />
+              ) : message ? (
+                <>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v4m0 4h.01" />
+                </>
+              ) : (
+                <>
+                  <path d="M20 7v5h-5M4 17v-5h5" />
+                  <path d="M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1" />
+                </>
+              )}
+            </svg>
+          </span>
+          <div className="pwa-status-copy" role="status" aria-atomic="true">
+            <strong>
+              {!online
+                ? 'Sem conexão'
+                : message
+                  ? 'Aviso do aplicativo'
+                  : 'Atualização disponível'}
+            </strong>
+            <p>
+              {!online
+                ? 'Reconecte para carregar ou salvar seus dados.'
+                : message || 'Uma nova versão do aplicativo está pronta.'}
+            </p>
+          </div>
+          {((online && update) || message) && (
+            <div className="pwa-status-actions">
+              {online && update && (
+                <button
+                  className="pwa-status-update"
+                  type="button"
+                  onClick={applyUpdate}
+                  disabled={updating}
+                >
+                  {updating ? 'Atualizando…' : 'Atualizar'}
+                </button>
+              )}
+              <button
+                className="pwa-status-close"
+                type="button"
+                disabled={updating}
+                onClick={() => (message ? setMessage('') : setUpdate(false))}
+                aria-label={message ? 'Fechar aviso' : 'Adiar atualização'}
+                title={message ? 'Fechar aviso' : 'Lembrar depois'}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
           )}
         </aside>
       )}
