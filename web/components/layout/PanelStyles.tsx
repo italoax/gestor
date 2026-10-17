@@ -1,5 +1,5 @@
 export function PanelStyles() {
-  return [
+  const styles = [
     'style',
     'node-migration',
     'modals',
@@ -13,4 +13,10 @@ export function PanelStyles() {
       precedence="panel"
     />
   ));
+  return (
+    <>
+      <link rel="preload" as="script" href="/assets/js/panel-runtime.js" />
+      {styles}
+    </>
+  );
 }

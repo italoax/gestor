@@ -8,6 +8,7 @@ if (
     'dist/runtime/backend/src/main.js',
     'dist/runtime/backend/src/worker.js',
     'public/assets/js/main.js',
+    'public/assets/js/panel-runtime.js',
     'public/sw.js',
   ].every((file) => existsSync(path.join(projectRoot, file)))
 ) {

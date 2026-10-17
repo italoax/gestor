@@ -37,8 +37,11 @@ function sources(directory: string): string[] {
 
 const sourceRoot = path.join(projectRoot, 'src/browser/assets/js');
 const shellEntry = path.join(sourceRoot, 'app-shell.ts');
+const panelEntry = path.join(sourceRoot, 'panel-runtime.ts');
 const browserOptions: BuildOptions = {
-  entryPoints: sources(sourceRoot).filter((file) => file !== shellEntry),
+  entryPoints: sources(sourceRoot).filter(
+    (file) => file !== shellEntry && file !== panelEntry,
+  ),
   outbase: sourceRoot,
   outdir: path.join(projectRoot, 'public/assets/js'),
   target: 'es2020',
@@ -53,6 +56,11 @@ const shellOptions: BuildOptions = {
   bundle: true,
   format: 'iife',
 };
+const panelOptions: BuildOptions = {
+  ...shellOptions,
+  entryPoints: [panelEntry],
+  minify: true,
+};
 const workerOptions: BuildOptions = {
   entryPoints: [path.join(projectRoot, 'src/browser/sw.ts')],
   outfile: path.join(projectRoot, 'public/sw.js'),
@@ -65,18 +73,26 @@ const workerOptions: BuildOptions = {
 if (process.argv.includes('--watch')) {
   const browser = await context(browserOptions);
   const shell = await context(shellOptions);
+  const panel = await context(panelOptions);
   const worker = await context(workerOptions);
   await browser.watch();
   await shell.watch();
+  await panel.watch();
   await worker.watch();
   const stop = async () => {
-    await Promise.all([browser.dispose(), shell.dispose(), worker.dispose()]);
+    await Promise.all([
+      browser.dispose(),
+      shell.dispose(),
+      panel.dispose(),
+      worker.dispose(),
+    ]);
   };
   process.once('SIGINT', () => void stop());
   process.once('SIGTERM', () => void stop());
 } else {
   await build(browserOptions);
   await build(shellOptions);
+  await build(panelOptions);
   await build(workerOptions);
 }
 console.log(

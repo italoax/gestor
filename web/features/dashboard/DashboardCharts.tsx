@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { formatMoney } from '../../../src/services/format.ts';
 
 export function SeriesChart({
@@ -167,23 +167,40 @@ function heat(ratio) {
   return `rgb(${stops[index].map((value, channel) => Math.round(value + (stops[index + 1][channel] - value) * t)).join(',')})`;
 }
 export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
+  const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState(null),
     [failed, setFailed] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    const module =
-      kind === 'estados'
-        ? import('@svg-maps/brazil')
-        : import('@svg-maps/world');
-    module
-      .then((value) => {
-        if (!cancelled) setMap(value.default);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
+    let observer: IntersectionObserver | undefined;
+    const loadMap = () => {
+      if (cancelled) return;
+      const module =
+        kind === 'estados'
+          ? import('@svg-maps/brazil')
+          : import('@svg-maps/world');
+      module
+        .then((value) => {
+          if (!cancelled) startTransition(() => setMap(value.default));
+        })
+        .catch(() => {
+          if (!cancelled) setFailed(true);
+        });
+    };
+    if ('IntersectionObserver' in window && container.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+          observer.disconnect();
+          loadMap();
+        },
+        { rootMargin: '200px' },
+      );
+      observer.observe(container.current);
+    } else loadMap();
     return () => {
       cancelled = true;
+      observer?.disconnect();
     };
   }, [kind]);
   const key = kind === 'estados' ? 'uf' : 'code';
@@ -192,7 +209,7 @@ export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
   );
   const max = Math.max(1, ...Object.values(counts));
   return (
-    <div className="dist-card map-card">
+    <div className="dist-card map-card" ref={container}>
       <div className="dist-head spread">
         <span>
           {kind === 'estados'

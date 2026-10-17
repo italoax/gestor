@@ -1,18 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-const modules = [
-  'ui/modals',
-  'ui/phone-fields',
-  'ui/date-fields',
-  'ui/tables',
-  'pages/catalogs',
-  'pages/client-access',
-  'pages/transacoes',
-  'pages/whatsapp-messages',
-  'pages/automacao',
-  'pages/mensagens',
-];
 const scripts = new Map();
 function loadScript(path) {
   if (scripts.has(path)) return scripts.get(path);
@@ -37,25 +25,33 @@ export function LegacyControllers({ revision }: { revision?: any }) {
   const [error, setError] = useState('');
   useEffect(() => {
     let cancelled = false;
+    let effectsIdle: number | undefined;
+    let effectsTimer: number | undefined;
+    const loadEffects = () => {
+      if (!cancelled) void loadScript('visual-effects').catch(() => {});
+    };
     async function initialize() {
-      for (const module of modules) await loadScript(module);
-      if (cancelled) return;
       const alreadyInitialized = Boolean(window.__gestorInitPage);
-      await loadScript('main');
+      const shellInitialized = Boolean(window.__gestorInitShell);
+      await loadScript('panel-runtime');
       if (cancelled) return;
       if (alreadyInitialized) await window.__gestorInitPage();
-      const shellInitialized = Boolean(window.__gestorInitShell);
-      await loadScript('app-shell');
       if (cancelled) return;
       if (shellInitialized) window.__gestorInitShell();
-      await loadScript('visual-effects');
-      if (!cancelled) setError('');
+      setError('');
+      if (typeof window.requestIdleCallback === 'function')
+        effectsIdle = window.requestIdleCallback(loadEffects, {
+          timeout: 2000,
+        });
+      else effectsTimer = window.setTimeout(loadEffects, 0);
     }
     initialize().catch((error) => {
       if (!cancelled) setError(error.message);
     });
     return () => {
       cancelled = true;
+      if (effectsIdle !== undefined) window.cancelIdleCallback(effectsIdle);
+      window.clearTimeout(effectsTimer);
       document.dispatchEvent(new Event('gestor:before-swap'));
       window.__gestorAbort?.abort();
       document.body.classList.remove('modal-open');
