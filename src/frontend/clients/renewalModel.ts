@@ -1,4 +1,5 @@
 import { formatDateBr, normalizeDateInput } from '../../services/format.ts';
+import { consumoRenovacao } from '../../services/creditos.ts';
 
 export function todayInSaoPaulo(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -55,10 +56,11 @@ export function calculateRenewal(single, plans, servers) {
     servers.find((s) => s.nome === single.servidor) || single.originalServer;
   const count = Number(single.creditos_gastos);
   if (!Number.isSafeInteger(count) || count < 1) return single;
-  const credits =
-    count *
-    Math.max(1, Number(single.telas) || 1) *
-    (Number(plan?.creditoGastos) || 1);
+  const credits = consumoRenovacao(
+    Math.max(1, Number(single.telas) || 1),
+    count,
+    Number(plan?.creditoGastos) || 1,
+  );
   const period = Number(plan?.periodo) || 30;
   const duration = period * count;
   const unit = periodInMonths(plan?.tipo)

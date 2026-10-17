@@ -405,7 +405,7 @@ export function RenewalModals({
               name="custo_pagamento"
               label="Custo"
               error={singleErrors.custo_pagamento}
-              hint="Telas × renovações × créditos do plano × custo por crédito."
+              hint="Renovações × créditos do plano × custo por crédito."
             >
               <input
                 {...props('custo_pagamento', 'single', 'input', false)}

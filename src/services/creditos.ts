@@ -4,8 +4,7 @@ export function consumoRenovacao(telas, periodos, creditosPorPeriodo = 1) {
     !Number.isSafeInteger(telas) ||
     telas < 1 ||
     !Number.isSafeInteger(periodos) ||
-    periodos < 1 ||
-    !Number.isSafeInteger(telas * periodos)
+    periodos < 1
   ) {
     throw new CreditosError(
       'Informe telas e períodos inteiros, maiores que zero.',
@@ -14,7 +13,8 @@ export function consumoRenovacao(telas, periodos, creditosPorPeriodo = 1) {
   if (!Number.isFinite(creditosPorPeriodo) || creditosPorPeriodo <= 0) {
     throw new CreditosError('Consumo de créditos do plano inválido.');
   }
-  const consumo = Number((telas * periodos * creditosPorPeriodo).toFixed(2));
+  // O consumo do plano vale por acesso no servidor, independentemente das telas.
+  const consumo = Number((periodos * creditosPorPeriodo).toFixed(2));
   if (!Number.isFinite(consumo) || consumo <= 0)
     throw new CreditosError('Consumo de créditos inválido.');
   return consumo;

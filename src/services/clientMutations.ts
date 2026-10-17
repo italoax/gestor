@@ -278,7 +278,7 @@ export function createClientMutationWorkflow({
             : valor;
         const telas = Number(body.telas);
         const creditosGastos = Number(body.creditos_gastos);
-        // Consumo = telas × períodos renovados × créditos configurados no plano.
+        // Consumo por acesso = períodos renovados × créditos do plano.
         const planoRenovacao = await queryOne(
           'SELECT credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1',
           { userId, nome: plano },
@@ -293,7 +293,7 @@ export function createClientMutationWorkflow({
           Number(planoRenovacao?.creditoGastos) || 1,
         );
         const telasN = telas;
-        // Custo automático = valor_cred do servidor × (telas × créditos).
+        // Custo automático = valor_cred do servidor × créditos consumidos.
         // `servidorResolvido` cobre o caso onde o cliente ficou com nome antigo (ex.
         // "UNITV") depois que o catálogo virou "UNITV 30 DIAS" — busca prefix match
         // e, se único, adota como o nome canônico daqui pra frente.
@@ -378,7 +378,7 @@ export function createClientMutationWorkflow({
                 formaPagamento: cliTx.formaPagamento,
                 plano: cliTx.plano,
                 servidor: cliTx.servidor,
-                // creditos na transação = consumo real do servidor (telas × períodos).
+                // Créditos na transação = consumo real dos períodos no servidor.
                 telas: Number(cliTx.telas) || 1,
                 creditos: consumo > 0 ? consumo : creditosGastos,
                 custo: Number(cliTx.custoPagamento) || 0,
