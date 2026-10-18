@@ -1,3 +1,7 @@
+import {
+  confirmFormSubmission,
+  showPanelNotice,
+} from '../ui/panel-feedback.js';
 window.gestorPageModules = window.gestorPageModules || {};
 window.gestorPageModules.initMessageTemplates = function ({
   setIconLabel,
@@ -41,40 +45,27 @@ window.gestorPageModules.initMessageTemplates = function ({
     ) as NodeListOf<HTMLFormElement>
   ).forEach((form) => {
     form.addEventListener('submit', (e) => {
-      if (!confirm('Deseja apagar esta mensagem?')) {
-        e.preventDefault();
-      }
+      confirmFormSubmission(e, 'Deseja apagar esta mensagem?');
     });
   });
 };
 
 window.gestorPageModules.initMessageTags = function ({ setModalState }) {
-  const msgNotice = document.getElementById(
-    'modal-mensagem-notice',
-  ) as HTMLElement;
-  if (msgNotice) {
-    const msg = document.getElementById(
-      'modal-mensagem-notice-msg',
-    ) as HTMLElement;
-    const params = new URLSearchParams(window.location.search);
-    let text = '';
-    if (params.get('saved') === '1') text = 'Mensagem salva com sucesso.';
-    if (params.get('updated') === '1')
-      text = 'Mensagem atualizada com sucesso.';
-    if (params.get('deleted') === '1') text = 'Mensagem apagada com sucesso.';
-    if (text) {
-      if (msg) msg.textContent = text;
-      setModalState(msgNotice, true);
-      params.delete('saved');
-      params.delete('updated');
-      params.delete('deleted');
-      const newUrl =
-        window.location.pathname +
-        (params.toString() ? '?' + params.toString() : '');
-      window.history.replaceState({}, '', newUrl);
-    }
+  const params = new URLSearchParams(window.location.search);
+  let text = '';
+  if (params.get('saved') === '1') text = 'Mensagem salva com sucesso.';
+  if (params.get('updated') === '1') text = 'Mensagem atualizada com sucesso.';
+  if (params.get('deleted') === '1') text = 'Mensagem apagada com sucesso.';
+  if (text) {
+    showPanelNotice(text);
+    params.delete('saved');
+    params.delete('updated');
+    params.delete('deleted');
+    const newUrl =
+      window.location.pathname +
+      (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState({}, '', newUrl);
   }
-
   const tagSelect = document.querySelector(
     '[data-insert-tag]',
   ) as HTMLInputElement;

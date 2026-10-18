@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { formatDateBr } from '../../../src/services/format.ts';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
@@ -30,7 +31,7 @@ function CampaignAction({
   );
 }
 
-function CampaignEditor({
+export function CampaignEditor({
   item,
   data,
   onClose,
@@ -390,37 +391,25 @@ function CampaignEditor({
   );
 }
 
-export function ScheduledMessages({ data }: { data: any }) {
-  const [editor, setEditor] = useState<{ item: any } | null>(null);
+export function ScheduledMessages({
+  data,
+  onEdit,
+}: {
+  data: any;
+  onEdit: (item: any) => void;
+}) {
   const campaigns = data.regras.filter((item) => item.campanha);
   return (
     <section className="campaigns" aria-label="Envios automáticos">
       {data.agendamentoAtivo === false && (
-        <p className="form-alert error" role="status">
+        <PanelNotice inline error>
           O envio automático está desativado no servidor. Você pode salvar os
           agendamentos, mas eles só serão enviados quando a automação estiver
           ativada.
-        </p>
+        </PanelNotice>
       )}
-      <div className="section-header">
-        <div>
-          <h2>Mensagens para clientes selecionados</h2>
-          <p className="muted">
-            Escreva sua mensagem e escolha quando cada cliente vai receber.
-          </p>
-        </div>
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={() => setEditor({ item: null })}
-        >
-          <Icon name="message" /> Novo envio
-        </button>
-      </div>
       {!campaigns.length ? (
-        <div className="cli-empty">
-          Nenhum envio automático agendado. Clique em Novo envio para começar.
-        </div>
+        <div className="cli-empty">Nenhum envio automático agendado.</div>
       ) : (
         <div className="auto-list">
           {campaigns.map((item) => (
@@ -488,7 +477,7 @@ export function ScheduledMessages({ data }: { data: any }) {
                     className="cli-ico-btn"
                     type="button"
                     aria-label={`Editar envio ${item.titulo}`}
-                    onClick={() => setEditor({ item })}
+                    onClick={() => onEdit(item)}
                   >
                     <Icon name="edit" />
                   </button>
@@ -511,13 +500,6 @@ export function ScheduledMessages({ data }: { data: any }) {
             </article>
           ))}
         </div>
-      )}
-      {editor && (
-        <CampaignEditor
-          item={editor.item}
-          data={data}
-          onClose={() => setEditor(null)}
-        />
       )}
     </section>
   );

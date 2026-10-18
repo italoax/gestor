@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { PanelStyles } from '../../components/layout/PanelStyles.tsx';
 import { PanelShell, SiteNotice } from '../../components/layout/PanelShell.tsx';
@@ -294,9 +295,9 @@ export function AccountScreen({ data }: { data?: any }) {
               </div>
             </div>
             {error && (
-              <p className="form-alert error" role="alert">
+              <PanelNotice inline error>
                 {error}
-              </p>
+              </PanelNotice>
             )}
           </div>
         </div>

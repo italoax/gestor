@@ -39,9 +39,7 @@
         <p> Use suas credenciais para continuar. </p>
       </div>
       <% if (error && error.length) { %>
-      <div class="form-alert error">
-        <%= error[0] %>
-      </div>
+      <%- include('../partials/panel-notice', {text: error[0], isError: true}) %>
       <% } %>
       <form class="login-form" action="/login" method="post" autocomplete="on">
         <%- csrfInput %>

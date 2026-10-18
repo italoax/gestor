@@ -3,7 +3,7 @@ import { publicAssetUrl } from '../../lib/publicAssets.ts';
 export function PanelStyles() {
   const styles = [
     'style',
-    'node-migration',
+    'panel-base',
     'modals',
     'panel-ui',
     'visual-effects',

@@ -1,4 +1,5 @@
 import { CsrfInput, Icon } from './ui.tsx';
+import { PanelNotice } from '../../../web/components/ui/PanelNotice.tsx';
 import { opcoesRenovacao } from '../../services/renovacaoOpcoes.ts';
 import { formatMoney } from '../../services/format.ts';
 
@@ -231,16 +232,18 @@ export function RenewalModals({
           <CsrfInput token={csrfToken} />
           <input type="hidden" name="action" value="add_pagamento" />
           <input type="hidden" name="id" value={single.id} />
-          <div
-            className="modal-error"
-            id="modal-add-pagamento-error"
-            aria-live="polite"
-          >
-            {missingCatalog
-              ? 'Este cliente está sem plano e/ou servidor. Preencha os campos abaixo antes de renovar.'
-              : Object.keys(singleErrors).length
-                ? 'Revise os campos obrigatórios destacados.'
-                : ''}
+          <div id="modal-add-pagamento-error" aria-live="polite">
+            {(missingCatalog || Object.keys(singleErrors).length > 0) && (
+              <PanelNotice
+                inline
+                error
+                text={
+                  missingCatalog
+                    ? 'Este cliente está sem plano e/ou servidor. Preencha os campos abaixo antes de renovar.'
+                    : 'Revise os campos obrigatórios destacados.'
+                }
+              />
+            )}
           </div>
           <div className="form-grid">
             <Field
@@ -485,20 +488,29 @@ export function RenewalModals({
               <strong data-multi-nome="">{multi.nome}</strong>
             </div>
           </div>
-          <p
+          <div
             data-multi-erro=""
-            role="alert"
             hidden={
               !multi.loading && !multi.error && !Object.keys(multiErrors).length
             }
           >
-            {multi.loading
-              ? 'Carregando planos…'
-              : multi.error ||
-                (Object.keys(multiErrors).length
-                  ? 'Revise os campos obrigatórios destacados.'
-                  : '')}
-          </p>
+            {(multi.loading ||
+              multi.error ||
+              Object.keys(multiErrors).length > 0) && (
+              <PanelNotice
+                inline
+                pending={multi.loading}
+                error={!multi.loading}
+                title={multi.loading ? 'Carregando planos…' : undefined}
+                text={
+                  multi.error ||
+                  (multi.loading
+                    ? 'Aguarde um instante.'
+                    : 'Revise os campos obrigatórios destacados.')
+                }
+              />
+            )}
+          </div>
           <div className="form-grid">
             <Field
               formId={multiId}

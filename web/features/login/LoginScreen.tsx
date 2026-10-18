@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 
 export function LoginScreen({ data }: { data?: any }) {
   const [visible, setVisible] = useState(false);
@@ -123,9 +124,9 @@ export function LoginScreen({ data }: { data?: any }) {
             <p>Use suas credenciais para continuar.</p>
           </div>
           {error && (
-            <div className="form-alert error" role="alert">
+            <PanelNotice inline error>
               {error}
-            </div>
+            </PanelNotice>
           )}
           <form
             className="login-form"

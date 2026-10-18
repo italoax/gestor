@@ -1,5 +1,6 @@
 'use client';
 import { useRef } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { formatDateBr, formatMoney } from '../../../src/services/format.ts';
 import { createPix, usePixPayment } from './usePixPayment.ts';
 import { useRenewalSelection } from './useRenewalSelection.ts';
@@ -167,13 +168,17 @@ export function PaymentScreen({ data }: { data?: any }) {
               </button>
             </div>
             {pix.phase !== 'approved' && (
-              <div
-                className="pay-status-msg"
-                id="pay-status-msg"
-                role="status"
-                aria-live="polite"
-              >
-                {pix.message}
+              <div className="pay-status-msg" id="pay-status-msg">
+                {pix.message && (
+                  <PanelNotice
+                    inline
+                    title="Pagamento"
+                    text={pix.message}
+                    error={pix.phase === 'idle'}
+                    info={pix.phase !== 'idle'}
+                    pending={pix.phase === 'busy'}
+                  />
+                )}
               </div>
             )}
           </div>

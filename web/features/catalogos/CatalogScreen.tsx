@@ -64,7 +64,7 @@ function DeleteForm({
   const submit = useNativeSubmit(`Deseja apagar ${item.nome}?`);
   return (
     <form
-      className="action-form disp-del-form"
+      className={`action-form ${catalog === 'servidores' ? 'srv-act-form' : 'disp-del-form'}`}
       method="post"
       action={`/${catalog}`}
       onSubmit={submit}
@@ -78,10 +78,14 @@ function DeleteForm({
       <input type="hidden" name="id" value={item.id} />
       <button
         type="submit"
-        className="cli-ico-btn danger"
+        className={
+          catalog === 'servidores' ? 'srv-act danger' : 'cli-ico-btn danger'
+        }
         aria-label={`Apagar ${item.nome}`}
+        title={`Excluir ${item.nome}`}
       >
-        <Icon name="trash" /> Excluir
+        <Icon name="trash" />
+        {catalog !== 'servidores' && ' Excluir'}
       </button>
     </form>
   );
@@ -450,10 +454,30 @@ export function CatalogScreen({ data }: { data?: any }) {
                         : 'disp-card-top'
                   }
                 >
-                  <Icon name={config.icon} />
-                  <strong>{item.nome}</strong>
+                  {catalog === 'servidores' ? (
+                    <div className="srv-id">
+                      <span className="srv-icon">
+                        <Icon name="server" />
+                      </span>
+                      <div>
+                        <strong>{item.nome}</strong>
+                        {item.identificador && (
+                          <small>{item.identificador}</small>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Icon name={config.icon} />
+                      <strong>{item.nome}</strong>
+                    </>
+                  )}
                   <span
-                    className={`badge ${(catalog === 'servidores' ? Number(item.creditos) > 0 : active(item)) ? 'badge-green' : 'badge-muted'}`}
+                    className={
+                      catalog === 'servidores'
+                        ? 'srv-balance-badge'
+                        : `badge ${active(item) ? 'badge-green' : 'badge-muted'}`
+                    }
                   >
                     {catalog === 'servidores'
                       ? Number(item.creditos) > 0
@@ -484,11 +508,12 @@ export function CatalogScreen({ data }: { data?: any }) {
                 )}
                 {catalog === 'servidores' && (
                   <>
-                    <small>{item.identificador}</small>
                     <div className="srv-stats">
                       <div className="srv-stat">
                         <span>CRÉDITOS</span>
-                        <strong>{number(item.creditos)}</strong>
+                        <strong className="srv-cred">
+                          {number(item.creditos)}
+                        </strong>
                       </div>
                       <div className="srv-stat">
                         <span>CLIENTES</span>
@@ -541,7 +566,9 @@ export function CatalogScreen({ data }: { data?: any }) {
                 >
                   <button
                     type="button"
-                    className="btn btn-muted"
+                    className={
+                      catalog === 'servidores' ? 'srv-act' : 'btn btn-muted'
+                    }
                     aria-label={`Editar ${item.nome}`}
                     onClick={() => setEditor({ item })}
                   >
@@ -550,7 +577,8 @@ export function CatalogScreen({ data }: { data?: any }) {
                   {catalog === 'servidores' && (
                     <button
                       type="button"
-                      className="btn btn-muted"
+                      className="srv-act srv-credit-action"
+                      aria-label={`Ajustar saldo de ${item.nome}`}
                       onClick={() => setEditor({ item, focusCredit: true })}
                     >
                       Ajustar saldo

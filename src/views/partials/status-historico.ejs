@@ -6,14 +6,15 @@
         >Removidos 24 horas após a publicação confirmada</small
       ></div
     >
-    <span class="muted"
+    <% if (historico.length) { %>
+    <span class="badge badge-muted"
       ><%= historico.length %>
-      registro(s)</span
+      <%= historico.length === 1 ? 'publicação' : 'publicações' %></span
     >
+    <% } %>
   </div>
   <% if (!historico.length) { %>
   <div class="status-empty">
-    <div class="status-empty-ico"><%- include('ui-icon', { name: 'broadcast' }) %></div>
     <p>Nenhum status publicado ainda.</p>
   </div>
   <% } else { %>
@@ -45,9 +46,7 @@
           <span class="badge <%= badgeClass %>"><%= badgeLabel %></span>
         </div>
         <% if (h.tipo === 'text') { %>
-        <p class="status-item-text"
-          ><%= (h.texto || '').slice(0, 140) %><%= (h.texto || '').length > 140 ? '…' : '' %></p
-        >
+        <p class="status-item-text"><%= h.texto || '' %></p>
         <% } else { %>
         <% if (h.tipo === 'image' && h.temImagem) { %>
         <div class="status-item-media">
@@ -88,40 +87,53 @@
           <% } %>
         </div>
       </div>
-      <% if (isAgendado) { %>
-      <form method="post" action="/status" class="status-item-del">
-        <button
-          class="cli-ico-btn status-edit-btn"
-          type="button"
-          title="Editar agendamento"
-          aria-label="Editar agendamento"
-          data-open-modal="modal-novo-status"
-          data-status-edit="<%= JSON.stringify({ id: h.id, tipo: h.tipo, texto: h.texto, legenda: h.legenda, corFundo: h.corFundo, agendadoPara: h.agendadoPara }) %>"
-          ><%- include('ui-icon', { name: 'edit' }) %></button
-        >
-        <%- csrfInput %>
-        <input type="hidden" name="action" value="cancelar_agendamento" />
-        <input type="hidden" name="id" value="<%= h.id %>" />
-        <button
-          class="cli-ico-btn danger"
-          type="submit"
-          title="Cancelar agendamento"
+      <% if (!isPublicando) { %>
+      <div class="status-item-actions">
+        <% if (isAgendado) { %>
+        <form
+          method="post"
+          action="/status"
+          class="status-item-del"
           data-confirm="Cancelar este agendamento?"
-          >✕</button
         >
-      </form>
-      <% } else if (!isPublicando) { %>
-      <form method="post" action="/status" class="status-item-del">
-        <%- csrfInput %>
-        <input type="hidden" name="action" value="delete_status" />
-        <input type="hidden" name="id" value="<%= h.id %>" />
-        <button
-          class="cli-ico-btn danger"
-          type="submit"
-          title="Apagar do histórico"
-          ><%- include('ui-icon', { name: 'trash' }) %></button
+          <button
+            class="cli-ico-btn status-edit-btn"
+            type="button"
+            title="Editar agendamento"
+            aria-label="Editar agendamento"
+            data-open-modal="modal-novo-status"
+            data-status-edit="<%= JSON.stringify({ id: h.id, tipo: h.tipo, texto: h.texto, legenda: h.legenda, corFundo: h.corFundo, agendadoPara: h.agendadoPara }) %>"
+            ><%- include('ui-icon', { name: 'edit' }) %></button
+          >
+          <%- csrfInput %>
+          <input type="hidden" name="action" value="cancelar_agendamento" />
+          <input type="hidden" name="id" value="<%= h.id %>" />
+          <button
+            class="cli-ico-btn danger"
+            type="submit"
+            title="Cancelar agendamento"
+            >✕</button
+          >
+        </form>
+        <% } else { %>
+        <form
+          method="post"
+          action="/status"
+          class="status-item-del"
+          data-confirm="Apagar este status do histórico?"
         >
-      </form>
+          <%- csrfInput %>
+          <input type="hidden" name="action" value="delete_status" />
+          <input type="hidden" name="id" value="<%= h.id %>" />
+          <button
+            class="cli-ico-btn danger"
+            type="submit"
+            title="Apagar do histórico"
+            ><%- include('ui-icon', { name: 'trash' }) %></button
+          >
+        </form>
+        <% } %>
+      </div>
       <% } %>
     </div>
     <% }) %>

@@ -1,3 +1,4 @@
+import { confirmFormSubmission } from './ui/panel-feedback.js';
 let gestorInitialization = 0;
 document.addEventListener('gestor:before-swap', () => gestorInitialization++);
 async function initGestor() {
@@ -290,19 +291,7 @@ async function initGestor() {
     syncModalUiState,
   } = modules.initModals({ on });
 
-  const siteNotice = document.querySelector(
-    '[data-auto-notice]',
-  ) as HTMLElement;
-  if (siteNotice) setModalState(siteNotice, true);
   modules.initClientAccess({ on, setModalState });
-
-  const pendingNotice = document.querySelector(
-    '#modal-notice[data-open-notice]',
-  ) as HTMLElement;
-  if (pendingNotice) {
-    pendingNotice.removeAttribute('data-open-notice');
-    setModalState(pendingNotice, true);
-  }
   const dropdowns = document.querySelectorAll(
     '[data-dropdown]',
   ) as NodeListOf<HTMLElement>;
@@ -533,9 +522,7 @@ async function initGestor() {
     ) as NodeListOf<HTMLFormElement>
   ).forEach((form) => {
     form.addEventListener('submit', (e) => {
-      if (!confirm('Deseja apagar este plano?')) {
-        e.preventDefault();
-      }
+      confirmFormSubmission(e, 'Deseja apagar este plano?');
     });
   });
 

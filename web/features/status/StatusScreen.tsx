@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
+import {
+  PanelNotice,
+  showPanelNotice,
+} from '../../components/ui/PanelNotice.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { useRouter } from 'next/navigation';
 import { postPanelAction } from '../../../src/frontend/panelAction.ts';
@@ -43,7 +47,9 @@ const scheduleLabel = (value) => {
 function StatusAction({ item, token }: { item?: any; token?: string }) {
   const scheduled = item.status === 'agendado';
   const submit = useNativeSubmit(
-    scheduled ? 'Cancelar este agendamento?' : undefined,
+    scheduled
+      ? 'Cancelar este agendamento?'
+      : 'Apagar este status do histórico?',
   );
   return (
     <form
@@ -154,6 +160,11 @@ function StatusEditor({
       if (result.redirect === '/login') return router.replace('/login');
       if (!result.ok) throw new Error(result.errors.join(' '));
       onClose();
+      showPanelNotice(
+        [...result.success, ...result.errors].join(' ') ||
+          (item ? 'Agendamento atualizado.' : 'Status agendado com sucesso.'),
+        result.errors.length > 0,
+      );
       router.refresh();
     } catch (failure) {
       if (controller.current.signal.aborted) return;
@@ -226,9 +237,13 @@ function StatusEditor({
           24 horas.
         </p>
         {error && (
-          <div className="form-alert error" role="alert">
-            {error}
-          </div>
+          <PanelNotice
+            text={error}
+            title="Confira os dados"
+            error
+            inline
+            onClose={() => setError('')}
+          />
         )}
         <div className="status-tabs">
           {[
@@ -445,19 +460,15 @@ export function StatusScreen({ data }: { data?: any }) {
     <NativePanel data={data} path="/status">
       <div className="container page-status" data-react-page="status">
         {data.agendamentoAtivo === false && (
-          <div className="form-alert error" role="alert">
-            <strong>Envio automático de status desativado.</strong> Os
-            agendamentos estão salvos, mas não serão publicados até o
-            administrador reativar o serviço de envio.
-          </div>
+          <PanelNotice
+            title="Envio automático de status desativado"
+            text="Os agendamentos estão salvos, mas só serão publicados quando o serviço de envio for reativado."
+            error
+            inline
+          />
         )}
         {data.temWhatsapp ? (
-          <div className="section-header">
-            <div>
-              <p className="muted">
-                Agende novidades, ofertas e avisos para o seu status.
-              </p>
-            </div>
+          <div className="ui-toolbar ui-toolbar-actions">
             <button
               className="btn btn-primary"
               type="button"
@@ -486,133 +497,143 @@ export function StatusScreen({ data }: { data?: any }) {
                 Removidos 24 horas após a publicação confirmada
               </small>
             </div>
-            <span className="muted">{history.length} registro(s)</span>
+            {history.length > 0 && (
+              <span className="badge badge-muted">
+                {history.length}{' '}
+                {history.length === 1 ? 'publicação' : 'publicações'}
+              </span>
+            )}
           </div>
           {error && (
-            <p role="status" className="form-alert error">
-              {error}
-            </p>
+            <PanelNotice
+              text={error}
+              title="Atualização do histórico"
+              error
+              inline
+            />
           )}
           {!history.length && (
             <div className="status-empty">
               <p>Nenhum status publicado ainda.</p>
             </div>
           )}
-          <div className="status-list">
-            {history.map((item) => (
-              <article
-                key={item.id}
-                className={`status-item ${item.status === 'erro' ? 'is-error' : item.status === 'agendado' ? 'is-scheduled' : 'is-ok'}`}
-                data-status-item={item.id}
-              >
-                <div className="status-item-body">
-                  <div className="status-item-head">
-                    <div className="status-item-label">
-                      <div
-                        className="status-item-ico"
-                        style={{
-                          backgroundColor:
-                            item.tipo === 'text' &&
-                            /^#[0-9a-f]{6}$/i.test(item.corFundo)
-                              ? item.corFundo
-                              : undefined,
-                        }}
-                      >
-                        <Icon
-                          name={
-                            item.tipo === 'text'
-                              ? 'message'
-                              : item.tipo === 'image'
-                                ? 'image'
-                                : 'monitor'
-                          }
-                        />
-                      </div>
-                      <strong>
-                        {item.tipo === 'text'
-                          ? 'Texto'
-                          : item.tipo === 'image'
-                            ? 'Imagem'
-                            : 'Vídeo'}
-                      </strong>
-                    </div>
-                    <span
-                      className={`badge badge-${item.status === 'postado' ? 'green' : item.status === 'erro' ? 'red' : item.status === 'agendado' ? 'yellow' : 'blue'}`}
-                    >
-                      {item.status === 'postado'
-                        ? 'Publicado'
-                        : item.status === 'erro'
-                          ? 'Erro'
-                          : item.status === 'agendado'
-                            ? 'Agendado'
-                            : 'Publicando...'}
-                    </span>
-                  </div>
-                  {item.tipo === 'text' ? (
-                    <p className="status-item-text">
-                      {(item.texto || '').slice(0, 140)}
-                      {(item.texto || '').length > 140 ? '…' : ''}
-                    </p>
-                  ) : (
-                    <>
-                      {item.tipo === 'image' && Number(item.temImagem) > 0 && (
-                        <div className="status-item-media">
-                          <img
-                            className="status-item-image"
-                            src={`/status/${item.id}/imagem`}
-                            alt="Imagem do status"
-                            loading="lazy"
-                            decoding="async"
+          {history.length > 0 && (
+            <div className="status-list">
+              {history.map((item) => (
+                <article
+                  key={item.id}
+                  className={`status-item ${item.status === 'erro' ? 'is-error' : item.status === 'agendado' ? 'is-scheduled' : 'is-ok'}`}
+                  data-status-item={item.id}
+                >
+                  <div className="status-item-body">
+                    <div className="status-item-head">
+                      <div className="status-item-label">
+                        <div
+                          className="status-item-ico"
+                          style={{
+                            backgroundColor:
+                              item.tipo === 'text' &&
+                              /^#[0-9a-f]{6}$/i.test(item.corFundo)
+                                ? item.corFundo
+                                : undefined,
+                          }}
+                        >
+                          <Icon
+                            name={
+                              item.tipo === 'text'
+                                ? 'message'
+                                : item.tipo === 'image'
+                                  ? 'image'
+                                  : 'monitor'
+                            }
                           />
                         </div>
-                      )}
-                      {item.legenda && (
-                        <p className="status-item-text">{item.legenda}</p>
-                      )}
-                    </>
-                  )}
-                  <div className="status-item-foot">
-                    <span>
-                      {item.status === 'agendado'
-                        ? `Publica em ${scheduleLabel(item.agendadoPara)}`
-                        : String(item.createdAt || '')
-                            .slice(0, 10)
-                            .split('-')
-                            .reverse()
-                            .join('/')}
-                    </span>
-                    {Boolean(item.destinatarios) && (
-                      <span>{item.destinatarios} contatos</span>
-                    )}
-                    {item.erro && (
+                        <strong>
+                          {item.tipo === 'text'
+                            ? 'Texto'
+                            : item.tipo === 'image'
+                              ? 'Imagem'
+                              : 'Vídeo'}
+                        </strong>
+                      </div>
                       <span
-                        className={
-                          item.status === 'erro'
-                            ? 'status-item-error'
-                            : 'status-item-note'
-                        }
+                        className={`badge badge-${item.status === 'postado' ? 'green' : item.status === 'erro' ? 'red' : item.status === 'agendado' ? 'yellow' : 'blue'}`}
                       >
-                        {item.erro}
+                        {item.status === 'postado'
+                          ? 'Publicado'
+                          : item.status === 'erro'
+                            ? 'Erro'
+                            : item.status === 'agendado'
+                              ? 'Agendado'
+                              : 'Publicando...'}
                       </span>
+                    </div>
+                    {item.tipo === 'text' ? (
+                      <p className="status-item-text">{item.texto || ''}</p>
+                    ) : (
+                      <>
+                        {item.tipo === 'image' &&
+                          Number(item.temImagem) > 0 && (
+                            <div className="status-item-media">
+                              <img
+                                className="status-item-image"
+                                src={`/status/${item.id}/imagem`}
+                                alt="Imagem do status"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          )}
+                        {item.legenda && (
+                          <p className="status-item-text">{item.legenda}</p>
+                        )}
+                      </>
                     )}
+                    <div className="status-item-foot">
+                      <span>
+                        {item.status === 'agendado'
+                          ? `Publica em ${scheduleLabel(item.agendadoPara)}`
+                          : String(item.createdAt || '')
+                              .slice(0, 10)
+                              .split('-')
+                              .reverse()
+                              .join('/')}
+                      </span>
+                      {Boolean(item.destinatarios) && (
+                        <span>{item.destinatarios} contatos</span>
+                      )}
+                      {item.erro && (
+                        <span
+                          className={
+                            item.status === 'erro'
+                              ? 'status-item-error'
+                              : 'status-item-note'
+                          }
+                        >
+                          {item.erro}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {item.status === 'agendado' && data.temWhatsapp && (
-                  <button
-                    type="button"
-                    className="cli-ico-btn status-edit-btn"
-                    aria-label="Editar agendamento"
-                    onClick={() => setEditor({ item })}
-                  >
-                    <Icon name="edit" />
-                  </button>
-                )}
-                {item.status !== 'publicando' && (
-                  <StatusAction item={item} token={data.page.csrfToken} />
-                )}
-              </article>
-            ))}
-          </div>
+                  {item.status !== 'publicando' && (
+                    <div className="status-item-actions">
+                      {item.status === 'agendado' && data.temWhatsapp && (
+                        <button
+                          type="button"
+                          className="cli-ico-btn status-edit-btn"
+                          aria-label="Editar agendamento"
+                          onClick={() => setEditor({ item })}
+                        >
+                          <Icon name="edit" />
+                        </button>
+                      )}
+                      <StatusAction item={item} token={data.page.csrfToken} />
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       {editor && (

@@ -38,9 +38,22 @@ function sources(directory: string): string[] {
 const sourceRoot = path.join(projectRoot, 'src/browser/assets/js');
 const shellEntry = path.join(sourceRoot, 'app-shell.ts');
 const panelEntry = path.join(sourceRoot, 'panel-runtime.ts');
+const classicEntries = [
+  'main',
+  'navigation',
+  'login',
+  'portal-login',
+  'pages/client-access',
+  'pages/catalogs',
+  'pages/automacao',
+  'pages/mensagens',
+].map((name) => path.join(sourceRoot, `${name}.ts`));
 const browserOptions: BuildOptions = {
   entryPoints: sources(sourceRoot).filter(
-    (file) => file !== shellEntry && file !== panelEntry,
+    (file) =>
+      file !== shellEntry &&
+      file !== panelEntry &&
+      !classicEntries.includes(file),
   ),
   outbase: sourceRoot,
   outdir: path.join(projectRoot, 'public/assets/js'),
@@ -48,6 +61,12 @@ const browserOptions: BuildOptions = {
   platform: 'browser',
   bundle: false,
   legalComments: 'none',
+};
+const classicOptions: BuildOptions = {
+  ...browserOptions,
+  entryPoints: classicEntries,
+  bundle: true,
+  format: 'iife',
 };
 // Agrupa o shell e seus módulos em um script clássico para as páginas React e EJS.
 const shellOptions: BuildOptions = {
@@ -72,16 +91,19 @@ const workerOptions: BuildOptions = {
 };
 if (process.argv.includes('--watch')) {
   const browser = await context(browserOptions);
+  const classic = await context(classicOptions);
   const shell = await context(shellOptions);
   const panel = await context(panelOptions);
   const worker = await context(workerOptions);
   await browser.watch();
+  await classic.watch();
   await shell.watch();
   await panel.watch();
   await worker.watch();
   const stop = async () => {
     await Promise.all([
       browser.dispose(),
+      classic.dispose(),
       shell.dispose(),
       panel.dispose(),
       worker.dispose(),
@@ -91,6 +113,7 @@ if (process.argv.includes('--watch')) {
   process.once('SIGTERM', () => void stop());
 } else {
   await build(browserOptions);
+  await build(classicOptions);
   await build(shellOptions);
   await build(panelOptions);
   await build(workerOptions);

@@ -1,3 +1,4 @@
+import { createPanelNotice } from './ui/panel-feedback.js';
 (() => {
   const form = document.querySelector('.login-form') as HTMLFormElement;
   if (!form) return;
@@ -77,12 +78,11 @@
       // Envia as credenciais uma única vez, após receber o cookie atualizado.
       HTMLFormElement.prototype.submit.call(form);
     } catch (error) {
-      const notice = document.createElement('p');
-      notice.className = 'form-alert error';
+      const notice = createPanelNotice(
+        error.message || 'Falha de conexão. Tente novamente.',
+        { error: true, inline: true },
+      );
       notice.dataset.loginError = '';
-      notice.setAttribute('role', 'alert');
-      notice.textContent =
-        error.message || 'Falha de conexão. Tente novamente.';
       form.prepend(notice);
       reset();
     }

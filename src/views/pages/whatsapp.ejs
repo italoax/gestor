@@ -23,12 +23,19 @@
             <span class="wa-star" title="Principal">★</span>
             <% } %>
           </strong>
-          <small data-wa-sub>Verificando número...</small>
+          <small data-wa-sub hidden></small>
         </div>
-        <span class="wa-status-pill" data-wa-status>Verificando...</span>
+        <span class="wa-status-pill" data-wa-status hidden></span>
       </div>
-      <button class="wa-connect-btn" type="button" data-wa-connect
-        >⏻ Conectar</button
+      <button
+        class="wa-connect-btn is-loading"
+        type="button"
+        data-wa-connect
+        disabled
+        aria-busy="true"
+        aria-live="polite"
+        ><span class="btn-spinner" aria-hidden="true"></span> Verificando
+        conexão...</button
       >
       <div class="wa-device-foot">
         <span>📵 Bloqueio de chamadas</span>
@@ -135,7 +142,7 @@
 </div>
 <script nonce="<%= locals.cspNonce || '' %>">
 (function () {
-  var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', iniciando: 'Conectando...', erro: 'Erro' };
+  var STATUS_LABEL = { conectado: 'Conectado', desconectado: 'Desconectado', qr: 'Conectando...', pairing: 'Conectando...', iniciando: 'Conectando...', reconectando: 'Reconectando...', erro: 'Erro' };
 
   // Formata "5531999998888" -> "+55 (31) 99999-8888". Aceita só dígitos.
   function formatarNumero(num) {
@@ -151,17 +158,22 @@
   }
 
   function atualizarCard(card, st) {
+    if (!st || (typeof st.connected !== 'boolean' && !Object.prototype.hasOwnProperty.call(STATUS_LABEL, st.status))) return;
     var pill = card.querySelector('[data-wa-status]');
     var btn = card.querySelector('[data-wa-connect]');
     var sub = card.querySelector('[data-wa-sub]');
     var conectado = st.connected || st.status === 'conectado';
-    if (pill) { pill.textContent = STATUS_LABEL[st.status] || (conectado ? 'Conectado' : 'Desconectado'); pill.className = 'wa-status-pill ' + (conectado ? 'on' : st.status === 'erro' ? 'err' : 'off'); }
-    if (btn) {
+    if (pill) { pill.hidden = false; pill.textContent = STATUS_LABEL[st.status] || (conectado ? 'Conectado' : 'Desconectado'); pill.className = 'wa-status-pill ' + (conectado ? 'on' : st.status === 'erro' ? 'err' : 'off'); }
+    if (btn && btn.dataset.loading !== '1') {
+      btn.disabled = false;
+      btn.classList.remove('is-loading');
+      btn.setAttribute('aria-busy', 'false');
       btn.classList.toggle('is-on', conectado);
       btn.innerHTML = conectado ? '⏻ Desconectar' : '⏻ Conectar';
       btn.dataset.connected = conectado ? '1' : '0';
     }
     if (sub) {
+      sub.hidden = false;
       if (conectado && st.number) {
         var label = formatarNumero(st.number);
         if (st.pushName) label += ' · ' + st.pushName;
@@ -269,11 +281,11 @@
   }
 
   document.querySelectorAll('[data-wa-connect]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', async function () {
       var card = btn.closest('.wa-device');
       var id = card.getAttribute('data-device-id');
       if (btn.dataset.connected === '1') {
-        if (!confirm('Desconectar este dispositivo?')) return;
+        if (!(await window.gestorConfirmAction('Desconectar este dispositivo?', card, btn))) return;
         btn.disabled = true;
         btn.dataset.loading = '1';
         var oldText = btn.innerHTML;

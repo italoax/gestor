@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { confirmFormSubmission } from '../../browser/assets/js/ui/panel-feedback.ts';
 
 const preferenceKeys = {
   message: 'pref-enviar-msg',
@@ -325,7 +326,7 @@ export function useClientForm() {
   function onPageSubmit(event) {
     if (
       (event.target as HTMLInputElement).matches('form.delete-cliente') &&
-      !window.confirm('Deseja apagar este cliente?')
+      !confirmFormSubmission(event, 'Deseja apagar este cliente?')
     )
       event.preventDefault();
   }

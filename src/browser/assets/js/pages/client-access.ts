@@ -1,3 +1,4 @@
+import { createPanelNotice } from '../ui/panel-feedback.js';
 window.gestorPageModules = window.gestorPageModules || {};
 window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
   const accessModal = document.getElementById(
@@ -10,6 +11,13 @@ window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
     const notice = accessModal.querySelector(
       '[data-access-notice]',
     ) as HTMLElement;
+    const setNotice = (text: string, error = false, pending = false) => {
+      notice.replaceChildren(
+        ...(text
+          ? [createPanelNotice(text, { inline: true, error, pending })]
+          : []),
+      );
+    };
     const actions = accessModal.querySelector(
       '[data-access-actions]',
     ) as HTMLElement;
@@ -72,20 +80,20 @@ window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
       (
         accessModal.querySelector('[data-access-state]') as HTMLElement
       ).textContent = '';
-      notice.textContent = 'Carregando…';
+      setNotice('Carregando…', false, true);
       setModalState(accessModal, true);
       try {
         await loadAccess(accessId);
-        notice.textContent = '';
+        setNotice('');
       } catch (e) {
-        notice.textContent = e.message;
+        setNotice(e.message, true);
       }
     });
     const saveAccess = async (action) => {
       if (busy) return;
       busy = true;
       toggle.disabled = revoke.disabled = true;
-      notice.textContent = 'Salvando…';
+      setNotice('Salvando…', false, true);
       try {
         const body = new URLSearchParams({
           id: accessId,
@@ -110,9 +118,9 @@ window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
         linkInput.value = '';
         linkInput.hidden = true;
         await loadAccess(accessId);
-        notice.textContent = result.message;
+        setNotice(result.message);
       } catch (e) {
-        notice.textContent = e.message;
+        setNotice(e.message, true);
       } finally {
         busy = false;
         toggle.disabled = false;
@@ -124,7 +132,7 @@ window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
       if (busy || accessBlocked) return;
       busy = true;
       copyLink.disabled = toggle.disabled = revoke.disabled = true;
-      notice.textContent = 'Preparando link…';
+      setNotice('Preparando link…', false, true);
       try {
         const r = await fetch('/clientes/' + accessId + '/link-pagamento', {
           headers: { Accept: 'application/json' },
@@ -143,14 +151,14 @@ window.gestorPageModules.initClientAccess = function ({ on, setModalState }) {
         await loadAccess(accessId);
         try {
           await navigator.clipboard.writeText(result.url);
-          notice.textContent = 'Link de acesso copiado!';
+          setNotice('Link de acesso copiado!');
         } catch {
           linkInput.focus();
           linkInput.select();
-          notice.textContent = 'Selecione e copie o link no campo acima.';
+          setNotice('Selecione e copie o link no campo acima.');
         }
       } catch (e) {
-        notice.textContent = e.message;
+        setNotice(e.message, true);
       } finally {
         busy = false;
         copyLink.disabled = accessBlocked;

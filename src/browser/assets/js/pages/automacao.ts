@@ -1,3 +1,4 @@
+import { confirmFormSubmission } from '../ui/panel-feedback.js';
 window.gestorPageModules = window.gestorPageModules || {};
 window.gestorPageModules.initBillingRules = function ({ setModalState }) {
   (
@@ -154,9 +155,7 @@ window.gestorPageModules.initBillingRules = function ({ setModalState }) {
     ) as NodeListOf<HTMLFormElement>
   ).forEach((form) => {
     form.addEventListener('submit', (e) => {
-      if (!confirm('Deseja apagar esta cobrança?')) {
-        e.preventDefault();
-      }
+      confirmFormSubmission(e, 'Deseja apagar esta cobrança?');
     });
   });
 

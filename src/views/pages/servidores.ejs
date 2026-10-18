@@ -87,17 +87,16 @@
       <p class="srv-note"><%= s.observacaoServidor %></p>
       <% } %>
       <div class="srv-actions">
+        <button class="srv-act edit-servidor" type="button" <%- editData %>
+          ><%- include('../partials/ui-icon', { name: 'edit' }) %>
+          Editar</button
+        >
         <button
           class="srv-act edit-servidor srv-credit-action"
           type="button"
           data-credit-focus
           <%- editData %>
-          ><%- include('../partials/ui-icon', { name: 'money' }) %>
-          Ajustar saldo</button
-        >
-        <button class="srv-act edit-servidor" type="button" <%- editData %>
-          ><%- include('../partials/ui-icon', { name: 'edit' }) %>
-          Editar</button
+          >Ajustar saldo</button
         >
         <form
           method="post"
@@ -107,10 +106,13 @@
           <%- csrfInput %>
           <input type="hidden" name="action" value="delete_servidor" />
           <input type="hidden" name="id" value="<%= s.id %>" />
-          <button class="srv-act danger" type="submit"
+          <button
+            class="srv-act danger"
+            type="submit"
+            aria-label="Excluir <%= s.nome %>"
+            title="Excluir <%= s.nome %>"
             ><%- include('../partials/ui-icon', { name: 'trash' }) %>
-            Excluir</button
-          >
+          </button>
         </form>
       </div>
     </div>

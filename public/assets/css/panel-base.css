@@ -1,5 +1,4 @@
-/* Ajustes mínimos específicos da migração para Node/EJS.
-   O arquivo style.css permanece idêntico ao CSS original do PHP. */
+/* Estilos de layout, páginas e controles compartilhados do painel. */
 
 .page-app,
 .page-app button,
@@ -2427,10 +2426,6 @@
   font-size: 22px;
   color: var(--text);
 }
-.topbar2-title span {
-  color: var(--muted);
-  font-size: 12.5px;
-}
 .topbar2-actions {
   margin-left: auto;
   display: flex;
@@ -2636,9 +2631,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .topbar2-title span {
-    display: none;
   }
   .topbar2-actions {
     gap: 7px;
@@ -3945,7 +3937,7 @@
   }
 
   /* ===== Específico: tabela de CLIENTES (cli-table.table-clientes) =====
-     `!important` aqui porque o style.css legado tem regras com mesma especificidade
+     `!important` aqui porque o style.css tem regras com mesma especificidade
      (.page-clientes .table-clientes tbody tr td) e ordem de carregamento estava
      deixando style.css ganhar em algumas combinações de cache. */
   .page-clientes .table-clientes tbody tr td.cli-c-nome {
@@ -4082,7 +4074,7 @@
   }
 
   /* ===== Tabela de DISPAROS (cli-table.disparos-table) =====
-     Colunas: 1 Quando | 2 Regra | 3 Clientes | 4 Status | 5 Detalhe */
+     Colunas: 1 Quando | 2 Regra | 3 Clientes | 4 Status */
   .disparos-table tbody tr td:nth-child(1) {
     display: block;
     padding: 14px 14px 6px;
@@ -4118,15 +4110,6 @@
   }
   .disparos-table tbody tr td:nth-child(4)::before {
     content: 'Status';
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    flex: 0 0 auto;
-  }
-  .disparos-table tbody tr td:nth-child(5)::before {
-    content: 'Detalhe';
     color: var(--muted);
     font-size: 11px;
     font-weight: 600;
@@ -4482,7 +4465,7 @@
     cursor: pointer;
   }
   .auto-rule-actions {
-    display: flex !important;
+    display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
@@ -8178,7 +8161,7 @@ tr.tx-row:focus-visible {
 
 /* ============================================================
    FIX: Login centralizado verticalmente no mobile
-   O style.css legado seta min-height: auto no .login-shell (~linha 1395),
+   O style.css define min-height: auto no .login-shell,
    o que impede o align-items:center de centralizar — card cola no topo.
    100dvh = altura dinamica (conta com toolbar do mobile).
    ============================================================ */
@@ -8434,20 +8417,6 @@ tr.tx-row:focus-visible {
   }
   .modal .modal-tabs::-webkit-scrollbar,
   .modal .tabs-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Avisos no topo do modal (modal-error) — destaque vermelho compacto */
-  .modal .modal-error {
-    background: color-mix(in srgb, #ef4444 12%, transparent);
-    border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
-    color: #f87171;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    margin: 0 0 12px;
-  }
-  .modal .modal-error:empty {
     display: none;
   }
 
@@ -9369,32 +9338,53 @@ body {
   }
 }
 
-/* A tabela usa a largura dispon?vel; rolagem s? abaixo da largura ?til. */
-@media (min-width: 901px) {
+/* Colunas acompanham o conteúdo; a rolagem fica dentro da tabela. */
+@media (min-width: 601px) {
   .page-clientes .table-wrapper {
     overflow-x: auto;
     min-width: 0;
   }
   .page-clientes .table-clientes {
     width: 100%;
-    min-width: 1100px;
-    table-layout: fixed;
+    min-width: 960px;
+    table-layout: auto;
   }
   .page-clientes .table-clientes th,
   .page-clientes .table-clientes td {
-    padding-left: 10px;
-    padding-right: 10px;
+    display: table-cell;
+    padding-inline: clamp(8px, 0.8vw, 12px);
     white-space: normal;
     overflow-wrap: anywhere;
   }
-  .page-clientes .table-clientes th:first-child {
-    width: 44px;
+  .page-clientes .table-clientes th {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+  .page-clientes .table-clientes :is(th, td):first-child {
+    width: 36px;
+    min-width: 0;
+  }
+  .page-clientes .table-clientes th:nth-child(2) {
+    width: 14%;
+    min-width: 128px;
   }
   .page-clientes .table-clientes th:nth-child(3) {
-    width: 160px;
+    width: 148px;
+  }
+  .page-clientes .table-clientes th:nth-child(4) {
+    min-width: 80px;
+  }
+  .page-clientes .table-clientes th:nth-child(6) {
+    min-width: 128px;
+  }
+  .page-clientes .table-clientes th:nth-child(7) {
+    min-width: 114px;
+  }
+  .page-clientes .table-clientes .cli-wpp {
+    white-space: nowrap;
   }
   .page-clientes .table-clientes th[data-sort-col='status'] {
-    width: 160px;
+    width: 132px;
   }
   .page-clientes .table-clientes .badge {
     display: inline-flex;
@@ -9405,8 +9395,8 @@ body {
     overflow-wrap: normal;
     word-break: normal;
   }
-  .page-clientes .table-clientes th:last-child {
-    width: 110px;
+  .page-clientes .table-clientes :is(th, td):last-child {
+    width: 90px;
   }
 }
 

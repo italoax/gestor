@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { PanelNotice } from '../ui/PanelNotice.tsx';
 import { publicAssetUrl } from '../../lib/publicAssets.ts';
 
 const scripts = new Map();
@@ -60,7 +61,7 @@ export function LegacyControllers({ revision }: { revision?: any }) {
     };
   }, [revision]);
   return error ? (
-    <div className="form-alert error" role="alert">
+    <PanelNotice inline error>
       {error}
       <button
         className="btn btn-muted"
@@ -69,6 +70,6 @@ export function LegacyControllers({ revision }: { revision?: any }) {
       >
         Recarregar página
       </button>
-    </div>
+    </PanelNotice>
   ) : null;
 }

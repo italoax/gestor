@@ -1,4 +1,6 @@
-﻿import { Fragment } from 'react';
+import { PanelFlashNotice } from '../../../web/components/ui/PanelFlashNotice.tsx';
+import { PanelNotice } from '../../../web/components/ui/PanelNotice.tsx';
+import { Fragment } from 'react';
 import { Icon, CsrfInput } from './ui.tsx';
 import { memo } from 'react';
 export const ClientsModals = memo(function ClientsModals({
@@ -22,7 +24,6 @@ export const ClientsModals = memo(function ClientsModals({
   noticeError?: any;
   clientForm?: any;
 }) {
-  const noticeMessages = [...noticeSuccess, ...noticeError];
   return (
     <>
       <div
@@ -221,14 +222,14 @@ export const ClientsModals = memo(function ClientsModals({
             />
             <input type="hidden" name="id" value={clientForm.clientId} />
             <input type="hidden" name="status" value={clientForm.status} />
-            <div
-              className="modal-error"
-              id="modal-add-cliente-error"
-              aria-live="polite"
-            >
-              {Object.keys(clientForm.errors).length
-                ? 'Revise os campos obrigatórios destacados.'
-                : ''}
+            <div id="modal-add-cliente-error" aria-live="polite">
+              {Object.keys(clientForm.errors).length > 0 && (
+                <PanelNotice
+                  inline
+                  error
+                  text="Revise os campos obrigatórios destacados."
+                />
+              )}
             </div>
             <div
               className={`tab-panel ${clientForm.tab === 'dados' ? 'active' : ''}`}
@@ -1193,47 +1194,7 @@ export const ClientsModals = memo(function ClientsModals({
           </div>
         </div>
       </div>
-      <div
-        className="modal-overlay client-modal"
-        id="modal-notice"
-        aria-hidden="true"
-        inert
-        data-open-notice={noticeMessages.length ? '' : undefined}
-      >
-        <div className="modal">
-          <div className="modal-header">
-            <h3>Aviso</h3>
-            <button
-              className="modal-close"
-              type="button"
-              data-close-modal=""
-              aria-label="Fechar"
-            >
-              ×
-            </button>
-          </div>
-          <div className="modal-body">
-            <div
-              className={`form-alert ${noticeError.length ? 'error' : 'success'}`}
-              id="modal-notice-message"
-              role="status"
-            >
-              {noticeMessages.map((message, index) => {
-                return (
-                  <Fragment key={message?.id ?? index}>
-                    <p>{message}</p>
-                  </Fragment>
-                );
-              })}
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-muted" type="button" data-close-modal="">
-              Fechar
-            </button>
-          </div>
-        </div>
-      </div>
+      <PanelFlashNotice success={noticeSuccess} error={noticeError} />
 
       <div
         className="modal-overlay client-modal"
@@ -1262,12 +1223,12 @@ export const ClientsModals = memo(function ClientsModals({
               </div>
               <span className="access-state" data-access-state=""></span>
             </div>
-            <p
+            <div
               className="access-notice"
               data-access-notice=""
               role="status"
               aria-live="polite"
-            ></p>
+            ></div>
             <div className="access-actions" data-access-actions="" hidden>
               <button
                 type="button"

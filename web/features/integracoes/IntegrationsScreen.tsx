@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
@@ -137,10 +138,10 @@ function IntegrationEditor({
             </select>
           </label>
         </div>
-        <div className="form-alert integ-cf-note">
+        <PanelNotice inline info>
           Se o teste retornar “bloqueado pelo Cloudflare”, peça ao provedor para
           liberar o IP do seu servidor.
-        </div>
+        </PanelNotice>
       </form>
     </NativeDialog>
   );

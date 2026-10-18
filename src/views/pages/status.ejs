@@ -1,10 +1,6 @@
 <div class="container page-status">
   <% if (typeof agendamentoAtivo !== 'undefined' && !agendamentoAtivo) { %>
-  <div class="form-alert error" role="alert">
-    <strong>Envio automático de status desativado.</strong>
-    Os agendamentos estão salvos, mas não serão publicados até o administrador
-    reativar o serviço de envio.
-  </div>
+  <%- include('../partials/panel-notice', {noticeTitle: 'Envio automático de status desativado', text: 'Os agendamentos estão salvos, mas não serão publicados até o administrador reativar o serviço de envio.', isError: true}) %>
   <% } %>
   <% if (!temWhatsapp) { %>
   <div class="cli-empty">
@@ -16,17 +12,14 @@
     <a class="btn btn-primary" href="/whatsapp">Ir para WhatsApp</a>
   </div>
   <% } else { %>
-  <div class="section-header">
-    <div>
-      <p class="muted">Agende novidades, ofertas e avisos para o seu status.</p>
-    </div>
+  <div class="ui-toolbar ui-toolbar-actions">
     <button
       class="btn btn-primary"
       type="button"
       data-open-modal="modal-novo-status"
       data-status-new
     >
-      <%- include('../partials/ui-icon', { name: 'broadcast' }) %>
+      <%- include('../partials/ui-icon', { name: 'plus' }) %>
       Nova publicação
     </button>
   </div>

@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
+import { confirmPanelAction } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
@@ -51,6 +53,7 @@ function CallBlock({ device, token }: { device?: any; token?: string }) {
 }
 function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
   const [state, setState] = useState(null);
+  const [checking, setChecking] = useState(true);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const revision = useRef(0);
@@ -86,8 +89,23 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
           window.gestorPolling?.recordResponse(response);
           if (!response.ok || response.redirected) throw new Error();
           const result = await response.json();
-          if (!controller.signal.aborted && startedAt === revision.current)
-            setState(result);
+          if (
+            !result ||
+            (typeof result.connected !== 'boolean' &&
+              !Object.hasOwn(labels, result.status))
+          )
+            throw new Error();
+          if (!controller.signal.aborted && startedAt === revision.current) {
+            setState({
+              ...result,
+              status: Object.hasOwn(labels, result.status)
+                ? result.status
+                : result.connected
+                  ? 'conectado'
+                  : 'desconectado',
+            });
+            setChecking(false);
+          }
         }
       } catch {
         if (
@@ -112,9 +130,13 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
     };
   }, [device.id, open]);
   async function operate() {
-    if (pending.current) return;
+    if (pending.current || checking) return;
     const disconnect = connected(state);
-    if (disconnect && !window.confirm('Desconectar este dispositivo?')) return;
+    if (
+      disconnect &&
+      !(await confirmPanelAction('Desconectar este dispositivo?'))
+    )
+      return;
     if (
       !disconnect &&
       ['qr', 'pairing', 'iniciando', 'reconectando'].includes(state?.status)
@@ -165,7 +187,7 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
       if (alive.current) setBusy(false);
     }
   }
-  const isConnected = connected(state);
+  const isConnected = !checking && connected(state);
   const message = busy
     ? 'Iniciando sessão... (pode levar alguns segundos)'
     : isConnected
@@ -194,38 +216,53 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
                 </span>
               ) : null}
             </strong>
-            <small className={isConnected ? 'connected' : ''}>
-              {!state
-                ? 'Verificando número...'
-                : isConnected
+            {!checking && (
+              <small className={isConnected ? 'connected' : ''}>
+                {isConnected
                   ? [phone(state.number), state.pushName]
                       .filter(Boolean)
                       .join(' · ') || 'Conectado'
                   : 'Sem número vinculado'}
-            </small>
+              </small>
+            )}
           </div>
-          <span
-            className={`wa-status-pill ${isConnected ? 'on' : state?.status === 'erro' ? 'err' : 'off'}`}
-            role="status"
-          >
-            {state
-              ? labels[state.status] ||
-                (isConnected ? 'Conectado' : 'Desconectado')
-              : 'Verificando...'}
-          </span>
+          {!checking && (
+            <span
+              className={`wa-status-pill ${isConnected ? 'on' : state?.status === 'erro' ? 'err' : 'off'}`}
+              role="status"
+            >
+              {labels[state.status] ||
+                (isConnected ? 'Conectado' : 'Desconectado')}
+            </span>
+          )}
         </div>
         <button
-          className={`wa-connect-btn ${isConnected ? 'is-on' : ''}`}
+          className={`wa-connect-btn ${isConnected ? 'is-on' : ''} ${checking || busy ? 'is-loading' : ''}`}
           type="button"
-          disabled={busy || !state}
+          disabled={busy || checking}
+          aria-busy={checking || busy}
+          aria-live="polite"
           onClick={operate}
         >
-          {busy ? 'Aguarde...' : isConnected ? '⏻ Desconectar' : '⏻ Conectar'}
+          {checking || busy ? (
+            <>
+              <span className="btn-spinner" aria-hidden="true" />
+              {checking
+                ? 'Verificando conexão...'
+                : isConnected
+                  ? 'Desconectando...'
+                  : 'Conectando...'}
+            </>
+          ) : isConnected ? (
+            '⏻ Desconectar'
+          ) : (
+            '⏻ Conectar'
+          )}
         </button>
         {state?.lastError && (
-          <p className="form-alert error" role="alert">
+          <PanelNotice inline error>
             {state.lastError}
-          </p>
+          </PanelNotice>
         )}
         <div className="wa-device-foot">
           <span>📵 Bloqueio de chamadas</span>

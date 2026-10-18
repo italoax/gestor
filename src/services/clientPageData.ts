@@ -1,4 +1,4 @@
-// Dados compartilhados pela página Next e pela página EJS durante a migração.
+// Dados compartilhados pelas páginas de clientes em Next e EJS.
 const privateFields = new Set([
   'senha',
   'senha_enc',

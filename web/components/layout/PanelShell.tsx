@@ -1,3 +1,4 @@
+import { PanelFlashNotice } from '../ui/PanelFlashNotice.tsx';
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
@@ -27,6 +28,7 @@ export function PanelShell({
   const currentPath = data.currentPath || '/clientes';
   const isActive = (href) =>
     currentPath === href || currentPath.startsWith(href + '/');
+  const pageTitle = menu.find(([, href]) => isActive(href))?.[0] || data.title;
   return (
     <div
       className="app-shell"
@@ -98,8 +100,7 @@ export function PanelShell({
       <div className="app-main">
         <header className="topbar2">
           <div className="topbar2-title">
-            <h1>{data.title}</h1>
-            <span>{data.subtitle}</span>
+            <h1>{pageTitle}</h1>
           </div>
           <div className="topbar2-actions">
             <a
@@ -258,58 +259,8 @@ export function SiteNotice({
   success = [],
   error = [],
 }: {
-  success?: any;
-  error?: any;
+  success?: string[];
+  error?: string[];
 }) {
-  if (!success.length && !error.length) return null;
-  return (
-    <div
-      className="modal-overlay"
-      id="modal-site-notice"
-      data-auto-notice=""
-      aria-hidden="true"
-      inert
-    >
-      <div className="modal site-notice-modal">
-        <div className="modal-header">
-          <h3>{error.length ? 'Confira este aviso' : 'Tudo certo!'}</h3>
-          <button
-            type="button"
-            className="modal-close"
-            data-close-modal=""
-            aria-label="Fechar"
-          >
-            ×
-          </button>
-        </div>
-        <div className="modal-body">
-          {success.map((text, index) => (
-            <div
-              key={`success-${index}`}
-              className="site-notice-message is-success"
-            >
-              <p>{text}</p>
-            </div>
-          ))}
-          {error.map((text, index) => (
-            <div
-              key={`error-${index}`}
-              className="site-notice-message is-error"
-            >
-              <p>{text}</p>
-            </div>
-          ))}
-          <div className="modal-actions">
-            <button
-              className="btn btn-primary"
-              type="button"
-              data-close-modal=""
-            >
-              Entendi
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <PanelFlashNotice success={success} error={error} />;
 }

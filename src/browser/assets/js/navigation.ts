@@ -1,3 +1,4 @@
+import { showPanelNotice, dismissPanelNotice } from './ui/panel-feedback.js';
 // Navegação compartilhada: mantém a estrutura do painel e busca dados atuais.
 (function () {
   // Inclui respostas HTML de erros de POST: o próximo GET pertence ao Next,
@@ -22,14 +23,8 @@
     controller,
     saving = false;
   let currentUrl = location.href;
-  const notice = document.createElement('div');
-  notice.className = 'navigation-notice';
-  notice.setAttribute('role', 'status');
-  notice.hidden = true;
-  document.body.append(notice);
   function message(text) {
-    notice.textContent = text;
-    notice.hidden = false;
+    showPanelNotice(text, true);
   }
   function rememberScroll() {
     if (location.href === currentUrl)
@@ -148,7 +143,7 @@
     if (!pop) rememberScroll();
     content.setAttribute('aria-busy', 'true');
     document.documentElement.classList.add('is-navigating');
-    notice.hidden = true;
+    dismissPanelNotice();
     document.dispatchEvent(
       new CustomEvent('gestor:navigation-start', {
         detail: { url: destination.href },

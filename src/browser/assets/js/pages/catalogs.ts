@@ -1,3 +1,4 @@
+import { confirmFormSubmission } from '../ui/panel-feedback.js';
 window.gestorPageModules = window.gestorPageModules || {};
 window.gestorPageModules.initCatalogs = function ({
   setIconLabel,
@@ -276,9 +277,7 @@ window.gestorPageModules.initCatalogs = function ({
     ) as NodeListOf<HTMLFormElement>
   ).forEach((form) => {
     form.addEventListener('submit', (e) => {
-      if (!confirm('Deseja apagar este servidor?')) {
-        e.preventDefault();
-      }
+      confirmFormSubmission(e, 'Deseja apagar este servidor?');
     });
   });
 };

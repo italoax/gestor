@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import Script from 'next/script';
 import { PwaProvider } from '../components/pwa/PwaProvider.tsx';
 import { publicAssetUrl } from '../lib/publicAssets.ts';
 
@@ -45,13 +46,19 @@ export default async function RootLayout({
   return (
     <html lang="pt-br" suppressHydrationWarning>
       <body className={bodyClass}>
-        <script
+        <Script
           id="restore-theme"
+          strategy="beforeInteractive"
           nonce={request.get('x-nonce') || undefined}
           dangerouslySetInnerHTML={{
             __html:
               'try{if(localStorage.getItem("gestor-theme")==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}',
           }}
+        />
+        <link
+          rel="stylesheet"
+          href={publicAssetUrl('/assets/css/panel-feedback.css')}
+          precedence="feedback"
         />
         <link
           rel="stylesheet"

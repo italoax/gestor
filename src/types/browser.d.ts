@@ -28,6 +28,11 @@ declare global {
     pushStatus?: () => Promise<any>;
     pushSubscribe?: () => Promise<any>;
     pushUnsubscribe?: () => Promise<any>;
-    toast?: any;
+    gestorShowNotice?: (text: string, error?: boolean) => void;
+    gestorConfirmAction?: (
+      message: string,
+      source?: HTMLElement,
+      trigger?: HTMLElement,
+    ) => Promise<boolean>;
   }
 }

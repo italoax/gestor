@@ -4,6 +4,13 @@ import {
 } from '../../../frontend/whatsappIndicator.js';
 import { initReleaseNotice } from './ui/release-notice.js';
 import { initSessionActivity } from './ui/session-activity.js';
+import {
+  confirmElementAction,
+  confirmPanelAction,
+  showPanelNotice,
+} from './ui/panel-feedback.js';
+
+const showError = (text: string) => showPanelNotice(text, true);
 
 // Mantém as consultas do cabeçalho durante a navegação do mesmo documento.
 // A troca de tela não deve reiniciar requisições nem duplicar uma em andamento.
@@ -71,14 +78,22 @@ window.__gestorInitShell = function () {
         : event.target?.closest('[data-confirm]');
     if (
       !element?.dataset.confirm ||
-      (event.type === 'click' && element.tagName === 'FORM')
+      (event.type === 'click' && element instanceof HTMLFormElement)
     )
       return;
     event.gestorConfirmationHandled = true;
-    if (!window.confirm(element.dataset.confirm)) event.preventDefault();
+    confirmElementAction(event, element, element.dataset.confirm);
   };
-  on(document, 'click', confirmAction);
-  on(document, 'submit', confirmAction);
+  on(document, 'click', confirmAction, { capture: true });
+  on(document, 'submit', confirmAction, { capture: true });
+  document
+    .querySelectorAll<HTMLElement>('[data-auto-panel-notice]')
+    .forEach((notice) => {
+      const text = notice.querySelector('p')?.textContent || '';
+      const error = notice.dataset.state === 'error';
+      notice.remove();
+      if (text) showPanelNotice(text, error);
+    });
   const setTimeout = (callback: () => void, delay: number) => {
     if (lifecycle.signal.aborted) return;
     const timer = window.setTimeout(() => {
@@ -580,18 +595,16 @@ window.__gestorInitShell = function () {
                       navigator.clipboard
                         .writeText(j.url)
                         .catch(function () {});
-                    if (typeof window.toast === 'function')
-                      window.toast(
-                        '✓ Link de pagamento copiado: ' + j.url,
-                        'success',
-                      );
-                    else alert('Link copiado:\n' + j.url);
+                    showPanelNotice('Link de pagamento: ' + j.url, false, {
+                      info: true,
+                      title: 'Link pronto',
+                    });
                   } else {
-                    alert((j && j.error) || 'Falha ao gerar link.');
+                    showError((j && j.error) || 'Falha ao gerar link.');
                   }
                 })
                 .catch(function () {
-                  alert('Erro de rede ao gerar link.');
+                  showError('Erro de rede ao gerar link.');
                 });
             }
           }
@@ -617,9 +630,11 @@ window.__gestorInitShell = function () {
     event.preventDefault();
     if (
       button.disabled ||
-      !confirm(
+      !(await confirmPanelAction(
         'Você já renovou o acesso no outro painel? Confirmar atualiza o vencimento e desconta os créditos no gestor.',
-      )
+        button,
+        button,
+      ))
     )
       return;
     button.disabled = true;
@@ -638,7 +653,7 @@ window.__gestorInitShell = function () {
       if (window.gestorNavigate) await window.gestorNavigate('/clientes');
       else location.assign('/clientes');
     } catch (error) {
-      alert(
+      showError(
         error.message ||
           'Falha ao confirmar. Confira o controle antes de tentar novamente.',
       );
@@ -864,9 +879,15 @@ window.__gestorInitShell = function () {
         // deixa o browser navegar normal
       }
     });
-    on(clearBtn, 'click', function () {
+    on(clearBtn, 'click', async function () {
       if (!state.items.length) return;
-      if (!confirm('Limpar os avisos? As renovações pendentes serão mantidas.'))
+      if (
+        !(await confirmPanelAction(
+          'Limpar os avisos? As renovações pendentes serão mantidas.',
+          clearBtn,
+          clearBtn,
+        ))
+      )
         return;
       window
         .csrfFetch('/notificacoes/limpar', { method: 'POST' })
@@ -957,13 +978,13 @@ window.__gestorInitShell = function () {
       !('PushManager' in window) ||
       !('Notification' in window)
     ) {
-      alert('Seu navegador não suporta notificações.');
+      showError('Seu navegador não suporta notificações.');
       return false;
     }
     try {
       var perm = await Notification.requestPermission();
       if (perm !== 'granted') {
-        alert('Permissão negada. Habilite nas configurações do navegador.');
+        showError('Permissão negada. Habilite nas configurações do navegador.');
         return false;
       }
       var kr = await fetch('/push/public-key', {
@@ -972,7 +993,7 @@ window.__gestorInitShell = function () {
         return r.json();
       });
       if (!kr.ok || !kr.enabled || !kr.key) {
-        alert('Push não está configurado no servidor.');
+        showError('Push não está configurado no servidor.');
         return false;
       }
       var reg = await pushRegistration();
@@ -988,12 +1009,14 @@ window.__gestorInitShell = function () {
       });
       var j = await r.json();
       if (!j.ok) {
-        alert('Falha ao registrar: ' + (j.error || '?'));
+        showError('Falha ao registrar: ' + (j.error || '?'));
         return false;
       }
       return true;
     } catch (e) {
-      alert('Erro ao ativar notificações: ' + (e && e.message ? e.message : e));
+      showError(
+        'Erro ao ativar notificações: ' + (e && e.message ? e.message : e),
+      );
       return false;
     }
   };

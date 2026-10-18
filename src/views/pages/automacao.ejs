@@ -51,20 +51,20 @@
           <div class="auto-rule-body">
             <div class="auto-rule-top">
               <strong><%= r.titulo %></strong>
-              <small><%= r.descricao || '' %></small>
+              <% if (r.descricao && r.descricao.trim().toLowerCase() !== b.label.toLowerCase()) { %>
+              <small><%= r.descricao %></small>
+              <% } %>
             </div>
             <span class="auto-badge <%= b.cls %>"
               ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %>
               <%= b.label %></span
             >
-            <div class="auto-rule-preview"
-              ><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ').slice(0,90) %><%= (r.mensagemTexto||'').length>90?'…':'' %></div
-            >
+            <div class="auto-rule-preview">
+              <span class="auto-rule-preview-text"
+                ><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ') %></span
+              >
+            </div>
             <div class="auto-rule-foot">
-              <span>Arquivo: Não arquivado</span>
-              <span class="dot">•</span>
-              <span><%= ativa ? 'Regra ativada' : 'Regra desativada' %></span>
-              <span class="dot">•</span>
               <button
                 type="button"
                 class="auto-receb-link"
@@ -82,23 +82,27 @@
               aria-label="Envio de hoje"
             >
               <strong><%= r.envioHoje.rotulo %></strong>
-              <span><%= r.envioHoje.detalhe %></span>
+              <% if (r.envioHoje.estado !== 'vazio') { %><span><%= r.envioHoje.detalhe %></span
+              ><% } %>
             </div>
             <% } %>
           </div>
         </div>
-        <div class="auto-rule-actions">
+        <div class="auto-rule-actions is-rule-actions">
           <form method="post" action="/automacao" class="auto-toggle-form">
             <%- csrfInput %>
             <input type="hidden" name="action" value="toggle_regra" />
             <input type="hidden" name="id" value="<%= r.id %>" />
-            <input
-              type="checkbox"
-              class="switch"
-              data-submit-on-change=""
-              <%= ativa ? 'checked' : '' %>
-              aria-label="Ativar regra"
-            />
+            <label class="auto-toggle-control">
+              <input
+                type="checkbox"
+                class="switch"
+                data-submit-on-change=""
+                <%= ativa ? 'checked' : '' %>
+                aria-label="Ativar regra"
+              />
+              <span><%= ativa ? 'Ativa' : 'Desativada' %></span>
+            </label>
           </form>
           <form
             method="post"
@@ -175,7 +179,6 @@
               <th>Regra</th>
               <th>Clientes</th>
               <th>Status</th>
-              <th>Detalhe</th>
             </tr>
           </thead>
           <tbody>
@@ -199,7 +202,6 @@
                   ><%= d.status==='enviado'?'Enviado':d.status==='nao_enviado'?'Não enviado':d.status==='incerto'?'Sem confirmação':d.status==='erro'?'Erro':'Pendente' %></span
                 ></td
               >
-              <td class="muted"><%= d.status==='incerto'?'Confira no WhatsApp antes de qualquer nova tentativa. ' + (d.erro||''):['erro','nao_enviado'].includes(d.status)?(d.erro||'Falha'):'-' %></td>
             </tr>
             <% }) %>
           </tbody>
@@ -639,7 +641,7 @@
             return '<div class="receb-row"><div class="receb-info"><strong>' + escapeHtml(c.nome) + '</strong><span>' + escapeHtml(c.telefone || '') + '</span><span>' + escapeHtml(c.servidor || '') + ' · ' + escapeHtml(c.plano || '') + ' · ' + escapeHtml(valor) + '</span></div><span class="receb-venc">' + escapeHtml(venc) + '</span></div>';
           }).join('');
         })
-        .catch(function () { list.innerHTML = '<div class="form-alert error">Não foi possível carregar os clientes.</div>'; });
+        .catch(function () { list.textContent = ''; window.gestorShowNotice('Não foi possível carregar os clientes.', true); });
     });
   });
 

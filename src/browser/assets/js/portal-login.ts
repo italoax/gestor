@@ -1,3 +1,4 @@
+import { createPanelNotice } from './ui/panel-feedback.js';
 (() => {
   const form = document.querySelector('.portal-login form') as HTMLFormElement;
   if (!form) return;
@@ -15,10 +16,13 @@
         : null;
     if (missing) {
       event.preventDefault();
-      error.textContent =
+      const text =
         missing === login
           ? 'Informe seu usuário IPTV.'
           : 'Informe sua senha IPTV.';
+      error.replaceChildren(
+        createPanelNotice(text, { inline: true, error: true }),
+      );
       error.hidden = false;
       missing.setAttribute('aria-invalid', 'true');
       missing.setAttribute('aria-describedby', 'login-error');

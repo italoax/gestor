@@ -1,4 +1,5 @@
 'use client';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { formatDateBr, formatMoney } from '../../../src/services/format.ts';
@@ -80,13 +81,8 @@ function PortalLogin({ data }: { data?: any }) {
       <p className="portal-eyebrow">ixstreaming</p>
       <h1>Área do cliente</h1>
       <p className="portal-lead">Sua assinatura, em um só lugar.</p>
-      <div
-        className="portal-login-error"
-        id="login-error"
-        role="alert"
-        hidden={!error}
-      >
-        {error}
+      <div className="portal-login-error" id="login-error" hidden={!error}>
+        {error && <PanelNotice inline error text={error} />}
       </div>
       <form
         className="portal-form"
@@ -319,8 +315,8 @@ export function PortalScreen({ data }: { data?: any }) {
           {cliente ? (
             <>
               {data.erro && (
-                <div className="portal-alert" role="alert">
-                  {data.erro}
+                <div className="portal-alert">
+                  <PanelNotice inline error text={data.erro} />
                 </div>
               )}
               <p className="portal-eyebrow">Área do cliente</p>

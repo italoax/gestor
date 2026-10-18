@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { useSearchParams } from 'next/navigation';
-import { ScheduledMessages } from './ScheduledMessages.tsx';
+import { CampaignEditor, ScheduledMessages } from './ScheduledMessages.tsx';
 
 const triggers = [
   ['Todos', 'Todos os clientes'],
@@ -15,6 +16,13 @@ const triggers = [
   ['Apos cadastro', 'Após cadastro'],
 ];
 const truthy = (value) => Boolean(Number(value));
+function triggerLabel(type?: string) {
+  return (
+    triggers.find(
+      ([value]) => value.toLowerCase() === type?.toLowerCase(),
+    )?.[1] || 'Todos os clientes'
+  );
+}
 function ActionForm({
   item,
   token,
@@ -30,7 +38,12 @@ function ActionForm({
 }) {
   const submit = useNativeSubmit(confirm);
   return (
-    <form method="post" action="/automacao" onSubmit={submit}>
+    <form
+      method="post"
+      action="/automacao"
+      className={action === 'toggle_regra' ? 'auto-toggle-form' : undefined}
+      onSubmit={submit}
+    >
       <CsrfInput token={token} />
       <input type="hidden" name="action" value={action} />
       <input type="hidden" name="id" value={item.id} />
@@ -356,9 +369,9 @@ function Recipients({
           {state.loading ? (
             <p role="status">Carregando...</p>
           ) : state.error ? (
-            <p className="form-alert error" role="alert">
+            <PanelNotice inline error>
               Não foi possível carregar os clientes.
-            </p>
+            </PanelNotice>
           ) : !state.clientes.length ? (
             <p>Nenhum cliente atende a essa regra hoje.</p>
           ) : (
@@ -399,12 +412,19 @@ export function AutomationScreen({ data }: { data?: any }) {
     params?.get('aba') === 'envios' ? 'envios' : 'regras',
   );
   const [editor, setEditor] = useState(null);
+  const [scheduledEditor, setScheduledEditor] = useState<{ item: any } | null>(
+    null,
+  );
   const [recipients, setRecipients] = useState(null);
   return (
     <NativePanel data={data} path="/automacao">
       <div className="container page-automacao" data-react-page="automacao">
-        <div className="auto-tabs">
-          <>
+        <div className="auto-tabs auto-toolbar">
+          <div
+            className="auto-tab-options"
+            role="group"
+            aria-label="Abas de automação"
+          >
             {['regras', 'envios', 'disparos'].map((value) => (
               <button
                 type="button"
@@ -420,18 +440,25 @@ export function AutomationScreen({ data }: { data?: any }) {
                     : 'Disparos'}
               </button>
             ))}
-          </>
+          </div>
           <button
-            hidden={tab === 'envios'}
             type="button"
             className="btn btn-primary auto-new"
-            onClick={() => setEditor({ item: null })}
+            onClick={() =>
+              tab === 'envios'
+                ? setScheduledEditor({ item: null })
+                : setEditor({ item: null })
+            }
           >
-            Nova regra
+            <Icon name="plus" />
+            {tab === 'envios' ? 'Novo envio' : 'Nova regra'}
           </button>
         </div>
         {tab === 'envios' ? (
-          <ScheduledMessages data={data} />
+          <ScheduledMessages
+            data={data}
+            onEdit={(item) => setScheduledEditor({ item })}
+          />
         ) : tab === 'regras' ? (
           <div className="auto-list">
             {!data.regras.some((item) => !item.campanha) && (
@@ -446,35 +473,29 @@ export function AutomationScreen({ data }: { data?: any }) {
                   data-rule-item={item.id}
                 >
                   <div className="auto-rule-main">
-                    <Icon name="bolt" />
+                    <span className="auto-rule-ico">
+                      <Icon name="bolt" />
+                    </span>
                     <div className="auto-rule-body">
                       <div className="auto-rule-top">
                         <strong>{item.titulo}</strong>
-                        <small>{item.descricao}</small>
+                        {item.descricao &&
+                          item.descricao.trim().toLowerCase() !==
+                            triggerLabel(item.tipo).toLowerCase() && (
+                            <small>{item.descricao}</small>
+                          )}
                       </div>
                       <span className="auto-badge">
-                        {triggers.find(
-                          ([value]) =>
-                            value.toLowerCase() === item.tipo?.toLowerCase(),
-                        )?.[1] || 'Todos os clientes'}
+                        {triggerLabel(item.tipo)}
                       </span>
                       <div className="auto-rule-preview">
-                        {(item.mensagemTexto || 'Sem template vinculado')
-                          .replace(/\s+/g, ' ')
-                          .slice(0, 90)}
+                        <span className="auto-rule-preview-text">
+                          {(
+                            item.mensagemTexto || 'Sem template vinculado'
+                          ).replace(/\s+/g, ' ')}
+                        </span>
                       </div>
                       <div className="auto-rule-foot">
-                        <span>
-                          Arquivo:{' '}
-                          {item.filtroArquivados === 'todos'
-                            ? 'Todos'
-                            : item.filtroArquivados || 'Não arquivado'}
-                        </span>
-                        <span>
-                          {item.status === 'Ativo'
-                            ? 'Regra ativada'
-                            : 'Regra desativada'}
-                        </span>
                         <button
                           type="button"
                           className="auto-receb-link"
@@ -490,28 +511,35 @@ export function AutomationScreen({ data }: { data?: any }) {
                           aria-label="Envio de hoje"
                         >
                           <strong>{item.envioHoje.rotulo}</strong>
-                          <span>{item.envioHoje.detalhe}</span>
+                          {item.envioHoje.estado !== 'vazio' && (
+                            <span>{item.envioHoje.detalhe}</span>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="auto-rule-actions">
+                  <div className="auto-rule-actions is-rule-actions">
                     <ActionForm
                       item={item}
                       token={data.page.csrfToken}
                       action="toggle_regra"
                     >
-                      <input
-                        type="checkbox"
-                        className="switch"
-                        aria-label={`Ativar regra ${item.titulo}`}
-                        defaultChecked={item.status === 'Ativo'}
-                        onChange={(event) =>
-                          (
-                            event.target as HTMLInputElement
-                          ).form.requestSubmit()
-                        }
-                      />
+                      <label className="auto-toggle-control">
+                        <input
+                          type="checkbox"
+                          className="switch"
+                          aria-label={`Ativar regra ${item.titulo}`}
+                          defaultChecked={item.status === 'Ativo'}
+                          onChange={(event) =>
+                            (
+                              event.target as HTMLInputElement
+                            ).form.requestSubmit()
+                          }
+                        />
+                        <span>
+                          {item.status === 'Ativo' ? 'Ativa' : 'Desativada'}
+                        </span>
+                      </label>
                     </ActionForm>
                     <ActionForm
                       item={item}
@@ -560,17 +588,15 @@ export function AutomationScreen({ data }: { data?: any }) {
             <table className="cli-table disparos-table">
               <thead>
                 <tr>
-                  {['Quando', 'Regra', 'Clientes', 'Status', 'Detalhe'].map(
-                    (label) => (
-                      <th key={label}>{label}</th>
-                    ),
-                  )}
+                  {['Quando', 'Regra', 'Clientes', 'Status'].map((label) => (
+                    <th key={label}>{label}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {!data.disparos.length && (
                   <tr>
-                    <td colSpan={5}>Nenhum disparo registrado.</td>
+                    <td colSpan={4}>Nenhum disparo registrado.</td>
                   </tr>
                 )}
                 {data.disparos.map((row, index) => (
@@ -591,14 +617,6 @@ export function AutomationScreen({ data }: { data?: any }) {
                               ? 'Erro'
                               : 'Pendente'}
                     </td>
-                    <td>
-                      {row.status === 'incerto'
-                        ? 'Confira no WhatsApp antes de qualquer nova tentativa. ' +
-                          (row.erro || '')
-                        : row.status === 'erro' || row.status === 'nao_enviado'
-                          ? row.erro || 'Falha'
-                          : '-'}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -608,6 +626,13 @@ export function AutomationScreen({ data }: { data?: any }) {
       </div>
       {editor && (
         <RuleEditor {...editor} data={data} onClose={() => setEditor(null)} />
+      )}
+      {scheduledEditor && (
+        <CampaignEditor
+          item={scheduledEditor.item}
+          data={data}
+          onClose={() => setScheduledEditor(null)}
+        />
       )}
       {recipients && (
         <Recipients item={recipients} onClose={() => setRecipients(null)} />

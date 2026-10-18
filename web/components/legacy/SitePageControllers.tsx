@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { PanelNotice } from '../ui/PanelNotice.tsx';
+import { confirmElementAction } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 
 // As telas adaptadas usam navegação completa enquanto seus controladores
 // manipulam o DOM. Isso encerra timers e listeners antes de outra tela montar.
@@ -43,11 +45,11 @@ export function SitePageControllers({
       if (event.type === 'click' && element?.tagName === 'FORM') return;
       if (element?.dataset.confirm) {
         event.gestorConfirmationHandled = true;
-        if (!window.confirm(element.dataset.confirm)) event.preventDefault();
+        confirmElementAction(event, element, element.dataset.confirm);
       }
     };
-    document.addEventListener('click', confirmAction);
-    document.addEventListener('submit', confirmAction);
+    document.addEventListener('click', confirmAction, true);
+    document.addEventListener('submit', confirmAction, true);
     async function initialize() {
       for (const descriptor of scripts) {
         if (cancelled) return;
@@ -110,15 +112,15 @@ export function SitePageControllers({
       cancelled = true;
       clearTimeout(timer);
       document.removeEventListener('change', change);
-      document.removeEventListener('click', confirmAction);
-      document.removeEventListener('submit', confirmAction);
+      document.removeEventListener('click', confirmAction, true);
+      document.removeEventListener('submit', confirmAction, true);
       document.dispatchEvent(new Event('gestor:before-swap'));
       window.__gestorAbort?.abort();
       nodes.forEach((node) => node.remove());
     };
   }, [scripts, path, trustedScriptNonce]);
   return error ? (
-    <div className="form-alert error" role="alert">
+    <PanelNotice inline error>
       {error}{' '}
       <button
         type="button"
@@ -127,6 +129,6 @@ export function SitePageControllers({
       >
         Recarregar página
       </button>
-    </div>
+    </PanelNotice>
   ) : null;
 }

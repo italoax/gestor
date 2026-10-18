@@ -163,13 +163,6 @@ h2 {
   text-underline-offset: 3px;
 }
 .portal-alert {
-  padding: 14px 16px;
-  border: 1px solid #87506e;
-  border-radius: 10px;
-  background: #422133;
-  color: #ffd4e4;
-  font-size: 14px;
-  line-height: 1.6;
   margin-bottom: 20px;
 }
 .portal-grid {
@@ -333,14 +326,7 @@ h2 {
   padding: 10px 12px;
 }
 .portal-login-error {
-  padding: 11px 13px;
   margin: 0 0 18px;
-  border: 1px solid #bd739136;
-  border-radius: 9px;
-  background: #bd739110;
-  color: #efb8cb;
-  font-size: 13px;
-  line-height: 1.5;
 }
 .portal-login-error[hidden] {
   display: none;

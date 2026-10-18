@@ -1,8 +1,3 @@
 <div class="container">
-  <div class="form-alert error">
-    <strong> Erro interno. </strong>
-    <% if (error) { %>
-    <pre><%= error && error.stack ? error.stack : (error && error.message ? error.message : String(error)) %></pre>
-    <% } %>
-  </div>
+  <%- include('../partials/panel-notice', {noticeTitle: 'Erro interno', text: error ? (error.stack || error.message || String(error)) : 'Não foi possível concluir a solicitação.', isError: true}) %>
 </div>

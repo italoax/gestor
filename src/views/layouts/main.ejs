@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-feedback.css') %>" />
     <meta charset="UTF-8" />
     <meta
       name="viewport"
@@ -30,7 +31,7 @@
     <meta name="csrf-token" content="<%= locals.csrfToken %>" />
     <% } %>
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/style.css') %>" />
-    <link rel="stylesheet" href="<%= assetUrl('/assets/css/node-migration.css') %>" />
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-base.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/modals.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-ui.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/visual-effects.css') %>" />
@@ -113,12 +114,7 @@
       <div class="app-main">
         <header class="topbar2">
           <div class="topbar2-title">
-            <h1><%= title || 'Gestor' %></h1>
-            <% if (typeof subtitle !== 'undefined' && subtitle) { %>
-            <span><%= subtitle %></span>
-            <% } else if (currentPath === '/dashboard') { %>
-            <span>Visão geral do sistema</span>
-            <% } %>
+            <h1><%= menu.find(item => isActive(item.href))?.label || title || 'Gestor' %></h1>
           </div>
           <div class="topbar2-actions">
             <a
@@ -294,45 +290,7 @@
         </header>
         <main class="app-content">
           <% if ((success && success.length) || (error && error.length)) { %>
-          <div
-            class="modal-overlay"
-            id="modal-site-notice"
-            data-auto-notice
-            aria-hidden="true"
-            inert
-          >
-            <div class="modal site-notice-modal">
-              <div class="modal-header">
-                <h3><%= error && error.length ? 'Confira este aviso' : 'Tudo certo!' %></h3>
-                <button
-                  type="button"
-                  class="modal-close"
-                  data-close-modal
-                  aria-label="Fechar"
-                  >&times;</button
-                >
-              </div>
-              <div class="modal-body">
-                <% (success || []).forEach(message => { %>
-                <div class="site-notice-message is-success">
-                  <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'check'}) %></span>
-                  <p><%= message %></p>
-                </div>
-                <% }) %>
-                <% (error || []).forEach(message => { %>
-                <div class="site-notice-message is-error">
-                  <span class="site-notice-icon"><%- include('../partials/ui-icon', {name:'info'}) %></span>
-                  <p><%= message %></p>
-                </div>
-                <% }) %>
-                <div class="modal-actions">
-                  <button class="btn btn-primary" type="button" data-close-modal
-                    >Entendi</button
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
+          <%- include('../partials/panel-notice', { text: [...(success || []), ...(error || [])].join(' '), isError: Boolean(error && error.length), automatic: true }) %>
           <% } %>
           <%- body %>
         </main>

@@ -1,4 +1,5 @@
 'use client';
+import { showPanelNotice } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CsrfInput, Icon } from '../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
@@ -277,7 +278,6 @@ function MessageEditor({
 export function MessagesScreen({ data }: { data?: any }) {
   const [search, setSearch] = useState('');
   const [editor, setEditor] = useState(null);
-  const [notice, setNotice] = useState('');
   useEffect(() => {
     const url = new URL(location.href);
     let message = '';
@@ -292,7 +292,7 @@ export function MessagesScreen({ data }: { data?: any }) {
       }
     }
     if (message) {
-      setNotice(message);
+      showPanelNotice(message);
       history.replaceState(
         history.state,
         '',
@@ -389,13 +389,6 @@ export function MessagesScreen({ data }: { data?: any }) {
           token={data.page.csrfToken}
           onClose={() => setEditor(null)}
         />
-      )}
-      {notice && (
-        <NativeDialog title="Aviso" onClose={() => setNotice('')}>
-          <div className="modal-body">
-            <div className="form-alert success">{notice}</div>
-          </div>
-        </NativeDialog>
       )}
     </NativePanel>
   );

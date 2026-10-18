@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { confirmFormSubmission } from '../../src/browser/assets/js/ui/panel-feedback.ts';
 
 export function useNativeSubmit(confirmMessage?: string) {
   const submitted = useRef(false);
@@ -21,7 +22,7 @@ export function useNativeSubmit(confirmMessage?: string) {
   return (event) => {
     if (
       submitted.current ||
-      (confirmMessage && !window.confirm(confirmMessage))
+      (confirmMessage && !confirmFormSubmission(event, confirmMessage))
     )
       event.preventDefault();
     else {

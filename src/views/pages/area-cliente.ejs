@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-feedback.css') %>" />
+    <script nonce="<%= locals.cspNonce || '' %>" type="module" src="<%= assetUrl('/assets/js/ui/panel-feedback.js') %>"></script>
     <link rel="apple-touch-icon" sizes="180x180" href="<%= assetUrl('/apple-touch-icon.png') %>" />
     <meta name="apple-mobile-web-app-title" content="IX TV" />
     <meta charset="utf-8" />
@@ -22,19 +24,15 @@
       </header>
       <main class="portal-main">
         <% if (erro && cliente) { %>
-        <div class="portal-alert" role="alert"><%= erro %></div>
+        <div class="portal-alert"><%- include('../partials/panel-notice', {text: erro, isError: true}) %></div>
         <% } %>
         <% if (!cliente) { %>
         <section class="portal-card portal-login">
           <p class="portal-eyebrow">ixstreaming</p>
           <h1>Área do cliente</h1>
           <p class="portal-lead">Sua assinatura, em um só lugar.</p>
-          <div
-            class="portal-login-error"
-            id="login-error"
-            role="alert"
-            <%= erro ? '' : 'hidden' %>
-            ><%= erro %></div
+          <div class="portal-login-error" id="login-error" <%= erro ? '' : 'hidden' %>
+            ><% if (erro) { %><%- include('../partials/panel-notice', {text: erro, isError: true}) %><% } %></div
           >
           <form
             class="portal-form"

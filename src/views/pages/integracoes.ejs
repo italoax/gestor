@@ -73,6 +73,7 @@
             method="post"
             action="/integracoes"
             class="integ-inline delete-integracao"
+            data-confirm="Remover esta integra&#231;&#227;o?"
             data-native-submit="1"
           >
             <%- csrfInput %>
@@ -178,11 +179,7 @@
           </select>
         </label>
       </div>
-      <div class="form-alert integ-cf-note"
-        >⚠️ O painel fica atrás do Cloudflare. Se o teste retornar "bloqueado
-        pelo Cloudflare", peça ao provedor para liberar (whitelist) o IP do seu
-        servidor.</div
-      >
+      <%- include('../partials/panel-notice', {text: 'Se o teste retornar "bloqueado pelo Cloudflare", peça ao provedor para liberar o IP do seu servidor.', isInfo: true}) %>
     </form>
     <div class="modal-footer">
       <button class="btn btn-muted" type="button" data-close-modal
@@ -250,8 +247,5 @@
     });
   });
 
-  document.querySelectorAll('.delete-integracao').forEach(function (f) {
-    f.addEventListener('submit', function (e) { if (!confirm('Remover esta integração?')) e.preventDefault(); });
-  });
 })();
 </script>

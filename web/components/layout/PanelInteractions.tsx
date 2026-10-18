@@ -4,14 +4,42 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { isPanelPage } from '../../../src/frontend/pageRoutes.ts';
 import { postPanelAction } from '../../../src/frontend/panelAction.ts';
+import { PanelNotice } from '../ui/PanelNotice.tsx';
+import {
+  showPanelNotice,
+  dismissPanelNotice,
+} from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 
 export function PanelInteractions({ path }: { path: string }) {
   const router = useRouter();
   const [notice, setNotice] = useState<{
     text: string;
     error?: boolean;
+    pending?: boolean;
     form?: HTMLFormElement;
   }>();
+  useEffect(() => {
+    setNotice(undefined);
+    dismissPanelNotice();
+    return dismissPanelNotice;
+  }, [path]);
+  const showNotice = (notice: {
+    text: string;
+    error?: boolean;
+    pending?: boolean;
+    form?: HTMLFormElement;
+  }) => {
+    dismissPanelNotice();
+    if (
+      notice.form?.isConnected &&
+      notice.form.closest('dialog[open], .modal-overlay.open')
+    )
+      setNotice(notice);
+    else {
+      setNotice(undefined);
+      showPanelNotice(notice.text, notice.error, { pending: notice.pending });
+    }
+  };
   useEffect(() => {
     let active = true;
     let saving = false;
@@ -134,7 +162,7 @@ export function PanelInteractions({ path }: { path: string }) {
       buttons.forEach((button) => {
         button.disabled = true;
       });
-      setNotice({ text: 'Salvando…' });
+      showNotice({ text: 'Aguarde um instante.', pending: true });
       const originalUrl = location.href;
       try {
         const result = await postPanelAction(url.href, body);
@@ -150,7 +178,7 @@ export function PanelInteractions({ path }: { path: string }) {
           return;
         }
         if (!result.ok) {
-          setNotice({ text: result.errors.join(' '), error: true, form });
+          showNotice({ text: result.errors.join(' '), error: true, form });
           return;
         }
         const modal = form.closest<HTMLElement>('.modal-overlay');
@@ -158,7 +186,7 @@ export function PanelInteractions({ path }: { path: string }) {
         form.dispatchEvent(
           new CustomEvent('gestor:submit-success', { bubbles: true }),
         );
-        setNotice({
+        showNotice({
           text:
             [...result.success, ...result.errors].join(' ') ||
             'Alterações salvas.',
@@ -176,7 +204,7 @@ export function PanelInteractions({ path }: { path: string }) {
           );
       } catch (error) {
         if (active && originalUrl === location.href)
-          setNotice({
+          showNotice({
             text:
               error instanceof Error &&
               !(error instanceof TypeError) &&
@@ -209,34 +237,19 @@ export function PanelInteractions({ path }: { path: string }) {
     };
   }, [router, path]);
   if (!notice) return null;
+  const inlineForm =
+    notice.form?.isConnected &&
+    notice.form.closest('dialog[open], .modal-overlay.open')
+      ? notice.form
+      : undefined;
   const message = (
-    <div
-      className={`form-alert ${notice.error ? 'error' : 'success'}`}
-      role={notice.error ? 'alert' : 'status'}
-      style={
-        notice.form?.isConnected
-          ? undefined
-          : {
-              position: 'fixed',
-              bottom: 80,
-              right: 16,
-              maxWidth: 'min(480px, calc(100vw - 32px))',
-              zIndex: 10000,
-            }
-      }
-    >
-      {notice.text}{' '}
-      <button
-        type="button"
-        className="btn btn-muted"
-        onClick={() => setNotice(undefined)}
-        aria-label="Fechar aviso"
-      >
-        ×
-      </button>
-    </div>
+    <PanelNotice
+      text={notice.text}
+      error={notice.error}
+      pending={notice.pending}
+      inline={Boolean(inlineForm)}
+      onClose={() => setNotice(undefined)}
+    />
   );
-  return notice.form?.isConnected
-    ? createPortal(message, notice.form)
-    : message;
+  return createPortal(message, inlineForm || document.body);
 }
