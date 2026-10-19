@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-export const PANEL_SESSION_IDLE_MS = 5 * 60_000;
+export const PANEL_SESSION_IDLE_MS = 60 * 60_000;
 
 export interface SessionSecurity {
   authenticatedAt: number;

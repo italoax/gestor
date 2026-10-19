@@ -1,6 +1,7 @@
 <% const failed = typeof isError !== 'undefined' && isError;
 const info = typeof isInfo !== 'undefined' && isInfo;
-const floating = typeof automatic !== 'undefined' && automatic; %>
+const floating = typeof automatic !== 'undefined' && automatic;
+const failure = failed && typeof describeNoticeError === 'function' ? describeNoticeError(text) : null; %>
 <div
   class="panel-notice<%= floating ? '' : ' is-inline' %>"
   data-state="<%= failed ? 'error' : info ? 'info' : 'success' %>"
@@ -31,8 +32,8 @@ const floating = typeof automatic !== 'undefined' && automatic; %>
     </svg>
   </span>
   <div class="panel-notice-copy" role="<%= failed ? 'alert' : 'status' %>" aria-atomic="true">
-    <strong><%= typeof noticeTitle !== 'undefined' ? noticeTitle : failed ? 'Confira este aviso' : info ? 'Informação' : 'Tudo certo!' %></strong>
-    <p><%= text %></p>
+    <strong><%= typeof noticeTitle !== 'undefined' ? noticeTitle : failed ? (failure ? failure.title : 'Não foi possível concluir') : info ? 'Informação' : 'Tudo certo!' %></strong>
+    <p><%= failure ? failure.text : text %></p>
   </div>
   <% if (floating) { %><button
     type="button"

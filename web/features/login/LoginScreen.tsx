@@ -1,11 +1,14 @@
 'use client';
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
+import { describeNoticeError } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 
 export function LoginScreen({ data }: { data?: any }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(data.error?.[0] || '');
+  const [error, setError] = useState(() =>
+    data.error?.[0] ? describeNoticeError(data.error[0]) : null,
+  );
   const submitting = useRef(false);
   useLayoutEffect(() => {
     document.body.className = 'login-page';
@@ -26,7 +29,7 @@ export function LoginScreen({ data }: { data?: any }) {
     const form = event.currentTarget;
     submitting.current = true;
     setBusy(true);
-    setError('');
+    setError(null);
     try {
       // Uma aba antiga pode guardar o token anterior a um login/logout.
       // Atualize o token e confirme o cookie antes de enviar a senha uma vez.
@@ -72,7 +75,12 @@ export function LoginScreen({ data }: { data?: any }) {
       form.elements._csrf.value = token;
       HTMLFormElement.prototype.submit.call(form);
     } catch (failure) {
-      setError(failure.message || 'Falha de conexão. Tente novamente.');
+      setError(
+        describeNoticeError(
+          failure,
+          'Não foi possível entrar. Tente novamente em alguns instantes.',
+        ),
+      );
       submitting.current = false;
       setBusy(false);
     }
@@ -124,9 +132,17 @@ export function LoginScreen({ data }: { data?: any }) {
             <p>Use suas credenciais para continuar.</p>
           </div>
           {error && (
-            <PanelNotice inline error>
-              {error}
-            </PanelNotice>
+            <PanelNotice
+              inline
+              error
+              title={
+                error.title === 'Não foi possível concluir'
+                  ? 'Não foi possível entrar'
+                  : error.title
+              }
+              text={error.text}
+              onClose={() => setError(null)}
+            />
           )}
           <form
             className="login-form"

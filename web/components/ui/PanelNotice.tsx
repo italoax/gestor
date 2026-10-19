@@ -1,4 +1,5 @@
 'use client';
+import { describeNoticeError } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 
 export { showPanelNotice } from '../../../src/browser/assets/js/ui/panel-feedback.ts';
 
@@ -26,6 +27,11 @@ export function PanelNotice({
   onClose?: () => void;
 }) {
   const dismissible = Boolean(onClose && !pending);
+  const failure = error
+    ? describeNoticeError(
+        text || (typeof children === 'string' ? children : ''),
+      )
+    : undefined;
   return (
     <div
       className={`panel-notice${inline ? ' is-inline' : ''}${className ? ' ' + className : ''}`}
@@ -77,13 +83,19 @@ export function PanelNotice({
             (pending
               ? 'Salvando…'
               : error
-                ? 'Confira este aviso'
+                ? failure.title
                 : info
                   ? 'Informação'
                   : 'Tudo certo!')}
         </strong>
-        {text && <p>{text}</p>}
-        {children && <div className="panel-notice-body">{children}</div>}
+        {text && <p>{error ? describeNoticeError(text).text : text}</p>}
+        {children && (
+          <div className="panel-notice-body">
+            {error && typeof children === 'string'
+              ? describeNoticeError(children).text
+              : children}
+          </div>
+        )}
       </div>
       {dismissible && (
         <button

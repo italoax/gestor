@@ -131,6 +131,9 @@
   margin: 0;
   box-shadow: none;
 }
+.login-card > .panel-notice.is-inline {
+  margin-bottom: 16px;
+}
 .panel-notice-actions {
   grid-column: 2 / -1;
   display: flex;

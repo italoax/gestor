@@ -1,3 +1,50 @@
+export function describeNoticeError(
+  error: unknown,
+  fallback = 'Não foi possível concluir a solicitação. Tente novamente.',
+) {
+  const value = error as { name?: string; message?: unknown; code?: string };
+  const message =
+    typeof error === 'string'
+      ? error.trim()
+      : typeof value?.message === 'string'
+        ? value.message.trim()
+        : '';
+  if (
+    value?.name === 'TimeoutError' ||
+    /^(?:ETIMEDOUT|UND_ERR_(?:CONNECT|HEADERS|BODY)_TIMEOUT)$/.test(
+      value?.code || '',
+    ) ||
+    /\b(?:timed?\s*out|timeout(?:error)?)\b/i.test(message)
+  )
+    return {
+      title: 'A resposta demorou',
+      text: 'O servidor demorou mais que o esperado. Aguarde alguns instantes e tente novamente.',
+    };
+  if (
+    /^(?:ENOTFOUND|ECONNRESET|ECONNREFUSED|ERR_NETWORK)$/.test(
+      value?.code || '',
+    ) ||
+    /^(?:(?:TypeError|Error):\s*)?(?:failed to fetch|fetch failed|network\s?error(?: when attempting to fetch resource\.?)?|network request failed|load failed)\.?$/i.test(
+      message,
+    )
+  )
+    return {
+      title: 'Não foi possível conectar',
+      text: 'Confira sua conexão com a internet e tente novamente.',
+    };
+  if (
+    value?.name === 'AbortError' ||
+    /^(?:this operation was aborted|the operation was aborted\.?|aborterror(?::.*)?)$/i.test(
+      message,
+    )
+  )
+    return {
+      title: 'Solicitação interrompida',
+      text: 'A solicitação foi interrompida. Tente novamente.',
+    };
+  return { title: 'Não foi possível concluir', text: message || fallback };
+}
+
 export type NoticeOptions = {
   title?: string;
   error?: boolean;
@@ -15,6 +62,7 @@ let floatingNotice: HTMLElement | undefined;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function createPanelNotice(text: string, options: NoticeOptions = {}) {
+  const failure = options.error ? describeNoticeError(text) : undefined;
   const notice = document.createElement('div');
   notice.className = `panel-notice${options.inline ? ' is-inline' : ''}`;
   notice.dataset.state = options.pending
@@ -48,12 +96,12 @@ export function createPanelNotice(text: string, options: NoticeOptions = {}) {
     (options.pending
       ? 'Salvando…'
       : options.error
-        ? 'Confira este aviso'
+        ? failure.title
         : options.info
           ? 'Informação'
           : 'Tudo certo!');
   const paragraph = document.createElement('p');
-  paragraph.textContent = text;
+  paragraph.textContent = failure?.text || text;
   copy.append(title, paragraph);
   notice.append(icon, copy);
   if (dismissible) {

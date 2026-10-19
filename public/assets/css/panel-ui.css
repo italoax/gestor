@@ -426,10 +426,43 @@ html:has(body.page-app) {
   --ui-control-radius: 10px;
 }
 .page-app .app-main > .topbar2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   position: sticky;
   top: 0;
   z-index: 50;
   flex-shrink: 0;
+}
+.page-app .topbar2-title {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  text-align: center;
+}
+.page-app .topbar2-title h1 {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.page-app .topbar2-actions {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+@media (max-width: 1100px) {
+  .page-app .app-main > .topbar2 {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 10px;
+  }
+  .page-app .app-main > .topbar2 > .topbar2-title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .page-app .app-main > .topbar2 > .topbar2-actions {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: center;
+    margin: 0;
+  }
 }
 .page-app .account-menu-wrap {
   position: relative;
