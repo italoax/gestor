@@ -137,10 +137,6 @@ export function DashboardScreen({ data }: { data?: any }) {
                 <i />
                 <b>{acessos.vencidos}</b> vencidos
               </span>
-              <span>
-                <i />
-                <b>{acessos.inativos}</b> inativos
-              </span>
             </div>
             <div className="dash-access-servers">
               <div className="dash-access-row dash-access-labels">
@@ -148,7 +144,6 @@ export function DashboardScreen({ data }: { data?: any }) {
                 <span>Acessos</span>
                 <span>Ativos</span>
                 <span>Vencidos</span>
-                <span>Inativos</span>
               </div>
               {acessos.servidores.map((server, index) => (
                 <div className="dash-access-row" key={index}>
@@ -157,7 +152,6 @@ export function DashboardScreen({ data }: { data?: any }) {
                     ['total', 'Acessos', ''],
                     ['ativos', 'Ativos', 'pos'],
                     ['vencidos', 'Vencidos', 'neg'],
-                    ['inativos', 'Inativos', ''],
                   ].map(([key, label, color]) => (
                     <span key={key} data-label={label} className={color}>
                       <b>{server[key]}</b>

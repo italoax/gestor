@@ -188,6 +188,9 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
     }
   }
   const isConnected = !checking && connected(state);
+  useEffect(() => {
+    if (open && isConnected) setOpen(false);
+  }, [open, isConnected]);
   const message = busy
     ? 'Iniciando sessão... (pode levar alguns segundos)'
     : isConnected

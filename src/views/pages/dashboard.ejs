@@ -67,14 +67,12 @@
         ><i></i><b><%= acessos.ativos %></b> ativos</span
       ><span class="is-expired"
         ><i></i><b><%= acessos.vencidos %></b> vencidos</span
-      ><span
-        ><i></i><b><%= acessos.inativos %></b> inativos</span
       ></div
     >
     <div class="dash-access-servers">
       <div class="dash-access-row dash-access-labels"
         ><span>Servidor</span><span>Acessos</span><span>Ativos</span
-        ><span>Vencidos</span><span>Inativos</span></div
+        ><span>Vencidos</span></div
       >
       <% acessos.servidores.forEach(s => { %>
       <div class="dash-access-row">
@@ -87,9 +85,6 @@
         >
         <span data-label="Vencidos" class="neg"
           ><b><%= s.vencidos %></b></span
-        >
-        <span data-label="Inativos"
-          ><b><%= s.inativos %></b></span
         >
       </div>
       <% }) %>
@@ -588,9 +583,13 @@
   </div>
 </div>
 <script nonce="<%= locals.cspNonce || '' %>" data-nav-once src="<%= assetUrl('/assets/js/vendor/chart.umd.js') %>"></script>
-<script nonce="<%= locals.cspNonce || '' %>">window.__dashData = <%- chart.replace(/</g, '\\u003c') %>;</script>
+<script nonce="<%= locals.cspNonce || '' %>" data-dashboard-chart="<%= chart %>">
+  window.__dashData = JSON.parse(document.currentScript.dataset.dashboardChart);
+</script>
 <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/dashboard-charts.js') %>"></script>
-<script nonce="<%= locals.cspNonce || '' %>">window.__geoData = <%- geo.replace(/</g, '\\u003c') %>;</script>
+<script nonce="<%= locals.cspNonce || '' %>" data-dashboard-geo="<%= geo %>">
+  window.__geoData = JSON.parse(document.currentScript.dataset.dashboardGeo);
+</script>
 <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/dashboard-maps.js') %>"></script>
 
 <script nonce="<%= locals.cspNonce || '' %>">
