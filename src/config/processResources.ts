@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, readlinkSync } from 'node:fs';
 
 function threadLimit(value: string | undefined, fallback: number) {
   if (value === undefined || value === '') return fallback;
@@ -35,4 +35,52 @@ export function currentThreadCount(): number | undefined {
   } catch {
     return undefined;
   }
+}
+
+// Somente contadores da própria conta. Não lê argumentos, ambiente ou dados
+// dos clientes; o agrupamento por domínio permite atribuir o NPROC do hPanel.
+export function accountProcessResources() {
+  if (process.platform !== 'linux') return undefined;
+  const uid = process.getuid?.();
+  if (uid === undefined) return undefined;
+  const groups = new Map<
+    string,
+    { processes: number; threads: number; rssMiB: number }
+  >();
+  let entries: string[];
+  try {
+    entries = readdirSync('/proc');
+  } catch {
+    return undefined;
+  }
+  for (const entry of entries) {
+    if (!/^\d+$/.test(entry)) continue;
+    try {
+      const status = readFileSync(`/proc/${entry}/status`, 'utf8');
+      if (Number(status.match(/^Uid:\s+(\d+)/m)?.[1]) !== uid) continue;
+      let domain = 'other';
+      try {
+        domain =
+          readlinkSync(`/proc/${entry}/cwd`).match(
+            /\/domains\/([^/]+)(?:\/|$)/,
+          )?.[1] || 'other';
+      } catch {}
+      const group = groups.get(domain) || {
+        processes: 0,
+        threads: 0,
+        rssMiB: 0,
+      };
+      group.processes++;
+      group.threads += Number(status.match(/^Threads:\s+(\d+)/m)?.[1] || 1);
+      group.rssMiB += Number(status.match(/^VmRSS:\s+(\d+)/m)?.[1] || 0) / 1024;
+      groups.set(domain, group);
+    } catch {
+      // O processo pode encerrar durante a leitura.
+    }
+  }
+  return [...groups].map(([domain, group]) => ({
+    domain,
+    ...group,
+    rssMiB: Math.round(group.rssMiB),
+  }));
 }

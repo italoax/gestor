@@ -14,6 +14,7 @@ import { safeError } from '../src/security/safeError.ts';
 import {
   childProcessResources,
   currentThreadCount,
+  accountProcessResources,
 } from '../src/config/processResources.ts';
 
 export async function runStack(listener?: PublicListener) {
@@ -91,6 +92,11 @@ export async function runStack(listener?: PublicListener) {
     );
   }
   runtimeLog('start', { workerEnabled, childThreadLimits: resources.limits });
+  // Uma leitura após estabilizar o boot; não cria processo de monitoramento.
+  const resourceTimer = setTimeout(() => {
+    runtimeLog('resources', { account: accountProcessResources() });
+  }, 30000);
+  resourceTimer.unref();
   process.once('exit', (code) => runtimeLog('exit', { code }));
   process.on('uncaughtExceptionMonitor', (error, origin) =>
     runtimeLog('fatal-error', { ...safeError(error), origin }),
@@ -151,6 +157,7 @@ export async function runStack(listener?: PublicListener) {
   async function shutdown(code = 0, reason = 'shutdown') {
     if (stopping) return;
     stopping = true;
+    clearTimeout(resourceTimer);
     clearTimeout(workerRetryTimer);
     runtimeLog('shutdown', { code, reason });
     process.exitCode = code;
