@@ -18,7 +18,6 @@ import { aplicativosConfig } from '../../src/config/catalogs.ts';
 import { dispositivosConfig } from '../../src/config/catalogs.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 import { closeSessionStores } from '../../src/db/sessionStore.ts';
-import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
 
 const { app: application, stopDevReload } = createApplication();
 let backend: Awaited<ReturnType<typeof createBackend>> | undefined;
@@ -60,12 +59,12 @@ try {
     },
     handleError: createErrorHandler(env.nodeEnv),
     async initialize() {
+      await db.query({ sql: 'SELECT 1', timeout: 5000 });
       if (env.localMode) {
-        await db.query('SELECT 1');
         console.log(
-          'Modo local: automações e migrações desativadas; sessões em memória.',
+          'Modo local: automações desativadas; sessões em memória.',
         );
-      } else await verifyDatabaseSchema(db);
+      }
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {

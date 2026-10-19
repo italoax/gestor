@@ -20,7 +20,6 @@
     "security:production": "node --import tsx scripts/security-production.mts",
     "security:keys": "node --import tsx scripts/security-keys.mts",
     "security:migrate": "node --import tsx scripts/migrate-secrets.mts",
-    "security:schema": "node --import tsx scripts/migrate-schema.mts",
     "security:restore": "node --import tsx scripts/restore-backup.mts",
     "security:inspect": "node --import tsx scripts/security-inspect.mts",
     "security:tls": "node --import tsx scripts/security-tls.mts",

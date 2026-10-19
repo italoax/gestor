@@ -5,7 +5,6 @@ import express from 'express';
 import { createWorker } from './create-worker.ts';
 import { env } from '../../src/config/env.ts';
 import { db } from '../../src/db/mysql.ts';
-import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
 import {
   startCobrancasScheduler,
   stopCobrancasScheduler,
@@ -28,8 +27,7 @@ try {
     application,
     handleError: createErrorHandler(env.nodeEnv),
     initialize: async () => {
-      await db.query('SELECT 1');
-      if (!env.localMode) await verifyDatabaseSchema(db);
+      await db.query({ sql: 'SELECT 1', timeout: 5000 });
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
