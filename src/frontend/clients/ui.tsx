@@ -50,7 +50,42 @@ const paths = {
       <path d="m3 17 5-5 4 4 4-6 5 7" />
     </>
   ),
+  video: (
+    <>
+      <rect x="3" y="5" width="13" height="14" rx="2" />
+      <path d="m16 10 5-3v10l-5-3" />
+    </>
+  ),
+  music: (
+    <>
+      <path d="M9 18V5l12-2v13M9 9l12-2" />
+      <ellipse cx="6" cy="18" rx="3" ry="3" />
+      <ellipse cx="18" cy="16" rx="3" ry="3" />
+    </>
+  ),
+  file: (
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6M8 13h8m-8 4h5" />
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
+  more: (
+    <>
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </>
+  ),
+  key: (
+    <>
+      <circle cx="8" cy="8" r="5" />
+      <path d="m12 12 9 9m-3-3 3-3m-6 0 3-3" />
+    </>
+  ),
+  archive: (
+    <>
+      <rect x="3" y="3" width="18" height="5" rx="1" />
+      <path d="M5 8v13h14V8m-10 4h6" />
+    </>
+  ),
   users: (
     <>
       <circle cx="9" cy="7" r="3" />

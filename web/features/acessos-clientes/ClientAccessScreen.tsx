@@ -70,19 +70,6 @@ export function ClientAccessScreen({ data }: { data?: any }) {
             >
               {item.blocked ? 'Habilitar acesso' : 'Desativar acesso'}
             </AccessAction>
-            <p className="muted">
-              O link de acesso tem 16 caracteres. Revogar invalida o link
-              anterior e as sessões abertas. Ao copiar ou enviar novamente, um
-              novo link será gerado.
-            </p>
-            <AccessAction
-              item={item}
-              token={data.page.csrfToken}
-              action="revoke-link"
-              disabled={!item.hasLink}
-            >
-              Revogar link de acesso
-            </AccessAction>
           </section>
         ))}
       </div>

@@ -54,16 +54,12 @@ export function installNativeRouteMiddleware(app) {
     sessionAction,
   );
   app.post(
-    [
-      '/minha-conta/pix',
-      '/integracao-pagamento',
-      '/integracoes',
-      '/acessos-clientes',
-    ],
+    ['/minha-conta/pix', '/integracao-pagamento', '/integracoes'],
     requireAuth,
     sensitiveRateLimit,
     requireRecentAuthentication,
   );
+  app.post('/acessos-clientes', requireAuth, sensitiveRateLimit);
   app.get(
     '/minha-conta/backup',
     requireAuth,
@@ -100,6 +96,7 @@ export function installNativeRouteMiddleware(app) {
         '/register',
         '/area-cliente/login',
         '/area-cliente',
+        '/area-cliente/sessao',
       ].includes(path) ||
         /^\/(?:r\/[^/]+|(?:pagar|p)\/[^/]+|pagar\/[^/]+\/status\/[^/]+)$/.test(
           path,

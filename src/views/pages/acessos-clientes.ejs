@@ -27,22 +27,6 @@
         ><%= c.portal_bloqueado ? 'Habilitar acesso' : 'Desativar acesso' %></button
       >
     </form>
-    <p class="muted"
-      >O link de acesso tem 16 caracteres. Revogar invalida o link anterior e as
-      sess&#245;es abertas. Ao copiar ou enviar novamente, um novo link
-      ser&#225; gerado.</p
-    >
-    <form method="post" action="/acessos-clientes" data-native-submit="1">
-      <%- csrfInput %>
-      <input type="hidden" name="id" value="<%= c.id %>" />
-      <button
-        class="btn btn-secondary"
-        name="action"
-        value="revoke-link"
-        <%= c.pagamento_curto ? '' : 'disabled' %>
-        >Revogar link de acesso</button
-      >
-    </form>
   </section>
   <% }) %>
 </div>

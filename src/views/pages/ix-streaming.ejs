@@ -67,12 +67,6 @@
         ><a href="#como-funciona">Como funciona</a><a href="#planos">Planos</a
         ><a href="#duvidas">Dúvidas</a></nav
       >
-      <a
-        href="/area-cliente"
-        data-open-client-portal
-        style="color:inherit;font-size:13px;white-space:nowrap"
-        >Área do cliente</a
-      >
     </header>
     <main id="conteudo">
       <section class="hero wrap">
@@ -603,24 +597,6 @@
         />
       </svg>
     </a>
-    <dialog
-      class="client-dialog"
-      id="client-dialog"
-      aria-label="Área do cliente"
-    >
-      <div class="client-dialog-bar">
-        <span>Área do cliente</span>
-        <button
-          type="button"
-          data-close-client-portal
-          aria-label="Fechar área do cliente"
-          autofocus
-          >&times;</button
-        >
-      </div>
-      <iframe title="Área do cliente ixstreaming" data-client-frame></iframe>
-    </dialog>
-    <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/landing-portal.js') %>" defer></script>
     <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/visual-effects.js') %>" defer></script>
   </body>
 </html>

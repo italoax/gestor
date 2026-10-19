@@ -20,6 +20,7 @@ import { getPixConfig } from './pixConfig.ts';
 import { createLogger } from './logger.ts';
 import {
   lerCampanha,
+  campanhaExpirada,
   campanhaPodeExecutar,
   dataReservaCampanha,
 } from './campanhas.ts';
@@ -114,6 +115,13 @@ async function executarCobrancasAutomaticasInterno() {
       continue;
     }
     const unico = campanha?.modo === 'unico';
+    if (campanhaExpirada(campanha, today)) {
+      await execute(
+        "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId AND status='Ativo'",
+        { id: cobranca.id, userId: cobranca.userId },
+      );
+      continue;
+    }
     if (
       unico &&
       !campanhaPodeExecutar(

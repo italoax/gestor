@@ -3,6 +3,11 @@ import { resumirEnviosCobranca } from '../services/cobrancaResumo.ts';
 import { createCampaignActions } from './campaigns.ts';
 import { lerCampanha, dataReservaCampanha } from '../services/campanhas.ts';
 import {
+  automationHistoryWindow,
+  automationHistoryUrl,
+  groupHistoryClients,
+} from '../services/automationHistory.ts';
+import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
@@ -160,6 +165,7 @@ export function createAutomationWorkflow({
       timeZone: 'America/Sao_Paulo',
       day: '2-digit',
       month: '2-digit',
+      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
@@ -172,6 +178,7 @@ export function createAutomationWorkflow({
           await ensureCobrancasEnviosTable();
           await seedRegrasPadrao(userId);
           const today = appTodayIso();
+          const history = automationHistoryWindow(today, input.query);
           const [
             regrasRows,
             enviosHoje,
@@ -216,16 +223,19 @@ export function createAutomationWorkflow({
                 ce.status,
                 ce.erro,
                 COUNT(*) AS clientesCount,
-                GROUP_CONCAT(CONCAT(cl.nome, ' (', COALESCE(
+                JSON_ARRAYAGG(JSON_OBJECT('nome', cl.nome, 'servidor',
                   CASE WHEN ce.acesso_chave = 'principal' THEN cl.servidor
-                    ELSE JSON_UNQUOTE(JSON_EXTRACT(cl.plano_adicional, '$.servidor')) END, 'acesso removido'), ')')
-                  ORDER BY cl.nome SEPARATOR ', ') AS clientesNomes
+                    ELSE JSON_UNQUOTE(JSON_EXTRACT(cl.plano_adicional, '$.servidor')) END
+                )) AS clientesDetalhes
            FROM cobrancas_envios ce JOIN cobrancas co ON co.id = ce.cobranca_id
            LEFT JOIN clientes cl ON cl.id = ce.cliente_id AND cl.user_id = co.user_id
           WHERE co.user_id = :userId
           GROUP BY ce.cobranca_id, ce.data_envio, ce.status, ce.erro, co.titulo
-          ORDER BY atualizadoEm DESC LIMIT 100`,
-              { userId },
+          HAVING atualizadoEm >=
+            CONVERT_TZ(CONCAT(:historyCutoff, ' 00:00:00'), '-03:00', '+00:00')
+          ORDER BY atualizadoEm DESC, ce.cobranca_id DESC, ce.data_envio DESC, ce.status, ce.erro
+          LIMIT ${history.porPagina + 1} OFFSET ${history.offset}`,
+              { userId, historyCutoff: history.dataLimite },
             ),
             queryRows(
               'SELECT COUNT(*) AS total FROM clientes WHERE user_id = :userId',
@@ -296,10 +306,38 @@ export function createAutomationWorkflow({
             subtitle: 'Envie mensagens automáticas para seus clientes',
             stats,
             regras,
-            disparos: disparos.map((d) => ({
-              ...d,
-              quando: formatDateTimeBr(d.atualizadoEm),
-            })),
+            historico: {
+              dataLimite: history.dataLimite,
+              pagina: history.pagina,
+              porPagina: history.porPagina,
+              temMais: disparos.length > history.porPagina,
+              anteriorUrl:
+                history.pagina > 1
+                  ? automationHistoryUrl(history.pagina - 1, history.porPagina)
+                  : null,
+              proximaUrl:
+                disparos.length > history.porPagina
+                  ? automationHistoryUrl(history.pagina + 1, history.porPagina)
+                  : null,
+            },
+            disparos: disparos.slice(0, history.porPagina).map((d) => {
+              const clientesPorServidor = groupHistoryClients(
+                d.clientesDetalhes,
+              );
+              return {
+                ...d,
+                quando: formatDateTimeBr(d.atualizadoEm),
+                clientesPorServidor,
+                clientesNomes: clientesPorServidor.length
+                  ? clientesPorServidor
+                      .map(
+                        (group) =>
+                          `${group.servidor}: ${group.clientes.join(', ')}`,
+                      )
+                      .join('; ')
+                  : d.clientesNomes,
+              };
+            }),
             clientesCount: Number(clientesCount[0]?.total ?? 0),
             planos,
             servidores,

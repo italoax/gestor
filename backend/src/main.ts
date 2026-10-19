@@ -60,10 +60,8 @@ try {
     handleError: createErrorHandler(env.nodeEnv),
     async initialize() {
       await db.query({ sql: 'SELECT 1', timeout: 5000 });
-      if (env.localMode) {
-        console.log(
-          'Modo local: automações desativadas; sessões em memória.',
-        );
+      if (env.localMode && process.env.GESTOR_COMPACT_LOGS !== 'true') {
+        console.log('Modo local: automações desativadas; sessões em memória.');
       }
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
@@ -90,7 +88,9 @@ try {
   if (address && typeof address === 'object')
     process.send?.({ type: 'listening', port: address.port });
   console.log(
-    `[Backend] Pronto em ${env.appUrl || `http://localhost:${env.port}`}`,
+    process.env.GESTOR_COMPACT_LOGS === 'true'
+      ? '[Backend] Pronto.'
+      : `[Backend] Pronto em ${env.appUrl || `http://localhost:${env.port}`}`,
   );
 } catch (error) {
   const databaseLimit =

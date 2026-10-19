@@ -206,12 +206,13 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
       registration.current.waiting.postMessage({ type: 'SKIP_WAITING' });
     else location.reload();
   };
+  const compactUpdate = online && update && !message;
   return (
     <InstallContext.Provider value={{ available, busy, install }}>
       {children}
       {(!online || update || message) && (
         <PanelNotice
-          className="pwa-app-notice"
+          className={`pwa-app-notice${compactUpdate ? ' pwa-update-notice' : ''}`}
           error={!online}
           info={online}
           pending={updating}
@@ -225,7 +226,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
           text={
             !online
               ? 'Reconecte para carregar ou salvar seus dados.'
-              : message || 'Uma nova versão do aplicativo está pronta.'
+              : message || undefined
           }
           onClose={
             ((online && update) || message) && !updating

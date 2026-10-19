@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { notifyPortalAccessChanged } from '../services/portalSessionStream.ts';
 import { revealIptvPassword } from '../security/storedSecrets.ts';
 import { startSessionSecurity } from '../services/sessionSecurity.ts';
 import {
@@ -166,7 +167,7 @@ export function createPortalWorkflow({
             revision(cliente) !== identity.revision
           ) {
             delete input.session.cliente;
-            return reply.redirect('/area-cliente/login');
+            return reply.redirect('/');
           }
           reply.locals.portalCliente = cliente;
           raiseWorkflowError();
@@ -296,6 +297,7 @@ export function createPortalWorkflow({
               'UPDATE clientes SET pagamento_curto = NULL WHERE id = :id AND user_id = :owner AND arquivado = 0',
               { id, owner },
             );
+            notifyPortalAccessChanged(id);
             if (input.get('Accept') === 'application/json')
               return reply.json({
                 ok: true,
@@ -311,21 +313,35 @@ export function createPortalWorkflow({
           if (!['disable', 'enable'].includes(input.body.action))
             return reply.sendStatus(400);
           const blocked = input.body.action === 'disable' ? 1 : 0;
-          await execute(
-            'UPDATE clientes SET portal_bloqueado = :blocked WHERE id = :id AND user_id = :owner AND arquivado = 0',
-            { id, owner, blocked },
-          );
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              await execute(
+                'UPDATE clientes SET portal_bloqueado = :blocked, pagamento_curto = :alias WHERE id = :id AND user_id = :owner AND arquivado = 0',
+                {
+                  id,
+                  owner,
+                  blocked,
+                  alias: blocked
+                    ? null
+                    : crypto.randomBytes(12).toString('base64url'),
+                },
+              );
+              break;
+            } catch (error) {
+              if (error.code !== 'ER_DUP_ENTRY' || blocked || attempt === 2)
+                throw error;
+            }
+          }
+          const message = blocked
+            ? 'Acesso desativado. O link anterior foi invalidado.'
+            : 'Acesso habilitado com um novo link.';
+          notifyPortalAccessChanged(id);
           if (input.get('Accept') === 'application/json')
             return reply.json({
               ok: true,
-              message: blocked ? 'Acesso desativado.' : 'Acesso habilitado.',
+              message,
             });
-          input.flash(
-            'portal-admin',
-            blocked
-              ? 'Acesso desativado.'
-              : 'Acesso habilitado com os dados do IPTV.',
-          );
+          input.flash('portal-admin', message);
           reply.redirect(`/acessos-clientes?cliente=${id}`);
         } catch (err) {
           raiseWorkflowError(err);

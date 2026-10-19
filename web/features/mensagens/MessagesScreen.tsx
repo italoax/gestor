@@ -6,6 +6,7 @@ import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { PanelSearch } from '../../../src/frontend/components/PanelSearch.tsx';
+import { messagePreview } from '../../../src/services/format.ts';
 
 const tags = [
   'saudacao',
@@ -90,11 +91,12 @@ function MessageEditor({
   return (
     <NativeDialog
       title={item ? 'Editar Template' : 'Novo Template'}
+      className="template-editor"
       onClose={onClose}
       footer={
         <>
           <button className="btn btn-muted" type="button" onClick={onClose}>
-            Fechar
+            Cancelar
           </button>
           <button
             className="btn btn-primary"
@@ -188,12 +190,12 @@ function MessageEditor({
         >
           <div className="form-grid">
             <label className="field full">
-              <span>Nome do Template *</span>
+              <span>Nome *</span>
               <input
                 className="input"
                 name="titulo"
                 defaultValue={item?.titulo || ''}
-                placeholder="Ex: Boas-vindas, Aviso de vencimento..."
+                placeholder="Ex.: Boas-vindas"
                 required
               />
             </label>
@@ -203,7 +205,7 @@ function MessageEditor({
                 className="input"
                 name="descricao"
                 defaultValue={item?.descricao || ''}
-                placeholder="Quando este template é usado"
+                placeholder="Opcional"
               />
             </label>
             <div className="field full">
@@ -216,7 +218,7 @@ function MessageEditor({
                   defaultValue=""
                   onChange={insertTag}
                 >
-                  <option value="">+ variável</option>
+                  <option value="">+ Variável</option>
                   {tags.map((tag) => (
                     <option key={tag} value={`{${tag}}`}>
                       {`{${tag}}`}
@@ -230,7 +232,8 @@ function MessageEditor({
                 id="message-text"
                 className="input"
                 name="mensagem"
-                rows={9}
+                rows={6}
+                placeholder="Digite a mensagem..."
                 value={text}
                 onChange={(event) =>
                   setText((event.target as HTMLTextAreaElement).value)
@@ -247,21 +250,21 @@ function MessageEditor({
         >
           <div className="form-grid">
             <label className="field">
-              <span>Tipo mídia</span>
+              <span>Tipo</span>
               <select
                 className="input"
                 name="media_tipo"
                 defaultValue={item?.mediaTipo || ''}
               >
                 <option value="">Nenhuma</option>
-                <option>image</option>
-                <option>video</option>
-                <option>audio</option>
-                <option>document</option>
+                <option value="image">Imagem</option>
+                <option value="video">Vídeo</option>
+                <option value="audio">Áudio</option>
+                <option value="document">Documento</option>
               </select>
             </label>
             <label className="field full">
-              <span>Caminho/URL mídia</span>
+              <span>Link ou caminho</span>
               <input
                 className="input"
                 name="media_path"
@@ -373,12 +376,7 @@ export function MessagesScreen({ data }: { data?: any }) {
               {item.descricao && (
                 <div className="msg-desc">{item.descricao}</div>
               )}
-              <div className="msg-preview">
-                {String(item.mensagem || '')
-                  .replace(/\s+/g, ' ')
-                  .slice(0, 110)}
-                {(item.mensagem || '').length > 110 ? '…' : ''}
-              </div>
+              <div className="msg-preview">{messagePreview(item.mensagem)}</div>
             </article>
           ))}
         </div>

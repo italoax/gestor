@@ -28,6 +28,10 @@ export async function runStack(listener?: PublicListener) {
     );
   const root = projectRoot;
   const development = process.argv.includes('--dev');
+  if (process.argv.includes('--verbose')) process.env.LOG_VERBOSE = 'true';
+  const compactLogs = development && process.env.LOG_VERBOSE !== 'true';
+  // Os scripts de build também são importados neste processo.
+  process.env.GESTOR_COMPACT_LOGS = compactLogs ? 'true' : 'false';
   const localMode = process.env.LOCAL_MODE ?? (development ? 'true' : 'false');
   const workerEnabled =
     localMode !== 'true' && process.env.RUN_AUTOMATIONS === 'true';
@@ -77,6 +81,11 @@ export async function runStack(listener?: PublicListener) {
   let workerRetryTimer: NodeJS.Timeout | undefined;
   let workerRetries = 0;
   function runtimeLog(event: string, details: Record<string, unknown> = {}) {
+    if (
+      compactLogs &&
+      !['child.error', 'fatal-error', 'worker.start-failed'].includes(event)
+    )
+      return;
     console.log(
       '[Runtime]',
       JSON.stringify({
@@ -92,10 +101,12 @@ export async function runStack(listener?: PublicListener) {
   }
   runtimeLog('start', { workerEnabled, childThreadLimits: resources.limits });
   // Uma leitura após estabilizar o boot; não cria processo de monitoramento.
-  const resourceTimer = setTimeout(() => {
-    runtimeLog('resources', { account: accountProcessResources() });
-  }, 30000);
-  resourceTimer.unref();
+  const resourceTimer = compactLogs
+    ? undefined
+    : setTimeout(() => {
+        runtimeLog('resources', { account: accountProcessResources() });
+      }, 30000);
+  resourceTimer?.unref();
   process.once('exit', (code) => runtimeLog('exit', { code }));
   process.on('uncaughtExceptionMonitor', (error, origin) =>
     runtimeLog('fatal-error', { ...safeError(error), origin }),
@@ -204,6 +215,10 @@ export async function runStack(listener?: PublicListener) {
     }
     workerRetries++;
     runtimeLog('worker.retry', { attempt: workerRetries, delayMs: delay });
+    if (compactLogs)
+      console.warn(
+        `[Automações] Nova tentativa em ${delay / 1000}s (${workerRetries}/3).`,
+      );
     workerRetryTimer = setTimeout(function retryWorker() {
       workerRetryTimer = undefined;
       void startWorker();
@@ -255,9 +270,11 @@ export async function runStack(listener?: PublicListener) {
   try {
     if (listener) await listener.ready;
     console.log(
-      listener
-        ? 'Inicialização: servidor público aberto; iniciando o backend.'
-        : 'Inicialização: iniciando o backend de desenvolvimento.',
+      compactLogs
+        ? '[Gestor] Preparando arquivos e iniciando o backend...'
+        : listener
+          ? 'Inicialização: servidor público aberto; iniciando o backend.'
+          : 'Inicialização: iniciando o backend de desenvolvimento.',
     );
     if (development) {
       await import('./build-react.mts');
@@ -351,7 +368,11 @@ export async function runStack(listener?: PublicListener) {
       await shutdown(1);
     } else {
       if (stopping) return;
-      console.log('Inicialização: preparando a interface Next.js.');
+      console.log(
+        compactLogs
+          ? '[Gestor] Iniciando a interface...'
+          : 'Inicialização: preparando a interface Next.js.',
+      );
       if (development) {
         launch('Next.js', [
           'node_modules/next/dist/bin/next',
@@ -386,7 +407,15 @@ export async function runStack(listener?: PublicListener) {
         );
       }
       if (workerEnabled) await startWorker();
-      if (!stopping)
+      if (!stopping && compactLogs) {
+        console.log(`[Gestor] Acesso: ${localUrl} | Ctrl+C para encerrar.`);
+        if (!workerEnabled)
+          console.log(
+            localMode === 'true'
+              ? '[Automações] Desativadas no modo local; sessões em memória.'
+              : '[Automações] Desativadas na configuração.',
+          );
+      } else if (!stopping)
         console.log(
           !workerEnabled
             ? `Gestor: ${runtimeEnv.APP_URL} — Next.js e NestJS; automações desativadas pela configuração, worker não iniciado.`

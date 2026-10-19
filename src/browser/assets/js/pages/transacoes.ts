@@ -5,6 +5,31 @@ window.gestorPageModules.initTransactions = function ({
 }) {
   if (document.querySelector('[data-react-page="transacoes"]') as HTMLElement)
     return;
+  const search = document.querySelector<HTMLInputElement>('#tx-search');
+  const payment = document.querySelector<HTMLSelectElement>(
+    '[data-tx-payment-filter]',
+  );
+  const size = document.querySelector<HTMLSelectElement>('[data-tx-page-size]');
+  const filterForm =
+    document.querySelector<HTMLFormElement>('[data-tx-filters]');
+  let filterTimer: ReturnType<typeof setTimeout>;
+  const submitFilters = () => {
+    clearTimeout(filterTimer);
+    if (filterForm?.isConnected) filterForm.requestSubmit();
+  };
+  search?.addEventListener('input', () => {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(submitFilters, 300);
+  });
+  payment?.addEventListener('change', submitFilters);
+  size?.addEventListener('change', submitFilters);
+  document
+    .querySelector('[data-tx-clear-filters]')
+    ?.addEventListener('click', () => {
+      if (search) search.value = '';
+      if (payment) payment.value = '';
+      submitFilters();
+    });
   // ----- Transações -----
   (
     document.querySelectorAll(
@@ -83,6 +108,19 @@ window.gestorPageModules.initTransactions = function ({
       put('tx-info-servidor', 'data-servidor');
       put('tx-info-plano', 'data-plano');
       put('tx-info-telas', 'data-telas');
+      const codes = Number(btn.getAttribute('data-codigos')) || 0;
+      const duration = btn.getAttribute('data-duracao') || '';
+      const quantityLabel = document.getElementById('tx-info-quantidade-label');
+      if (quantityLabel)
+        quantityLabel.textContent = codes ? 'Códigos' : 'Telas';
+      if (codes) put('tx-info-telas', 'data-codigos');
+      put('tx-info-duracao', 'data-duracao');
+      const durationGroup = document.getElementById('tx-info-duracao-group');
+      if (durationGroup) durationGroup.hidden = !duration;
+      const creditsGroup = document.getElementById('tx-info-creditos-group');
+      if (creditsGroup)
+        creditsGroup.hidden =
+          codes > 0 && codes === Number(btn.getAttribute('data-creditos-num'));
       put('tx-info-creditos', 'data-creditos');
       put('tx-info-custo', 'data-custo');
       put('tx-info-total', 'data-total');

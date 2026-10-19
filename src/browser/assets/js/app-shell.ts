@@ -22,6 +22,8 @@ const whatsappSnapshots = new Map<
   string,
   { indicator: WhatsappIndicator; response: any }
 >();
+let initializedShell: HTMLElement | null = null;
+let initializedScope: string | undefined;
 function readShellStatus(key: string, url: string, interval: number) {
   const state = shellReads.get(key) || { at: 0 };
   if (state.pending) return state.pending;
@@ -51,9 +53,25 @@ function readShellStatus(key: string, url: string, interval: number) {
 }
 
 window.__gestorInitShell = function () {
+  const shell = document.querySelector<HTMLElement>('[data-shell]');
+  const queryScope =
+    shell?.dataset.releaseLogin ||
+    document.querySelector<HTMLElement>('[data-wa-chip]')?.dataset.waStateKey ||
+    'panel';
+  const persistent = shell?.hasAttribute('data-persistent-panel');
+  if (
+    persistent &&
+    shell === initializedShell &&
+    queryScope === initializedScope &&
+    window.__gestorShellAbort &&
+    !window.__gestorShellAbort.signal.aborted
+  )
+    return;
   window.__gestorShellAbort?.abort();
   const lifecycle = new AbortController();
   window.__gestorShellAbort = lifecycle;
+  initializedShell = shell;
+  initializedScope = queryScope;
   const timeouts = new Set<number>();
   const intervals = new Set<number>();
   const on = (
@@ -116,13 +134,8 @@ window.__gestorInitShell = function () {
     },
     { once: true },
   );
-  on(document, 'gestor:before-swap', () => lifecycle.abort());
+  if (!persistent) on(document, 'gestor:before-swap', () => lifecycle.abort());
   // Obs.: a troca de tema (claro/escuro) é feita pelo main.js via [data-theme-toggle].
-  var shell = document.querySelector('[data-shell]') as HTMLElement;
-  const queryScope =
-    shell?.dataset.releaseLogin ||
-    document.querySelector<HTMLElement>('[data-wa-chip]')?.dataset.waStateKey ||
-    'panel';
   void initReleaseNotice(shell, lifecycle.signal);
   initSessionActivity(shell, lifecycle.signal);
 
@@ -296,20 +309,22 @@ window.__gestorInitShell = function () {
   }
 
   // Fechar banner do topo
-  var bannerClose = document.querySelector(
-    '[data-dismiss-banner]',
-  ) as HTMLElement;
-  if (bannerClose) {
-    on(bannerClose, 'click', function () {
+  on(document, 'click', function (event) {
+    const bannerClose = (event.target as HTMLElement).closest(
+      '[data-dismiss-banner]',
+    );
+    if (bannerClose) {
       var banner = bannerClose.closest('.dash-banner') as HTMLElement;
       if (banner) banner.remove();
-    });
-  }
+    }
+  });
 
   // Atalho Ctrl+K para a busca
-  var search = document.querySelector('[data-global-search]') as HTMLElement;
   on(document, 'keydown', function (e) {
     if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      const search = document.querySelector<HTMLElement>(
+        '[data-global-search]',
+      );
       e.preventDefault();
       if (search) search.focus();
     }
@@ -481,21 +496,15 @@ window.__gestorInitShell = function () {
   });
 
   // Selecionar todos os clientes (checkbox do cabeçalho)
-  (
-    document.querySelectorAll(
-      '[data-check-all]',
-    ) as NodeListOf<HTMLInputElement>
-  ).forEach(function (master) {
+  on(document, 'change', function (event) {
+    const master = event.target as HTMLInputElement;
+    if (!master.matches('[data-check-all]')) return;
     if (master.closest('[data-react-page]') as HTMLElement) return;
-    on(master, 'change', function () {
-      var scope = (master.closest('table') as HTMLElement) || document;
-      (
-        scope.querySelectorAll(
-          'tbody .cli-check',
-        ) as NodeListOf<HTMLInputElement>
-      ).forEach(function (cb) {
-        cb.checked = master.checked;
-      });
+    var scope = (master.closest('table') as HTMLElement) || document;
+    (
+      scope.querySelectorAll('tbody .cli-check') as NodeListOf<HTMLInputElement>
+    ).forEach(function (cb) {
+      cb.checked = master.checked;
     });
   });
 
@@ -617,7 +626,49 @@ window.__gestorInitShell = function () {
     on(window, 'scroll', closeAllMenus, true);
     on(window, 'resize', closeAllMenus);
     on(document, 'keydown', function (e) {
-      if (e.key === 'Escape') closeAllMenus();
+      const trigger = (e.target as HTMLElement).closest(
+        '.cli-menu-btn',
+      ) as HTMLElement;
+      if (trigger && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
+        e.preventDefault();
+        if (trigger.getAttribute('aria-expanded') !== 'true') trigger.click();
+        const items =
+          trigger.parentElement.querySelectorAll<HTMLButtonElement>(
+            '.cli-menu-item',
+          );
+        items[e.key === 'ArrowUp' ? items.length - 1 : 0]?.focus();
+        return;
+      }
+      const menu = document.querySelector('.cli-menu-pop.open') as HTMLElement;
+      if (!menu) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        const button = menu.parentElement.querySelector(
+          '.cli-menu-btn',
+        ) as HTMLElement;
+        closeAllMenus();
+        button?.focus();
+      } else if (e.key === 'Tab') closeAllMenus();
+      else if (
+        menu.contains(e.target as Node) &&
+        ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)
+      ) {
+        e.preventDefault();
+        const items = Array.from(
+          menu.querySelectorAll<HTMLButtonElement>('.cli-menu-item'),
+        );
+        const current = items.indexOf(
+          document.activeElement as HTMLButtonElement,
+        );
+        const next =
+          e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? items.length - 1
+              : (current + (e.key === 'ArrowDown' ? 1 : -1) + items.length) %
+                items.length;
+        items[next]?.focus();
+      }
     });
   })();
 

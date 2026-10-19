@@ -235,6 +235,7 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     else if (button?.matches('.open-multi-payment')) void openMulti(button);
   }
   function updateSingle(name, value) {
+    if (name === 'servidor') setSingleErrors({});
     setSingle((previous) => {
       const next = { ...previous, [name]: value };
       if (name === 'valor')
@@ -246,6 +247,7 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     });
   }
   function updateMulti(name, value) {
+    if (name === 'selecao') setMultiErrors({});
     setMulti((previous) => {
       const next = { ...previous, [name]: value };
       if (name === 'selecao')
@@ -274,7 +276,7 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     for (const field of form.querySelectorAll(
       '[name]',
     ) as NodeListOf<HTMLInputElement>) {
-      if (field.disabled) continue;
+      if (field.matches(':disabled')) continue;
       const value = String(field.value).trim();
       if (field.hasAttribute('data-date-mask'))
         field.setCustomValidity(
@@ -287,7 +289,11 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     }
     for (const name of ['vencimento', 'pago_em']) {
       const field = form.elements.namedItem(name);
-      if (field?.value && !normalizeDateInput(field.value))
+      if (
+        field?.value &&
+        !field.matches(':disabled') &&
+        !normalizeDateInput(field.value)
+      )
         errors[name] = 'Informe uma data válida.';
     }
     const message = ensurePreference().getState();

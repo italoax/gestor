@@ -2,6 +2,14 @@ import { fileURLToPath } from 'node:url';
 // Configuração em JavaScript para dispensar o compilador SWC na inicialização.
 export default {
   poweredByHeader: false,
+  ...(process.env.GESTOR_COMPACT_LOGS === 'true'
+    ? {
+        logging: {
+          incomingRequests: false,
+          browserToTerminal: 'warn',
+        },
+      }
+    : {}),
   // A hospedagem compartilha CPUs; evite criar 27 processos de compilação.
   experimental: { cpus: 2 },
   turbopack: { root: fileURLToPath(new URL('../', import.meta.url)) },

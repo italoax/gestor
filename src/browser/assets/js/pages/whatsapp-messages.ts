@@ -33,7 +33,10 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
       }
       (
         form.querySelectorAll('[data-wa-media]') as NodeListOf<HTMLElement>
-      ).forEach((b) => b.classList.remove('active'));
+      ).forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       setModalState(modal, true);
     });
   });
@@ -69,7 +72,10 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
         const ativo = b.classList.contains('active');
         (
           waForm.querySelectorAll('[data-wa-media]') as NodeListOf<HTMLElement>
-        ).forEach((x) => x.classList.remove('active'));
+        ).forEach((x) => {
+          x.classList.remove('active');
+          x.setAttribute('aria-pressed', 'false');
+        });
         if (ativo) {
           if (tipoInput) tipoInput.value = '';
           if (urlInput) {
@@ -77,6 +83,7 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
           }
         } else {
           b.classList.add('active');
+          b.setAttribute('aria-pressed', 'true');
           if (tipoInput)
             tipoInput.value = b.getAttribute('data-wa-media') || '';
           if (urlInput) {

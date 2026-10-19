@@ -1,10 +1,17 @@
 import { safeError } from '../../src/security/safeError.ts';
 import { stopWhenSupervisorExits } from '../../src/services/supervisorLifecycle.ts';
-import { startEnabledAutomations } from '../../src/security/automationPolicy.ts';
+import {
+  automationsEnabled,
+  startEnabledAutomations,
+} from '../../src/security/automationPolicy.ts';
 import express from 'express';
 import { createWorker } from './create-worker.ts';
 import { env } from '../../src/config/env.ts';
-import { db } from '../../src/db/mysql.ts';
+import { db, execute } from '../../src/db/mysql.ts';
+import { ensureCobrancasEnviosSchema } from '../../src/db/cobrancasEnviosSchema.ts';
+import { appTodayIso } from '../../src/services/dates.ts';
+import { createLogger } from '../../src/services/logger.ts';
+import { createAutomationHistoryRetention } from '../../src/services/automationHistoryRetention.ts';
 import {
   startCobrancasScheduler,
   stopCobrancasScheduler,
@@ -18,6 +25,21 @@ import {
   stopBackupScheduler,
 } from '../../src/services/backupScheduler.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
+
+const historyLogger = createLogger('historico-envios');
+const historyRetention = createAutomationHistoryRetention({
+  enabled: () => automationsEnabled(env),
+  today: appTodayIso,
+  ensureSchema: ensureCobrancasEnviosSchema,
+  execute,
+  onError: (error) =>
+    historyLogger.error('Erro na limpeza do histórico de envios.', error),
+  onCleanup: (deleted, cutoff) =>
+    historyLogger.info('Registros de envio com mais de 3 meses removidos.', {
+      registros: deleted,
+      anterioresA: cutoff,
+    }),
+});
 
 let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
 try {
@@ -36,6 +58,7 @@ try {
         startCobrancasScheduler,
         startStatusScheduler,
         startBackupScheduler,
+        () => historyRetention.start(),
       );
     },
     async stopAutomations() {
@@ -43,6 +66,7 @@ try {
         stopCobrancasScheduler(),
         stopStatusScheduler(),
         stopBackupScheduler(),
+        historyRetention.stop(),
       ]);
     },
     stopDevReload() {},
@@ -58,16 +82,24 @@ try {
     process.send?.({ type: 'listening', socketPath: address });
   if (address && typeof address === 'object')
     process.send?.({ type: 'listening', port: address.port });
-  console.log(
-    typeof address === 'string'
-      ? '[Worker] Automações prontas no canal interno.'
-      : `[Worker] Automações prontas na porta ${address?.port ?? env.workerPort}.`,
-  );
-  console.log(
-    env.runAutomations && !env.localMode
-      ? '[Worker] Automações explicitamente habilitadas.'
-      : '[Worker] Automações desativadas; nenhum timer iniciado.',
-  );
+  if (process.env.GESTOR_COMPACT_LOGS === 'true') {
+    console.log(
+      env.runAutomations && !env.localMode
+        ? '[Automações] Prontas.'
+        : '[Automações] Desativadas; nenhum timer iniciado.',
+    );
+  } else {
+    console.log(
+      typeof address === 'string'
+        ? '[Worker] Automações prontas no canal interno.'
+        : `[Worker] Automações prontas na porta ${address?.port ?? env.workerPort}.`,
+    );
+    console.log(
+      env.runAutomations && !env.localMode
+        ? '[Worker] Automações explicitamente habilitadas.'
+        : '[Worker] Automações desativadas; nenhum timer iniciado.',
+    );
+  }
 } catch (error) {
   const databaseLimit =
     (error as { code?: string })?.code === 'ER_USER_LIMIT_REACHED';

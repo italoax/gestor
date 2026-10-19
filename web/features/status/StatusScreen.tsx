@@ -194,8 +194,8 @@ function StatusEditor({
   return (
     <NativeDialog
       title={item ? 'Editar agendamento' : 'Nova publicação'}
-      className="status-composer"
-      width={800}
+      className="status-composer status-editor"
+      width={640}
       onClose={() => {
         if (!pending.current) onClose();
       }}
@@ -215,11 +215,7 @@ function StatusEditor({
             form="react-status-form"
             disabled={busy}
           >
-            {busy
-              ? 'Salvando...'
-              : item
-                ? 'Salvar alterações'
-                : 'Agendar status'}
+            {busy ? 'Salvando...' : item ? 'Salvar' : 'Agendar'}
           </button>
         </>
       }
@@ -250,10 +246,6 @@ function StatusEditor({
         />
         <input type="hidden" name="id" value={item?.id || ''} />
         <input type="hidden" name="tipo" value={type} />
-        <p className="status-intro muted">
-          Escolha quando publicar e, se quiser, quando remover o status. Sem
-          horário de término, ele fica disponível por 24 horas.
-        </p>
         {error && (
           <PanelNotice
             text={error}
@@ -286,12 +278,12 @@ function StatusEditor({
             {type === 'text' ? (
               <>
                 <label className="field full">
-                  <span>Texto do status *</span>
+                  <span>Texto *</span>
                   <textarea
                     className="input"
                     name="texto"
                     maxLength={700}
-                    rows={5}
+                    rows={4}
                     value={text}
                     required
                     onChange={(event) =>
@@ -340,15 +332,13 @@ function StatusEditor({
                   <strong>
                     {files[type]?.name ||
                       (item?.tipo === type
-                        ? 'Manter arquivo atual ou selecionar outro'
-                        : 'Selecionar arquivo')}
+                        ? type === 'image'
+                          ? 'Trocar imagem'
+                          : 'Trocar vídeo'
+                        : type === 'image'
+                          ? 'Selecionar imagem'
+                          : 'Selecionar vídeo')}
                   </strong>
-                  <small>
-                    Máx 5 MB
-                    {type === 'video'
-                      ? ' · vídeo de até 30 segundos'
-                      : ' · também pode colar uma imagem'}
-                  </small>
                 </label>
                 <label className="field full">
                   <span>Legenda</span>
@@ -363,7 +353,7 @@ function StatusEditor({
               </>
             )}
             <label className="field full">
-              <span>Data e hora da publicação *</span>
+              <span>Publicar em *</span>
               <input
                 className="input"
                 type="datetime-local"
@@ -373,10 +363,6 @@ function StatusEditor({
                 value={startsAt}
                 onChange={(event) => setStartsAt(event.target.value)}
               />
-              <small className="muted">
-                O sistema posta automaticamente no horário escolhido. Mantenha o
-                WhatsApp conectado.
-              </small>
             </label>
             <label className="field full">
               <span>Remover em (opcional)</span>
@@ -389,15 +375,10 @@ function StatusEditor({
                   item?.removerEm ? localInput(utcDate(item.removerEm)) : ''
                 }
               />
-              <small className="muted">
-                Por exemplo: publicar às 10:00 e remover às 22:00 do mesmo dia.
-                Deixe vazio para durar 24 horas. Mantenha o WhatsApp conectado
-                para a remoção automática.
-              </small>
             </label>
           </div>
-          <details className="status-modal-preview" open>
-            <summary>Prévia do status</summary>
+          <details className="status-modal-preview">
+            <summary>Prévia</summary>
             <div className="status-preview-content">
               {type === 'text' ? (
                 <div

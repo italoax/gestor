@@ -13,38 +13,38 @@ export function NoticesScreen({ data }: { data?: any }) {
   return (
     <NativePanel data={data} path="/avisos">
       <div className="container page-avisos" data-react-page="avisos">
-        <div className="ui-catalog-heading">
-          <h2>
-            Painéis e aplicativos <span>{panels.length}</span>
-          </h2>
-          <p className="muted">Acesse os painéis pelos atalhos abaixo.</p>
-        </div>
-        <div className="avisos-list avisos-paineis">
-          {panels.map((panel) => (
-            <article className="aviso-card" key={panel.url}>
-              <div className="aviso-icon">
-                <Icon name="monitor" />
-              </div>
-              <div className="aviso-content">
-                <div className="aviso-heading">
-                  <h3>{panel.name}</h3>
-                </div>
-                <p>{new URL(panel.url).hostname}</p>
-              </div>
-              <div className="aviso-actions">
+        <section className="avisos-paineis" aria-labelledby="paineis-heading">
+          <div className="ui-catalog-heading">
+            <h2 id="paineis-heading">
+              Painéis e aplicativos <span>{panels.length}</span>
+            </h2>
+            <p className="muted">Acesse os painéis pelos atalhos abaixo.</p>
+          </div>
+          <ul className="painel-links">
+            {panels.map((panel) => (
+              <li key={panel.url}>
                 <a
-                  className="btn btn-primary"
+                  className="painel-link"
                   href={panel.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Abrir ${panel.name} em nova aba`}
                 >
-                  Abrir painel
+                  <span className="aviso-icon">
+                    <Icon name="monitor" />
+                  </span>
+                  <span className="painel-link-info">
+                    <strong>{panel.name}</strong>
+                    <span>{new URL(panel.url).hostname}</span>
+                  </span>
+                  <span className="painel-link-action" aria-hidden="true">
+                    Abrir ↗
+                  </span>
                 </a>
-              </div>
-            </article>
-          ))}
-        </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </NativePanel>
   );

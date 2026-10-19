@@ -1,8 +1,9 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { requestBackend } from '../../src/frontend/backendTransport.ts';
+import { cache } from 'react';
 
-export async function loadClientsPage(archived) {
+export const loadClientsPage = cache(async (archived: boolean) => {
   const requestHeaders = await headers();
   const backend = process.env.NEXT_BACKEND_URL || 'http://127.0.0.1:3001';
   const response = await requestBackend(
@@ -23,4 +24,4 @@ export async function loadClientsPage(archived) {
   if (response.status === 401 || response.status === 302) redirect('/login');
   if (!response.ok) throw new Error('Não foi possível carregar os clientes.');
   return response.json();
-}
+});

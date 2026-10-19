@@ -1,4 +1,12 @@
 import { Decimal } from 'decimal.js';
+export function messagePreview(value: unknown, maxLength = 110) {
+  // Slice por unidades UTF-16 pode cortar um emoji e gerar HTML diferente do cliente.
+  const characters = Array.from(String(value || '').replace(/\s+/g, ' '));
+  return (
+    characters.slice(0, maxLength).join('') +
+    (characters.length > maxLength ? '…' : '')
+  );
+}
 export function formatMoney(value) {
   const decimal = new Decimal(Number(value ?? 0));
   return decimal

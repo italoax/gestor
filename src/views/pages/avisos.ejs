@@ -7,35 +7,32 @@
   ];
 %>
 <div class="container page-avisos">
-  <div class="ui-catalog-heading">
-    <h2
-      >Painéis e aplicativos <span><%= paineis.length %></span></h2
-    >
-    <p class="muted">Acesse os painéis pelos atalhos abaixo.</p>
-  </div>
-  <div class="avisos-list avisos-paineis">
-    <% paineis.forEach(painel => { %>
-    <article class="aviso-card">
-      <div class="aviso-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></div>
-      <div class="aviso-content">
-        <div class="aviso-heading"
-          ><h3><%= painel.nome %></h3></div
-        >
-        <p><%= new URL(painel.url).hostname %></p>
-      </div>
-      <div class="aviso-actions">
+  <section class="avisos-paineis" aria-labelledby="paineis-heading">
+    <div class="ui-catalog-heading">
+      <h2 id="paineis-heading"
+        >Painéis e aplicativos <span><%= paineis.length %></span></h2
+      >
+      <p class="muted">Acesse os painéis pelos atalhos abaixo.</p>
+    </div>
+    <ul class="painel-links">
+      <% paineis.forEach(painel => { %>
+      <li>
         <a
-          class="btn btn-primary"
+          class="painel-link"
           href="<%= painel.url %>"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Abrir <%= painel.nome %> em nova aba"
         >
-          <%- include('../partials/ui-icon', { name: 'link' }) %>
-          Abrir painel
+          <span class="aviso-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
+          <span class="painel-link-info">
+            <strong><%= painel.nome %></strong>
+            <span><%= new URL(painel.url).hostname %></span>
+          </span>
+          <span class="painel-link-action" aria-hidden="true">Abrir ↗</span>
         </a>
-      </div>
-    </article>
-    <% }) %>
-  </div>
+      </li>
+      <% }) %>
+    </ul>
+  </section>
 </div>

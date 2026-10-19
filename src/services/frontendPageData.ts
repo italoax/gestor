@@ -241,6 +241,16 @@ export function nativePageData(
     if (view === 'pages/automacao')
       return {
         ...base,
+        historico: data.historico
+          ? pick(data.historico, [
+              'dataLimite',
+              'pagina',
+              'porPagina',
+              'temMais',
+              'anteriorUrl',
+              'proximaUrl',
+            ])
+          : null,
         agendamentoAtivo: data.agendamentoAtivo !== false,
         stats: pick(data.stats, [
           'regras',
@@ -277,8 +287,8 @@ export function nativePageData(
             ? pick(item.envioHoje, ['estado', 'rotulo', 'detalhe'])
             : null,
         })),
-        disparos: (data.disparos || []).map((item) =>
-          pick(item, [
+        disparos: (data.disparos || []).map((item) => ({
+          ...pick(item, [
             'id',
             'quando',
             'regraTitulo',
@@ -287,7 +297,13 @@ export function nativePageData(
             'status',
             'erro',
           ]),
-        ),
+          clientesPorServidor: (item.clientesPorServidor || []).map(
+            (group) => ({
+              servidor: String(group.servidor),
+              clientes: (group.clientes || []).map((nome) => String(nome)),
+            }),
+          ),
+        })),
         mensagens: (data.mensagens || []).map((item) =>
           pick(item, ['id', 'titulo', 'mensagem']),
         ),
@@ -313,6 +329,19 @@ export function nativePageData(
     if (view === 'pages/transacoes')
       return {
         ...base,
+        filtros: pick(data.filtros, ['busca', 'pagamento']),
+        formasPagamento: (data.formasPagamento || []).map((value) =>
+          String(value),
+        ),
+        paginacao: data.paginacao
+          ? pick(data.paginacao, [
+              'pagina',
+              'porPagina',
+              'temMais',
+              'anteriorUrl',
+              'proximaUrl',
+            ])
+          : null,
         stats: pick(data.stats, [
           'total',
           'telas',
@@ -327,6 +356,8 @@ export function nativePageData(
             'clienteNome',
             'formaPagamento',
             'descricao',
+            'duracao',
+            'codigos',
             'servidor',
             'plano',
             'telas',

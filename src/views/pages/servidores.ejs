@@ -91,13 +91,6 @@
           ><%- include('../partials/ui-icon', { name: 'edit' }) %>
           Editar</button
         >
-        <button
-          class="srv-act edit-servidor srv-credit-action"
-          type="button"
-          data-credit-focus
-          <%- editData %>
-          >Ajustar saldo</button
-        >
         <form
           method="post"
           action="/servidores"
@@ -121,12 +114,9 @@
   <% } %>
 </div>
 <div class="modal-overlay" id="modal-add-servidor" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal catalog-editor server-editor">
     <div class="modal-header">
-      <h3
-        ><%- include('../partials/ui-icon', { name: 'server' }) %>
-        Novo Servidor</h3
-      >
+      <h3>Novo servidor</h3>
       <button
         class="modal-close"
         type="button"
@@ -149,7 +139,7 @@
       <input type="hidden" name="sessao" value="Não definido" />
       <div class="form-grid">
         <label class="field full"
-          ><span>Nome do Servidor *</span
+          ><span>Nome do servidor *</span
           ><input
             class="input"
             name="nome"
@@ -166,27 +156,19 @@
             step="0.01"
             name="creditos"
             value="0"
-          /><small class="muted"
-            >Informe o saldo total disponível no servidor.</small
-          ></label
-        >
+        /></label>
         <label class="field"
-          ><span>Custo por Crédito (R$)</span
+          ><span>Custo por crédito (R$)</span
           ><input
             class="input"
             type="number"
             step="0.01"
             name="valor_cred"
             value="2"
-          /><small class="muted">Custo médio padrão por crédito</small></label
-        >
+        /></label>
         <label class="field full"
           ><span>Observações</span
-          ><textarea
-            class="input"
-            name="observacao_servidor"
-            placeholder="Observações sobre o servidor..."
-          ></textarea>
+          ><textarea class="input" name="observacao_servidor" rows="2"></textarea>
         </label>
       </div>
     </form>

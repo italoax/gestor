@@ -14,10 +14,17 @@ import { ClientsAuthGuard } from '../../clients/clients.guard.ts';
 import { PortalService } from './portal.service.ts';
 import { workflowInput, sendWorkflowResponse } from '../workflow.http.ts';
 import { PortalAuthGuard } from './portal.guard.ts';
+import { servePortalSession } from '../../../../src/services/portalSessionStream.ts';
 @Controller()
 @UseFilters(CatalogExceptionFilter)
 export class PortalController {
   constructor(@Inject(PortalService) private readonly service: PortalService) {}
+  @Get('/area-cliente/sessao')
+  async session(@Req() request: Request, @Res() response: Response) {
+    return servePortalSession(request, response, () =>
+      this.service.authorize(workflowInput(request, response)),
+    );
+  }
   @Get('/area-cliente/login')
   async loginPage(@Req() request: Request, @Res() response: Response) {
     sendWorkflowResponse(

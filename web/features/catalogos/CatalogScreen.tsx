@@ -64,7 +64,7 @@ function DeleteForm({
   const submit = useNativeSubmit(`Deseja apagar ${item.nome}?`);
   return (
     <form
-      className={`action-form ${catalog === 'servidores' ? 'srv-act-form' : 'disp-del-form'}`}
+      className={`action-form ${catalog === 'servidores' ? 'srv-act-form' : catalog === 'planos' ? 'plano-del-form' : 'disp-del-form'}`}
       method="post"
       action={`/${catalog}`}
       onSubmit={submit}
@@ -94,40 +94,36 @@ function DeleteForm({
 function CatalogEditor({
   catalog,
   item,
-  focusCredit,
   token,
   onClose,
 }: {
   catalog?: any;
   item?: any;
-  focusCredit?: any;
   token?: string;
   onClose?: (...args: any[]) => any;
 }) {
   const config = configs[catalog];
+  const compact = [
+    'planos',
+    'servidores',
+    'aplicativos',
+    'dispositivos',
+  ].includes(catalog);
   const dialog = useRef(null);
   const submit = useNativeSubmit();
   const [tipo, setTipo] = useState(item?.tipo || 'Dias');
   const [periodo, setPeriodo] = useState(item?.periodo ?? 30);
-  const [creditos, setCreditos] = useState(item?.creditos ?? 1);
   useEffect(() => {
     const element = dialog.current;
     const trigger = document.activeElement as HTMLElement;
     element.showModal();
     document.body.classList.add('modal-open');
-    if (focusCredit) {
-      const input = element.querySelector(
-        '[name="creditos"]',
-      ) as HTMLInputElement;
-      input?.focus();
-      input?.select();
-    }
     return () => {
       element.close();
       document.body.classList.remove('modal-open');
       if (trigger?.isConnected) trigger.focus();
     };
-  }, [focusCredit]);
+  }, []);
   useEffect(() => {
     const element = dialog.current;
     element.addEventListener('gestor:submit-success', onClose);
@@ -135,7 +131,7 @@ function CatalogEditor({
   }, [onClose]);
   function field(label, name, value, props: Record<string, any> = {}) {
     return (
-      <label className="field">
+      <label className={`field ${compact && name === 'nome' ? 'full' : ''}`}>
         <span>{label}</span>
         <input
           className="input"
@@ -146,14 +142,27 @@ function CatalogEditor({
       </label>
     );
   }
+  const statusField = (
+    <label className={`field ${catalog === 'aplicativos' ? '' : 'full'}`}>
+      <span>Status</span>
+      <select
+        className="input"
+        name="status"
+        defaultValue={item?.status || 'Ativo'}
+      >
+        <option>Ativo</option>
+        <option>Inativo</option>
+      </select>
+    </label>
+  );
   return (
     <dialog
       ref={dialog}
-      className="modal react-catalog-dialog"
+      className={`modal react-catalog-dialog ${compact ? 'catalog-editor' : ''} ${catalog === 'planos' ? 'plan-editor' : catalog === 'servidores' ? 'server-editor' : catalog === 'aplicativos' ? 'app-editor' : catalog === 'dispositivos' ? 'device-editor' : ''}`}
       style={{
-        width: 'min(600px, calc(100vw - 24px))',
+        width: `min(${compact ? 520 : 600}px, calc(100vw - 24px))`,
         maxHeight: '90dvh',
-        overflow: 'auto',
+        overflow: compact ? 'hidden' : 'auto',
         padding: 0,
         margin: 'auto',
         color: 'var(--text)',
@@ -166,9 +175,7 @@ function CatalogEditor({
     >
       <div className="modal-header">
         <h3 id="catalog-editor-title">
-          {focusCredit
-            ? 'Ajustar saldo'
-            : `${item ? 'Editar' : 'Novo'} ${config.label}`}
+          {`${item ? 'Editar' : 'Novo'} ${compact ? config.singular : config.label}`}
         </h3>
         <button
           type="button"
@@ -195,13 +202,42 @@ function CatalogEditor({
         />
         <input type="hidden" name="id" value={item?.id ?? ''} />
         <div className="form-grid">
-          {field(`Nome do ${config.label} *`, 'nome', item?.nome, {
-            required: true,
-          })}
+          {field(
+            compact
+              ? `Nome do ${config.singular} *`
+              : `Nome do ${config.label} *`,
+            'nome',
+            item?.nome,
+            {
+              required: true,
+              ...(catalog === 'planos'
+                ? {
+                    maxLength: 120,
+                    pattern: '.*\\S.*',
+                    placeholder: 'Ex.: Mensal',
+                  }
+                : {}),
+            },
+          )}
           {catalog === 'planos' && (
             <>
+              <input
+                type="hidden"
+                name="observacao"
+                value={item?.observacao ?? ''}
+              />
+              <input
+                type="hidden"
+                name="sigma_package_id"
+                value={item?.sigmaPackageId ?? ''}
+              />
+              <input
+                type="hidden"
+                name="sigma_connections"
+                value={item?.sigmaConnections || 1}
+              />
               <label className="field">
-                <span>Tipo de Período *</span>
+                <span>Unidade *</span>
                 <select
                   className="input"
                   name="tipo"
@@ -215,7 +251,7 @@ function CatalogEditor({
                 </select>
               </label>
               <label className="field">
-                <span>Período ({tipo === 'Meses' ? 'meses' : 'dias'}) *</span>
+                <span>Duração *</span>
                 <input
                   className="input"
                   type="number"
@@ -230,7 +266,7 @@ function CatalogEditor({
                   }
                 />
               </label>
-              <label className="field">
+              <label className="field full">
                 <span>Créditos *</span>
                 <input
                   className="input"
@@ -240,45 +276,11 @@ function CatalogEditor({
                   max="9999999999.99"
                   step="0.01"
                   required
-                  value={creditos}
-                  onChange={(event) =>
-                    setCreditos((event.target as HTMLInputElement).value)
-                  }
+                  defaultValue={item?.creditos ?? 1}
                 />
               </label>
-              {field(
-                'Sigma: package_id (opcional)',
-                'sigma_package_id',
-                item?.sigmaPackageId,
-                { maxLength: 120, autoComplete: 'off' },
-              )}
-              {field(
-                'Sigma: conexões',
-                'sigma_connections',
-                item?.sigmaConnections || 1,
-                {
-                  type: 'number',
-                  min: 1,
-                  max: 2147483647,
-                  step: 1,
-                  required: true,
-                },
-              )}
-              <div className="field full plano-info">
-                Este plano terá duração de{' '}
-                <strong>
-                  {periodo} {tipo.toLowerCase()}
-                </strong>{' '}
-                e consumirá <strong>{number(creditos)} crédito(s)</strong> do
-                servidor ao renovar.
-              </div>
               <label className="switch-field full">
-                <span>
-                  <strong>Plano Ativo</strong>
-                  <small>
-                    Planos inativos não aparecem para novos cadastros
-                  </small>
-                </span>
+                <span>Ativado</span>
                 <input
                   type="checkbox"
                   className="switch"
@@ -302,58 +304,46 @@ function CatalogEditor({
                 step: '0.01',
               })}
               {field(
-                'Custo por Crédito (R$)',
+                'Custo por crédito (R$)',
                 'valor_cred',
                 item?.valorCred ?? 2,
                 { type: 'number', step: '0.01' },
               )}
-              <small className="field full muted">
-                Informe o saldo total disponível no servidor e o custo médio por
-                crédito.
-              </small>
             </>
           )}
           {catalog === 'aplicativos' &&
             field(
-              'Valor da renovação (R$)',
+              'Renovação (R$)',
               'valor_renovacao',
               item?.valorRenovacao ?? 0,
               { type: 'number', step: '0.01', min: 0 },
             )}
-          <label className="field full">
-            <span>
-              {catalog === 'servidores' ? 'Observações' : 'Descrição'}
-            </span>
-            <textarea
-              className="input"
-              name={
-                catalog === 'planos'
-                  ? 'observacao'
-                  : catalog === 'servidores'
-                    ? 'observacao_servidor'
-                    : 'descricao'
-              }
-              defaultValue={
-                item?.observacao ??
-                item?.observacaoServidor ??
-                item?.descricao ??
-                ''
-              }
-            />
-          </label>
-          {['aplicativos', 'dispositivos'].includes(catalog) && (
+          {catalog === 'aplicativos' && statusField}
+          {catalog !== 'planos' && (
             <label className="field full">
-              <span>Status</span>
-              <select
+              <span>
+                {catalog === 'servidores' ? 'Observações' : 'Descrição'}
+              </span>
+              <textarea
                 className="input"
-                name="status"
-                defaultValue={item?.status || 'Ativo'}
-              >
-                <option>Ativo</option>
-                <option>Inativo</option>
-              </select>
+                rows={compact ? 2 : undefined}
+                name={
+                  catalog === 'planos'
+                    ? 'observacao'
+                    : catalog === 'servidores'
+                      ? 'observacao_servidor'
+                      : 'descricao'
+                }
+                defaultValue={
+                  item?.observacao ??
+                  item?.observacaoServidor ??
+                  item?.descricao ??
+                  ''
+                }
+              />
             </label>
           )}
+          {catalog === 'dispositivos' && statusField}
         </div>
       </form>
       <div className="modal-footer">
@@ -491,17 +481,26 @@ export function CatalogScreen({ data }: { data?: any }) {
                 {catalog === 'planos' && (
                   <div className="plano-metrics">
                     <div>
-                      <span>PERÍODO</span>
+                      <span>Duração</span>
                       <strong>
-                        {item.periodo} {String(item.tipo).toLowerCase()}
+                        {item.periodo}{' '}
+                        {String(item.tipo).toLowerCase() === 'meses'
+                          ? Number(item.periodo) === 1
+                            ? 'mês'
+                            : 'meses'
+                          : Number(item.periodo) === 1
+                            ? 'dia'
+                            : 'dias'}
                       </strong>
                     </div>
                     <div>
-                      <span>CRÉDITOS</span>
+                      <span title="Créditos usados por renovação">
+                        Créditos
+                      </span>
                       <strong>{number(item.creditos)}</strong>
                     </div>
                     <div>
-                      <span>CLIENTES</span>
+                      <span>Clientes</span>
                       <strong>{item.clientes || 0}</strong>
                     </div>
                   </div>
@@ -527,7 +526,10 @@ export function CatalogScreen({ data }: { data?: any }) {
                   </>
                 )}
                 {catalog === 'aplicativos' && (
-                  <div className="app-valor">
+                  <div
+                    className="app-valor"
+                    data-defined={Number(item.valorRenovacao) > 0}
+                  >
                     <span>Valor de renovação</span>
                     <strong>
                       {Number(item.valorRenovacao) > 0
@@ -567,23 +569,17 @@ export function CatalogScreen({ data }: { data?: any }) {
                   <button
                     type="button"
                     className={
-                      catalog === 'servidores' ? 'srv-act' : 'btn btn-muted'
+                      catalog === 'servidores'
+                        ? 'srv-act'
+                        : catalog === 'planos'
+                          ? 'btn btn-muted plano-edit'
+                          : 'btn btn-muted disp-edit'
                     }
                     aria-label={`Editar ${item.nome}`}
                     onClick={() => setEditor({ item })}
                   >
                     <Icon name="edit" /> Editar
                   </button>
-                  {catalog === 'servidores' && (
-                    <button
-                      type="button"
-                      className="srv-act srv-credit-action"
-                      aria-label={`Ajustar saldo de ${item.nome}`}
-                      onClick={() => setEditor({ item, focusCredit: true })}
-                    >
-                      Ajustar saldo
-                    </button>
-                  )}
                   <DeleteForm
                     catalog={catalog}
                     item={item}

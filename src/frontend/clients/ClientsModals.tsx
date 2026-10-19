@@ -24,6 +24,7 @@ export const ClientsModals = memo(function ClientsModals({
   noticeError?: any;
   clientForm?: any;
 }) {
+  const hasServer = clientForm.servers.length > 0;
   return (
     <>
       <div
@@ -32,9 +33,9 @@ export const ClientsModals = memo(function ClientsModals({
         aria-hidden="true"
         inert
       >
-        <div className="modal">
+        <div className="modal message-editor">
           <div className="modal-header">
-            <h3 id="whatsapp-title">Enviar Mensagem</h3>
+            <h3 id="whatsapp-title">Enviar mensagem</h3>
             <button
               className="modal-close"
               type="button"
@@ -55,19 +56,24 @@ export const ClientsModals = memo(function ClientsModals({
             <input type="hidden" name="action" defaultValue="send_whatsapp" />
             <input type="hidden" name="id" defaultValue="" />
             <input type="hidden" name="media_tipo" defaultValue="" />
-            <div className="form-grid">
-              <div className="field full wa-client-box">
-                <strong data-wa-nome="">—</strong>
-                <span className="muted" data-wa-telefone=""></span>
+            <div className="wa-compose-fields">
+              <div className="wa-client-box">
+                <span className="wa-client-icon">
+                  <Icon name="users" />
+                </span>
+                <div>
+                  <strong data-wa-nome="">—</strong>
+                  <span className="muted" data-wa-telefone=""></span>
+                </div>
               </div>
               <label className="field full">
-                <span>Template (opcional)</span>
+                <span>Modelo (opcional)</span>
                 <select
                   className="input"
                   name="mensagem_id"
                   data-wa-template=""
                 >
-                  <option value="">Selecione um template</option>
+                  <option value="">Sem modelo</option>
                   {mensagens.map((m, index) => {
                     return (
                       <Fragment key={m?.id ?? index}>
@@ -84,48 +90,53 @@ export const ClientsModals = memo(function ClientsModals({
                 <textarea
                   className="input"
                   name="mensagem_texto"
-                  rows={4}
+                  rows={5}
                   placeholder="Digite sua mensagem..."
                   data-wa-mensagem=""
                 ></textarea>
               </label>
               <div className="field full">
-                <span>Anexar Mídia</span>
+                <span>Anexo (opcional)</span>
                 <div className="wa-media-btns">
                   <button
                     type="button"
                     className="btn btn-muted"
                     data-wa-media="image"
+                    aria-pressed="false"
                   >
-                    🖼 Imagem
+                    <Icon name="image" /> Imagem
                   </button>
                   <button
                     type="button"
                     className="btn btn-muted"
                     data-wa-media="video"
+                    aria-pressed="false"
                   >
-                    🎬 Vídeo
+                    <Icon name="video" /> Vídeo
                   </button>
                   <button
                     type="button"
                     className="btn btn-muted"
                     data-wa-media="audio"
+                    aria-pressed="false"
                   >
-                    🎵 Áudio
+                    <Icon name="music" /> Áudio
                   </button>
                   <button
                     type="button"
                     className="btn btn-muted"
                     data-wa-media="document"
+                    aria-pressed="false"
                   >
-                    📄 Documento
+                    <Icon name="file" /> Documento
                   </button>
                 </div>
                 <input
                   className="input wa-media-url"
                   type="url"
                   name="media_url"
-                  placeholder="Cole o link da mídia (https://...)"
+                  aria-label="Link do anexo"
+                  placeholder="https://..."
                   hidden
                 />
               </div>
@@ -136,12 +147,12 @@ export const ClientsModals = memo(function ClientsModals({
               Cancelar
             </button>
             <button
-              className="btn btn-green"
+              className="btn btn-primary"
               type="submit"
               form="modal-send-whatsapp-form"
               data-loading-text="Enviando mensagem"
             >
-              ✈ Enviar
+              Enviar
             </button>
           </div>
         </div>
@@ -152,11 +163,11 @@ export const ClientsModals = memo(function ClientsModals({
         aria-hidden="true"
         inert
       >
-        <div className="modal modal-lg">
+        <div className="modal modal-lg client-editor">
           <div className="modal-header">
             <h3>
               <Icon name={clientForm.editing ? 'edit' : 'plus'} />
-              {clientForm.editing ? 'Editar Cliente' : 'Novo Cliente'}
+              {clientForm.editing ? 'Editar cliente' : 'Novo cliente'}
             </h3>
             <button
               className="modal-close"
@@ -235,7 +246,7 @@ export const ClientsModals = memo(function ClientsModals({
               className={`tab-panel ${clientForm.tab === 'dados' ? 'active' : ''}`}
               data-tab-panel="dados"
             >
-              <div className="form-grid">
+              <div className="client-fields">
                 <label className="field full">
                   <span>Nome *</span>
                   <input
@@ -243,7 +254,7 @@ export const ClientsModals = memo(function ClientsModals({
                       clientForm.errors.nome ? 'input input-error' : 'input'
                     }
                     name="nome"
-                    placeholder="Nome completo do cliente"
+                    placeholder="Nome completo"
                     required
                     data-required="1"
                     data-tab="dados"
@@ -261,6 +272,70 @@ export const ClientsModals = memo(function ClientsModals({
                   </small>
                 </label>
 
+                <label className="field full">
+                  <span>WhatsApp *</span>
+                  <div className="input-icon phone-control">
+                    <span className="icon-box" aria-hidden="true">
+                      <Icon name="phone" />
+                    </span>
+                    <div className="phone-prefix" data-phone-prefix="">
+                      <button
+                        className="phone-prefix-btn"
+                        type="button"
+                        data-phone-prefix-toggle=""
+                        aria-expanded="false"
+                      >
+                        +55
+                      </button>
+                      <input
+                        type="hidden"
+                        name="telefone_prefixo"
+                        defaultValue="+55"
+                        data-phone-prefix-value=""
+                      />
+                      <div className="phone-prefix-menu" hidden>
+                        <input
+                          className="input phone-prefix-search"
+                          type="search"
+                          placeholder="Buscar país ou prefixo"
+                          data-phone-prefix-search=""
+                        />
+                        <div
+                          className="phone-prefix-list"
+                          data-phone-prefix-list=""
+                        ></div>
+                      </div>
+                    </div>
+                    <input
+                      className={
+                        clientForm.errors.telefone
+                          ? 'input input-error'
+                          : 'input'
+                      }
+                      type="tel"
+                      name="telefone"
+                      placeholder="(00) 0 0000-0000"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      maxLength={18}
+                      required
+                      data-phone-mask=""
+                      data-required="1"
+                      data-tab="dados"
+                      data-field-label="WhatsApp"
+                      aria-invalid={Boolean(clientForm.errors.telefone)}
+                      aria-describedby="cliente-error-telefone"
+                    />
+                  </div>
+                  <small
+                    className="field-error"
+                    data-error-for="telefone"
+                    id="cliente-error-telefone"
+                    aria-live="polite"
+                  >
+                    {clientForm.errors.telefone}
+                  </small>
+                </label>
                 <label className="field">
                   <span>Usuário</span>
                   <input
@@ -334,107 +409,51 @@ export const ClientsModals = memo(function ClientsModals({
                   )}
                 </div>
 
-                <label className="field full">
-                  <span>WhatsApp *</span>
-                  <div className="input-icon phone-control">
-                    <span className="icon-box" aria-hidden="true">
-                      <Icon name="phone" />
-                    </span>
-                    <div className="phone-prefix" data-phone-prefix="">
-                      <button
-                        className="phone-prefix-btn"
-                        type="button"
-                        data-phone-prefix-toggle=""
-                        aria-expanded="false"
-                      >
-                        +55
-                      </button>
+                <details className="full cli-details" open={clientForm.editing}>
+                  <summary>Outros dados</summary>
+                  <div className="client-fields">
+                    <label className="field full">
+                      <span>Contato secundário</span>
                       <input
-                        type="hidden"
-                        name="telefone_prefixo"
-                        defaultValue="+55"
-                        data-phone-prefix-value=""
+                        className={
+                          clientForm.errors.telefone_secundario
+                            ? 'input input-error'
+                            : 'input'
+                        }
+                        name="telefone_secundario"
+                        aria-label="Contato secundário"
+                        placeholder="(00) 0 0000-0000"
                       />
-                      <div className="phone-prefix-menu" hidden>
-                        <input
-                          className="input phone-prefix-search"
-                          type="search"
-                          placeholder="Buscar país ou prefixo"
-                          data-phone-prefix-search=""
-                        />
-                        <div
-                          className="phone-prefix-list"
-                          data-phone-prefix-list=""
-                        ></div>
-                      </div>
-                    </div>
-                    <input
-                      className={
-                        clientForm.errors.telefone
-                          ? 'input input-error'
-                          : 'input'
-                      }
-                      type="tel"
-                      name="telefone"
-                      placeholder="(00) 0 0000-0000"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={18}
-                      required
-                      data-phone-mask=""
-                      data-required="1"
-                      data-tab="dados"
-                      data-field-label="WhatsApp"
-                      aria-invalid={Boolean(clientForm.errors.telefone)}
-                      aria-describedby="cliente-error-telefone"
-                    />
+                    </label>
+                    <label className="field full">
+                      <span>Origem</span>
+                      <select
+                        className={
+                          clientForm.errors.captacao
+                            ? 'input input-error'
+                            : 'input'
+                        }
+                        name="captacao"
+                      >
+                        <option value="">Selecione</option>
+                        <option>Indicação</option>
+                        <option>Instagram</option>
+                        <option>WhatsApp</option>
+                        <option>Facebook</option>
+                        <option>Google</option>
+                        <option>Outro</option>
+                      </select>
+                    </label>
+                    <label className="field full">
+                      <span>Observações</span>
+                      <textarea
+                        className="input"
+                        name="observacoes"
+                        rows={2}
+                      ></textarea>
+                    </label>
                   </div>
-                  <small
-                    className="field-error"
-                    data-error-for="telefone"
-                    id="cliente-error-telefone"
-                    aria-live="polite"
-                  >
-                    {clientForm.errors.telefone}
-                  </small>
-                </label>
-                <details className="field full cli-details">
-                  <summary>+ Adicionar contato secundário</summary>
-                  <input
-                    className={
-                      clientForm.errors.telefone_secundario
-                        ? 'input input-error'
-                        : 'input'
-                    }
-                    name="telefone_secundario"
-                    placeholder="(00) 0 0000-0000"
-                  />
                 </details>
-                <label className="field">
-                  <span>Captação</span>
-                  <select
-                    className={
-                      clientForm.errors.captacao ? 'input input-error' : 'input'
-                    }
-                    name="captacao"
-                  >
-                    <option value="">Origem do cliente</option>
-                    <option>Indicação</option>
-                    <option>Instagram</option>
-                    <option>WhatsApp</option>
-                    <option>Facebook</option>
-                    <option>Google</option>
-                    <option>Outro</option>
-                  </select>
-                </label>
-                <label className="field full">
-                  <span>Observações</span>
-                  <textarea
-                    className="input"
-                    name="observacoes"
-                    placeholder="Observações internas sobre o cliente..."
-                  ></textarea>
-                </label>
 
                 <label
                   className="switch-field full"
@@ -444,12 +463,8 @@ export const ClientsModals = memo(function ClientsModals({
                   <span>
                     <strong>
                       <Icon name="message" />
-                      Enviar mensagem
+                      Enviar mensagem ao cadastrar
                     </strong>
-                    <small>
-                      Dispara um template pelo WhatsApp logo após salvar o
-                      cliente.
-                    </small>
                   </span>
                   <input
                     type="checkbox"
@@ -467,7 +482,7 @@ export const ClientsModals = memo(function ClientsModals({
                   data-only-new=""
                   hidden={clientForm.editing || !clientForm.sendMessage}
                 >
-                  <span>Template a enviar *</span>
+                  <span>Modelo de mensagem *</span>
                   <select
                     className={
                       clientForm.errors.template_boas_vindas
@@ -478,7 +493,7 @@ export const ClientsModals = memo(function ClientsModals({
                     value={clientForm.template}
                     onChange={clientForm.ignoreChange}
                   >
-                    <option value="">Selecione um template</option>
+                    <option value="">Selecione</option>
                     {mensagens.map((m, index) => {
                       return (
                         <Fragment key={m?.id ?? index}>
@@ -495,7 +510,9 @@ export const ClientsModals = memo(function ClientsModals({
               data-tab-panel="plano"
             >
               <div className="server-selection">
-                <span>Servidores *</span>
+                <span>
+                  {clientForm.editing ? 'Servidores (até 2) *' : 'Servidor *'}
+                </span>
                 <details
                   open
                   className="server-picker"
@@ -518,7 +535,8 @@ export const ClientsModals = memo(function ClientsModals({
                           value={name}
                           checked={clientForm.servers.includes(name)}
                           disabled={
-                            clientForm.additional &&
+                            clientForm.servers.length >=
+                              (clientForm.editing ? 2 : 1) &&
                             !clientForm.servers.includes(name)
                           }
                           onChange={(event) =>
@@ -533,7 +551,6 @@ export const ClientsModals = memo(function ClientsModals({
                     ))}
                   </div>
                 </details>
-                <small>Marque um ou dois servidores para este cliente.</small>
                 <select
                   hidden
                   name="servidor"
@@ -576,30 +593,25 @@ export const ClientsModals = memo(function ClientsModals({
                   {clientForm.errors.servidor}
                 </small>
               </div>
-              <p className="muted">
-                Campos com * são obrigatórios. Dados de acesso e integração são
-                opcionais.
-              </p>
-              <p className="server-selection-help">
-                Selecione acima os servidores. Ajuste abaixo o valor e a
-                validade de cada acesso.
-              </p>
               <section
                 className="server-access-card"
                 aria-labelledby="primary-server-title"
+                hidden={!hasServer}
               >
                 <h4 id="primary-server-title" data-principal-titulo="">
                   {clientForm.servers[0] || 'Primeiro servidor'}
                 </h4>
-                <div className="form-grid">
-                  <div className="field">
+                <div className="client-access-fields">
+                  <label className="field full">
                     <span>Plano *</span>
                     <select
                       className={
                         clientForm.errors.plano ? 'input input-error' : 'input'
                       }
                       name="plano"
-                      data-required="1"
+                      disabled={!hasServer}
+                      required={hasServer}
+                      data-required={hasServer ? '1' : undefined}
                       data-tab="plano"
                       data-field-label="Plano"
                       aria-invalid={Boolean(clientForm.errors.plano)}
@@ -629,7 +641,7 @@ export const ClientsModals = memo(function ClientsModals({
                     >
                       {clientForm.errors.plano}
                     </small>
-                  </div>
+                  </label>
                   <label className="field">
                     <span>Valor (R$) *</span>
                     <input
@@ -641,7 +653,9 @@ export const ClientsModals = memo(function ClientsModals({
                       name="valor"
                       min="0.01"
                       placeholder="0,00"
-                      data-required="1"
+                      disabled={!hasServer}
+                      required={hasServer}
+                      data-required={hasServer ? '1' : undefined}
                       data-tab="plano"
                       data-field-label="Valor"
                       aria-invalid={Boolean(clientForm.errors.valor)}
@@ -667,7 +681,9 @@ export const ClientsModals = memo(function ClientsModals({
                       defaultValue="1"
                       min="1"
                       step="1"
-                      data-required="1"
+                      disabled={!hasServer}
+                      required={hasServer}
+                      data-required={hasServer ? '1' : undefined}
                       data-tab="plano"
                       data-field-label="Telas"
                       data-telas-input=""
@@ -681,10 +697,6 @@ export const ClientsModals = memo(function ClientsModals({
                       aria-live="polite"
                     >
                       {clientForm.errors.telas}
-                    </small>
-                    <small>
-                      Muda o valor na mesma proporção (2 telas = 2× o valor).
-                      Ajuste o valor à mão pra dar desconto.
                     </small>
                   </label>
                   <label className="field">
@@ -703,9 +715,10 @@ export const ClientsModals = memo(function ClientsModals({
                       maxLength={10}
                       pattern="\d{2}/\d{2}/\d{4}"
                       title="Use dd/mm/aaaa"
-                      required
+                      disabled={!hasServer}
+                      required={hasServer}
                       data-date-mask=""
-                      data-required="1"
+                      data-required={hasServer ? '1' : undefined}
                       data-tab="plano"
                       data-field-label="Vencimento"
                       aria-invalid={Boolean(clientForm.errors.vencimento)}
@@ -721,7 +734,7 @@ export const ClientsModals = memo(function ClientsModals({
                     </small>
                   </label>
                   <label className="field">
-                    <span>Hora de Vencimento</span>
+                    <span>Horário *</span>
                     <input
                       className={
                         clientForm.errors.hora_vencimento
@@ -731,7 +744,22 @@ export const ClientsModals = memo(function ClientsModals({
                       type="time"
                       name="hora_vencimento"
                       defaultValue="23:59"
+                      disabled={!hasServer}
+                      required={hasServer}
+                      data-required={hasServer ? '1' : undefined}
+                      data-tab="plano"
+                      data-field-label="Horário"
+                      aria-invalid={Boolean(clientForm.errors.hora_vencimento)}
+                      aria-describedby="cliente-error-hora_vencimento"
                     />
+                    <small
+                      className="field-error"
+                      data-error-for="hora_vencimento"
+                      id="cliente-error-hora_vencimento"
+                      aria-live="polite"
+                    >
+                      {clientForm.errors.hora_vencimento}
+                    </small>
                   </label>
                 </div>
               </section>
@@ -776,8 +804,8 @@ export const ClientsModals = memo(function ClientsModals({
                       ))}
                   </select>
                 </label>
-                <div className="form-grid">
-                  <label className="field">
+                <div className="client-access-fields">
+                  <label className="field full">
                     <span>Plano *</span>
                     <select
                       className={
@@ -874,7 +902,7 @@ export const ClientsModals = memo(function ClientsModals({
                       {clientForm.errors.adicional_telas}
                     </small>
                   </label>
-                  <label className="field">
+                  <label className="field full">
                     <span>Vencimento *</span>
                     <input
                       className={
@@ -905,10 +933,10 @@ export const ClientsModals = memo(function ClientsModals({
                   </label>
                 </div>
                 <details className="server-extra">
-                  <summary>Dados de acesso e integração (opcional)</summary>
-                  <div className="form-grid">
+                  <summary>Acesso e integração</summary>
+                  <div className="client-fields">
                     <label className="field">
-                      <span>Usuário do segundo servidor</span>
+                      <span>Usuário</span>
                       <input
                         className={
                           clientForm.errors.adicional_user
@@ -921,7 +949,7 @@ export const ClientsModals = memo(function ClientsModals({
                       />
                     </label>
                     <label className="field full">
-                      <span>ID do segundo servidor no painel Sigma</span>
+                      <span>ID no painel Sigma</span>
                       <input
                         className={
                           clientForm.errors.adicional_id_painel
@@ -932,9 +960,6 @@ export const ClientsModals = memo(function ClientsModals({
                         maxLength={120}
                         disabled={!clientForm.additional}
                       />
-                      <small>
-                        Use o ID do acesso correspondente ao segundo servidor.
-                      </small>
                     </label>
                   </div>
                 </details>
@@ -948,7 +973,7 @@ export const ClientsModals = memo(function ClientsModals({
                   })}
                 </strong>
               </div>
-              <div className="form-grid server-payment">
+              <div className="client-fields server-payment">
                 <label className="field">
                   <span>Pagamento *</span>
                   <select
@@ -985,11 +1010,7 @@ export const ClientsModals = memo(function ClientsModals({
                   hidden={clientForm.editing}
                 >
                   <span>
-                    <strong>💲 Registrar pagamento ao salvar</strong>
-                    <small>
-                      Conta como pago agora e baixa crédito do servidor.
-                      Desmarque para só cadastrar.
-                    </small>
+                    <strong>Registrar pagamento e baixar créditos</strong>
                   </span>
                   <input
                     type="checkbox"
@@ -1021,14 +1042,11 @@ export const ClientsModals = memo(function ClientsModals({
               className={`tab-panel ${clientForm.tab === 'apps' ? 'active' : ''}`}
               data-tab-panel="apps"
             >
-              <p className="muted">
-                Escolha o aplicativo usado em cada servidor.
-              </p>
               <section className="cli-apps-card">
                 <strong data-app-principal="">
                   {clientForm.servers[0] || 'Primeiro servidor'}
                 </strong>
-                <div className="form-grid">
+                <div className="client-app-fields">
                   <label className="field">
                     <span>
                       <Icon name="monitor" />
@@ -1105,7 +1123,7 @@ export const ClientsModals = memo(function ClientsModals({
                 <strong data-app-segundo="">
                   {clientForm.servers[1] || 'Segundo servidor'}
                 </strong>
-                <div className="form-grid">
+                <div className="client-app-fields">
                   <label className="field">
                     <span>
                       <Icon name="monitor" />
@@ -1136,7 +1154,7 @@ export const ClientsModals = memo(function ClientsModals({
                   <label className="field">
                     <span>
                       <Icon name="phone" />
-                      Aplicativo
+                      Aplicativo *
                     </span>
                     <select
                       className={
@@ -1189,7 +1207,7 @@ export const ClientsModals = memo(function ClientsModals({
               type="submit"
               form="modal-add-cliente-form"
             >
-              {clientForm.editing ? 'Salvar Cliente' : 'Cadastrar Cliente'}
+              {clientForm.editing ? 'Salvar' : 'Cadastrar'}
             </button>
           </div>
         </div>
@@ -1217,11 +1235,19 @@ export const ClientsModals = memo(function ClientsModals({
           <div className="modal-body">
             <CsrfInput token={csrfToken} />
             <div className="access-identity">
+              <span className="access-client-icon">
+                <Icon name="users" />
+              </span>
               <div>
                 <h3 data-access-name=""></h3>
                 <p data-access-user=""></p>
               </div>
-              <span className="access-state" data-access-state=""></span>
+              <span
+                className="access-state"
+                data-access-state=""
+                role="status"
+                aria-live="polite"
+              ></span>
             </div>
             <div
               className="access-notice"
@@ -1230,13 +1256,6 @@ export const ClientsModals = memo(function ClientsModals({
               aria-live="polite"
             ></div>
             <div className="access-actions" data-access-actions="" hidden>
-              <button
-                type="button"
-                className="btn btn-primary access-copy"
-                data-access-copy=""
-              >
-                Copiar link de acesso
-              </button>
               <input
                 className="input access-link"
                 data-access-link=""
@@ -1245,36 +1264,32 @@ export const ClientsModals = memo(function ClientsModals({
                 aria-label="Link de acesso do cliente"
               />
               <p className="access-hint">
-                Envie o link apenas a este cliente. Ele permite entrar sem
-                senha.
+                Link pessoal, com entrada sem senha.
               </p>
               <div className="access-setting">
                 <div>
-                  <strong>Entrada na conta</strong>
-                  <p>Controle o acesso do cliente.</p>
+                  <strong>Acesso à conta</strong>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="btn btn-muted"
                   data-access-toggle=""
                 ></button>
               </div>
-              <div className="access-revoke">
-                <strong>Substituir o link atual</strong>
-                <p>
-                  O link antigo e as sess&#245;es abertas deixam de funcionar.
-                  Um novo link ser&#225; gerado na pr&#243;xima c&#243;pia ou
-                  envio.
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  data-access-revoke=""
-                >
-                  Revogar link
-                </button>
-              </div>
             </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-muted" type="button" data-close-modal="">
+              Fechar
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary access-copy"
+              data-access-copy=""
+              disabled
+            >
+              Copiar link
+            </button>
           </div>
         </div>
       </div>

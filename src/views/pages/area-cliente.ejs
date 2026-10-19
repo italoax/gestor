@@ -220,5 +220,8 @@
     </div>
     <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/portal-login.js') %>" defer></script>
     <script nonce="<%= locals.cspNonce || '' %>" src="<%= assetUrl('/assets/js/portal-pix.js') %>" defer></script>
+    <% if (cliente) { %>
+    <script nonce="<%= locals.cspNonce || '' %>" type="module" src="<%= assetUrl('/assets/js/portal-session.js') %>"></script>
+    <% } %>
   </body>
 </html>

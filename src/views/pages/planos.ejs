@@ -44,6 +44,7 @@
       data-search-text="<%= [p.nome, p.observacao, p.ativo ? 'Ativo' : 'Inativo'].filter(Boolean).join(' ') %>"
     >
       <div class="plano-head">
+        <%- include('../partials/ui-icon', { name: 'package' }) %>
         <strong><%= p.nome %></strong>
         <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
@@ -52,16 +53,15 @@
           ><span>Duração</span
           ><strong
             ><%= p.periodo %>
-            <%= String(p.tipo).toLowerCase() === 'dias' ? 'dias' : 'meses' %></strong
+            <%= String(p.tipo).toLowerCase() === 'dias' ? Number(p.periodo) === 1 ? 'dia' : 'dias' : Number(p.periodo) === 1 ? 'mês' : 'meses' %></strong
           ></div
         >
         <div
-          ><span>Créditos por renovação</span
+          ><span title="Créditos usados por renovação">Créditos</span
           ><strong class="plano-cred"><%= Number(p.creditos || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) %></strong></div
         >
         <div
-          ><span>Clientes ativos</span
-          ><strong><%= p.clientes || 0 %></strong></div
+          ><span>Clientes</span><strong><%= p.clientes || 0 %></strong></div
         >
       </div>
       <% if (p.observacao) { %>
@@ -103,9 +103,9 @@
   <% } %>
 </div>
 <div class="modal-overlay" id="modal-add-plano" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal catalog-editor plan-editor">
     <div class="modal-header">
-      <h3>+ Novo Plano</h3>
+      <h3>Novo plano</h3>
       <button
         class="modal-close"
         type="button"
@@ -124,30 +124,31 @@
       <%- csrfInput %>
       <input type="hidden" name="action" value="create_plano" />
       <input type="hidden" name="id" value="" />
+      <input type="hidden" name="observacao" value="" />
+      <input type="hidden" name="sigma_package_id" value="" />
+      <input type="hidden" name="sigma_connections" value="1" />
       <div class="form-grid">
         <label class="field full"
-          ><span>Nome do Plano *</span
+          ><span>Nome do plano *</span
           ><input
             class="input"
             name="nome"
             maxlength="120"
             pattern=".*\S.*"
-            placeholder="Ex: Mensal, Trimestral..."
+            placeholder="Ex.: Mensal"
             required
             data-required="1"
             data-field-label="Nome do Plano"
         /></label>
-        <label class="field full">
-          <span>Tipo de Período *</span>
+        <label class="field">
+          <span>Unidade *</span>
           <select class="input" name="tipo">
             <option>Dias</option>
             <option>Meses</option>
           </select>
         </label>
         <label class="field"
-          ><span
-            ><%- include('../partials/ui-icon', { name: 'calendar' }) %>
-            <span data-plano-periodo-label>Período (dias) *</span></span
+          ><span>Duração *</span
           ><input
             class="input"
             type="number"
@@ -158,10 +159,8 @@
             step="1"
             required
         /></label>
-        <label class="field"
-          ><span
-            ><%- include('../partials/ui-icon', { name: 'money' }) %>
-            Créditos *</span
+        <label class="field full"
+          ><span>Créditos *</span
           ><input
             class="input"
             type="number"
@@ -172,54 +171,8 @@
             value="1"
             required
         /></label>
-        <label class="field"
-          ><span
-            ><%- include('../partials/ui-icon', { name: 'settings' }) %>
-            Sigma: package_id <small>(opcional)</small></span
-          ><input
-            class="input"
-            name="sigma_package_id"
-            maxlength="120"
-            placeholder="ex: bQELo0Dgro"
-            autocomplete="off"
-          /><small
-            >ID do pacote no painel Sigma — usado na renovação
-            automática.</small
-          ></label
-        >
-        <label class="field"
-          ><span
-            ><%- include('../partials/ui-icon', { name: 'settings' }) %>
-            Sigma: conexões</span
-          ><input
-            class="input"
-            type="number"
-            name="sigma_connections"
-            value="1"
-            min="1"
-            max="2147483647"
-            step="1"
-            required
-        /></label>
-        <div class="field full plano-info" data-plano-info
-          >Este plano terá duração de <strong>30 dias</strong> e consumirá
-          <strong>1 crédito(s)</strong> do servidor ao renovar.</div
-        >
-        <label class="field full"
-          ><span>Descrição</span
-          ><textarea
-            class="input"
-            name="observacao"
-            placeholder="Descrição do plano..."
-          ></textarea>
-        </label>
         <label class="switch-field full">
-          <span
-            ><strong>Plano Ativo</strong
-            ><small
-              >Planos inativos não aparecem para novos cadastros</small
-            ></span
-          >
+          <span>Ativado</span>
           <input
             type="checkbox"
             name="ativo"

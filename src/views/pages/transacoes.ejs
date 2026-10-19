@@ -1,4 +1,71 @@
+<% const pagination = locals.paginacao || {pagina: 1, porPagina: 10, temMais: false}; %>
+<% const filters = locals.filtros || {busca: '', pagamento: ''}; %>
 <div class="container page-transacoes" data-search-scope>
+  <form method="get" action="/transacoes" class="tx-filters" data-tx-filters>
+    <div class="tx-filter-field tx-filter-search">
+      <label for="tx-search">Buscar</label>
+      <div
+        class="panel-search"
+        role="search"
+        aria-label="Buscar em todas as transações"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+        <input
+          class="input"
+          id="tx-search"
+          type="search"
+          name="busca"
+          value="<%= filters.busca %>"
+          maxlength="160"
+          placeholder="Cliente, servidor ou descrição..."
+          autocomplete="off"
+        />
+      </div>
+    </div>
+    <label class="tx-filter-field">
+      <span>Pagamento</span>
+      <select
+        class="input"
+        aria-label="Filtrar transações por pagamento"
+        data-tx-payment-filter
+        name="pagamento"
+      >
+        <option value="">Todos</option>
+        <% (locals.formasPagamento || [...new Set(transacoes.map(item => String(item.formaPagamento || '').trim()).filter(Boolean))].sort()).forEach(payment => { %>
+        <option value="<%= payment %>" <%= filters.pagamento === payment ? 'selected' : '' %>
+          ><%= payment %></option
+        >
+        <% }) %>
+      </select>
+    </label>
+    <div class="tx-filter-field">
+      <label for="tx-page-size">Por página</label>
+      <select
+        class="input"
+        name="porPagina"
+        id="tx-page-size"
+        aria-label="Transações por página"
+        data-tx-page-size
+      >
+        <% [10, 50, 100].forEach(size => { %>
+        <option value="<%= size %>" <%= Number(pagination.porPagina) === size ? 'selected' : '' %>
+          ><%= size %></option
+        >
+        <% }) %>
+      </select>
+    </div>
+  </form>
   <div class="cli-table-card tx-card">
     <div class="table-wrapper">
       <table class="cli-table tx-table">
@@ -28,7 +95,17 @@
           <% if (!transacoes.length) { %>
           <tr>
             <td colspan="12">
-              <div class="dist-empty">Nenhuma transação registrada.</div>
+              <div class="auto-empty-state">
+                <h3><%= filters.busca || filters.pagamento ? 'Nenhuma transação encontrada' : 'Nenhuma transação registrada' %></h3>
+                <% if (filters.busca || filters.pagamento) { %>
+                <button
+                  class="btn btn-muted"
+                  type="button"
+                  data-tx-clear-filters
+                  >Limpar filtros</button
+                >
+                <% } %>
+              </div>
             </td>
           </tr>
           <% } %>
@@ -36,6 +113,7 @@
           <tr
             data-search-item
             data-id="<%= t.id %>"
+            data-tx-payment="<%= String(t.formaPagamento || '').trim() %>"
             class="tx-row"
             tabindex="0"
           >
@@ -67,7 +145,7 @@
               -
               <% } %>
             </td>
-            <td><%= t.telas %></td>
+            <td><%= t.codigos ? '—' : t.telas %></td>
             <td class="<%= Number(t.creditos) < 0 ? 'tx-neg' : '' %>"><%= Number(t.creditos) %></td>
             <td class="tx-neg"><%= formatMoney(t.custo) %></td>
             <td class="tx-pos">+<%= formatMoney(t.valorVenda) %></td>
@@ -86,6 +164,9 @@
                 data-servidor="<%= t.servidor || '-' %>"
                 data-plano="<%= t.plano || '-' %>"
                 data-telas="<%= t.telas %>"
+                data-duracao="<%= t.duracao || '' %>"
+                data-codigos="<%= t.codigos || '' %>"
+                data-creditos-num="<%= Number(t.creditos || 0) %>"
                 data-creditos="<%= Number(t.creditos) %>"
                 data-custo="<%= formatMoney(t.custo) %>"
                 data-total="<%= formatMoney(t.valorVenda) %>"
@@ -99,13 +180,25 @@
         </tbody>
       </table>
     </div>
-    <div class="cli-table-foot">
-      <span class="muted"
-        ><%= transacoes.length %>
-        transação<%= transacoes.length === 1 ? '' : 'ões' %></span
-      >
-    </div>
   </div>
+  <% if (pagination.pagina > 1 || pagination.temMais) { %>
+  <nav class="tx-pagination" aria-label="Páginas das transações">
+    <div
+      ><% if (pagination.anteriorUrl) { %><a class="btn btn-muted" href="<%= pagination.anteriorUrl %>"
+        >Anterior</a
+      ><% } %></div
+    >
+    <span
+      >Página
+      <%= pagination.pagina %></span
+    >
+    <div
+      ><% if (pagination.proximaUrl) { %><a class="btn btn-muted" href="<%= pagination.proximaUrl %>"
+        >Próxima</a
+      ><% } %></div
+    >
+  </nav>
+  <% } %>
 </div>
 <div class="modal-overlay" id="modal-transacao-info" aria-hidden="true" inert>
   <div class="modal" style="max-width:460px;">
@@ -228,6 +321,7 @@
         <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
           <span
             style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
+            id="tx-info-quantidade-label"
             >Telas</span
           >
           <span
@@ -236,7 +330,10 @@
             >—</span
           >
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+        <div
+          id="tx-info-creditos-group"
+          style="display:flex;flex-direction:column;gap:2px;min-width:0;"
+        >
           <span
             style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
             >Créditos</span
@@ -246,6 +343,14 @@
             style="font-size:13.5px;color:var(--text);font-weight:500;"
             >—</span
           >
+        </div>
+        <div
+          id="tx-info-duracao-group"
+          style="display:flex;flex-direction:column;gap:2px;min-width:0;"
+          hidden
+        >
+          <span class="muted">Duração</span>
+          <span id="tx-info-duracao">—</span>
         </div>
       </div>
     </div>

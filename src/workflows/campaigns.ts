@@ -1,5 +1,5 @@
-import { lerCampanha } from '../services/campanhas.ts';
-import { appNowSql } from '../services/dates.ts';
+import { lerCampanha, campanhaExpirada } from '../services/campanhas.ts';
+import { appNowSql, appTodayIso } from '../services/dates.ts';
 import { normalizeDateInput } from '../services/format.ts';
 
 export function createCampaignActions({
@@ -73,7 +73,15 @@ export function createCampaignActions({
         if (action === 'resume_campanha') {
           if (previous.status !== 'Pausada')
             throw new Error('Somente envios pausados podem ser retomados.');
-          lerCampanha(previous.campanhaConfig);
+          if (
+            campanhaExpirada(
+              lerCampanha(previous.campanhaConfig),
+              appTodayIso(),
+            )
+          )
+            throw new Error(
+              'Este envio único passou do prazo de 3 meses. Crie um novo agendamento.',
+            );
           await execute(
             "UPDATE cobrancas SET status='Ativo', automatica=1, ultima_execucao='1970-01-01 00:00:00' WHERE id=:id AND user_id=:userId AND status='Pausada'",
             { id, userId },

@@ -59,7 +59,7 @@ export function isUnknownPageNavigation(
     /^\/clientes\/(?:[^/]+\/(?:planos-renovacao|link-pagamento)|preferencias\/mensagem-pagamento)\/?$/.test(
       pathname,
     ) ||
-    /^\/(?:whatsapp\/status|status\/(?:historico|[^/]+\/imagem)|minha-conta\/backup|automacao\/clientes|automacao\/regra\/[^/]+\/recebedores|pagar\/[^/]+\/status\/[^/]+|area-cliente\/__frontend\/session)\/?$/.test(
+    /^\/(?:whatsapp\/status|status\/(?:historico|[^/]+\/imagem)|minha-conta\/backup|automacao\/clientes|automacao\/regra\/[^/]+\/recebedores|pagar\/[^/]+\/status\/[^/]+|area-cliente\/(?:__frontend\/session|sessao))\/?$/.test(
       pathname,
     )
   )

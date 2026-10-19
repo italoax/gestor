@@ -30,7 +30,7 @@
 <!-- Modal: Nova publicação -->
 <% if (temWhatsapp) { %>
 <div class="modal-overlay" id="modal-novo-status" aria-hidden="true" inert>
-  <div class="modal modal-lg status-composer">
+  <div class="modal modal-lg status-composer status-editor">
     <div class="modal-header">
       <h3 id="status-composer-title"
         ><%- include('../partials/ui-icon', { name: 'broadcast' }) %>
@@ -55,10 +55,6 @@
       <input type="hidden" name="action" id="status-action" value="" />
       <input type="hidden" name="id" id="status-edit-id" value="" />
       <input type="hidden" name="tipo" id="status-tipo" value="text" />
-      <p class="status-intro muted"
-        >Escolha quando publicar e, se quiser, quando remover o status. Sem
-        horário de término, ele fica disponível por 24 horas.</p
-      >
       <div class="status-tabs" aria-label="Tipo de publicação">
         <button
           type="button"
@@ -89,12 +85,12 @@
           <!-- Aba TEXTO -->
           <div class="status-panel" data-panel="text">
             <label class="field full">
-              <span>Texto do status *</span>
+              <span>Texto *</span>
               <textarea
                 class="input"
                 name="texto"
                 id="status-texto"
-                rows="5"
+                rows="4"
                 maxlength="700"
                 placeholder="O que você quer publicar?"
               ></textarea>
@@ -103,7 +99,6 @@
               >
             </label>
             <div class="status-colors">
-              <span class="muted">Cor de fundo:</span>
               <% const cores = [
                   ['#075E54','Verde escuro'],
                   ['#25D366','Verde claro'],
@@ -144,8 +139,7 @@
               />
               <span class="status-drop-ico"><%- include('../partials/ui-icon', { name: 'image' }) %></span>
               <span class="status-drop-text"
-                ><strong>Selecionar imagem ou colar com Ctrl+V</strong
-                ><small>PNG, JPG ou WebP · máx 5 MB</small></span
+                ><strong>Selecionar imagem</strong></span
               >
             </label>
             <label class="field full">
@@ -158,10 +152,6 @@
                 maxlength="500"
                 placeholder="Escreva ou cole sua legenda aqui"
               ></textarea>
-              <small class="muted"
-                >Use Enter para separar linhas e parágrafos. A legenda será
-                enviada como você escreveu.</small
-              >
             </label>
           </div>
           <!-- Aba VÍDEO -->
@@ -176,8 +166,7 @@
               />
               <span class="status-drop-ico">🎬</span>
               <span class="status-drop-text"
-                ><strong>Selecionar vídeo</strong
-                ><small>MP4 · máx 30s e 5 MB</small></span
+                ><strong>Selecionar vídeo</strong></span
               >
             </label>
             <label class="field full">
@@ -190,17 +179,13 @@
                 maxlength="500"
                 placeholder="Escreva ou cole sua legenda aqui"
               ></textarea>
-              <small class="muted"
-                >Use Enter para separar linhas e parágrafos. A legenda será
-                enviada como você escreveu.</small
-              >
             </label>
           </div>
           <!-- Agendamento (obrigatório) -->
           <label class="field full status-schedule">
             <span
               ><%- include('../partials/ui-icon', { name: 'clock' }) %>
-              Data e hora da publicação *</span
+              Publicar em *</span
             >
             <input
               class="input"
@@ -215,10 +200,6 @@
               id="status-agendado-offset"
               value="180"
             />
-            <small class="muted"
-              >O sistema posta automaticamente no horário escolhido. Mantém o
-              WhatsApp conectado.</small
-            >
           </label>
           <label class="field full">
             <span>Remover em (opcional)</span>
@@ -234,16 +215,11 @@
               id="status-remover-offset"
               value="180"
             />
-            <small class="muted"
-              >Por exemplo: publicar às 10:00 e remover às 22:00 do mesmo dia.
-              Deixe vazio para durar 24 horas. Mantenha o WhatsApp conectado
-              para a remoção automática.</small
-            >
           </label>
         </div>
         <!-- Preview -->
-        <details class="status-modal-preview" open>
-          <summary>Prévia do status</summary>
+        <details class="status-modal-preview">
+          <summary>Prévia</summary>
           <div class="status-preview-content">
             <div
               class="status-preview"
@@ -276,7 +252,7 @@
         >
         <button class="btn btn-primary" type="submit" id="status-submit-btn"
           ><%- include('../partials/ui-icon', { name: 'clock' }) %>
-          Agendar status</button
+          Agendar</button
         >
       </div>
     </form>
@@ -422,7 +398,7 @@
     document.getElementById('status-action').value = record ? 'editar_status' : '';
     document.getElementById('status-edit-id').value = record ? record.id : '';
     document.getElementById('status-composer-title').textContent = record ? 'Editar agendamento' : 'Nova publicação';
-    document.getElementById('status-submit-btn').textContent = record ? 'Salvar alterações' : 'Agendar status';
+    document.getElementById('status-submit-btn').textContent = record ? 'Salvar' : 'Agendar';
     if (record?.removerEm) {
       const end = new Date(String(record.removerEm).replace(' ', 'T').replace(/Z$/, '') + 'Z');
       removerInput.value = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16);

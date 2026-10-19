@@ -38,7 +38,80 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   padding: 12px;
 }
 
+/* Catálogos: formulários compactos com os campos principais. */
+.page-app .catalog-editor {
+  --modal-body-padding: 16px;
+  --modal-header-padding: 14px 16px;
+  --modal-footer-padding: 14px 16px;
+  height: auto;
+  min-height: 0;
+}
+.modal-overlay .modal.catalog-editor {
+  --dialog-width: 520px;
+}
+dialog.catalog-editor[open] {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.page-app .catalog-editor .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px 12px;
+}
+.page-app .catalog-editor .full {
+  grid-column: 1 / -1;
+}
+.page-app .catalog-editor .field {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.page-app .catalog-editor .field > span {
+  font-size: 12px;
+  font-weight: 500;
+}
+.page-app .catalog-editor .input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 10px;
+}
+.page-app .catalog-editor textarea.input {
+  min-height: 76px;
+  resize: vertical;
+}
+.page-app .catalog-editor .switch-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.page-app .catalog-editor .switch-field > span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.page-app .catalog-editor .modal-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.page-app .catalog-editor .modal-footer .btn {
+  width: 100%;
+}
+
 /* Cadastro: a seleção de servidores conduz os dados de cada acesso. */
+.renewal-fields {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
 .client-plan-panel .server-selection > span {
   display: block;
   font-weight: 700;
@@ -520,24 +593,41 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 }
 
 #modal-client-access .access-dialog {
-  --dialog-width: 460px;
+  --dialog-width: 480px;
+  --modal-body-padding: 16px;
+  --modal-header-padding: 14px 16px;
+  --modal-footer-padding: 14px 16px;
+  min-height: 0;
+}
+#modal-client-access .modal-header h3 {
+  font-size: 16px;
+  line-height: 1.4;
 }
 #modal-client-access .modal-body {
-  padding: 22px;
+  display: grid;
+  gap: 16px;
 }
 .access-identity {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: 10px;
+}
+.access-client-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
 }
 .access-identity > div {
   min-width: 0;
 }
 .access-identity h3 {
-  margin: 0 0 6px;
-  font-size: 19px;
+  margin: 0 0 4px;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 .access-identity p {
@@ -547,8 +637,7 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
   overflow-wrap: anywhere;
 }
 .access-state {
-  flex-shrink: 0;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 20px;
   color: #94dfb4;
   background: #22c55e14;
@@ -572,78 +661,48 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 .access-link[hidden] {
   display: none !important;
 }
-.access-copy {
-  width: 100%;
-  min-height: 44px;
-}
 .access-link {
   width: 100%;
   min-width: 0;
+  min-height: 44px;
   font-size: 12px;
 }
 .access-hint {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
 }
 .access-setting {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 18px 0;
-  border-top: 1px solid var(--border);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
 }
-.access-setting strong,
-.access-revoke strong {
+.access-setting strong {
   font-size: 13px;
   font-weight: 600;
 }
-.access-setting p,
-.access-revoke p {
+#modal-client-access .access-setting .btn {
+  min-height: 44px;
+  padding: 8px 10px;
   font-size: 12px;
-  line-height: 1.6;
-  color: var(--muted);
-  margin: 5px 0 0;
-}
-.access-setting .btn {
-  font-size: 12px;
-  flex-shrink: 0;
-  padding: 9px 12px;
-}
-.access-revoke {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-2);
-}
-.access-revoke .btn {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--red);
 }
 .access-notice:empty {
   display: none;
 }
-.access-notice {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border-radius: 9px;
-  background: var(--surface-2);
-  font-size: 12px;
-  line-height: 1.5;
+#modal-client-access .modal-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
-@media (max-width: 380px) {
-  .access-setting {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .access-identity {
-    flex-wrap: wrap;
-  }
+#modal-client-access .modal-footer .btn {
+  width: 100%;
 }
-
 :root:not([data-theme='light']) .modal-overlay .modal {
   background: var(--surface);
   border-color: #52485c;
@@ -668,6 +727,287 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 }
 .modal-overlay.client-modal .modal-sm {
   --dialog-width: 400px;
+}
+
+/* Envio de mensagem no mesmo padrão compacto dos demais formulários. */
+#modal-send-whatsapp .message-editor {
+  --dialog-width: 640px;
+  --modal-body-padding: 16px;
+  --modal-header-padding: 14px 16px;
+  --modal-footer-padding: 14px 16px;
+  min-height: 0;
+}
+#modal-send-whatsapp .modal-header h3 {
+  font-size: 16px;
+  line-height: 1.4;
+}
+#modal-send-whatsapp .wa-compose-fields {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+#modal-send-whatsapp .wa-client-box {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+#modal-send-whatsapp .wa-client-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+#modal-send-whatsapp .wa-client-box > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#modal-send-whatsapp [data-wa-nome] {
+  font-size: 14px;
+}
+#modal-send-whatsapp [data-wa-telefone] {
+  font-size: 12px;
+}
+#modal-send-whatsapp .field {
+  display: grid;
+  gap: 6px;
+}
+#modal-send-whatsapp .field > span {
+  font-size: 12px;
+  font-weight: 500;
+}
+#modal-send-whatsapp .input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 10px;
+}
+#modal-send-whatsapp textarea.input {
+  min-height: 140px;
+  resize: vertical;
+}
+#modal-send-whatsapp .wa-media-btns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+#modal-send-whatsapp .wa-media-btns .btn {
+  min-width: 0;
+  min-height: 44px;
+  gap: 6px;
+  padding: 8px;
+  font-size: 13px;
+}
+#modal-send-whatsapp .wa-media-btns .btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+#modal-send-whatsapp .wa-media-btns .ui-icon {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+}
+#modal-send-whatsapp .wa-media-url {
+  margin-top: 4px;
+}
+#modal-send-whatsapp .modal-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+#modal-send-whatsapp .modal-footer .btn {
+  width: 100%;
+}
+@media (min-width: 600px) {
+  #modal-send-whatsapp .wa-media-btns {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Cadastro de cliente: abas fixas, campos compactos e ações sempre visíveis. */
+#modal-add-cliente .client-editor {
+  --dialog-width: 640px;
+  --modal-body-padding: 16px;
+  --modal-header-padding: 14px 16px;
+  --modal-footer-padding: 14px 16px;
+  min-height: 0;
+}
+#modal-add-cliente .modal-header h3 {
+  gap: 8px;
+  font-size: 16px;
+}
+#modal-add-cliente .modal-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 8px 16px;
+  gap: 6px;
+}
+#modal-add-cliente .tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 13px;
+}
+#modal-add-cliente
+  :is(.client-fields, .client-access-fields, .client-app-fields) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+  min-width: 0;
+}
+#modal-add-cliente .full {
+  grid-column: 1 / -1;
+}
+#modal-add-cliente .field {
+  display: grid;
+  gap: 6px;
+}
+#modal-add-cliente .field > :is(span, label) {
+  font-size: 12px;
+  font-weight: 500;
+}
+#modal-add-cliente .input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 10px;
+}
+#modal-add-cliente textarea.input {
+  min-height: 72px;
+  resize: vertical;
+}
+#modal-add-cliente
+  :is(.field-error, [data-password-feedback], #modal-add-cliente-error):empty {
+  display: none;
+}
+#modal-add-cliente .cli-details {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#modal-add-cliente .cli-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+#modal-add-cliente .cli-details > summary::after {
+  content: '+';
+  font-size: 18px;
+}
+#modal-add-cliente .cli-details[open] > summary::after {
+  content: '−';
+}
+#modal-add-cliente .cli-details > .client-fields {
+  margin-top: 14px;
+}
+#modal-add-cliente :is(.switch-field, .server-total) {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+#modal-add-cliente .switch-field {
+  min-height: 52px;
+  gap: 12px;
+}
+#modal-add-cliente .switch-field strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+#modal-add-cliente .switch-field > input {
+  flex-shrink: 0;
+}
+#modal-add-cliente .server-selection > span {
+  font-size: 12px;
+}
+#modal-add-cliente .server-picker {
+  padding: 12px;
+}
+#modal-add-cliente .server-option input {
+  accent-color: var(--primary);
+}
+#modal-add-cliente .server-option:has(input:checked) {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+#modal-add-cliente :is(.server-access-card, .cli-apps-card) {
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+#modal-add-cliente .cli-apps-card:first-child {
+  margin-top: 0;
+}
+#modal-add-cliente
+  :is(
+    .server-access-card h4,
+    [data-adicional-titulo],
+    .cli-apps-card > strong
+  ) {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+#modal-add-cliente .server-extra > .client-fields {
+  margin-top: 12px;
+}
+#modal-add-cliente .server-total {
+  margin: 14px 0;
+  font-size: 13px;
+}
+#modal-add-cliente .server-total strong {
+  color: var(--primary);
+  font-size: 18px;
+}
+#modal-add-cliente .modal-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+#modal-add-cliente .modal-footer .btn {
+  width: 100%;
+}
+@media (max-width: 480px) {
+  #modal-add-cliente .client-app-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #modal-add-cliente [data-password-toggle-label] {
+    display: none;
+  }
+  #modal-add-cliente .password-control button {
+    padding: 0 10px;
+  }
+  #modal-add-cliente .client-access-fields > .field:has([name='vencimento']) {
+    grid-column: 1 / -1;
+  }
 }
 
 dialog:is(.react-catalog-dialog, .react-dialog)::backdrop {

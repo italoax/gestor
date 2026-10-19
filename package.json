@@ -14,6 +14,7 @@
     "format:check": "node --import tsx scripts/format.mts --check",
     "check": "npm run typecheck && npm run build:backend && npm run build:react && npm run build:browser && node --import tsx scripts/check-views.mts",
     "dev": "node --import tsx scripts/run-stack.mts --dev",
+    "dev:verbose": "node --import tsx scripts/run-stack.mts --dev --verbose",
     "build": "node --import tsx scripts/build.mts",
     "build:react": "node --import tsx scripts/build-react.mts",
     "prestart": "node --import tsx scripts/verify-build.mts",

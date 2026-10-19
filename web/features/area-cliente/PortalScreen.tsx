@@ -7,6 +7,7 @@ import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { createPix, usePixPayment } from '../pagamentos/usePixPayment.ts';
 import { useRenewalSelection } from '../pagamentos/useRenewalSelection.ts';
 import { submitPortalLogin } from '../../lib/portalLogin.ts';
+import { watchPortalSession } from '../../../src/browser/assets/js/ui/portal-session.ts';
 
 function PortalLogin({ data }: { data?: any }) {
   const [error, setError] = useState(data.erro),
@@ -288,6 +289,9 @@ function Renewal({ data }: { data?: any }) {
 export function PortalScreen({ data }: { data?: any }) {
   const logout = useNativeSubmit(),
     cliente = data.cliente;
+  useEffect(() => {
+    if (cliente) return watchPortalSession();
+  }, [cliente?.id]);
   const details = [
     ['Usuário IPTV', cliente?.user],
     ['Plano', cliente?.plano],

@@ -114,7 +114,8 @@ export function CampaignEditor({
   return (
     <NativeDialog
       title={item ? 'Editar envio automático' : 'Novo envio automático'}
-      width={760}
+      width={640}
+      className="campaign-editor"
       onClose={onClose}
       footer={
         <>
@@ -127,7 +128,7 @@ export function CampaignEditor({
             form="scheduled-message-form"
             disabled={!selected.length || !text.trim()}
           >
-            Salvar agendamento
+            Salvar
           </button>
         </>
       }
@@ -151,7 +152,7 @@ export function CampaignEditor({
           <input key={id} type="hidden" name="clientes_ids[]" value={id} />
         ))}
         <label className="field">
-          <span>Nome do envio *</span>
+          <span>Nome *</span>
           <input
             className="input"
             name="nome"
@@ -162,9 +163,8 @@ export function CampaignEditor({
           />
         </label>
         <section className="auto-form-section">
-          <h4>Mensagem personalizada</h4>
           <label className="field">
-            <span>Usar um template como ponto de partida</span>
+            <span>Modelo</span>
             <select
               className="input"
               defaultValue=""
@@ -175,7 +175,7 @@ export function CampaignEditor({
                 if (template) setText(template.mensagem);
               }}
             >
-              <option value="">Escrever minha mensagem</option>
+              <option value="">Sem modelo</option>
               {data.mensagens.map((row) => (
                 <option key={row.id} value={row.id}>
                   {row.titulo}
@@ -184,28 +184,22 @@ export function CampaignEditor({
             </select>
           </label>
           <label className="field">
-            <span>Texto da mensagem *</span>
+            <span>Mensagem *</span>
             <textarea
               className="input campaign-message"
               name="mensagem"
               value={text}
               onChange={(event) => setText(event.target.value)}
               maxLength={10000}
-              rows={6}
+              rows={4}
               required
               placeholder="Olá {nome}, temos uma novidade para você..."
             />
           </label>
-          <small className="muted">
-            Você pode usar {'{nome}'}, {'{primeiro_nome}'}, {'{servidor}'} e{' '}
-            {'{vencimento}'}. Cada cliente recebe uma mensagem, mesmo tendo dois
-            servidores.
-          </small>
         </section>
         <section className="auto-form-section">
-          <h4>Quando enviar</h4>
-          <div className="form-grid">
-            <label className="field">
+          <div className="campaign-schedule-grid">
+            <label className="field full">
               <span>Frequência *</span>
               <select
                 className="input"
@@ -213,23 +207,13 @@ export function CampaignEditor({
                 value={mode}
                 onChange={(event) => setMode(event.target.value)}
               >
-                <option value="unico">Uma vez, em uma data</option>
-                <option value="semanal">Repetir toda semana</option>
+                <option value="unico">Uma vez</option>
+                <option value="semanal">Semanal</option>
               </select>
             </label>
-            <label className="field">
-              <span>Horário de Brasília *</span>
-              <input
-                className="input"
-                type="time"
-                name="hora_envio"
-                required
-                defaultValue={String(item?.horaEnvio || '09:00').slice(0, 5)}
-              />
-            </label>
             {mode === 'unico' && (
-              <label className="field full">
-                <span>Data do envio *</span>
+              <label className="field">
+                <span>Data *</span>
                 <input
                   className="input"
                   type="date"
@@ -239,6 +223,16 @@ export function CampaignEditor({
                 />
               </label>
             )}
+            <label className={`field ${mode === 'semanal' ? 'full' : ''}`}>
+              <span>Hora (Brasília) *</span>
+              <input
+                className="input"
+                type="time"
+                name="hora_envio"
+                required
+                defaultValue={String(item?.horaEnvio || '09:00').slice(0, 5)}
+              />
+            </label>
           </div>
           {mode === 'semanal' && (
             <fieldset className="campaign-days">
@@ -264,23 +258,20 @@ export function CampaignEditor({
               </div>
             </fieldset>
           )}
-          <p className="muted">
-            O envio acontece pelo servidor, mesmo com o painel fechado. Mantenha
-            seu WhatsApp conectado.
-          </p>
         </section>
         <section className="auto-form-section">
           <h4>
-            Escolher clientes{' '}
+            Clientes{' '}
             <span className="campaign-count" aria-live="polite">
-              {selected.length} selecionados
+              {selected.length}{' '}
+              {selected.length === 1 ? 'selecionado' : 'selecionados'}
             </span>
           </h4>
           <label className="field">
-            <span>Pesquisar por nome ou telefone</span>
             <input
               className="input"
               type="search"
+              aria-label="Buscar clientes"
               value={search}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') event.preventDefault();
@@ -289,7 +280,7 @@ export function CampaignEditor({
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar cliente"
+              placeholder="Nome ou telefone"
             />
           </label>
           <div className="campaign-selection-tools">
@@ -308,7 +299,7 @@ export function CampaignEditor({
                 )
               }
             >
-              Selecionar desta página
+              Selecionar página
             </button>
             <button
               className="btn btn-muted"
@@ -316,7 +307,7 @@ export function CampaignEditor({
               disabled={!selected.length}
               onClick={() => setSelected([])}
             >
-              Limpar seleção
+              Limpar
             </button>
           </div>
           {clients.loading ? (
@@ -381,10 +372,6 @@ export function CampaignEditor({
               </div>
             </>
           )}
-          <small className="muted">
-            Até 1.000 clientes por agendamento. A seleção é mantida ao pesquisar
-            e trocar de página. Clientes arquivados ou inativos não recebem.
-          </small>
         </section>
       </form>
     </NativeDialog>
@@ -409,7 +396,11 @@ export function ScheduledMessages({
         </PanelNotice>
       )}
       {!campaigns.length ? (
-        <div className="cli-empty">Nenhum envio automático agendado.</div>
+        <div className="auto-empty-state">
+          <Icon name="calendar" />
+          <h3>Nenhum envio agendado</h3>
+          <p>Escolha a mensagem, os clientes e quando deseja enviar.</p>
+        </div>
       ) : (
         <div className="auto-list">
           {campaigns.map((item) => (

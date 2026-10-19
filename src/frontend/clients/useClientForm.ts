@@ -233,7 +233,7 @@ export function useClientForm() {
     const form = ref.current;
     let next = [...servers];
     if (checked) {
-      if (next.includes(name) || next.length >= 2) return;
+      if (next.includes(name) || next.length >= (editing ? 2 : 1)) return;
       next.push(name);
       if (next.length === 2 && !form.elements.adicional_plano.value)
         setField('adicional_plano', form.elements.plano.value);
@@ -259,6 +259,23 @@ export function useClientForm() {
       clearAdditional();
     }
     setServers(next);
+    setErrors((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([field]) => {
+          if (next.length < 2 && field.startsWith('adicional_')) return false;
+          return (
+            next.length > 0 ||
+            ![
+              'plano',
+              'valor',
+              'telas',
+              'vencimento',
+              'hora_vencimento',
+            ].includes(field)
+          );
+        }),
+      ),
+    );
     setField('servidor', next[0] || '');
     setField('adicional_servidor', next[1] || '');
     syncScreenPrice();

@@ -1,8 +1,16 @@
+'use client';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 import { PanelFlashNotice } from '../ui/PanelFlashNotice.tsx';
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
-import { PwaInstallButton } from '../pwa/PwaProvider.tsx';
+import { panelShellData } from '../../lib/panelData.ts';
 
 const menu = [
   ['Dashboard', '/dashboard', 'chart'],
@@ -18,12 +26,67 @@ const menu = [
   ['Automação', '/automacao', 'bolt'],
 ];
 
+const PanelDataContext = createContext<((data: any) => void) | null>(null);
+
+// O layout do painel permanece montado entre as rotas. As telas publicam
+// seus dados para atualizar o título e a sessão sem recriar os controles.
+export function PersistentPanel({
+  data,
+  children,
+}: {
+  data: any;
+  children: React.ReactNode;
+}) {
+  const [currentData, setCurrentData] = useState(data);
+  useLayoutEffect(() => {
+    document.body.className = 'page-app';
+  }, []);
+  useEffect(() => {
+    document.dispatchEvent(
+      new CustomEvent('gestor:navigated', { detail: { url: location.href } }),
+    );
+  }, [currentData.currentPath]);
+  useEffect(
+    () => () => {
+      window.__gestorShellAbort?.abort();
+    },
+    [],
+  );
+  return (
+    <PanelDataContext.Provider value={setCurrentData}>
+      <PanelFrame data={currentData} persistent>
+        {children}
+      </PanelFrame>
+    </PanelDataContext.Provider>
+  );
+}
+
 export function PanelShell({
   data,
   children,
 }: {
   data?: any;
   children?: React.ReactNode;
+}) {
+  const updatePanel = useContext(PanelDataContext);
+  useLayoutEffect(() => {
+    if (updatePanel) updatePanel(panelShellData(data));
+  }, [updatePanel, data]);
+  return updatePanel ? (
+    children
+  ) : (
+    <PanelFrame data={data}>{children}</PanelFrame>
+  );
+}
+
+function PanelFrame({
+  data,
+  children,
+  persistent = false,
+}: {
+  data: any;
+  children?: React.ReactNode;
+  persistent?: boolean;
 }) {
   const currentPath = data.currentPath || '/clientes';
   const isActive = (href) =>
@@ -34,6 +97,7 @@ export function PanelShell({
       className="app-shell"
       data-shell=""
       data-ajax-panel=""
+      data-persistent-panel={persistent ? '' : undefined}
       data-release-login={data.page.releaseNoticeLoginId || undefined}
       data-session-expires-at={data.page.sessionExpiresAt || undefined}
     >
@@ -208,7 +272,6 @@ export function PanelShell({
                   <Icon name="card" />
                   <span>Integração de pagamento</span>
                 </a>
-                <PwaInstallButton />
               </nav>
             </div>
           </div>

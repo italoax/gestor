@@ -257,43 +257,76 @@ export function ClientRow({
             <button
               className="cli-ico-btn cli-menu-btn"
               type="button"
-              aria-haspopup="true"
+              aria-haspopup="menu"
               aria-expanded="false"
               title="Mais ações"
+              aria-label={`Ações de ${c.nome}`}
             >
-              ⋯
+              <Icon name="more" />
             </button>
-            <div className="cli-menu-pop" role="menu" hidden>
-              <button className="cli-menu-item" type="button" data-act="msg">
-                <Icon name="message" />
-                Enviar mensagem
+            <div
+              className="cli-menu-pop"
+              role="menu"
+              aria-label="Ações do cliente"
+              hidden
+            >
+              <button
+                className="cli-menu-item"
+                type="button"
+                role="menuitem"
+                data-act="msg"
+              >
+                <span className="cli-menu-icon">
+                  <Icon name="message" />
+                </span>
+                <span>Enviar mensagem</span>
               </button>
-              <button className="cli-menu-item" type="button" data-act="edit">
-                <Icon name="edit" />
-                Editar
+              <button
+                className="cli-menu-item"
+                type="button"
+                role="menuitem"
+                data-act="edit"
+              >
+                <span className="cli-menu-icon">
+                  <Icon name="edit" />
+                </span>
+                <span>Editar</span>
               </button>
               <button
                 className="cli-menu-item"
                 type="button"
                 data-client-access={c.id}
+                role="menuitem"
               >
-                🔑 Acesso do cliente
+                <span className="cli-menu-icon">
+                  <Icon name="key" />
+                </span>
+                <span>Acesso do cliente</span>
               </button>
-              <button
-                className="cli-menu-item"
-                type="button"
-                data-act={verArquivados ? 'unarchive' : 'archive'}
-              >
-                🗄 {verArquivados ? 'Desarquivar' : 'Arquivar'}
-              </button>
-              <div className="cli-menu-sep"></div>
+              {verArquivados && (
+                <button
+                  className="cli-menu-item"
+                  type="button"
+                  data-act="unarchive"
+                  role="menuitem"
+                >
+                  <span className="cli-menu-icon">
+                    <Icon name="archive" />
+                  </span>
+                  <span>Desarquivar</span>
+                </button>
+              )}
+              <div className="cli-menu-sep" role="separator"></div>
               <button
                 className="cli-menu-item danger"
                 type="button"
                 data-act="delete"
+                role="menuitem"
               >
-                <Icon name="trash" />
-                Excluir
+                <span className="cli-menu-icon">
+                  <Icon name="trash" />
+                </span>
+                <span>Excluir</span>
               </button>
             </div>
           </div>
@@ -356,24 +389,22 @@ export function ClientRow({
               <input type="hidden" name="id" defaultValue={c.id} />
               <button type="submit"></button>
             </form>
-            <form
-              method="post"
-              action="/clientes"
-              className={
-                verArquivados ? 'unarchive-cliente' : 'archive-cliente'
-              }
-            >
-              <CsrfInput token={csrfToken} />
-              <input
-                type="hidden"
-                name="action"
-                defaultValue={
-                  verArquivados ? 'desarquivar_cliente' : 'arquivar_cliente'
-                }
-              />
-              <input type="hidden" name="id" defaultValue={c.id} />
-              <button type="submit"></button>
-            </form>
+            {verArquivados && (
+              <form
+                method="post"
+                action="/clientes"
+                className="unarchive-cliente"
+              >
+                <CsrfInput token={csrfToken} />
+                <input
+                  type="hidden"
+                  name="action"
+                  defaultValue="desarquivar_cliente"
+                />
+                <input type="hidden" name="id" defaultValue={c.id} />
+                <button type="submit"></button>
+              </form>
+            )}
           </div>
         </div>
       </td>

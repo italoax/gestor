@@ -1,4 +1,5 @@
 <%
+  const historico = locals.historico || { pagina: 1, temMais: false };
   function badgeTipo(tipo) {
     const t = String(tipo).toLowerCase();
     if (t === 'vencimento') return { cls: 'tipo-antes', label: 'Antes do venc. do plano', ico: '⏰' };
@@ -49,30 +50,39 @@
             ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %></span
           >
           <div class="auto-rule-body">
-            <div class="auto-rule-top">
-              <strong><%= r.titulo %></strong>
-              <% if (r.descricao && r.descricao.trim().toLowerCase() !== b.label.toLowerCase()) { %>
-              <small><%= r.descricao %></small>
-              <% } %>
+            <div class="auto-rule-header">
+              <div class="auto-rule-heading">
+                <div class="auto-rule-top">
+                  <strong><%= r.titulo %></strong>
+                  <% if (r.descricao && r.descricao.trim().toLowerCase() !== b.label.toLowerCase()) { %>
+                  <small><%= r.descricao %></small>
+                  <% } %>
+                </div>
+                <span class="auto-badge <%= b.cls %>"
+                  ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %>
+                  <%= b.label %></span
+                >
+              </div>
+              <form method="post" action="/automacao" class="auto-toggle-form">
+                <%- csrfInput %>
+                <input type="hidden" name="action" value="toggle_regra" />
+                <input type="hidden" name="id" value="<%= r.id %>" />
+                <label class="auto-toggle-control">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    class="switch"
+                    data-submit-on-change=""
+                    <%= ativa ? 'checked' : '' %>
+                    aria-label="Ativar regra <%= r.titulo %>"
+                  />
+                  <span><%= ativa ? 'Ativado' : 'Desativado' %></span>
+                </label>
+              </form>
             </div>
-            <span class="auto-badge <%= b.cls %>"
-              ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %>
-              <%= b.label %></span
-            >
             <div class="auto-rule-preview">
               <span class="auto-rule-preview-text"
                 ><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ') %></span
-              >
-            </div>
-            <div class="auto-rule-foot">
-              <button
-                type="button"
-                class="auto-receb-link"
-                data-regra-id="<%= r.id %>"
-                data-regra-nome="<%= r.titulo %>"
-                ><%- include('../partials/ui-icon', { name: 'users' }) %>
-                <%= r.recebedores %>
-                clientes</button
               >
             </div>
             <% if (r.envioHoje) { %>
@@ -89,21 +99,6 @@
           </div>
         </div>
         <div class="auto-rule-actions is-rule-actions">
-          <form method="post" action="/automacao" class="auto-toggle-form">
-            <%- csrfInput %>
-            <input type="hidden" name="action" value="toggle_regra" />
-            <input type="hidden" name="id" value="<%= r.id %>" />
-            <label class="auto-toggle-control">
-              <input
-                type="checkbox"
-                class="switch"
-                data-submit-on-change=""
-                <%= ativa ? 'checked' : '' %>
-                aria-label="Ativar regra"
-              />
-              <span><%= ativa ? 'Ativa' : 'Desativada' %></span>
-            </label>
-          </form>
           <form
             method="post"
             action="/automacao"
@@ -116,9 +111,9 @@
             <button
               class="btn btn-muted auto-force-send"
               type="submit"
-              title="Forçar envio dos pendentes"
+              title="Enviar pendentes"
               data-loading-text="Enviando pendentes..."
-              >Forçar envio</button
+              >Enviar</button
             >
           </form>
           <button
@@ -160,54 +155,122 @@
     <% } %>
   </div>
   <div class="auto-panel" data-auto-panel="disparos">
+    <form method="get" action="/automacao" class="auto-history-size-form">
+      <input type="hidden" name="aba" value="disparos" />
+      <select
+        class="input"
+        name="porPagina"
+        aria-label="Registros por página"
+        data-history-page-size
+      >
+        <% [10, 50, 100].forEach(size => { %>
+        <option value="<%= size %>" <%= Number(historico.porPagina || 10) === size ? 'selected' : '' %>
+          ><%= size %>
+          por página</option
+        >
+        <% }) %>
+      </select>
+    </form>
     <% if (!disparos.length) { %>
     <div class="cli-empty">
       <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '➤' }) %></div>
-      <h3>Nenhum disparo realizado</h3>
-      <p class="muted"
-        >Quando você disparar uma regra, o progresso aparecerá aqui em tempo
-        real.</p
-      >
+      <h3>Nenhum envio neste período</h3>
+      <p class="muted">Os envios dos últimos 3 meses aparecerão aqui.</p>
     </div>
     <% } else { %>
-    <div class="cli-table-card">
-      <div class="table-wrapper">
-        <table class="cli-table disparos-table">
-          <thead>
-            <tr>
-              <th>Quando</th>
-              <th>Regra</th>
-              <th>Clientes</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% disparos.forEach(d => { const total = Number(d.clientesCount || 0); const nomes = String(d.clientesNomes || ''); const lista = nomes.split(', ').filter(Boolean); const preview = lista.slice(0, 3).join(', '); const sobra = lista.length - 3; %>
-            <tr>
-              <td><%= d.quando %></td>
-              <td><%= d.regraTitulo || '-' %></td>
-              <td <% if (lista.length) { %> title="<%= nomes %>" <% } %>>
-                <% if (total > 1) { %>
-                <span class="badge badge-muted" style="margin-right:6px;"
-                  ><%= total %></span
-                >
-                <% } %>
-                <%= preview || '-' %>
-                <% if (sobra > 0) { %>
-                <span class="muted">+<%= sobra %></span>
-                <% } %>
-              </td>
-              <td
-                ><span class="badge <%= d.status==='enviado'?'badge-green':d.status==='erro'?'badge-red':'badge-muted' %>"
-                  ><%= d.status==='enviado'?'Enviado':d.status==='nao_enviado'?'Não enviado':d.status==='incerto'?'Sem confirmação':d.status==='erro'?'Erro':'Pendente' %></span
-                ></td
-              >
-            </tr>
-            <% }) %>
-          </tbody>
-        </table>
+    <section class="auto-history" aria-label="Histórico de envios">
+      <%
+        const dias = new Map();
+        disparos.forEach(d => {
+          const quando = String(d.quando || '').match(/^(\d{2}\/\d{2}(?:\/\d{4})?)[,\s]+(\d{2}:\d{2})/);
+          const data = quando?.[1] || 'Data não informada';
+          const entradas = dias.get(data) || [];
+          entradas.push({ ...d, horario: quando?.[2] || d.quando || '—' });
+          dias.set(data, entradas);
+        });
+      %>
+      <div class="auto-history-days">
+        <% dias.forEach((entradas, data) => { %>
+        <article class="auto-history-day" data-history-date="<%= data %>">
+          <h3 class="auto-history-date"
+            ><%- include('../partials/ui-icon', { name: 'calendar' }) %><%= data %></h3
+          >
+          <div class="auto-history-table-wrap">
+            <table
+              class="auto-history-table"
+              aria-label="Envios de <%= data %>"
+            >
+              <thead>
+                <tr>
+                  <th>Horário</th>
+                  <th>Regra</th>
+                  <th>Clientes</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% entradas.forEach(d => { const total = Number(d.clientesCount || 0); const nomes = String(d.clientesNomes || ''); %>
+                <tr>
+                  <td class="auto-history-when"><%= d.horario %></td>
+                  <td class="auto-history-rule"><%= d.regraTitulo || 'Regra sem nome' %></td>
+                  <td class="auto-history-clients">
+                    <div>
+                      <span class="auto-history-count"
+                        ><%= total %>
+                        <%= total === 1 ? 'cliente' : 'clientes' %></span
+                      >
+                      <% if (d.clientesPorServidor?.length) { %>
+                      <div class="auto-history-servers">
+                        <% d.clientesPorServidor.forEach(grupo => { %>
+                        <div class="auto-history-server">
+                          <strong><%= grupo.servidor %></strong>
+                          <p><%= grupo.clientes.join(', ') %></p>
+                        </div>
+                        <% }) %>
+                      </div>
+                      <% } else { %>
+                      <p><%= nomes || 'Nenhum cliente identificado' %></p>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="auto-history-status"
+                    ><span
+                      class="auto-history-badge"
+                      data-tone="<%= d.status==='enviado'?'success':d.status==='erro'?'danger':['incerto','pendente'].includes(d.status)?'warning':'muted' %>"
+                      ><%= d.status==='enviado'?'Enviado':d.status==='nao_enviado'?'Não enviado':d.status==='incerto'?'Sem confirmação':d.status==='erro'?'Erro':'Pendente' %></span
+                    ></td
+                  >
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <% }) %>
       </div>
-    </div>
+    </section>
+    <% } %>
+    <% if (historico.pagina > 1 || historico.temMais) { %>
+    <nav class="auto-history-pagination" aria-label="Páginas do histórico">
+      <div
+        ><% if (historico.anteriorUrl) { %><a
+          class="btn btn-muted"
+          href="<%= historico.anteriorUrl %>"
+          >Anterior</a
+        ><% } %></div
+      >
+      <span
+        >Página
+        <%= historico.pagina %></span
+      >
+      <div
+        ><% if (historico.proximaUrl) { %><a
+          class="btn btn-muted"
+          href="<%= historico.proximaUrl %>"
+          >Próxima</a
+        ><% } %></div
+      >
+    </nav>
     <% } %>
   </div>
 </div>
@@ -514,17 +577,25 @@
 </div>
 <script nonce="<%= locals.cspNonce || '' %>">
 (function () {
+  document.querySelector('[data-history-page-size]')?.addEventListener('change', function () {
+    this.form.requestSubmit();
+  });
   // Abas de página (Regras / Disparos)
   document.querySelectorAll('[data-auto-tab]').forEach(function (tab) {
     tab.addEventListener('click', function () {
       document.querySelectorAll('[data-auto-tab]').forEach(function (t) { t.classList.remove('active'); });
       tab.classList.add('active');
       var key = tab.getAttribute('data-auto-tab');
+      var createButton = document.querySelector('.page-automacao .auto-new');
+      if (createButton) createButton.hidden = key === 'disparos';
       document.querySelectorAll('[data-auto-panel]').forEach(function (p) {
         p.classList.toggle('active', p.getAttribute('data-auto-panel') === key);
       });
     });
   });
+  if (new URLSearchParams(location.search).get('aba') === 'disparos') {
+    document.querySelector('[data-auto-tab="disparos"]')?.click();
+  }
 
   var modal = document.getElementById('modal-nova-regra');
   if (!modal) return;

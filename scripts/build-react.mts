@@ -25,4 +25,7 @@ await build({
   format: 'esm',
   jsx: 'automatic',
 });
-console.log('React: tela de clientes compilada para o servidor e o navegador.');
+if (process.env.GESTOR_COMPACT_LOGS !== 'true')
+  console.log(
+    'React: tela de clientes compilada para o servidor e o navegador.',
+  );

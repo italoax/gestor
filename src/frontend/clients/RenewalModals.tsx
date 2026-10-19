@@ -8,7 +8,6 @@ function Field({
   name,
   label,
   error,
-  hint,
   children,
   full = false,
 }: {
@@ -16,7 +15,6 @@ function Field({
   name?: string;
   label?: React.ReactNode;
   error?: any;
-  hint?: React.ReactNode;
   children?: React.ReactNode;
   full?: boolean;
 }) {
@@ -24,7 +22,6 @@ function Field({
     <label className={full ? 'field full' : 'field'}>
       <span>{label}</span>
       {children}
-      {hint && <small>{hint}</small>}
       <small
         className="field-error"
         data-error-for={name}
@@ -59,7 +56,7 @@ function Modal({
       aria-hidden="true"
       inert
     >
-      <div className="modal">
+      <div className="modal renewal-editor">
         <div className="modal-header">
           <h3 id={titleId}>{title}</h3>
           <button
@@ -117,12 +114,20 @@ export function RenewalModals({
     const errors = kind === 'single' ? singleErrors : multiErrors;
     const update =
       kind === 'single' ? renewal.updateSingle : renewal.updateMulti;
+    const selected =
+      kind === 'single'
+        ? Boolean(single.servidor)
+        : multi.escolhas.some((group) => group.selecao === multi.selecao);
+    const isRequired =
+      required &&
+      (name === (kind === 'single' ? 'servidor' : 'selecao') || selected);
     const handler = (event) => update(name, event.currentTarget.value);
     return {
       name,
       value: state[name],
       className: errors[name] ? 'input input-error' : 'input',
-      'data-required': required ? '1' : undefined,
+      required: isRequired,
+      'data-required': isRequired ? '1' : undefined,
       'aria-invalid': Boolean(errors[name]),
       'aria-describedby': `${kind === 'single' ? singleId : multiId}-error-${name}`,
       onChange: type === 'select' ? handler : () => {},
@@ -136,7 +141,7 @@ export function RenewalModals({
     const error = preference.error || errors.mensagem_pagamento_id;
     return (
       <div className="field full">
-        <label htmlFor={`${id}-message`}>Mensagem após salvar</label>
+        <label htmlFor={`${id}-message`}>Mensagem no WhatsApp</label>
         <select
           className="input"
           id={`${id}-message`}
@@ -155,11 +160,6 @@ export function RenewalModals({
             </option>
           ))}
         </select>
-        <small>
-          {kind === 'multi'
-            ? 'Enviada pelo WhatsApp após salvar. A escolha fica salva na sua conta.'
-            : 'Mensagem enviada pelo WhatsApp após salvar. A última escolha vale para todos os dispositivos da sua conta.'}
-        </small>
         {preference.pending && (
           <small role="status">Sincronizando mensagem…</small>
         )}
@@ -207,7 +207,19 @@ export function RenewalModals({
       <Modal
         id="modal-add-pagamento"
         titleId="pagamento-title"
-        title={single.id ? `↻ Renovar - ${single.nome}` : '↻ Renovar Pagamento'}
+        title="Renovar"
+        summary={
+          single.servidor && (
+            <div
+              className="renewal-total"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <span>Total</span>
+              <strong data-single-total="">{formatMoney(single.valor)}</strong>
+            </div>
+          )
+        }
         footer={
           <button
             className="btn btn-primary"
@@ -232,6 +244,12 @@ export function RenewalModals({
           <CsrfInput token={csrfToken} />
           <input type="hidden" name="action" value="add_pagamento" />
           <input type="hidden" name="id" value={single.id} />
+          <div className="renewal-customer">
+            <span className="renewal-customer-icon">
+              <Icon name="users" />
+            </span>
+            <strong>{single.nome}</strong>
+          </div>
           <div id="modal-add-pagamento-error" aria-live="polite">
             {(missingCatalog || Object.keys(singleErrors).length > 0) && (
               <PanelNotice
@@ -239,194 +257,172 @@ export function RenewalModals({
                 error
                 text={
                   missingCatalog
-                    ? 'Este cliente está sem plano e/ou servidor. Preencha os campos abaixo antes de renovar.'
+                    ? !single.originalServer?.nome
+                      ? 'Defina o servidor em Editar cliente.'
+                      : 'Selecione o servidor e o plano.'
                     : 'Revise os campos obrigatórios destacados.'
                 }
               />
             )}
           </div>
-          <div className="form-grid">
-            <Field
-              formId={singleId}
-              name="vencimento"
-              label="Nova data de vencimento *"
-              error={singleErrors.vencimento}
+          <Field
+            formId={singleId}
+            full
+            name="servidor"
+            label="Servidor *"
+            error={singleErrors.servidor}
+          >
+            <select
+              {...props('servidor', 'single', 'select')}
+              data-renovacao-servidor=""
             >
-              <input
-                {...props('vencimento')}
-                type="text"
-                placeholder="dd/mm/aaaa"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={10}
-                pattern="\d{2}/\d{2}/\d{4}"
-                title="Use dd/mm/aaaa"
-                data-date-mask=""
-              />
-            </Field>
-            <Field
-              formId={singleId}
-              name="hora_vencimento"
-              label="Nova hora de vencimento"
-              error={singleErrors.hora_vencimento}
-            >
-              <input
-                {...props('hora_vencimento', 'single', 'input', false)}
-                type="time"
-              />
-            </Field>
-            <Field
-              formId={singleId}
-              name="plano"
-              label="Plano *"
-              error={singleErrors.plano}
-              hint="Ao trocar o plano, confira o valor do período completo abaixo."
-            >
-              <select
-                {...props('plano', 'single', 'select')}
-                data-renovacao-plano=""
-              >
-                <option value="">Selecione</option>
-                {planos
-                  .filter((p) => p.ativo)
-                  .map((p) => (
-                    <option key={p.id} value={p.nome}>
-                      {p.nome}
-                    </option>
-                  ))}
-                {single.originalPlan?.nome &&
-                  !planos.some(
-                    (p) => p.ativo && p.nome === single.originalPlan.nome,
-                  ) && (
-                    <option value={single.originalPlan.nome}>
-                      {single.originalPlan.nome} (atual)
-                    </option>
-                  )}
-              </select>
-            </Field>
-            <Field
-              formId={singleId}
-              name="servidor"
-              label="Servidor *"
-              error={singleErrors.servidor}
-              hint="Os créditos serão descontados do servidor selecionado."
-            >
-              <select
-                {...props('servidor', 'single', 'select')}
-                data-renovacao-servidor=""
-              >
-                <option value="">Selecione</option>
-                {servidores.map((s) => (
+              <option value="">Selecione</option>
+              {servidores
+                .filter((s) => s.nome === single.originalServer?.nome)
+                .map((s) => (
                   <option key={s.id} value={s.nome}>
                     {s.nome}
                   </option>
                 ))}
-                {single.originalServer?.nome &&
-                  !servidores.some(
-                    (s) => s.nome === single.originalServer.nome,
-                  ) && (
-                    <option value={single.originalServer.nome}>
-                      {single.originalServer.nome} (atual)
-                    </option>
-                  )}
-              </select>
-            </Field>
-            <Field
-              formId={singleId}
-              name="valor"
-              label="Valor *"
-              error={singleErrors.valor}
-              hint="Quantidade de renovações × preço do período completo. Pode editar para dar desconto."
-            >
+              {single.originalServer?.nome &&
+                !servidores.some(
+                  (s) => s.nome === single.originalServer.nome,
+                ) && (
+                  <option value={single.originalServer.nome}>
+                    {single.originalServer.nome} (atual)
+                  </option>
+                )}
+            </select>
+          </Field>
+          <fieldset
+            className="renewal-fields"
+            hidden={!single.servidor}
+            disabled={!single.servidor}
+          >
+            <div className="renewal-grid">
+              <Field
+                formId={singleId}
+                full
+                name="plano"
+                label="Plano *"
+                error={singleErrors.plano}
+              >
+                <select
+                  {...props('plano', 'single', 'select')}
+                  data-renovacao-plano=""
+                >
+                  <option value="">Selecione</option>
+                  {planos
+                    .filter((p) => p.ativo)
+                    .map((p) => (
+                      <option key={p.id} value={p.nome}>
+                        {p.nome}
+                      </option>
+                    ))}
+                  {single.originalPlan?.nome &&
+                    !planos.some(
+                      (p) => p.ativo && p.nome === single.originalPlan.nome,
+                    ) && (
+                      <option value={single.originalPlan.nome}>
+                        {single.originalPlan.nome} (atual)
+                      </option>
+                    )}
+                </select>
+              </Field>
+              <Field
+                formId={singleId}
+                name="telas"
+                label="Telas *"
+                error={singleErrors.telas}
+              >
+                <input
+                  {...props('telas')}
+                  type="number"
+                  min="1"
+                  step="1"
+                  data-telas-input=""
+                />
+              </Field>
+              <Field
+                formId={singleId}
+                name="valor"
+                label="Valor (R$) *"
+                error={singleErrors.valor}
+              >
+                <input
+                  {...props('valor')}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0,00"
+                />
+              </Field>
+              <Field
+                formId={singleId}
+                name="pago_em"
+                label="Pago em"
+                error={singleErrors.pago_em}
+              >
+                <input
+                  {...props('pago_em', 'single', 'input', false)}
+                  type="text"
+                  placeholder="dd/mm/aaaa"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={10}
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  title="Use dd/mm/aaaa"
+                  data-date-mask=""
+                />
+              </Field>
+              <Field
+                formId={singleId}
+                name="hora_vencimento"
+                label="Horário *"
+                error={singleErrors.hora_vencimento}
+              >
+                <input {...props('hora_vencimento')} type="time" />
+              </Field>
+              <Field
+                formId={singleId}
+                name="forma_pagamento"
+                label="Pagamento *"
+                error={singleErrors.forma_pagamento}
+              >
+                <select {...props('forma_pagamento', 'single', 'select')}>
+                  <PaymentOptions />
+                </select>
+              </Field>
+              <Field
+                formId={singleId}
+                name="vencimento"
+                label="Vencimento *"
+                error={singleErrors.vencimento}
+              >
+                <input
+                  {...props('vencimento')}
+                  type="text"
+                  placeholder="dd/mm/aaaa"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={10}
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  title="Use dd/mm/aaaa"
+                  data-date-mask=""
+                />
+              </Field>
               <input
-                {...props('valor')}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0,00"
-              />
-            </Field>
-            <Field
-              formId={singleId}
-              name="forma_pagamento"
-              label="Forma de pagamento *"
-              error={singleErrors.forma_pagamento}
-            >
-              <select {...props('forma_pagamento', 'single', 'select')}>
-                <PaymentOptions />
-              </select>
-            </Field>
-            <Field
-              formId={singleId}
-              name="pago_em"
-              label="Pago em"
-              error={singleErrors.pago_em}
-            >
-              <input
-                {...props('pago_em', 'single', 'input', false)}
-                type="text"
-                placeholder="dd/mm/aaaa"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={10}
-                pattern="\d{2}/\d{2}/\d{4}"
-                title="Use dd/mm/aaaa"
-                data-date-mask=""
-              />
-            </Field>
-            <Field
-              formId={singleId}
-              name="creditos_gastos"
-              label="Quantidade de renovações"
-              error={singleErrors.creditos_gastos}
-              hint={
-                <>
-                  Cada renovação corresponde a um período completo do plano. O
-                  valor cadastrado do cliente é o preço desse período.
-                  <br />
-                  <span data-renovacao-periodo="">{single.summary}</span>
-                </>
-              }
-            >
-              <input
-                {...props('creditos_gastos')}
-                type="number"
-                min="1"
-                step="1"
+                type="hidden"
+                name="creditos_gastos"
+                value={single.creditos_gastos}
                 data-creditos-input=""
               />
-            </Field>
-            <input
-              type="hidden"
-              name="telas"
-              value={single.telas}
-              data-telas-input=""
-            />
-            <Field
-              formId={singleId}
-              name="custo_pagamento"
-              label="Custo"
-              error={singleErrors.custo_pagamento}
-              hint="Renovações × créditos do plano × custo por crédito."
-            >
-              <input
-                {...props('custo_pagamento', 'single', 'input', false)}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="auto"
-                data-custo-input=""
-              />
-            </Field>
-            <label className="field full">
-              <span>Observação</span>
-              <textarea
-                {...props('observacao_pagamento', 'single', 'input', false)}
-                placeholder="Anotações sobre essa renovação..."
-              />
-            </label>
-            {message('single')}
-          </div>
+              <p className="renewal-period full" data-renovacao-periodo="">
+                {single.summary}
+              </p>
+              {message('single')}
+            </div>
+          </fieldset>
         </form>
       </Modal>
       <Modal
@@ -434,15 +430,7 @@ export function RenewalModals({
         title="Renovar servidores"
         summary={
           <div className="renewal-total" aria-live="polite" aria-atomic="true">
-            <div>
-              <strong>Total da renovação</strong>
-              <small>
-                {group?.dados.itens.length || 0}{' '}
-                {group?.dados.itens.length === 1
-                  ? 'servidor selecionado'
-                  : 'servidores selecionados'}
-              </small>
-            </div>
+            <span>Total</span>
             <strong data-multi-total="">
               {option ? formatMoney(option.valor) : '—'}
             </strong>
@@ -461,7 +449,7 @@ export function RenewalModals({
               renewal.submitting.multi
             }
           >
-            {renewal.submitting.multi ? 'Renovando…' : 'Confirmar renovação'}
+            {renewal.submitting.multi ? 'Renovando…' : 'Renovar'}
           </button>
         }
       >
@@ -483,10 +471,7 @@ export function RenewalModals({
             <span className="renewal-customer-icon">
               <Icon name="users" />
             </span>
-            <div>
-              <small>Renovação de assinatura</small>
-              <strong data-multi-nome="">{multi.nome}</strong>
-            </div>
+            <strong data-multi-nome="">{multi.nome}</strong>
           </div>
           <div
             data-multi-erro=""
@@ -511,18 +496,19 @@ export function RenewalModals({
               />
             )}
           </div>
-          <div className="form-grid">
+          <div className="renewal-grid">
             <Field
               formId={multiId}
               full
               name="selecao"
-              label="Servidores para renovar"
+              label="Servidores *"
               error={multiErrors.selecao}
             >
               <select
                 {...props('selecao', 'multi', 'select')}
                 disabled={multi.loading}
               >
+                <option value="">Selecione os servidores</option>
                 {multi.escolhas.map((g) => (
                   <option key={g.selecao} value={g.selecao}>
                     {g.label}
@@ -530,99 +516,95 @@ export function RenewalModals({
                 ))}
               </select>
             </Field>
-            <Field
-              formId={multiId}
-              full
-              name="periodos"
-              label="Duração da renovação"
-              error={multiErrors.periodos}
-            >
-              <select
-                {...props('periodos', 'multi', 'select')}
-                disabled={multi.loading}
-              >
-                {group?.opcoes.map((o) => (
-                  <option key={o.periodos} value={o.periodos}>
-                    {durationLabel(o.periodos)} · {formatMoney(o.valor)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <div
-              className="field full renewal-summary"
-              data-multi-resumo=""
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {option && <h4>Resumo da renovação</h4>}
-              {option &&
-                group.dados.itens.map((item, index) => {
-                  const dateName =
-                    item.chave === 'principal'
-                      ? 'vencimento_principal'
-                      : 'vencimento_adicional';
-                  return (
-                    <article
-                      className="renewal-server"
-                      key={`${item.servidor}-${index}`}
-                    >
-                      <div className="renewal-server-heading">
-                        <strong>{item.servidor}</strong>
-                        <strong>
-                          {formatMoney(item.valor * option.periodos)}
-                        </strong>
-                      </div>
-                      <p className="renewal-server-plan">
-                        {item.plano} · {itemDuration(item, option.periodos)}
-                      </p>
-                      <div className="renewal-server-date">
-                        <Field
-                          formId={multiId}
-                          name={dateName}
-                          label={
-                            <>
-                              <Icon name="calendar" /> Novo vencimento —{' '}
-                              {item.servidor}
-                            </>
-                          }
-                          error={multiErrors[dateName]}
-                          hint="Pode ajustar a data deste servidor. O valor e os créditos seguem a duração selecionada."
-                        >
-                          <input
-                            {...props(dateName, 'multi')}
-                            type="text"
-                            placeholder="dd/mm/aaaa"
-                            inputMode="numeric"
-                            autoComplete="off"
-                            maxLength={10}
-                            pattern="\d{2}/\d{2}/\d{4}"
-                            title="Use dd/mm/aaaa"
-                            data-date-mask=""
-                          />
-                        </Field>
-                      </div>
-                    </article>
-                  );
-                })}
-            </div>
-            <Field
-              formId={multiId}
-              full
-              name="forma_pagamento"
-              label="Forma de pagamento"
-              error={multiErrors.forma_pagamento}
-            >
-              <select {...props('forma_pagamento', 'multi', 'select')}>
-                <PaymentOptions />
-              </select>
-            </Field>
-            {message('multi')}
           </div>
-          <p className="muted renewal-note">
-            As datas são sugeridas a partir do vencimento atual ou de hoje, se
-            já venceu. Ao trocar os servidores ou a duração, as datas são
-            recalculadas.
-          </p>
+          <fieldset
+            className="renewal-fields"
+            hidden={!group}
+            disabled={!group}
+          >
+            <div className="renewal-grid">
+              <Field
+                formId={multiId}
+                full
+                name="periodos"
+                label="Duração *"
+                error={multiErrors.periodos}
+              >
+                <select
+                  {...props('periodos', 'multi', 'select')}
+                  disabled={multi.loading}
+                >
+                  {group?.opcoes.map((o) => (
+                    <option key={o.periodos} value={o.periodos}>
+                      {durationLabel(o.periodos)} · {formatMoney(o.valor)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <div
+                className="field full renewal-summary"
+                data-multi-resumo=""
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {option &&
+                  group.dados.itens.map((item, index) => {
+                    const dateName =
+                      item.chave === 'principal'
+                        ? 'vencimento_principal'
+                        : 'vencimento_adicional';
+                    return (
+                      <article
+                        className="renewal-server"
+                        key={`${item.servidor}-${index}`}
+                      >
+                        <div className="renewal-server-heading">
+                          <strong>{item.servidor}</strong>
+                          <strong>
+                            {formatMoney(item.valor * option.periodos)}
+                          </strong>
+                        </div>
+                        <p className="renewal-server-plan">
+                          {item.plano} · {itemDuration(item, option.periodos)}
+                        </p>
+                        <div className="renewal-server-date">
+                          <Field
+                            formId={multiId}
+                            name={dateName}
+                            label="Vencimento *"
+                            error={multiErrors[dateName]}
+                          >
+                            <input
+                              {...props(dateName, 'multi')}
+                              type="text"
+                              placeholder="dd/mm/aaaa"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              maxLength={10}
+                              pattern="\d{2}/\d{2}/\d{4}"
+                              title="Use dd/mm/aaaa"
+                              data-date-mask=""
+                            />
+                          </Field>
+                        </div>
+                      </article>
+                    );
+                  })}
+              </div>
+              <Field
+                formId={multiId}
+                full
+                name="forma_pagamento"
+                label="Pagamento *"
+                error={multiErrors.forma_pagamento}
+              >
+                <select {...props('forma_pagamento', 'multi', 'select')}>
+                  <PaymentOptions />
+                </select>
+              </Field>
+              {message('multi')}
+            </div>
+          </fieldset>
         </form>
       </Modal>
     </>

@@ -45,15 +45,13 @@
       data-search-text="<%= a.nome %> <%= a.descricao || '' %> <%= ativo ? 'Ativo' : 'Inativo' %>"
     >
       <div class="disp-card-top">
-        <span class="disp-ico"><%- include('../partials/ui-icon', { name: '🗓️' }) %></span>
+        <span class="disp-ico"><%- include('../partials/ui-icon', { name: 'phone' }) %></span>
         <div class="disp-info">
           <strong><%= a.nome %></strong>
         </div>
-        <span class="ui-status <%= ativo ? 'is-active' : '' %>"
-          ><%= ativo ? 'Ativo' : 'Inativo' %></span
-        >
+        <span class="badge <%= ativo ? 'badge-green' : 'badge-muted' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
-      <div class="app-valor"
+      <div class="app-valor" data-defined="<%= Number(a.valorRenovacao) > 0 %>"
         ><span>Valor de renovação</span
         ><strong><%= Number(a.valorRenovacao) > 0 ? formatMoney(a.valorRenovacao) : 'Não definido' %></strong></div
       >
@@ -95,12 +93,9 @@
   <% } %>
 </div>
 <div class="modal-overlay" id="modal-add-aplicativo" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal catalog-editor app-editor">
     <div class="modal-header">
-      <h3
-        ><%- include('../partials/ui-icon', { name: 'apps' }) %>
-        Novo Aplicativo</h3
-      >
+      <h3>Novo aplicativo</h3>
       <button
         class="modal-close"
         type="button"
@@ -121,7 +116,7 @@
       <input type="hidden" name="id" value="" />
       <div class="form-grid">
         <label class="field full"
-          ><span>Nome do Aplicativo *</span
+          ><span>Nome do aplicativo *</span
           ><input
             class="input"
             name="nome"
@@ -130,8 +125,8 @@
             data-required="1"
             data-field-label="Nome do Aplicativo"
         /></label>
-        <label class="field full"
-          ><span>Valor de Renovação (R$)</span
+        <label class="field"
+          ><span>Renovação (R$)</span
           ><input
             class="input"
             type="number"
@@ -140,20 +135,16 @@
             name="valor_renovacao"
             placeholder="0,00"
         /></label>
-        <label class="field full"
-          ><span>Descrição</span
-          ><textarea
-            class="input"
-            name="descricao"
-            placeholder="Descrição opcional do aplicativo..."
-          ></textarea>
-        </label>
-        <label class="field full">
+        <label class="field">
           <span>Status</span>
           <select class="input" name="status">
             <option>Ativo</option>
             <option>Inativo</option>
           </select>
+        </label>
+        <label class="field full"
+          ><span>Descrição</span
+          ><textarea class="input" name="descricao" rows="2"></textarea>
         </label>
       </div>
     </form>

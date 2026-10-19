@@ -1,4 +1,5 @@
 import { normalizeDateInput } from './format.ts';
+import { automationHistoryCutoff } from './automationHistory.ts';
 
 export function lerCampanha(value) {
   if (value == null) return null;
@@ -28,10 +29,17 @@ export function lerCampanha(value) {
 }
 
 export function campanhaPodeExecutar(campanha, hoje, hora, horario) {
+  if (campanhaExpirada(campanha, hoje)) return false;
   return (
     campanha.modo !== 'unico' ||
     hoje > campanha.data ||
     (hoje === campanha.data && hora >= horario)
+  );
+}
+
+export function campanhaExpirada(campanha, hoje: string) {
+  return (
+    campanha?.modo === 'unico' && campanha.data < automationHistoryCutoff(hoje)
   );
 }
 

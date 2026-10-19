@@ -44,7 +44,7 @@ window.gestorPageModules.initCatalogs = function ({
         if (pSigConn)
           pSigConn.value = btn.getAttribute('data-sigma-connections') || '1';
         const pTitulo = modal.querySelector('.modal-header h3') as HTMLElement;
-        if (pTitulo) setIconLabel(pTitulo, 'edit', 'Editar Plano');
+        if (pTitulo) pTitulo.textContent = 'Editar plano';
         const pBtnEd = document.querySelector(
           'button[type="submit"][form="modal-add-plano-form"]',
         ) as HTMLButtonElement;
@@ -79,7 +79,7 @@ window.gestorPageModules.initCatalogs = function ({
       const t = document.querySelector(
         '#modal-add-plano .modal-header h3',
       ) as HTMLElement;
-      if (t) setIconLabel(t, 'plus', 'Novo Plano');
+      if (t) t.textContent = 'Novo plano';
       const pBtnNv = document.querySelector(
         'button[type="submit"][form="modal-add-plano-form"]',
       ) as HTMLButtonElement;
@@ -110,7 +110,11 @@ window.gestorPageModules.initCatalogs = function ({
       const dStatus = form.querySelector('[name="status"]') as HTMLInputElement;
       if (dStatus) dStatus.value = btn.getAttribute('data-status') || 'Ativo';
       const dTit = modal.querySelector('.modal-header h3') as HTMLElement;
-      if (dTit) setIconLabel(dTit, 'edit', 'Editar Dispositivo');
+      if (dTit) dTit.textContent = 'Editar dispositivo';
+      const submit = modal.querySelector(
+        'button[form="modal-add-dispositivo-form"]',
+      );
+      if (submit) submit.textContent = 'Salvar';
       setModalState(modal, true);
     });
   });
@@ -134,7 +138,11 @@ window.gestorPageModules.initCatalogs = function ({
       const t = document.querySelector(
         '#modal-add-dispositivo .modal-header h3',
       ) as HTMLElement;
-      if (t) setIconLabel(t, 'plus', 'Novo Dispositivo');
+      if (t) t.textContent = 'Novo dispositivo';
+      const submit = document.querySelector(
+        '#modal-add-dispositivo button[form="modal-add-dispositivo-form"]',
+      );
+      if (submit) submit.textContent = 'Cadastrar';
     });
   });
 
@@ -165,7 +173,7 @@ window.gestorPageModules.initCatalogs = function ({
       const aStatus = form.querySelector('[name="status"]') as HTMLInputElement;
       if (aStatus) aStatus.value = btn.getAttribute('data-status') || 'Ativo';
       const aTit = modal.querySelector('.modal-header h3') as HTMLElement;
-      if (aTit) setIconLabel(aTit, 'edit', 'Editar Aplicativo');
+      if (aTit) aTit.textContent = 'Editar aplicativo';
       setModalState(modal, true);
     });
   });
@@ -189,7 +197,7 @@ window.gestorPageModules.initCatalogs = function ({
       const t = document.querySelector(
         '#modal-add-aplicativo .modal-header h3',
       ) as HTMLElement;
-      if (t) setIconLabel(t, 'plus', 'Novo Aplicativo');
+      if (t) t.textContent = 'Novo aplicativo';
     });
   });
 
@@ -227,20 +235,12 @@ window.gestorPageModules.initCatalogs = function ({
       setIfExists('identificador', btn.getAttribute('data-identificador'));
       setIfExists('observacao_servidor', btn.getAttribute('data-obs'));
       const stitulo = modal.querySelector('.modal-header h3') as HTMLElement;
-      if (stitulo) setIconLabel(stitulo, 'edit', 'Editar Servidor');
+      if (stitulo) stitulo.textContent = 'Editar servidor';
       const sBtnEd = document.querySelector(
         'button[type="submit"][form="modal-add-servidor-form"]',
       ) as HTMLButtonElement;
       if (sBtnEd) sBtnEd.textContent = 'Salvar';
       setModalState(modal, true);
-      if (btn.hasAttribute('data-credit-focus')) {
-        if (stitulo) setIconLabel(stitulo, 'money', 'Ajustar saldo');
-        const creditos = form.querySelector(
-          '[name="creditos"]',
-        ) as HTMLInputElement;
-        creditos.focus({ preventScroll: true });
-        creditos.select();
-      }
     });
   });
 
@@ -263,7 +263,7 @@ window.gestorPageModules.initCatalogs = function ({
       const t = document.querySelector(
         '#modal-add-servidor .modal-header h3',
       ) as HTMLElement;
-      if (t) setIconLabel(t, 'plus', 'Novo Servidor');
+      if (t) t.textContent = 'Novo servidor';
       const sBtnNv = document.querySelector(
         'button[type="submit"][form="modal-add-servidor-form"]',
       ) as HTMLButtonElement;

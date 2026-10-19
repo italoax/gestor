@@ -1,4 +1,3 @@
-import { LandingPortal } from './LandingPortal.tsx';
 export function LandingContent({ data }: { data?: any }) {
   return (
     <div data-react-page="inicio">
@@ -39,7 +38,6 @@ export function LandingContent({ data }: { data?: any }) {
           <a href={'#planos'}>{'Planos'}</a>
           <a href={'#duvidas'}>{'Dúvidas'}</a>
         </nav>
-        <LandingPortal />
       </header>
 
       <main id={'conteudo'}>

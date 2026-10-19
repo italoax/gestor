@@ -118,6 +118,7 @@ if (process.argv.includes('--watch')) {
   await build(panelOptions);
   await build(workerOptions);
 }
-console.log(
-  'Controles do navegador e service worker compilados de TypeScript.',
-);
+if (process.env.GESTOR_COMPACT_LOGS !== 'true')
+  console.log(
+    'Controles do navegador e service worker compilados de TypeScript.',
+  );

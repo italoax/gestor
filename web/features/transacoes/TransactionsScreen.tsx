@@ -1,6 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Icon } from '../../../src/frontend/clients/ui.tsx';
+import { PanelSearch } from '../../../src/frontend/components/PanelSearch.tsx';
+import {
+  TRANSACTIONS_PAGE_SIZES,
+  transactionsPageUrl,
+} from '../../../src/services/transactionsPage.ts';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 
@@ -28,8 +35,11 @@ function TransactionDetails({
     ['Plano', item.plano],
     ['Servidor', item.servidor],
     ['Descrição', item.descricao],
-    ['Telas', item.telas],
-    ['Créditos', item.creditos],
+    ...(item.duracao ? [['Duração', item.duracao]] : []),
+    [item.codigos ? 'Códigos' : 'Telas', item.codigos || item.telas],
+    ...(!item.codigos || Number(item.creditos) !== Number(item.codigos)
+      ? [['Créditos', Number(item.creditos || 0).toLocaleString('pt-BR')]]
+      : []),
   ];
   return (
     <NativeDialog title="Detalhes da Transação" onClose={onClose} width={460}>
@@ -95,13 +105,123 @@ function TransactionDetails({
   );
 }
 
-export function TransactionsScreen({ data }: { data?: any }) {
+function TransactionsContent({ data }: { data?: any }) {
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState(data.filtros?.busca || '');
+  const [payment, setPayment] = useState(data.filtros?.pagamento || '');
+  const router = useRouter();
+  const [changingSize, startSizeChange] = useTransition();
+  const pagination = data.paginacao;
+  const rows = data.transacoes || [];
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const syncBackNavigation = () => {
+      if (timer.current) clearTimeout(timer.current);
+      const params = new URLSearchParams(window.location.search);
+      setSearch(params.get('busca') || '');
+      setPayment(params.get('pagamento') || '');
+    };
+    window.addEventListener('popstate', syncBackNavigation);
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+      window.removeEventListener('popstate', syncBackNavigation);
+    };
+  }, []);
+  const applyFilters = (busca: string, pagamento: string, delay = 0) => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      startSizeChange(() =>
+        router.replace(
+          transactionsPageUrl(1, pagination?.porPagina || 10, {
+            busca,
+            pagamento,
+          }),
+          { scroll: false },
+        ),
+      );
+    }, delay);
+  };
+  const payments = data.formasPagamento?.length
+    ? data.formasPagamento
+    : [
+        ...new Set<string>(
+          rows
+            .map((item) => String(item.formaPagamento || '').trim())
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const filteredView = Boolean(
+    search.trim() || payment || data.filtros?.busca || data.filtros?.pagamento,
+  );
   return (
-    <NativePanel data={data} path="/transacoes">
+    <>
       <div className="container page-transacoes" data-react-page="transacoes">
+        <div className="tx-filters">
+          <div className="tx-filter-field tx-filter-search">
+            <label htmlFor="tx-search">Buscar</label>
+            <PanelSearch
+              id="tx-search"
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                applyFilters(value, payment, 300);
+              }}
+              placeholder="Cliente, servidor ou descrição..."
+              label="Buscar em todas as transações"
+            />
+          </div>
+          <label className="tx-filter-field">
+            <span>Pagamento</span>
+            <select
+              className="input"
+              aria-label="Filtrar transações por pagamento"
+              value={payment}
+              onChange={(event) => {
+                setPayment(event.target.value);
+                applyFilters(search, event.target.value);
+              }}
+            >
+              <option value="">Todos</option>
+              {payments.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="tx-filter-field">
+            <span>Por página</span>
+            <select
+              className="input"
+              aria-label="Transações por página"
+              value={pagination?.porPagina || 10}
+              disabled={changingSize}
+              onChange={(event) => {
+                const size = Number(event.target.value);
+                if (timer.current) clearTimeout(timer.current);
+                startSizeChange(() =>
+                  router.push(
+                    transactionsPageUrl(1, size, {
+                      busca: search,
+                      pagamento: payment,
+                    }),
+                    {
+                      scroll: false,
+                    },
+                  ),
+                );
+              }}
+            >
+              {TRANSACTIONS_PAGE_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="cli-table-card tx-card">
-          <div className="table-wrapper">
+          <div className="table-wrapper" aria-busy={changingSize}>
             <table className="cli-table tx-table">
               <thead>
                 <tr>
@@ -129,16 +249,39 @@ export function TransactionsScreen({ data }: { data?: any }) {
                 </tr>
               </thead>
               <tbody>
-                {!data.transacoes.length && (
+                {!rows.length && (
                   <tr>
                     <td colSpan={12}>
-                      <div className="dist-empty">
-                        Nenhuma transação registrada.
+                      <div className="auto-empty-state">
+                        <Icon name="card" />
+                        <h3>
+                          {filteredView
+                            ? 'Nenhuma transação encontrada'
+                            : 'Nenhuma transação registrada'}
+                        </h3>
+                        <p>
+                          {filteredView
+                            ? 'Tente outro cliente, servidor ou pagamento.'
+                            : 'As transações aparecerão aqui após os próximos pagamentos.'}
+                        </p>
+                        {filteredView && (
+                          <button
+                            className="btn btn-muted"
+                            type="button"
+                            onClick={() => {
+                              setSearch('');
+                              setPayment('');
+                              applyFilters('', '');
+                            }}
+                          >
+                            Limpar filtros
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 )}
-                {data.transacoes.map((item) => (
+                {rows.map((item) => (
                   <tr
                     key={item.id}
                     className="tx-row"
@@ -186,7 +329,7 @@ export function TransactionsScreen({ data }: { data?: any }) {
                         '-'
                       )}
                     </td>
-                    <td>{item.telas}</td>
+                    <td>{item.codigos ? '—' : item.telas}</td>
                     <td className={Number(item.creditos) < 0 ? 'tx-neg' : ''}>
                       {Number(item.creditos || 0)}
                     </td>
@@ -212,17 +355,46 @@ export function TransactionsScreen({ data }: { data?: any }) {
               </tbody>
             </table>
           </div>
-          <div className="cli-table-foot">
-            <span className="muted">
-              {data.transacoes.length}{' '}
-              {data.transacoes.length === 1 ? 'transação' : 'transações'}
-            </span>
-          </div>
         </div>
+        {pagination && (pagination.pagina > 1 || pagination.temMais) && (
+          <nav className="tx-pagination" aria-label="Páginas das transações">
+            <div>
+              {pagination.anteriorUrl && (
+                <Link
+                  href={pagination.anteriorUrl}
+                  prefetch={false}
+                  className="btn btn-muted"
+                >
+                  Anterior
+                </Link>
+              )}
+            </div>
+            <span>Página {pagination.pagina}</span>
+            <div>
+              {pagination.proximaUrl && (
+                <Link
+                  href={pagination.proximaUrl}
+                  prefetch={false}
+                  className="btn btn-muted"
+                >
+                  Próxima
+                </Link>
+              )}
+            </div>
+          </nav>
+        )}
       </div>
       {selected && (
         <TransactionDetails item={selected} onClose={() => setSelected(null)} />
       )}
+    </>
+  );
+}
+
+export function TransactionsScreen({ data }: { data?: any }) {
+  return (
+    <NativePanel data={data} path="/transacoes">
+      <TransactionsContent data={data} />
     </NativePanel>
   );
 }

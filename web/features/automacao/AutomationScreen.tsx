@@ -7,6 +7,7 @@ import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { useSearchParams } from 'next/navigation';
 import { CampaignEditor, ScheduledMessages } from './ScheduledMessages.tsx';
+import { DispatchHistory } from './DispatchHistory.tsx';
 
 const triggers = [
   ['Todos', 'Todos os clientes'],
@@ -409,7 +410,9 @@ function Recipients({
 export function AutomationScreen({ data }: { data?: any }) {
   const params = useSearchParams();
   const [tab, setTab] = useState(
-    params?.get('aba') === 'envios' ? 'envios' : 'regras',
+    ['envios', 'disparos'].includes(params?.get('aba'))
+      ? params.get('aba')
+      : 'regras',
   );
   const [editor, setEditor] = useState(null);
   const [scheduledEditor, setScheduledEditor] = useState<{ item: any } | null>(
@@ -441,18 +444,20 @@ export function AutomationScreen({ data }: { data?: any }) {
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className="btn btn-primary auto-new"
-            onClick={() =>
-              tab === 'envios'
-                ? setScheduledEditor({ item: null })
-                : setEditor({ item: null })
-            }
-          >
-            <Icon name="plus" />
-            {tab === 'envios' ? 'Novo envio' : 'Nova regra'}
-          </button>
+          {tab !== 'disparos' && (
+            <button
+              type="button"
+              className="btn btn-primary auto-new"
+              onClick={() =>
+                tab === 'envios'
+                  ? setScheduledEditor({ item: null })
+                  : setEditor({ item: null })
+              }
+            >
+              <Icon name="plus" />
+              {tab === 'envios' ? 'Novo envio' : 'Nova regra'}
+            </button>
+          )}
         </div>
         {tab === 'envios' ? (
           <ScheduledMessages
@@ -462,7 +467,14 @@ export function AutomationScreen({ data }: { data?: any }) {
         ) : tab === 'regras' ? (
           <div className="auto-list">
             {!data.regras.some((item) => !item.campanha) && (
-              <div className="cli-empty">Nenhuma regra cadastrada.</div>
+              <div className="auto-empty-state">
+                <Icon name="bolt" />
+                <h3>Nenhuma regra criada</h3>
+                <p>
+                  Crie uma regra para enviar mensagens antes ou depois do
+                  vencimento.
+                </p>
+              </div>
             )}
             {data.regras
               .filter((item) => !item.campanha)
@@ -477,32 +489,52 @@ export function AutomationScreen({ data }: { data?: any }) {
                       <Icon name="bolt" />
                     </span>
                     <div className="auto-rule-body">
-                      <div className="auto-rule-top">
-                        <strong>{item.titulo}</strong>
-                        {item.descricao &&
-                          item.descricao.trim().toLowerCase() !==
-                            triggerLabel(item.tipo).toLowerCase() && (
-                            <small>{item.descricao}</small>
-                          )}
+                      <div className="auto-rule-header">
+                        <div className="auto-rule-heading">
+                          <div className="auto-rule-top">
+                            <strong>{item.titulo}</strong>
+                            {item.descricao &&
+                              item.descricao.trim().toLowerCase() !==
+                                triggerLabel(item.tipo).toLowerCase() && (
+                                <small>{item.descricao}</small>
+                              )}
+                          </div>
+                          <span className="auto-badge">
+                            {triggerLabel(item.tipo)}
+                          </span>
+                        </div>
+                        <ActionForm
+                          item={item}
+                          token={data.page.csrfToken}
+                          action="toggle_regra"
+                        >
+                          <label className="auto-toggle-control">
+                            <input
+                              type="checkbox"
+                              role="switch"
+                              className="switch"
+                              aria-label={`Ativar regra ${item.titulo}`}
+                              defaultChecked={item.status === 'Ativo'}
+                              onChange={(event) =>
+                                (
+                                  event.target as HTMLInputElement
+                                ).form.requestSubmit()
+                              }
+                            />
+                            <span>
+                              {item.status === 'Ativo'
+                                ? 'Ativado'
+                                : 'Desativado'}
+                            </span>
+                          </label>
+                        </ActionForm>
                       </div>
-                      <span className="auto-badge">
-                        {triggerLabel(item.tipo)}
-                      </span>
                       <div className="auto-rule-preview">
                         <span className="auto-rule-preview-text">
                           {(
                             item.mensagemTexto || 'Sem template vinculado'
                           ).replace(/\s+/g, ' ')}
                         </span>
-                      </div>
-                      <div className="auto-rule-foot">
-                        <button
-                          type="button"
-                          className="auto-receb-link"
-                          onClick={() => setRecipients(item)}
-                        >
-                          {item.recebedores || 0} clientes
-                        </button>
                       </div>
                       {item.envioHoje && (
                         <div
@@ -522,39 +554,17 @@ export function AutomationScreen({ data }: { data?: any }) {
                     <ActionForm
                       item={item}
                       token={data.page.csrfToken}
-                      action="toggle_regra"
-                    >
-                      <label className="auto-toggle-control">
-                        <input
-                          type="checkbox"
-                          className="switch"
-                          aria-label={`Ativar regra ${item.titulo}`}
-                          defaultChecked={item.status === 'Ativo'}
-                          onChange={(event) =>
-                            (
-                              event.target as HTMLInputElement
-                            ).form.requestSubmit()
-                          }
-                        />
-                        <span>
-                          {item.status === 'Ativo' ? 'Ativa' : 'Desativada'}
-                        </span>
-                      </label>
-                    </ActionForm>
-                    <ActionForm
-                      item={item}
-                      token={data.page.csrfToken}
                       action="dispatch_regra"
                       confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
                     >
                       <button
                         className="btn btn-muted auto-force-send"
                         type="submit"
-                        aria-label={`Forçar envio: ${item.titulo}`}
+                        aria-label={`Enviar: ${item.titulo}`}
                         data-loading-text="Enviando pendentes..."
                       >
                         <Icon name="bolt" />
-                        Forçar envio
+                        Enviar
                       </button>
                     </ActionForm>
                     <button
@@ -584,44 +594,11 @@ export function AutomationScreen({ data }: { data?: any }) {
               ))}
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table className="cli-table disparos-table">
-              <thead>
-                <tr>
-                  {['Quando', 'Regra', 'Clientes', 'Status'].map((label) => (
-                    <th key={label}>{label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {!data.disparos.length && (
-                  <tr>
-                    <td colSpan={4}>Nenhum disparo registrado.</td>
-                  </tr>
-                )}
-                {data.disparos.map((row, index) => (
-                  <tr key={row.id || index}>
-                    <td>{row.quando}</td>
-                    <td>{row.regraTitulo || '-'}</td>
-                    <td title={row.clientesNomes || ''}>
-                      {row.clientesCount || 0} · {row.clientesNomes || '-'}
-                    </td>
-                    <td>
-                      {row.status === 'enviado'
-                        ? 'Enviado'
-                        : row.status === 'nao_enviado'
-                          ? 'Não enviado'
-                          : row.status === 'incerto'
-                            ? 'Sem confirmação'
-                            : row.status === 'erro'
-                              ? 'Erro'
-                              : 'Pendente'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DispatchHistory
+            key={data.historico?.pagina || 1}
+            rows={data.disparos}
+            history={data.historico}
+          />
         )}
       </div>
       {editor && (

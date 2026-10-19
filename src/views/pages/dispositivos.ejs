@@ -50,9 +50,7 @@
           <div class="disp-info">
             <strong><%= d.nome %></strong>
           </div>
-          <span class="disp-status <%= ativo ? 'is-active' : '' %>"
-            ><%= ativo ? 'Ativo' : 'Inativo' %></span
-          >
+          <span class="badge <%= ativo ? 'badge-green' : 'badge-muted' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
         </div>
         <% if (d.descricao) { %>
         <p class="device-desc"><%= d.descricao %></p>
@@ -94,12 +92,9 @@
   </section>
 </div>
 <div class="modal-overlay" id="modal-add-dispositivo" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal catalog-editor device-editor">
     <div class="modal-header">
-      <h3
-        ><%- include('../partials/ui-icon', { name: 'monitor' }) %>
-        Novo Dispositivo</h3
-      >
+      <h3>Novo dispositivo</h3>
       <button
         class="modal-close"
         type="button"
@@ -120,22 +115,18 @@
       <input type="hidden" name="id" value="" />
       <div class="form-grid">
         <label class="field full"
-          ><span>Nome do Dispositivo *</span
+          ><span>Nome do dispositivo *</span
           ><input
             class="input"
             name="nome"
-            placeholder="Ex: Android Box, Chromecast, Fire TV Stick..."
+            placeholder="Ex.: Android TV"
             required
             data-required="1"
             data-field-label="Nome do Dispositivo"
         /></label>
         <label class="field full"
           ><span>Descrição</span
-          ><textarea
-            class="input"
-            name="descricao"
-            placeholder="Descrição opcional do dispositivo..."
-          ></textarea>
+          ><textarea class="input" name="descricao" rows="2"></textarea>
         </label>
         <label class="field full">
           <span>Status</span>
@@ -154,7 +145,7 @@
         class="btn btn-primary"
         type="submit"
         form="modal-add-dispositivo-form"
-        >Salvar</button
+        >Cadastrar</button
       >
     </div>
   </div>

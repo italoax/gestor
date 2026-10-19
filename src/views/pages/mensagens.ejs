@@ -71,16 +71,14 @@
       <% if (m.descricao) { %>
       <div class="msg-desc"><%= m.descricao %></div>
       <% } %>
-      <div class="msg-preview"
-        ><%= (m.mensagem || '').replace(/\s+/g, ' ').slice(0, 110) %><%= (m.mensagem || '').length > 110 ? '…' : '' %></div
-      >
+      <div class="msg-preview"><%= messagePreview(m.mensagem) %></div>
     </div>
     <% }) %>
   </div>
   <% } %>
 </div>
 <div class="modal-overlay" id="modal-add-mensagem" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal template-editor">
     <div class="modal-header">
       <h3>+ Novo Template</h3>
       <button
@@ -116,27 +114,23 @@
       <div class="tab-panel active" data-tab-panel="mensagem">
         <div class="form-grid">
           <label class="field full">
-            <span>Nome do Template *</span>
+            <span>Nome *</span>
             <input
               class="input"
               name="titulo"
-              placeholder="Ex: Boas-vindas, Aviso de vencimento..."
+              placeholder="Ex.: Boas-vindas"
               required
             />
           </label>
           <label class="field full">
             <span>Descrição</span>
-            <input
-              class="input"
-              name="descricao"
-              placeholder="Quando este template é usado"
-            />
+            <input class="input" name="descricao" placeholder="Opcional" />
           </label>
           <label class="field full">
             <div class="tag-select-row">
               <span>Mensagem</span>
               <select class="input tag-select" name="tags" data-insert-tag>
-                <option value="">+ variável</option>
+                <option value="">+ Variável</option>
                 <option value="{saudacao}">{saudacao}</option>
                 <option value="{nome}">{nome}</option>
                 <option value="{primeiro_nome}">{primeiro_nome}</option>
@@ -154,32 +148,37 @@
                 >
               </select>
             </div>
-            <textarea class="input" name="mensagem" data-mensagem-text rows="9"></textarea>
+            <textarea
+              class="input"
+              name="mensagem"
+              data-mensagem-text
+              rows="6"
+              placeholder="Digite a mensagem..."
+            ></textarea>
           </label>
         </div>
       </div>
       <div class="tab-panel" data-tab-panel="midia">
         <div class="form-grid">
           <label class="field">
-            <span>Tipo mídia</span>
+            <span>Tipo</span>
             <select class="input" name="media_tipo">
               <option value="">Nenhuma</option>
-              <option>image</option>
-              <option>video</option>
-              <option>audio</option>
-              <option>document</option>
+              <option value="image">Imagem</option>
+              <option value="video">Vídeo</option>
+              <option value="audio">Áudio</option>
+              <option value="document">Documento</option>
             </select>
           </label>
           <label class="field full"
-            ><span>Caminho/URL mídia</span
-            ><input class="input" name="media_path"
+            ><span>Link ou caminho</span><input class="input" name="media_path"
           /></label>
         </div>
       </div>
     </form>
     <div class="modal-footer">
       <button class="btn btn-muted" type="button" data-close-modal
-        >Fechar</button
+        >Cancelar</button
       >
       <button
         class="btn btn-primary"
