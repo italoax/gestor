@@ -117,6 +117,10 @@ const pagamentosNovasColunas = [
 const whatsappStatusNovasColunas = [
   // Quando agendado (status='agendado'), guarda a hora-alvo de publicação.
   ['agendado_para', 'DATETIME NULL'],
+  ['remover_em', 'DATETIME NULL'],
+  ['whatsapp_message_id', 'VARCHAR(200) NULL'],
+  ['whatsapp_sessao', 'VARCHAR(120) NULL'],
+  ['whatsapp_contexto', 'MEDIUMTEXT NULL'],
   // Guarda a mídia agendada e a imagem de prévia até o registro ser removido.
   // Vídeos são limpos após a tentativa de publicação.
   // MEDIUMTEXT cobre até ~16MB (mais que o limite de upload de 5MB + overhead).
@@ -487,7 +491,7 @@ const statements = [
     CONSTRAINT fk_assinatura_pag_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_assinatura_pag_plano FOREIGN KEY (plano_id) REFERENCES assinatura_planos(id) ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
-  // Controle de idempotencia dos alertas de vencimento da assinatura. O cron
+  // Controle de idempotencia dos alertas de vencimento da assinatura. O agendador
   // roda a cada minuto; sem isso, mandaria push repetido o dia todo. A UNIQUE
   // (user_id, vencimento, dias) garante que cada alerta (ex.: "faltam 3 dias"
   // pra um vencimento especifico) dispare uma unica vez.

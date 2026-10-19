@@ -482,6 +482,7 @@ export function statusHistoryData(items) {
       'destinatarios',
       'postadoEm',
       'agendadoPara',
+      'removerEm',
       'createdAt',
     ]),
   );

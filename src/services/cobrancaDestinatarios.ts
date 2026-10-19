@@ -4,7 +4,7 @@ export function regraPorVencimento(regra) {
   );
 }
 // Cada linha representa um acesso; id e telefone continuam sendo os do cadastro.
-// A consulta compartilhada mantém a prévia, a contagem e o cron com os mesmos filtros.
+// A consulta compartilhada mantém a prévia, a contagem e o agendador com os mesmos filtros.
 export function consultaDestinatariosCobranca(userId, regra, today) {
   const json = (campo) =>
     `JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${campo}')) COLLATE utf8mb4_unicode_ci`;

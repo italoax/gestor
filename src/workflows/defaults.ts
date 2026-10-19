@@ -18,8 +18,7 @@ import {
 import {
   dispararRegraManual,
   ensureCobrancasEnviosTable,
-  executarCobrancasAutomaticas,
-} from '../services/cobrancasCron.ts';
+} from '../services/cobrancasScheduler.ts';
 import {
   jaSemeou,
   marcarSemeado,
@@ -28,6 +27,7 @@ import {
 import { env } from '../config/env.ts';
 import { automationsEnabled } from '../security/automationPolicy.ts';
 import { removerStatusExpirados } from '../services/statusRetention.ts';
+import { removerStatusWhatsapp } from '../services/statusRemoval.ts';
 import { statusHistoryData } from '../services/frontendPageData.ts';
 import {
   carregarConfigsDoUsuario,
@@ -54,8 +54,6 @@ import {
   escolhasRenovacao,
   lerPlanoAdicional,
 } from '../services/renovacaoOpcoes.ts';
-import { executarAgendados } from '../services/statusCron.ts';
-import { rodarBackupAgendado } from '../services/backup.ts';
 import { createDashboardWorkflow } from './dashboard.ts';
 import { createAccountWorkflow } from './account.ts';
 import { createTransactionsWorkflow } from './transactions.ts';
@@ -70,8 +68,6 @@ import { createNotificationsWorkflow } from './notifications.ts';
 import { createPortalWorkflow } from './portal.ts';
 import { createLandingWorkflow } from './landing.ts';
 import { createPlaceholderWorkflow } from './placeholder.ts';
-import { createCronWorkflow } from './cron.ts';
-import { createWorkerProxyWorkflow } from './worker-proxy.ts';
 export function createDefaultFeatures() {
   return {
     dashboard: createDashboardWorkflow({
@@ -130,6 +126,7 @@ export function createDefaultFeatures() {
       queryRows,
       toNullableString,
       removerStatusExpirados,
+      removerStatusWhatsapp,
       statusHistoryData,
     }),
     'payment-settings': createPaymentSettingsWorkflow({
@@ -179,17 +176,4 @@ export function createDefaultFeatures() {
     landing: createLandingWorkflow({}),
     placeholder: createPlaceholderWorkflow({}),
   };
-}
-export function createDefaultLocalCronWorkflow() {
-  return createCronWorkflow({
-    env,
-    executarCobrancasAutomaticas,
-    executarAgendados,
-    rodarBackupAgendado,
-  });
-}
-export function createDefaultCronWorkflow() {
-  return env.workerUrl
-    ? createWorkerProxyWorkflow({ env })
-    : createDefaultLocalCronWorkflow();
 }

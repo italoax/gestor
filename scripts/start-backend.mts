@@ -16,9 +16,6 @@ process.env.HOST = '127.0.0.1';
 process.env.RUN_AUTOMATIONS =
   process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false';
 process.env.NEXT_FRONTEND_ENABLED = 'true';
-process.env.WORKER_URL =
-  process.env.WORKER_URL ||
-  `http://127.0.0.1:${process.env.WORKER_PORT || 3002}`;
 if (process.env.NODE_ENV === 'production')
   await import(
     pathToFileURL(path.join(projectRoot, 'dist/runtime/backend/src/main.js'))

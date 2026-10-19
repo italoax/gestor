@@ -49,7 +49,7 @@ function StatusAction({ item, token }: { item?: any; token?: string }) {
   const submit = useNativeSubmit(
     scheduled
       ? 'Cancelar este agendamento?'
-      : 'Apagar este status do histórico?',
+      : 'Apagar este status do site e do WhatsApp?',
   );
   return (
     <form
@@ -68,7 +68,7 @@ function StatusAction({ item, token }: { item?: any; token?: string }) {
       <button
         type="submit"
         className="cli-ico-btn danger"
-        aria-label={scheduled ? 'Cancelar agendamento' : 'Apagar do histórico'}
+        aria-label={scheduled ? 'Cancelar agendamento' : 'Apagar status'}
       >
         <Icon name="trash" />
       </button>
@@ -94,6 +94,9 @@ function StatusEditor({
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [startsAt, setStartsAt] = useState(
+    item ? localInput(utcDate(item.agendadoPara)) : '',
+  );
   const pending = useRef(false);
   const controller = useRef(null);
   const fileInput = useRef(null);
@@ -140,6 +143,21 @@ function StatusEditor({
     if (type === 'text' && !text.trim()) {
       setError('Digite o texto do status.');
       return;
+    }
+    const endValue = String(payload.get('remover_em') || '');
+    if (endValue) {
+      const end = new Date(endValue);
+      if (
+        !Number.isFinite(end.getTime()) ||
+        end <= selectedDate ||
+        end.getTime() - selectedDate.getTime() > 86400000
+      ) {
+        setError(
+          'O término deve ser depois da publicação e dentro de 24 horas.',
+        );
+        return;
+      }
+      payload.set('remover_offset', String(end.getTimezoneOffset()));
     }
     const file = files[type];
     if (type !== 'text' && !file && item?.tipo !== type) {
@@ -233,8 +251,8 @@ function StatusEditor({
         <input type="hidden" name="id" value={item?.id || ''} />
         <input type="hidden" name="tipo" value={type} />
         <p className="status-intro muted">
-          Escolha o conteúdo e o horário. A publicação aparece em Meu status por
-          24 horas.
+          Escolha quando publicar e, se quiser, quando remover o status. Sem
+          horário de término, ele fica disponível por 24 horas.
         </p>
         {error && (
           <PanelNotice
@@ -352,13 +370,29 @@ function StatusEditor({
                 name="agendado_para"
                 required
                 min={minimum}
-                defaultValue={
-                  item ? localInput(utcDate(item.agendadoPara)) : ''
-                }
+                value={startsAt}
+                onChange={(event) => setStartsAt(event.target.value)}
               />
               <small className="muted">
                 O sistema posta automaticamente no horário escolhido. Mantenha o
                 WhatsApp conectado.
+              </small>
+            </label>
+            <label className="field full">
+              <span>Remover em (opcional)</span>
+              <input
+                className="input"
+                type="datetime-local"
+                name="remover_em"
+                min={startsAt || minimum}
+                defaultValue={
+                  item?.removerEm ? localInput(utcDate(item.removerEm)) : ''
+                }
+              />
+              <small className="muted">
+                Por exemplo: publicar às 10:00 e remover às 22:00 do mesmo dia.
+                Deixe vazio para durar 24 horas. Mantenha o WhatsApp conectado
+                para a remoção automática.
               </small>
             </label>
           </div>
@@ -494,7 +528,7 @@ export function StatusScreen({ data }: { data?: any }) {
             <div>
               <strong>Histórico</strong>
               <small className="status-live-note">
-                Removidos 24 horas após a publicação confirmada
+                Removidos no término escolhido ou após 24 horas
               </small>
             </div>
             {history.length > 0 && (
@@ -601,6 +635,9 @@ export function StatusScreen({ data }: { data?: any }) {
                       </span>
                       {Boolean(item.destinatarios) && (
                         <span>{item.destinatarios} contatos</span>
+                      )}
+                      {item.removerEm && (
+                        <span>Remove em {scheduleLabel(item.removerEm)}</span>
                       )}
                       {item.erro && (
                         <span

@@ -100,7 +100,6 @@ export function installNativeRouteMiddleware(app) {
         '/register',
         '/area-cliente/login',
         '/area-cliente',
-        '/__cron/cobrancas',
       ].includes(path) ||
         /^\/(?:r\/[^/]+|(?:pagar|p)\/[^/]+|pagar\/[^/]+\/status\/[^/]+)$/.test(
           path,

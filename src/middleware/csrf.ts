@@ -3,12 +3,9 @@ import crypto from 'node:crypto';
 // sessão, embutido em campo hidden de cada form, validado a cada POST/PUT/DELETE.
 // Mesmo com sameSite=lax já mitigando a maioria dos ataques, isso é defesa em
 // profundidade — protege contra subdomain takeover, browser bug, link especial, etc.
-// Caminhos que pulam validação: webhooks de pagamento e endpoints
-// de cron protegidos por token próprio. Esses não são chamados pelo browser do
-// usuário, então CSRF não se aplica.
+// Webhooks de pagamento não são chamados pelo navegador de um usuário autenticado.
 const ROTAS_EXENTAS = [
   /^\/webhook\//,
-  /^\/__cron\//,
   // /pagar/<token>/criar é POST público da página de pagamento (cliente final
   // não logado). Não tem como ter CSRF token. O token na URL já dá pertinência
   // ao cliente certo, e não há estado autenticado pra um CSRF abusar.
@@ -31,7 +28,7 @@ export function csrfMiddleware(req, res, next) {
   res.set('Cache-Control', 'no-store');
   // Métodos seguros (não alteram estado) não precisam validar.
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  // Rotas exentas (webhooks externos, cron).
+  // Rotas isentas (webhooks e pagamento público).
   if (ROTAS_EXENTAS.some((re) => re.test(req.path))) return next();
   const recebido = String(
     (req.body && req.body._csrf) || req.get('x-csrf-token') || '',

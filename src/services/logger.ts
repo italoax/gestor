@@ -46,7 +46,7 @@ function emitir(nivel, tag, msg, meta) {
   else if (nivel === 'warn') console.warn(linha);
   else console.log(linha);
 }
-// Cria um logger com uma tag fixa (ex.: "cron", "backup", "assinatura").
+// Cria um logger com uma tag fixa (ex.: "agendador", "backup", "assinatura").
 export function createLogger(tag) {
   return {
     debug: (msg: string, meta?: unknown) => emitir('debug', tag, msg, meta),

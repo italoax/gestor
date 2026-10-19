@@ -55,7 +55,6 @@ export async function runStack(listener?: PublicListener) {
     LOCAL_MODE: localMode,
     APP_URL: development ? localUrl : process.env.APP_URL || localUrl,
     NEXT_BACKEND_URL: backendUrl,
-    WORKER_URL: workerEnabled ? `http://127.0.0.1:${workerPort}` : '',
     WORKER_PORT: String(workerPort),
     RUN_AUTOMATIONS: process.env.RUN_AUTOMATIONS === 'true' ? 'true' : 'false',
     NEXT_FRONTEND_ENABLED: 'true',
@@ -240,17 +239,6 @@ export async function runStack(listener?: PublicListener) {
             worker.kill('SIGTERM');
           return;
         }
-        await new Promise<void>((resolve, reject) =>
-          backend.send(
-            {
-              type: 'worker-url',
-              url: endpoint.socketPath
-                ? 'http://127.0.0.1'
-                : 'http://127.0.0.1:' + endpoint.port,
-            },
-            (error) => (error ? reject(error) : resolve()),
-          ),
-        );
       }
       if (stopping || worker.exitCode !== null || worker.signalCode !== null)
         return;

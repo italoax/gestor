@@ -12,7 +12,6 @@ import { NotificationsModule } from './notifications/notifications.module.ts';
 import { PortalModule } from './portal/portal.module.ts';
 import { LandingModule } from './landing/landing.module.ts';
 import { PlaceholderModule } from './placeholder/placeholder.module.ts';
-import { CronModule } from './cron/cron.module.ts';
 export const featureModules = [
   DashboardModule,
   AccountModule,
@@ -28,5 +27,4 @@ export const featureModules = [
   PortalModule,
   LandingModule,
   PlaceholderModule,
-  CronModule,
 ];

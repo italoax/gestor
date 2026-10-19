@@ -6,24 +6,25 @@ import { env } from '../config/env.ts';
 import { postarStatus } from './whatsapp.ts';
 import { notificar } from './notificacoes.ts';
 import { removerStatusExpirados } from './statusRetention.ts';
+import { removerStatusNoHorario } from './statusRemoval.ts';
 let timer = null;
 let rodando = false;
 let stopping = false;
 const sessionCooldowns = new Map<string, number>();
 const STATUS_INTERVAL_MS = 5000;
-export async function stopStatusCron() {
+export async function stopStatusScheduler() {
   stopping = true;
   if (timer) clearInterval(timer);
   timer = null;
   while (rodando) await sleep(50);
 }
-export function startStatusCron() {
+export function startStatusScheduler() {
   if (!automationsEnabled(env) || stopping || timer) return;
   // A cada 30s: barato e dá precisão suficiente. Não precisa ser ao segundo —
   // status agendado para 14:30 publica entre 14:30 e 14:30:30.
   const tick = () => {
     void executarAgendados().catch((error) =>
-      console.error('Erro no cron de status:', safeError(error)),
+      console.error('Erro no agendador de status:', safeError(error)),
     );
   };
   timer = setInterval(tick, 30000);
@@ -34,8 +35,10 @@ export async function executarAgendados() {
   if (!automationsEnabled(env) || stopping) return { skipped: true };
   if (rodando) return { skipped: true };
   rodando = true;
+  const remocoesTentadas = new Set<number>();
   try {
     await removerStatusExpirados();
+    await removerStatusNoHorario(remocoesTentadas);
     for (const [session, until] of sessionCooldowns) {
       if (until <= Date.now()) sessionCooldowns.delete(session);
     }
@@ -69,12 +72,23 @@ export async function executarAgendados() {
       // enviar o conteúdo atualizado; o UPDATE acima respeita reagendamentos.
       const current = await queryRows(
         `SELECT tipo, texto, cor_fundo AS corFundo, fonte, media_data AS mediaData,
-                media_url AS mediaUrl, legenda FROM whatsapp_status
+                media_url AS mediaUrl, legenda, remover_em AS removerEm FROM whatsapp_status
           WHERE id = :id AND status = 'publicando'`,
         { id: row.id },
       );
       if (!current.length) continue;
       row = { ...row, ...current[0] };
+      if (
+        row.removerEm &&
+        new Date(String(row.removerEm).replace(' ', 'T') + 'Z').getTime() <=
+          Date.now()
+      ) {
+        await execute(
+          "UPDATE whatsapp_status SET status = 'erro', erro = 'O período de exibição terminou antes da publicação.' WHERE id = :id AND status = 'publicando'",
+          { id: row.id },
+        );
+        continue;
+      }
       if (!row.sessao) {
         await execute(
           `UPDATE whatsapp_status
@@ -114,6 +128,8 @@ export async function executarAgendados() {
           `UPDATE whatsapp_status
               SET status = :status, erro = :erro, destinatarios = :destinatarios,
                   postado_em = :postadoEm,
+                  whatsapp_message_id = :messageId, whatsapp_sessao = :sessao,
+                  whatsapp_contexto = :contexto,
                   media_data = CASE WHEN tipo = 'image' THEN media_data ELSE NULL END
             WHERE id = :id`,
           {
@@ -123,6 +139,14 @@ export async function executarAgendados() {
               ? aviso
               : (resultado.error || 'Falha desconhecida').slice(0, 2000),
             destinatarios,
+            messageId: resultado.ok ? resultado.messageId || null : null,
+            sessao: resultado.ok ? row.sessao : null,
+            contexto:
+              resultado.ok &&
+              typeof resultado.response === 'object' &&
+              resultado.response?.deleteContext
+                ? JSON.stringify(resultado.response.deleteContext)
+                : null,
             postadoEm: resultado.ok
               ? new Date().toISOString().slice(0, 19).replace('T', ' ')
               : null,
@@ -174,7 +198,9 @@ export async function executarAgendados() {
         // Evita uma rajada de stories da mesma conta quando vencem juntos.
         sessionCooldowns.set(row.sessao, Date.now() + STATUS_INTERVAL_MS);
       }
+      await removerStatusNoHorario(remocoesTentadas);
     }
+    await removerStatusNoHorario(remocoesTentadas);
     return { postados };
   } finally {
     rodando = false;

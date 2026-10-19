@@ -3,7 +3,7 @@
     <div
       ><strong>Histórico</strong
       ><small class="status-live-note"
-        >Removidos 24 horas após a publicação confirmada</small
+        >Removidos no término escolhido ou após 24 horas</small
       ></div
     >
     <% if (historico.length) { %>
@@ -81,6 +81,12 @@
             contatos</span
           >
           <% } %>
+          <% if (h.removerEm) { %>
+          <span
+            >Remove em
+            <%= new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }).format(h.removerEm instanceof Date ? h.removerEm : new Date(String(h.removerEm).replace(' ', 'T').replace(/Z$/, '') + 'Z')) %></span
+          >
+          <% } %>
           <% if (h.erro) { %>
           <span class="dot">•</span>
           <span class="<%= h.status === 'erro' ? 'status-item-error' : 'status-item-note' %>"><%= h.erro %></span>
@@ -102,7 +108,7 @@
             title="Editar agendamento"
             aria-label="Editar agendamento"
             data-open-modal="modal-novo-status"
-            data-status-edit="<%= JSON.stringify({ id: h.id, tipo: h.tipo, texto: h.texto, legenda: h.legenda, corFundo: h.corFundo, agendadoPara: h.agendadoPara }) %>"
+            data-status-edit="<%= JSON.stringify({ id: h.id, tipo: h.tipo, texto: h.texto, legenda: h.legenda, corFundo: h.corFundo, agendadoPara: h.agendadoPara, removerEm: h.removerEm }) %>"
             ><%- include('ui-icon', { name: 'edit' }) %></button
           >
           <%- csrfInput %>
@@ -120,15 +126,12 @@
           method="post"
           action="/status"
           class="status-item-del"
-          data-confirm="Apagar este status do histórico?"
+          data-confirm="Apagar este status do site e do WhatsApp?"
         >
           <%- csrfInput %>
           <input type="hidden" name="action" value="delete_status" />
           <input type="hidden" name="id" value="<%= h.id %>" />
-          <button
-            class="cli-ico-btn danger"
-            type="submit"
-            title="Apagar do histórico"
+          <button class="cli-ico-btn danger" type="submit" title="Apagar status"
             ><%- include('ui-icon', { name: 'trash' }) %></button
           >
         </form>

@@ -58,7 +58,6 @@ export const env = {
   localMode: process.env.LOCAL_MODE === 'true',
   nextFrontendEnabled: process.env.NEXT_FRONTEND_ENABLED === 'true',
   runAutomations: process.env.RUN_AUTOMATIONS === 'true',
-  workerUrl: process.env.WORKER_URL || '',
   workerPort: Number(process.env.WORKER_PORT || 3002),
   nodeEnv,
   port: Number(process.env.PORT ?? 3000),
@@ -71,9 +70,6 @@ export const env = {
   sessionAdminIdleMs: duration('SESSION_ADMIN_IDLE_MS', PANEL_SESSION_IDLE_MS),
   sessionAdminAbsoluteMs: duration('SESSION_ADMIN_ABSOLUTE_MS', 8 * 3600_000),
   sessionAbsoluteMs: duration('SESSION_ABSOLUTE_MS', 12 * 3600_000),
-  // Token usado pelo endpoint público de cron (/__cron/cobrancas) — pra cron externo
-  // (Hostinger/cron-job.org) acordar o processo e disparar a execução.
-  cronToken: process.env.CRON_TOKEN ?? '',
   db: {
     ...databaseConnection(process.env),
     name: process.env.DB_NAME ?? '',

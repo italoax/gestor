@@ -6,15 +6,18 @@ import { createWorker } from './create-worker.ts';
 import { env } from '../../src/config/env.ts';
 import { db } from '../../src/db/mysql.ts';
 import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
-import { createDefaultLocalCronWorkflow } from '../../src/workflows/defaults.ts';
 import {
-  startCobrancasCron,
-  stopCobrancasCron,
-} from '../../src/services/cobrancasCron.ts';
+  startCobrancasScheduler,
+  stopCobrancasScheduler,
+} from '../../src/services/cobrancasScheduler.ts';
 import {
-  startStatusCron,
-  stopStatusCron,
-} from '../../src/services/statusCron.ts';
+  startStatusScheduler,
+  stopStatusScheduler,
+} from '../../src/services/statusScheduler.ts';
+import {
+  startBackupScheduler,
+  stopBackupScheduler,
+} from '../../src/services/backupScheduler.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 
 let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
@@ -23,7 +26,6 @@ try {
   application.disable('x-powered-by');
   worker = await createWorker({
     application,
-    features: { cron: createDefaultLocalCronWorkflow() },
     handleError: createErrorHandler(env.nodeEnv),
     initialize: async () => {
       await db.query('SELECT 1');
@@ -31,10 +33,19 @@ try {
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
-      startEnabledAutomations(env, startCobrancasCron, startStatusCron);
+      startEnabledAutomations(
+        env,
+        startCobrancasScheduler,
+        startStatusScheduler,
+        startBackupScheduler,
+      );
     },
     async stopAutomations() {
-      await Promise.all([stopCobrancasCron(), stopStatusCron()]);
+      await Promise.all([
+        stopCobrancasScheduler(),
+        stopStatusScheduler(),
+        stopBackupScheduler(),
+      ]);
     },
     stopDevReload() {},
     async closeSessionStores() {},

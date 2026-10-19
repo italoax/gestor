@@ -4,10 +4,7 @@ import { listarRenovacoesPendentes } from '../../src/services/renovacoesPendente
 import bcrypt from 'bcryptjs';
 import { createLoginAttempts } from '../../src/services/loginAttempts.ts';
 import { recordSecurityEvent } from '../../src/security/runtimeSecurity.ts';
-import {
-  createDefaultFeatures,
-  createDefaultCronWorkflow,
-} from '../../src/workflows/defaults.ts';
+import { createDefaultFeatures } from '../../src/workflows/defaults.ts';
 import { urlPagamentoDoCliente } from '../../src/workflows/payment-defaults.ts';
 import { createDefaultPaymentWorkflow } from '../../src/workflows/payment-defaults.ts';
 import { createDefaultPaymentConfirmation } from '../../src/workflows/confirmation-defaults.ts';
@@ -22,15 +19,13 @@ import { dispositivosConfig } from '../../src/config/catalogs.ts';
 import { createErrorHandler } from '../../src/middleware/errorHandler.ts';
 import { closeSessionStores } from '../../src/db/sessionStore.ts';
 import { verifyDatabaseSchema } from '../../src/db/migrations.ts';
-import { stopCobrancasCron } from '../../src/services/cobrancasCron.ts';
-import { stopStatusCron } from '../../src/services/statusCron.ts';
 
 const { app: application, stopDevReload } = createApplication();
 let backend: Awaited<ReturnType<typeof createBackend>> | undefined;
 try {
   backend = await createBackend({
     application,
-    features: { ...createDefaultFeatures(), cron: createDefaultCronWorkflow() },
+    features: createDefaultFeatures(),
     auth: {
       queryOne,
       comparePassword: bcrypt.compare,
@@ -74,22 +69,12 @@ try {
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
-      // O worker é o único dono dos timers; o backend apenas encaminha o cron.
+      // O worker Node é o único dono dos timers das automações.
     },
-    async stopAutomations() {
-      await Promise.all([stopCobrancasCron(), stopStatusCron()]);
-    },
+    async stopAutomations() {},
     stopDevReload,
     closeSessionStores,
     closeDatabase: () => db.end(),
-  });
-  process.on('message', (message: unknown) => {
-    const value = message as { type?: string; url?: string };
-    if (value?.type === 'worker-url' && typeof value.url === 'string') {
-      const url = new URL(value.url);
-      if (url.protocol === 'http:' && url.hostname === '127.0.0.1')
-        env.workerUrl = url.origin;
-    }
   });
   backend.enableShutdownHooks(['SIGINT', 'SIGTERM']);
   stopWhenSupervisorExits();

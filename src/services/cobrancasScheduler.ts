@@ -23,19 +23,16 @@ import {
   campanhaPodeExecutar,
   dataReservaCampanha,
 } from './campanhas.ts';
-const logger = createLogger('cron-cobrancas');
+const logger = createLogger('agendador-cobrancas');
 let timer = null;
-// Lock global compartilhado pelo cron interno (setInterval) e pelo endpoint
-// público /__cron/cobrancas. Se um tick anterior ainda estiver rodando (envios
-// espaçados por delay), o próximo tick retorna {skipped} em vez de empilhar
-// execuções simultâneas que duplicariam mensagens.
-let cronRodando = false;
+// Evita sobrepor ciclos do timer enquanto um lote ainda está sendo enviado.
+let rodando = false;
 const shutdownSignal = new AbortController();
-export async function stopCobrancasCron() {
+export async function stopCobrancasScheduler() {
   shutdownSignal.abort();
   if (timer) clearInterval(timer);
   timer = null;
-  while (cronRodando) await sleep(50);
+  while (rodando) await sleep(50);
 }
 async function esperarEnvio(ms) {
   try {
@@ -63,26 +60,26 @@ function delayEntreEnvios(minOverride, maxOverride) {
   const maxMs = maxSec * 1000;
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
 }
-export function startCobrancasCron() {
+export function startCobrancasScheduler() {
   if (!automationsEnabled(env) || shutdownSignal.signal.aborted || timer)
     return;
-  timer = setInterval(() => {
+  const tick = () => {
     void executarCobrancasAutomaticas().catch((error) =>
-      logger.error('erro no cron de cobranças', error),
+      logger.error('erro no agendador de cobranças', error),
     );
-  }, 60000);
+  };
+  timer = setInterval(tick, 60000);
+  tick();
 }
 export async function executarCobrancasAutomaticas() {
   if (!automationsEnabled(env) || shutdownSignal.signal.aborted)
     return { skipped: true };
-  // Lock unificado: cron interno e endpoint /__cron/cobrancas chamam essa função;
-  // sem o check aqui, os dois podiam rodar ao mesmo tempo e duplicar envios.
-  if (cronRodando) return { skipped: true };
-  cronRodando = true;
+  if (rodando) return { skipped: true };
+  rodando = true;
   try {
     return await executarCobrancasAutomaticasInterno();
   } finally {
-    cronRodando = false;
+    rodando = false;
   }
 }
 async function executarCobrancasAutomaticasInterno() {
@@ -241,7 +238,7 @@ async function executarCobrancasAutomaticasInterno() {
         !result.ok && result.retrySafe !== true,
       );
       // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
-      // Pausa a regra (status 'Pausada' não bate no WHERE do cron) pra não
+      // Pausa a regra (status 'Pausada' não bate no WHERE do agendador) pra não
       // continuar martelando e piorar a situação.
       if (result.ok) {
         falhasSeguidas = 0;

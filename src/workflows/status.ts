@@ -10,6 +10,7 @@ export function createStatusWorkflow({
   toNullableString,
   removerStatusExpirados,
   statusHistoryData,
+  removerStatusWhatsapp = undefined,
 }) {
   async function sessaoWhatsappPrincipal(userId) {
     const rows = await queryRows(
@@ -24,6 +25,12 @@ export function createStatusWorkflow({
     // datetime-local vem como "YYYY-MM-DDTHH:mm" — basta trocar T por espaço.
     const m = raw.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::\d{2})?$/);
     if (!m) return null;
+    const parsed = new Date(`${m[1]}T${m[2]}:00Z`);
+    if (
+      !Number.isFinite(parsed.getTime()) ||
+      parsed.toISOString().slice(0, 16) !== `${m[1]}T${m[2]}`
+    )
+      return null;
     return `${m[1]} ${m[2]}:00`;
   }
   return {
@@ -59,7 +66,7 @@ export function createStatusWorkflow({
             `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
               (tipo = 'image' AND media_data IS NOT NULL) AS temImagem,
               legenda, status, erro, destinatarios,
-              postado_em AS postadoEm, agendado_para AS agendadoPara, created_at AS createdAt
+              postado_em AS postadoEm, agendado_para AS agendadoPara, remover_em AS removerEm, created_at AS createdAt
          FROM whatsapp_status WHERE user_id = :userId ORDER BY created_at DESC LIMIT 50`,
             { userId: input.session.user.id },
           );
@@ -83,7 +90,7 @@ export function createStatusWorkflow({
             `SELECT id, tipo, texto, cor_fundo AS corFundo, fonte, media_url AS mediaUrl,
               (tipo = 'image' AND media_data IS NOT NULL) AS temImagem,
               legenda, status, erro, destinatarios,
-              postado_em AS postadoEm, agendado_para AS agendadoPara, created_at AS createdAt
+              postado_em AS postadoEm, agendado_para AS agendadoPara, remover_em AS removerEm, created_at AS createdAt
          FROM whatsapp_status
         WHERE user_id = :userId
         ORDER BY created_at DESC
@@ -110,16 +117,16 @@ export function createStatusWorkflow({
           const action = String(input.body.action ?? '');
           if (action === 'delete_status') {
             const id = Number(input.body.id);
-            await execute(
-              'DELETE FROM whatsapp_status WHERE id = :id AND user_id = :userId',
-              { id, userId },
+            const result = await removerStatusWhatsapp(id, userId);
+            input.flash(
+              result.ok ? 'success' : 'error',
+              result.ok ? 'Status removido.' : result.error,
             );
-            input.flash('success', 'Registro removido.');
             return reply.redirect('/status');
           }
           if (action === 'cancelar_agendamento') {
             const id = Number(input.body.id);
-            // Só cancela se ainda estiver agendado — evita corrida com o cron que pode
+            // Só cancela se ainda estiver agendado — evita corrida com o agendador que pode
             // ter postado entre o usuário clicar e o servidor receber.
             const result = await execute(
               "DELETE FROM whatsapp_status WHERE id = :id AND user_id = :userId AND status = 'agendado'",
@@ -200,7 +207,7 @@ export function createStatusWorkflow({
             return reply.redirect('/status');
           }
           // Agendamento obrigatório — não há mais fluxo de publicação imediata.
-          // O statusCron publica no horário marcado. media_data guarda o data URL
+          // O statusScheduler publica no horário marcado. media_data guarda o data URL
           // inteiro (MEDIUMTEXT); imagens ficam disponíveis para a prévia no histórico.
           const localAgendamento = parseAgendamento(input.body.agendado_para);
           const offset = Number(input.body.agendado_offset ?? 180);
@@ -231,6 +238,33 @@ export function createStatusWorkflow({
             : original?.tipo === tipo
               ? original.mediaResumo
               : null;
+          let removerEm = null;
+          if (String(input.body.remover_em ?? '').trim()) {
+            const localFim = parseAgendamento(input.body.remover_em);
+            const offsetFim = Number(input.body.remover_offset ?? offset);
+            const fim =
+              localFim &&
+              Number.isInteger(offsetFim) &&
+              Math.abs(offsetFim) <= 840
+                ? new Date(
+                    new Date(localFim.replace(' ', 'T') + 'Z').getTime() +
+                      offsetFim * 60000,
+                  )
+                : null;
+            if (
+              !fim ||
+              !Number.isFinite(fim.getTime()) ||
+              fim.getTime() <= alvo.getTime() ||
+              fim.getTime() - alvo.getTime() > 24 * 60 * 60 * 1000
+            ) {
+              input.flash(
+                'error',
+                'O término deve ser depois da publicação e dentro de 24 horas.',
+              );
+              return reply.redirect('/status');
+            }
+            removerEm = fim.toISOString().slice(0, 19).replace('T', ' ');
+          }
           const agendadoPara = alvo
             .toISOString()
             .slice(0, 19)
@@ -239,7 +273,7 @@ export function createStatusWorkflow({
             const result = await execute(
               `UPDATE whatsapp_status SET tipo = :tipo, texto = :texto, cor_fundo = :corFundo,
             fonte = :fonte, media_url = :mediaResumo, media_data = :mediaData,
-            legenda = :legenda, agendado_para = :agendadoPara
+            legenda = :legenda, agendado_para = :agendadoPara, remover_em = :removerEm
           WHERE id = :id AND user_id = :userId AND status = 'agendado'`,
               {
                 id: editId,
@@ -252,6 +286,7 @@ export function createStatusWorkflow({
                 mediaData: mediaUrl,
                 legenda,
                 agendadoPara,
+                removerEm,
               },
             );
             input.flash(
@@ -264,9 +299,9 @@ export function createStatusWorkflow({
           }
           await execute(
             `INSERT INTO whatsapp_status (user_id, tipo, texto, cor_fundo, fonte, media_url, media_data,
-            legenda, status, agendado_para)
+            legenda, status, agendado_para, remover_em)
        VALUES (:userId, :tipo, :texto, :corFundo, :fonte, :mediaResumo, :mediaData,
-            :legenda, 'agendado', :agendadoPara)`,
+            :legenda, 'agendado', :agendadoPara, :removerEm)`,
             {
               userId,
               tipo,
@@ -277,6 +312,7 @@ export function createStatusWorkflow({
               mediaData: mediaUrl,
               legenda,
               agendadoPara,
+              removerEm,
             },
           );
           input.flash(

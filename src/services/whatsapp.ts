@@ -50,7 +50,7 @@ function traduzirErroWhatsapp(error) {
 // Timeout do fetch pro microserviço WhatsApp. 30s cobre o caso normal (resolveJid
 // + composing 800-3500ms + send), e aborta cedo se o serviço travou — antes,
 // um fetch sem timeout pendurava a request do painel até o WhatsApp responder
-// (podia ser 60s+), travando o cron e o submit do formulário.
+// (podia ser 60s+), travando o agendador e o submit do formulário.
 const WHATSAPP_FETCH_TIMEOUT_MS = 30000;
 async function jsonRequest(
   url,
@@ -96,7 +96,9 @@ async function jsonRequest(
     }
     const json = typeof data === 'object' && data !== null ? data : null;
     const messages = Array.isArray(json?.messages) ? json.messages : [];
-    const messageId = String(messages[0]?.id ?? json?.key?.id ?? '');
+    const messageId = String(
+      json?.messageId ?? messages[0]?.id ?? json?.key?.id ?? '',
+    );
     return { ok: true, status: response.status, response: data, messageId };
   } catch (error) {
     const aborted = error instanceof Error && error.name === 'AbortError';
@@ -350,6 +352,26 @@ export async function postarStatus(sessao, payload, token?: string) {
       return result;
     await sleep(6000);
   }
+}
+export async function apagarStatus(sessao, messageId, context, token?: string) {
+  const url = sessionUrl('/api/status/delete', sessao);
+  if (!url) return { ok: false, error: 'WA_SESSION_API_URL ausente.' };
+  const result = await jsonRequest(
+    url,
+    { ...context, session: sessao, messageId },
+    'POST',
+    sessionHeaders(token),
+    180000,
+  );
+  if (
+    result.ok &&
+    (typeof result.response !== 'object' || !result.response?.confirmed)
+  )
+    return {
+      ok: false,
+      error: 'O WhatsApp não confirmou a exclusão do status.',
+    };
+  return result;
 }
 export async function enviarMensagemModelo(
   sessao,

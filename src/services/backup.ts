@@ -8,8 +8,8 @@ import { createLogger } from './logger.ts';
 import { dataVault } from '../security/storedSecrets.ts';
 // Backup do banco em SQL puro, sem depender de mysqldump (que nao existe no
 // Node da Hostinger shared). Gera CREATE TABLE (via SHOW CREATE TABLE) + INSERTs
-// de cada tabela. Serve tanto pro download manual no /admin quanto pro cron
-// diario que preserva os arquivos em disco. A reten??o exige pol?tica expl?cita.
+// de cada tabela. Serve para o download manual e para o agendador diário
+// do worker Node que preserva os arquivos em disco.
 const logger = createLogger('backup');
 // Diretorio de backups relativo ao cwd (raiz do app na Hostinger). Fica fora do
 // deploy zip (o deploy so inclui src/public) e do git (ver .gitignore).
@@ -99,7 +99,7 @@ function nomeArquivoBackup(dataIso) {
 }
 /**
  * Roda o backup diario. Idempotente: se o arquivo de hoje ja existe, nao refaz
- * (o cron chama isso a cada minuto). Retorna o caminho quando gera de fato.
+ * (o worker Node verifica a cada minuto). Retorna o caminho quando gera de fato.
  */
 export async function rodarBackupAgendado() {
   if (env.localMode) return { gerado: false };

@@ -56,8 +56,8 @@
       <input type="hidden" name="id" id="status-edit-id" value="" />
       <input type="hidden" name="tipo" id="status-tipo" value="text" />
       <p class="status-intro muted"
-        >Escolha o conteúdo e o horário. A publicação aparece em Meu status por
-        24 horas.</p
+        >Escolha quando publicar e, se quiser, quando remover o status. Sem
+        horário de término, ele fica disponível por 24 horas.</p
       >
       <div class="status-tabs" aria-label="Tipo de publicação">
         <button
@@ -218,6 +218,26 @@
             <small class="muted"
               >O sistema posta automaticamente no horário escolhido. Mantém o
               WhatsApp conectado.</small
+            >
+          </label>
+          <label class="field full">
+            <span>Remover em (opcional)</span>
+            <input
+              class="input"
+              type="datetime-local"
+              name="remover_em"
+              id="status-remover-input"
+            />
+            <input
+              type="hidden"
+              name="remover_offset"
+              id="status-remover-offset"
+              value="180"
+            />
+            <small class="muted"
+              >Por exemplo: publicar às 10:00 e remover às 22:00 do mesmo dia.
+              Deixe vazio para durar 24 horas. Mantenha o WhatsApp conectado
+              para a remoção automática.</small
             >
           </label>
         </div>
@@ -396,12 +416,17 @@
   }
 
   const form = document.getElementById('form-status');
+  const removerInput = document.getElementById('status-remover-input');
   function prepareComposer(record) {
     form.reset();
     document.getElementById('status-action').value = record ? 'editar_status' : '';
     document.getElementById('status-edit-id').value = record ? record.id : '';
     document.getElementById('status-composer-title').textContent = record ? 'Editar agendamento' : 'Nova publicação';
     document.getElementById('status-submit-btn').textContent = record ? 'Salvar alterações' : 'Agendar status';
+    if (record?.removerEm) {
+      const end = new Date(String(record.removerEm).replace(' ', 'T').replace(/Z$/, '') + 'Z');
+      removerInput.value = new Date(end.getTime() - end.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
     ['image', 'video'].forEach(type => {
       const input = document.getElementById('status-' + type + '-file');
       input.value = '';
@@ -439,8 +464,19 @@
   document.addEventListener('click', handleComposer);
   document.addEventListener('gestor:before-swap', () => document.removeEventListener('click', handleComposer), { once: true });
   if (form) {
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', (event) => {
       const selectedDate = new Date(agendarInput.value);
+      removerInput.setCustomValidity('');
+      if (removerInput.value) {
+        const end = new Date(removerInput.value);
+        if (!Number.isFinite(end.getTime()) || end <= selectedDate || end.getTime() - selectedDate.getTime() > 86400000) {
+          event.preventDefault();
+          removerInput.setCustomValidity('O término deve ser depois da publicação e dentro de 24 horas.');
+          removerInput.reportValidity();
+          return;
+        }
+        document.getElementById('status-remover-offset').value = String(end.getTimezoneOffset());
+      }
       document.getElementById('status-agendado-offset').value = String(selectedDate.getTimezoneOffset());
       const tipo = tipoHidden.value;
       panels.forEach(p => {
@@ -450,5 +486,6 @@
       });
     });
   }
+  removerInput.addEventListener('input', () => removerInput.setCustomValidity(''));
 })();
 </script>
