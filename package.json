@@ -19,6 +19,7 @@
     "build:react": "node --import tsx scripts/build-react.mts",
     "prestart": "node --import tsx scripts/verify-build.mts",
     "security:production": "node --import tsx scripts/security-production.mts",
+    "security:assets": "node --import tsx scripts/check-public-assets.mts",
     "security:keys": "node --import tsx scripts/security-keys.mts",
     "security:migrate": "node --import tsx scripts/migrate-secrets.mts",
     "security:restore": "node --import tsx scripts/restore-backup.mts",

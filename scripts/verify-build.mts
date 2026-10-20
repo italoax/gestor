@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { projectRoot } from '../src/config/paths.ts';
+import { verifyPublicAssets } from './check-public-assets.mts';
 if (
   ![
     'web/.next/BUILD_ID',
@@ -17,3 +18,4 @@ if (
     'Build de produção ausente. Execute npm run build antes de iniciar o gestor.',
   );
 }
+verifyPublicAssets();

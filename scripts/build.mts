@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url';
 import { createAssetVersions } from '../src/services/assetVersions.ts';
 import { execFileSync } from 'node:child_process';
 import { hostingEntrySource } from './hosting-entry.mts';
+import { verifyPublicAssets } from './check-public-assets.mts';
+
+verifyPublicAssets({ includeNext: false });
 
 // Compatibilidade com hospedagens ainda configuradas para dist/server.js.
 const output = new URL('../dist/', import.meta.url);
@@ -31,5 +34,6 @@ execFileSync(
   ['node_modules/next/dist/bin/next', 'build', 'web', '--webpack'],
   { stdio: 'inherit' },
 );
+verifyPublicAssets();
 writeFileSync(new URL('server.js', output), hostingEntrySource());
 console.log('Entrada de compatibilidade criada: dist/server.js');

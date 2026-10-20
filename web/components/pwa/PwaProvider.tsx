@@ -65,7 +65,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener(
       'beforeinstallprompt',
       (event) => {
-        event.preventDefault();
+        // Mantém a oferta nativa de instalação e permite instalar pelo menu.
         prompt.current = event as InstallEvent;
         refreshInstall();
       },

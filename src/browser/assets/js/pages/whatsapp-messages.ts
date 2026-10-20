@@ -29,6 +29,7 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
       const murl = form.querySelector('.wa-media-url') as HTMLInputElement;
       if (murl) {
         murl.hidden = true;
+        murl.disabled = true;
         murl.value = '';
       }
       (
@@ -52,7 +53,10 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
     waTemplate.addEventListener('change', () => {
       const opt = waTemplate.options[waTemplate.selectedIndex];
       const msg = opt ? opt.getAttribute('data-message') || '' : '';
-      if (msg) waMensagem.value = msg;
+      if (msg) {
+        waMensagem.value = msg;
+        waMensagem.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     });
   }
 
@@ -61,10 +65,65 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
     'modal-send-whatsapp-form',
   ) as HTMLFormElement;
   if (waForm) {
-    const urlInput = waForm.querySelector('.wa-media-url') as HTMLElement;
+    const urlInput = waForm.querySelector('.wa-media-url') as HTMLInputElement;
     const tipoInput = waForm.querySelector(
       '[name="media_tipo"]',
     ) as HTMLInputElement;
+    let attempted = false;
+    function setFieldError(field: HTMLElement, id: string, message: string) {
+      field?.setAttribute('aria-invalid', String(Boolean(message)));
+      field?.classList.toggle('input-error', Boolean(message));
+      const hint = document.getElementById(id);
+      if (hint) hint.textContent = message;
+    }
+    function validate(focus = false) {
+      const templateText = waTemplate?.value
+        ? waTemplate.selectedOptions[0]?.getAttribute('data-message')?.trim()
+        : '';
+      const hasText = Boolean(waMensagem?.value.trim() || templateText);
+      const hasMedia = Boolean(tipoInput?.value);
+      const mediaUrl = hasMedia ? urlInput?.value.trim() : '';
+      const messageError =
+        !hasText && !hasMedia
+          ? 'Digite uma mensagem ou adicione um anexo.'
+          : '';
+      let mediaError = '';
+      if (hasMedia) {
+        if (!mediaUrl) mediaError = 'Informe o link do anexo selecionado.';
+        else if (!urlInput.checkValidity() || !/^https?:\/\//i.test(mediaUrl))
+          mediaError = 'Use um link completo com https:// ou http://.';
+      }
+      setFieldError(waMensagem, 'wa-message-error', messageError);
+      setFieldError(urlInput, 'wa-media-error', mediaError);
+      const error = messageError || mediaError;
+      if (focus && error) (messageError ? waMensagem : urlInput)?.focus();
+      return !error;
+    }
+    waForm.addEventListener('submit', (event) => {
+      attempted = true;
+      if (!validate(true)) {
+        event.preventDefault();
+        const button = event.submitter as HTMLButtonElement;
+        if (button?.dataset.prevText !== undefined) {
+          button.innerHTML = button.dataset.prevText;
+          delete button.dataset.prevText;
+          delete button.dataset.submitting;
+          button.classList.remove('is-submitting');
+          button.style.pointerEvents = '';
+        }
+      }
+    });
+    waForm.addEventListener('input', () => {
+      if (attempted) validate();
+    });
+    waForm.addEventListener('change', () => {
+      if (attempted) validate();
+    });
+    waForm.addEventListener('reset', () => {
+      attempted = false;
+      setFieldError(waMensagem, 'wa-message-error', '');
+      setFieldError(urlInput, 'wa-media-error', '');
+    });
     (
       waForm.querySelectorAll('[data-wa-media]') as NodeListOf<HTMLElement>
     ).forEach((b) => {
@@ -80,6 +139,7 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
           if (tipoInput) tipoInput.value = '';
           if (urlInput) {
             urlInput.hidden = true;
+            urlInput.disabled = true;
           }
         } else {
           b.classList.add('active');
@@ -88,9 +148,11 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
             tipoInput.value = b.getAttribute('data-wa-media') || '';
           if (urlInput) {
             urlInput.hidden = false;
+            urlInput.disabled = false;
             urlInput.focus();
           }
         }
+        if (attempted) validate();
       });
     });
   }

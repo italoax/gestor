@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 // Configuração em JavaScript para dispensar o compilador SWC na inicialização.
 export default {
   poweredByHeader: false,
+  productionBrowserSourceMaps: false,
   ...(process.env.GESTOR_COMPACT_LOGS === 'true'
     ? {
         logging: {

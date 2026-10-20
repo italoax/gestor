@@ -250,17 +250,22 @@ export function RenewalModals({
             </span>
             <strong>{single.nome}</strong>
           </div>
-          <div id="modal-add-pagamento-error" aria-live="polite">
+          <div id="modal-add-pagamento-error">
             {(missingCatalog || Object.keys(singleErrors).length > 0) && (
               <PanelNotice
                 inline
                 error
+                title={
+                  missingCatalog
+                    ? 'Confira o servidor e o plano'
+                    : 'Confira os campos indicados'
+                }
                 text={
                   missingCatalog
                     ? !single.originalServer?.nome
                       ? 'Defina o servidor em Editar cliente.'
                       : 'Selecione o servidor e o plano.'
-                    : 'Revise os campos obrigatórios destacados.'
+                    : 'Preencha ou corrija os campos indicados para continuar.'
                 }
               />
             )}
@@ -486,12 +491,18 @@ export function RenewalModals({
                 inline
                 pending={multi.loading}
                 error={!multi.loading}
-                title={multi.loading ? 'Carregando planos…' : undefined}
+                title={
+                  multi.loading
+                    ? 'Carregando planos…'
+                    : multi.error
+                      ? undefined
+                      : 'Confira os campos indicados'
+                }
                 text={
                   multi.error ||
                   (multi.loading
                     ? 'Aguarde um instante.'
-                    : 'Revise os campos obrigatórios destacados.')
+                    : 'Preencha ou corrija os campos indicados para continuar.')
                 }
               />
             )}

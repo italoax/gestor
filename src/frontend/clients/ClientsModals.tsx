@@ -1,5 +1,4 @@
 import { PanelFlashNotice } from '../../../web/components/ui/PanelFlashNotice.tsx';
-import { PanelNotice } from '../../../web/components/ui/PanelNotice.tsx';
 import { Fragment } from 'react';
 import { Icon, CsrfInput } from './ui.tsx';
 import { memo } from 'react';
@@ -51,6 +50,7 @@ export const ClientsModals = memo(function ClientsModals({
             id="modal-send-whatsapp-form"
             className="modal-body"
             data-native-submit="1"
+            noValidate
           >
             <CsrfInput token={csrfToken} />
             <input type="hidden" name="action" defaultValue="send_whatsapp" />
@@ -93,7 +93,9 @@ export const ClientsModals = memo(function ClientsModals({
                   rows={5}
                   placeholder="Digite sua mensagem..."
                   data-wa-mensagem=""
+                  aria-describedby="wa-message-error"
                 ></textarea>
+                <small className="field-error" id="wa-message-error" />
               </label>
               <div className="field full">
                 <span>Anexo (opcional)</span>
@@ -136,9 +138,12 @@ export const ClientsModals = memo(function ClientsModals({
                   type="url"
                   name="media_url"
                   aria-label="Link do anexo"
+                  aria-describedby="wa-media-error"
                   placeholder="https://..."
                   hidden
+                  disabled
                 />
+                <small className="field-error" id="wa-media-error" />
               </div>
             </div>
           </form>
@@ -187,6 +192,11 @@ export const ClientsModals = memo(function ClientsModals({
             >
               <Icon name="users" />
               Dados
+              {clientForm.errorCountForTab('dados') > 0 && (
+                <span className="tab-error-count" aria-label="campos com erro">
+                  {clientForm.errorCountForTab('dados')}
+                </span>
+              )}
             </button>
             <button
               className={`tab-btn ${clientForm.tab === 'plano' ? 'active' : ''}`}
@@ -196,6 +206,11 @@ export const ClientsModals = memo(function ClientsModals({
             >
               <Icon name="package" />
               Plano
+              {clientForm.errorCountForTab('plano') > 0 && (
+                <span className="tab-error-count" aria-label="campos com erro">
+                  {clientForm.errorCountForTab('plano')}
+                </span>
+              )}
             </button>
             <button
               className={`tab-btn ${clientForm.tab === 'apps' ? 'active' : ''}`}
@@ -205,6 +220,11 @@ export const ClientsModals = memo(function ClientsModals({
             >
               <Icon name="phone" />
               Apps
+              {clientForm.errorCountForTab('apps') > 0 && (
+                <span className="tab-error-count" aria-label="campos com erro">
+                  {clientForm.errorCountForTab('apps')}
+                </span>
+              )}
             </button>
           </div>
           <form
@@ -233,15 +253,9 @@ export const ClientsModals = memo(function ClientsModals({
             />
             <input type="hidden" name="id" value={clientForm.clientId} />
             <input type="hidden" name="status" value={clientForm.status} />
-            <div id="modal-add-cliente-error" aria-live="polite">
-              {Object.keys(clientForm.errors).length > 0 && (
-                <PanelNotice
-                  inline
-                  error
-                  text="Revise os campos obrigatórios destacados."
-                />
-              )}
-            </div>
+            <input type="hidden" name="telefone_secundario" defaultValue="" />
+            <input type="hidden" name="captacao" defaultValue="" />
+            <input type="hidden" name="observacoes" defaultValue="" />
             <div
               className={`tab-panel ${clientForm.tab === 'dados' ? 'active' : ''}`}
               data-tab-panel="dados"
@@ -409,52 +423,6 @@ export const ClientsModals = memo(function ClientsModals({
                   )}
                 </div>
 
-                <details className="full cli-details" open={clientForm.editing}>
-                  <summary>Outros dados</summary>
-                  <div className="client-fields">
-                    <label className="field full">
-                      <span>Contato secundário</span>
-                      <input
-                        className={
-                          clientForm.errors.telefone_secundario
-                            ? 'input input-error'
-                            : 'input'
-                        }
-                        name="telefone_secundario"
-                        aria-label="Contato secundário"
-                        placeholder="(00) 0 0000-0000"
-                      />
-                    </label>
-                    <label className="field full">
-                      <span>Origem</span>
-                      <select
-                        className={
-                          clientForm.errors.captacao
-                            ? 'input input-error'
-                            : 'input'
-                        }
-                        name="captacao"
-                      >
-                        <option value="">Selecione</option>
-                        <option>Indicação</option>
-                        <option>Instagram</option>
-                        <option>WhatsApp</option>
-                        <option>Facebook</option>
-                        <option>Google</option>
-                        <option>Outro</option>
-                      </select>
-                    </label>
-                    <label className="field full">
-                      <span>Observações</span>
-                      <textarea
-                        className="input"
-                        name="observacoes"
-                        rows={2}
-                      ></textarea>
-                    </label>
-                  </div>
-                </details>
-
                 <label
                   className="switch-field full"
                   data-only-new=""
@@ -516,9 +484,14 @@ export const ClientsModals = memo(function ClientsModals({
                 <details
                   open
                   className="server-picker"
+                  data-invalid={Boolean(clientForm.errors.servidor)}
                   data-servidores-multiselect=""
                 >
-                  <summary data-servidores-resumo="">
+                  <summary
+                    data-servidores-resumo=""
+                    aria-invalid={Boolean(clientForm.errors.servidor)}
+                    aria-describedby="cliente-error-servidor"
+                  >
                     {clientForm.servers.join(' + ') ||
                       'Selecione os servidores'}
                   </summary>

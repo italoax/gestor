@@ -8,6 +8,8 @@ import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 
 const connected = (state) => state?.connected || state?.status === 'conectado';
+const sessionExpiredMessage =
+  'Sua sessão expirou. Recarregue a página para entrar novamente.';
 const labels = {
   conectado: 'Conectado',
   desconectado: 'Desconectado',
@@ -87,7 +89,9 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
             ]),
           });
           window.gestorPolling?.recordResponse(response);
-          if (!response.ok || response.redirected) throw new Error();
+          if (response.redirected || response.status === 401)
+            throw new Error(sessionExpiredMessage);
+          if (!response.ok) throw new Error();
           const result = await response.json();
           if (
             !result ||
@@ -107,18 +111,22 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
             setChecking(false);
           }
         }
-      } catch {
+      } catch (error) {
         if (
           !controller.signal.aborted &&
           !pending.current &&
           startedAt === revision.current
-        )
+        ) {
           setState((current) => ({
             ...current,
             status: connected(current) ? current.status : 'erro',
             lastError:
-              'Não foi possível verificar a conexão. Tentaremos novamente.',
+              error instanceof Error && error.message === sessionExpiredMessage
+                ? sessionExpiredMessage
+                : 'Não foi possível verificar a conexão. Tentaremos novamente.',
           }));
+          setChecking(false);
+        }
       }
       if (!controller.signal.aborted)
         timer = setTimeout(poll, open ? 3000 : 12000);

@@ -819,6 +819,12 @@ dialog.catalog-editor[open] {
 #modal-send-whatsapp .wa-media-url {
   margin-top: 4px;
 }
+#modal-send-whatsapp .field-error:empty {
+  display: none;
+}
+#modal-send-whatsapp-form > .panel-notice.is-inline {
+  margin: 16px 0 0;
+}
 #modal-send-whatsapp .modal-footer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -889,36 +895,8 @@ dialog.catalog-editor[open] {
   min-height: 72px;
   resize: vertical;
 }
-#modal-add-cliente
-  :is(.field-error, [data-password-feedback], #modal-add-cliente-error):empty {
+#modal-add-cliente :is(.field-error, [data-password-feedback]):empty {
   display: none;
-}
-#modal-add-cliente .cli-details {
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-#modal-add-cliente .cli-details > summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 44px;
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-#modal-add-cliente .cli-details > summary::after {
-  content: '+';
-  font-size: 18px;
-}
-#modal-add-cliente .cli-details[open] > summary::after {
-  content: '−';
-}
-#modal-add-cliente .cli-details > .client-fields {
-  margin-top: 14px;
 }
 #modal-add-cliente :is(.switch-field, .server-total) {
   padding: 12px;
@@ -1020,4 +998,104 @@ dialog:is(.react-catalog-dialog, .react-dialog):not([open]) {
 dialog:is(.react-catalog-dialog, .react-dialog)[open] {
   display: flex;
   flex-direction: column;
+}
+
+/* Erros visíveis junto ao campo e avisos com espaço para leitura. */
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) {
+  --modal-error-color: #ffaca7;
+  --modal-error-border: #e26868;
+}
+:root[data-theme='light']
+  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog) {
+  --modal-error-color: #b42332;
+  --modal-error-border: #c83c4b;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .panel-notice.is-inline[data-state='error'] {
+  --notice-color: var(--modal-error-color);
+  align-items: start;
+  padding: 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--modal-error-border) 40%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--modal-error-border) 7%, var(--surface));
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-body
+  > :has(> .panel-notice.is-inline) {
+  margin-bottom: 16px;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .modal-body
+  > .panel-notice.is-inline {
+  margin-bottom: 16px;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .field
+  .field-error:not(:empty) {
+  display: block;
+  margin: 0;
+  color: var(--modal-error-color);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .field-error:not(:empty)::before {
+  content: '!';
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  :is(.input.input-error, .input[aria-invalid='true']),
+.page-app
+  .modal
+  :is(.phone-control, .password-control):has([aria-invalid='true']),
+.modal-overlay .server-picker[data-invalid='true'] {
+  border-color: var(--modal-error-border);
+  background: color-mix(
+    in srgb,
+    var(--modal-error-border) 5%,
+    var(--surface-2)
+  );
+}
+:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
+  .input[aria-invalid='true']:focus-visible,
+.page-app
+  .modal
+  :is(.phone-control, .password-control):has(
+    [aria-invalid='true']
+  ):focus-within,
+.modal-overlay .server-picker[data-invalid='true'] > summary:focus-visible {
+  outline: 2px solid var(--modal-error-border);
+  outline-offset: 2px;
+}
+.page-app
+  .modal
+  :is(.phone-control, .password-control)
+  > .input[aria-invalid='true'] {
+  outline: none;
+  background: transparent;
+}
+#modal-add-cliente .tab-error-count {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 4px;
+  border-radius: 6px;
+  color: var(--modal-error-color);
+  background: color-mix(in srgb, var(--modal-error-border) 16%, var(--surface));
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }

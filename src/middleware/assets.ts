@@ -10,6 +10,26 @@ export function installAssets(
   let assets = createAssetVersions(publicRoot);
   app.locals.assetUrl = (url) => assets.assetUrl(url);
   app.locals.serviceWorkerUrl = () => '/__pwa/worker?v=' + assets.cacheName;
+  if (!development) {
+    // A pasta de assets publica apenas os artefatos destinados ao navegador.
+    app.use('/assets', (req, res, next) => {
+      let pathname: string;
+      try {
+        pathname = decodeURIComponent(req.path).replace(/\\/g, '/');
+      } catch {
+        res.set(noStoreHeaders).sendStatus(404);
+        return;
+      }
+      if (
+        /\.(?:map|[cm]?tsx?)$/i.test(pathname) ||
+        pathname.split('/').some((segment) => segment.startsWith('.'))
+      ) {
+        res.set(noStoreHeaders).sendStatus(404);
+        return;
+      }
+      next();
+    });
+  }
   if (development) {
     app.use((req, _res, next) => {
       if (req.method === 'GET' && !/^\/(assets|icons|uploads)\//.test(req.path))
@@ -36,6 +56,7 @@ export function installAssets(
   // Mantém os hashes nas URLs e impede armazenamento HTTP mesmo sem versão.
   app.use(
     express.static(publicRoot, {
+      dotfiles: 'ignore',
       etag: false,
       lastModified: false,
       setHeaders(res) {

@@ -15,14 +15,5 @@ export function PanelStyles() {
       precedence="panel"
     />
   ));
-  return (
-    <>
-      <link
-        rel="preload"
-        as="script"
-        href={publicAssetUrl('/assets/js/panel-runtime.js')}
-      />
-      {styles}
-    </>
-  );
+  return <>{styles}</>;
 }

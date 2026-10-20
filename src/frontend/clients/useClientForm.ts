@@ -34,6 +34,37 @@ export function useClientForm() {
   const additional = servers.length === 2;
   const tools = () => window.gestorClientFieldTools;
 
+  function validationMessage(field: HTMLInputElement) {
+    if (field.matches(':disabled')) return '';
+    const label = field.dataset.fieldLabel || 'este campo';
+    if (!field.value.trim()) {
+      if (field.name === 'nome') return 'Informe o nome do cliente.';
+      if (field.name === 'telefone') return 'Informe o número do WhatsApp.';
+      if (field.name === 'servidor') return 'Selecione um servidor.';
+      return field.tagName === 'SELECT'
+        ? `Selecione uma opção para ${label}.`
+        : `Preencha o campo ${label}.`;
+    }
+    if (field.checkValidity()) return '';
+    if (field.hasAttribute('data-date-mask'))
+      return 'Informe uma data válida no formato dd/mm/aaaa.';
+    if (field.type === 'number')
+      return `Informe um valor válido, a partir de ${field.min || '0'}.`;
+    return `Confira o valor de ${label.toLocaleLowerCase('pt-BR')}.`;
+  }
+  function revalidateField(field: HTMLInputElement) {
+    if (!field.name) return;
+    setErrors((current) => {
+      if (!Object.hasOwn(current, field.name)) return current;
+      const message = validationMessage(field);
+      if (message === current[field.name]) return current;
+      const next = { ...current };
+      if (message) next[field.name] = message;
+      else delete next[field.name];
+      return next;
+    });
+  }
+
   function setField(name, value: string | number = '') {
     const input = ref.current?.elements.namedItem(name) as HTMLSelectElement;
     if (!input) return;
@@ -72,6 +103,7 @@ export function useClientForm() {
       form.elements.valor.value = (base * screens).toFixed(2);
   }
   function onInput(event) {
+    revalidateField(event.target as HTMLInputElement);
     const form = ref.current;
     if ((event.target as HTMLInputElement).name === 'valor') {
       const value = Number((event.target as HTMLInputElement).value);
@@ -262,6 +294,7 @@ export function useClientForm() {
     setErrors((current) =>
       Object.fromEntries(
         Object.entries(current).filter(([field]) => {
+          if (next.length > 0 && field === 'servidor') return false;
           if (next.length < 2 && field.startsWith('adicional_')) return false;
           return (
             next.length > 0 ||
@@ -283,6 +316,7 @@ export function useClientForm() {
   }
   function onChange(event) {
     const input = event.target as HTMLInputElement;
+    revalidateField(input);
     if (input.name === 'telas') syncScreenPrice();
     if (input.name === 'enviar_boas_vindas') {
       setSendMessage(input.checked);
@@ -306,29 +340,25 @@ export function useClientForm() {
       form.querySelectorAll(
         '[data-required="1"]',
       ) as NodeListOf<HTMLInputElement>,
-    ).filter(
-      (field) =>
-        !field.disabled && (!field.value.trim() || !field.checkValidity()),
-    );
+    ).filter((field) => Boolean(validationMessage(field)));
     const nextErrors: Record<string, any> = {};
     for (const field of invalid)
-      nextErrors[field.name] = !field.value.trim()
-        ? 'Campo obrigatório.'
-        : field.type === 'number'
-          ? 'Informe um valor válido, maior ou igual a ' +
-            (field.min || '0') +
-            '.'
-          : 'Informe um valor válido.';
+      nextErrors[field.name] = validationMessage(field);
     setErrors(nextErrors);
     if (!invalid.length) return;
     event.preventDefault();
     setTab(invalid[0].dataset.tab || 'dados');
     requestAnimationFrame(() => {
-      const visible = invalid.find((field) => !field.hidden);
-      (
-        visible ||
-        (form.querySelector('[data-servidores-opcoes] input') as HTMLElement)
-      )?.focus();
+      const field = invalid[0];
+      const target = field.hidden
+        ? (form.querySelector('[data-servidores-resumo]') as HTMLElement)
+        : field;
+      let details = target?.closest('details');
+      while (details) {
+        details.open = true;
+        details = details.parentElement?.closest('details');
+      }
+      target?.focus();
     });
   }
   function onPageClick(event) {
@@ -359,6 +389,10 @@ export function useClientForm() {
     setTab,
     total,
     errors,
+    errorCountForTab: (name: string) =>
+      Object.keys(errors).filter(
+        (field) => ref.current?.elements.namedItem(field)?.dataset.tab === name,
+      ).length,
     sendMessage,
     template,
     reset,

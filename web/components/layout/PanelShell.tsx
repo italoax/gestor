@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { PanelFlashNotice } from '../ui/PanelFlashNotice.tsx';
+import { PwaInstallButton } from '../pwa/PwaProvider.tsx';
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
@@ -272,6 +273,7 @@ function PanelFrame({
                   <Icon name="card" />
                   <span>Integração de pagamento</span>
                 </a>
+                <PwaInstallButton />
               </nav>
             </div>
           </div>

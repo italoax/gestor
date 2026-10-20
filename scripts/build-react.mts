@@ -8,6 +8,7 @@ await build({
   outfile: 'public/assets/js/react/clients.js',
   bundle: true,
   minify: true,
+  sourcemap: false,
   format: 'iife',
   platform: 'browser',
   target: ['es2020'],

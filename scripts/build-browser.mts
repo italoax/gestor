@@ -3,14 +3,19 @@ import path from 'node:path';
 import { build, context, type BuildOptions } from 'esbuild';
 import { projectRoot } from '../src/config/paths.ts';
 import { writeReleaseNotes } from './release-notes.mts';
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
 writeReleaseNotes();
+const development =
+  process.argv.includes('--dev') || process.argv.includes('--watch');
 const vendorDirectory = path.join(projectRoot, 'public/assets/js/vendor');
 mkdirSync(path.join(vendorDirectory, 'maps'), { recursive: true });
-copyFileSync(
-  path.join(projectRoot, 'node_modules/chart.js/dist/chart.umd.js'),
+writeFileSync(
   path.join(vendorDirectory, 'chart.umd.js'),
+  readFileSync(
+    path.join(projectRoot, 'node_modules/chart.js/dist/chart.umd.js'),
+    'utf8',
+  ).replace(/^\/\/[#@]\s*sourceMappingURL=.*$/gm, ''),
 );
 for (const map of ['brazil', 'world'])
   await build({
@@ -22,6 +27,8 @@ for (const map of ['brazil', 'world'])
     format: 'esm',
     platform: 'browser',
     outfile: path.join(vendorDirectory, 'maps', `${map}.js`),
+    minify: !development,
+    sourcemap: false,
   });
 
 function sources(directory: string): string[] {
@@ -60,6 +67,8 @@ const browserOptions: BuildOptions = {
   target: 'es2020',
   platform: 'browser',
   bundle: false,
+  minify: !development,
+  sourcemap: false,
   legalComments: 'none',
 };
 const classicOptions: BuildOptions = {
@@ -87,6 +96,8 @@ const workerOptions: BuildOptions = {
   target: 'es2020',
   platform: 'browser',
   bundle: false,
+  minify: !development,
+  sourcemap: false,
   legalComments: 'none',
 };
 if (process.argv.includes('--watch')) {
