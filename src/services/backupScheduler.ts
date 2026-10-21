@@ -1,5 +1,4 @@
 import { env } from '../config/env.ts';
-import { automationsEnabled } from '../security/automationPolicy.ts';
 import { safeError } from '../security/safeError.ts';
 import { rodarBackupAgendado } from './backup.ts';
 
@@ -37,7 +36,7 @@ export function createBackupScheduler({ enabled, run, onError }) {
 }
 
 const scheduler = createBackupScheduler({
-  enabled: () => automationsEnabled(env),
+  enabled: () => !env.localMode,
   run: rodarBackupAgendado,
   onError: (error) =>
     console.error('Erro no backup automático:', safeError(error)),

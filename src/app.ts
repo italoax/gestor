@@ -19,6 +19,7 @@ import { exposeFrontendAction } from './middleware/frontendActions.ts';
 import { createSessionSecurity } from './middleware/sessionSecurity.ts';
 import { queryOne } from './db/mysql.ts';
 import { recordSecurityEvent } from './security/runtimeSecurity.ts';
+import { runtimeStorage } from './services/runtimeStorage.ts';
 
 // Monta o aplicativo sem abrir a porta HTTP nem iniciar automações.
 // O Nest controla a inicialização e o encerramento do processo.
@@ -36,7 +37,10 @@ export function createApplication({
       : () => {};
 
   configureHttp(app, projectRoot, runtimeEnv);
-  installAssets(app, publicRoot, { development });
+  installAssets(app, publicRoot, {
+    development,
+    uploadsRoot: runtimeStorage().uploads,
+  });
 
   const routes = express.Router();
 

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { WorkflowResponse } from '../../backend/src/features/workflow.types.ts';
+import type { WorkflowResponse } from '../../apps/api/src/features/workflow.types.ts';
 
 const listeners = new Map<number, Set<() => void>>();
 

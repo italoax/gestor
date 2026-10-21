@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "ixstreaming",
-  "short_name": "ixstreaming",
+  "name": "Gestor IXTV",
+  "short_name": "Gestor IXTV",
   "description": "Painel de gestão IPTV — clientes, cobranças, mensagens e relatórios.",
   "start_url": "/dashboard",
   "scope": "/",

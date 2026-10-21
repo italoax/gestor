@@ -52,7 +52,9 @@ export function isUnknownPageNavigation(
     return false;
   // Arquivos, APIs e downloads têm respostas próprias, mesmo no navegador.
   if (
-    /^\/(?:api|assets|_next|push|webhook|__[^/]*)(?:\/|$)/.test(pathname) ||
+    /^\/(?:api|assets|uploads|_next|push|webhook|__[^/]*)(?:\/|$)/.test(
+      pathname,
+    ) ||
     /\.[^/]+$/.test(pathname) ||
     /^\/(?:healthz|notificacoes)\/?$/.test(pathname) ||
     /^\/r\/[^/]+\/?$/.test(pathname) ||

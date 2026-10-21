@@ -1,5 +1,5 @@
 import { CsrfInput, Icon } from './ui.tsx';
-import { PanelNotice } from '../../../web/components/ui/PanelNotice.tsx';
+import { PanelNotice } from '../../../apps/web/components/ui/PanelNotice.tsx';
 import { opcoesRenovacao } from '../../services/renovacaoOpcoes.ts';
 import { formatMoney } from '../../services/format.ts';
 

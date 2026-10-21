@@ -1,11 +1,11 @@
 node_modules/
 dist/
-web/.next/
+apps/web/.next/
 public/assets/js/react/
 /public/assets/js/
 /public/sw.js
 /public/updates.json
-/web/next-env.d.ts
+/apps/web/next-env.d.ts
 *.tsbuildinfo
 .env
 tokens/
@@ -13,32 +13,24 @@ npm-debug.log*
 
 # Backups do banco gerados em runtime
 backups/
+/gestor-data/
 
 .env.*
 !.env.example
-.deploy/
+.local/
 .vscode/
 sessions/
 *.zip
 *.tar
 
-.tmp-ui/
-
 # Testes e auditorias executados localmente antes do commit
 /test/
-/scripts/*.test.mts
-/scripts/run-isolated-tests.mts
-/scripts/security-local-db.mts
-/scripts/security-compatibility-child.mts
-/scripts/security-csp.browser.mts
 /.github/workflows/
 
 # SQL pontual gerado para uma recuperacao ja aplicada
 /SECURITY-SCHEMA-RECOVERY.sql
 
-# Documentação e controle local de deploy não fazem parte do site
-/docs/
-/README.md
+# Controle local de deploy não faz parte do site
 /.deploy-version.json
 
 # Arquivos enviados pelos usuários em runtime
@@ -48,3 +40,6 @@ sessions/
 /secrets/
 *.keyring.json
 *.security.env
+
+# Documentação Markdown permanece somente no computador
+*.[mM][dD]

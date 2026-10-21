@@ -6,14 +6,15 @@ import { env } from '../config/env.ts';
 import { appTodayIso } from './dates.ts';
 import { createLogger } from './logger.ts';
 import { dataVault } from '../security/storedSecrets.ts';
+import { runtimeStorage } from './runtimeStorage.ts';
+import { createDailyBackup } from './dailyBackup.ts';
 // Backup do banco em SQL puro, sem depender de mysqldump (que nao existe no
 // Node da Hostinger shared). Gera CREATE TABLE (via SHOW CREATE TABLE) + INSERTs
 // de cada tabela. Serve para o download manual e para o agendador diário
-// do worker Node que preserva os arquivos em disco.
+// do backend Node que preserva os arquivos em disco.
 const logger = createLogger('backup');
-// Diretorio de backups relativo ao cwd (raiz do app na Hostinger). Fica fora do
-// deploy zip (o deploy so inclui src/public) e do git (ver .gitignore).
-const BACKUP_DIR = path.resolve(process.cwd(), 'backups');
+// Na hospedagem, os dados ficam fora das versões substituídas pelo deploy.
+const BACKUP_DIR = runtimeStorage().backups;
 function escaparValor(v) {
   if (v === null || v === undefined) return 'NULL';
   if (typeof v === 'number') return Number.isFinite(v) ? String(v) : 'NULL';
@@ -94,44 +95,23 @@ async function dumpSnapshot(connection) {
   partes.push('SET FOREIGN_KEY_CHECKS=1;');
   return partes.join('\n');
 }
-function nomeArquivoBackup(dataIso) {
-  return `gestor-${dataIso}.sql${dataVault ? '.enc' : ''}`;
-}
+const dailyBackup = createDailyBackup({
+  directory: BACKUP_DIR,
+  today: appTodayIso,
+  generate: gerarDumpSql,
+  database: env.db.name,
+  vault: dataVault,
+});
 /**
  * Roda o backup diario. Idempotente: se o arquivo de hoje ja existe, nao refaz
- * (o worker Node verifica a cada minuto). Retorna o caminho quando gera de fato.
+ * (o backend verifica a cada minuto). Retorna o caminho da cópia pronta.
  */
 export async function rodarBackupAgendado() {
   if (env.localMode) return { gerado: false };
-  const hoje = appTodayIso();
-  const destino = path.join(BACKUP_DIR, nomeArquivoBackup(hoje));
-  if (fs.existsSync(destino)) return { gerado: false };
-  fs.mkdirSync(BACKUP_DIR, { recursive: true, mode: 0o700 });
-  const dump = await gerarDumpSql();
-  const content = dataVault
-    ? JSON.stringify({
-        version: 2,
-        sourceDatabase: env.db.name,
-        payload: dataVault.seal(dump, `database-backup:${env.db.name}`),
-      })
-    : dump;
-  if (
-    dataVault &&
-    dataVault.open(
-      JSON.parse(content).payload,
-      `database-backup:${env.db.name}`,
-    ) !== dump
-  )
-    throw new Error('Backup não passou na verificação de recuperação.');
-  fs.writeFileSync(destino, content, {
-    encoding: 'utf8',
-    mode: 0o600,
-    flag: 'wx',
-  });
-  // A etapa 2 preserva os backups existentes. Limpeza exige política explícita.
-  const kb = Math.round(dump.length / 1024);
-  logger.info(`backup diario gerado: ${nomeArquivoBackup(hoje)} (${kb} KB)`);
-  return { gerado: true, arquivo: destino };
+  const result = await dailyBackup();
+  if (result.gerado)
+    logger.info(`backup diario gerado: ${path.basename(result.arquivo)}`);
+  return result;
 }
 // Lista os backups em disco (pro painel admin mostrar).
 export function listarBackups() {

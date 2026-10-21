@@ -5,7 +5,7 @@ import { noStoreHeaders } from '../config/cache.ts';
 export function installAssets(
   app,
   publicRoot,
-  { development = false }: Record<string, any> = {},
+  { development = false, uploadsRoot }: Record<string, any> = {},
 ) {
   let assets = createAssetVersions(publicRoot);
   app.locals.assetUrl = (url) => assets.assetUrl(url);
@@ -53,6 +53,23 @@ export function installAssets(
       .set(noStoreHeaders)
       .send(assets.manifestSource);
   });
+  if (uploadsRoot) {
+    app.use(
+      '/uploads',
+      express.static(uploadsRoot, {
+        dotfiles: 'ignore',
+        index: false,
+        redirect: false,
+        etag: false,
+        lastModified: false,
+        setHeaders(res) {
+          for (const [key, value] of Object.entries(noStoreHeaders))
+            res.setHeader(key, value);
+        },
+      }),
+      (_req, res) => res.set(noStoreHeaders).sendStatus(404),
+    );
+  }
   // Mantém os hashes nas URLs e impede armazenamento HTTP mesmo sem versão.
   app.use(
     express.static(publicRoot, {

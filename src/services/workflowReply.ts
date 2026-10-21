@@ -1,5 +1,5 @@
 // Resultados independentes do servidor HTTP. O controller decide como enviá-los.
-import type { WorkflowResponse } from '../../backend/src/features/workflow.types.ts';
+import type { WorkflowResponse } from '../../apps/api/src/features/workflow.types.ts';
 
 export function createWorkflowReply(locals: Record<string, any> = {}) {
   let statusCode = 200;

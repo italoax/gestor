@@ -1,4 +1,4 @@
-import { PanelFlashNotice } from '../../../web/components/ui/PanelFlashNotice.tsx';
+import { PanelFlashNotice } from '../../../apps/web/components/ui/PanelFlashNotice.tsx';
 import { Fragment } from 'react';
 import { Icon, CsrfInput } from './ui.tsx';
 import { memo } from 'react';

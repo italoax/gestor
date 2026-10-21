@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title><%= title || 'Gestor' %></title>
+    <title><%= title || 'Gestor IXTV' %></title>
     <link rel="icon" type="image/svg+xml" href="<%= assetUrl('/favicon.svg') %>" />
     <link rel="icon" type="image/png" sizes="32x32" href="<%= assetUrl('/icons/favicon-32.png') %>" />
     <link rel="icon" type="image/png" sizes="16x16" href="<%= assetUrl('/icons/favicon-16.png') %>" />
@@ -26,7 +26,7 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
-    <meta name="apple-mobile-web-app-title" content="ixstreaming" />
+    <meta name="apple-mobile-web-app-title" content="Gestor IXTV" />
     <% if (locals.csrfToken) { %>
     <meta name="csrf-token" content="<%= locals.csrfToken %>" />
     <% } %>
@@ -73,13 +73,13 @@
         <a
           class="sidebar-brand sidebar-brand-custom"
           href="/dashboard"
-          title="ixstreaming - Dashboard"
-          aria-label="ixstreaming - Dashboard"
+          title="Gestor IXTV - Dashboard"
+          aria-label="Gestor IXTV - Dashboard"
         >
           <span class="sidebar-brand-image"
             ><img
               src="<%= assetUrl('/assets/images/ixlogo.png') %>"
-              alt="ixstreaming"
+              alt="Gestor IXTV"
               width="1280"
               height="1280"
           /></span>
@@ -114,7 +114,7 @@
       <div class="app-main">
         <header class="topbar2">
           <div class="topbar2-title">
-            <h1><%= menu.find(item => isActive(item.href))?.label || title || 'Gestor' %></h1>
+            <h1><%= menu.find(item => isActive(item.href))?.label || title || 'Gestor IXTV' %></h1>
           </div>
           <div class="topbar2-actions">
             <a

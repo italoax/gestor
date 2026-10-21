@@ -50,7 +50,7 @@ export async function startNextFrontend({
   const next: CreateNext = require('next');
   const app = next({
     dev: false,
-    dir: path.join(projectRoot, 'web'),
+    dir: path.join(projectRoot, 'apps/web'),
     hostname,
     port,
     customServer: true,

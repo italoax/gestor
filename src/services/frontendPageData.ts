@@ -130,7 +130,7 @@ export function nativePageData(
   if (view === 'pages/login')
     return {
       view,
-      title: 'Login | Gestor',
+      title: 'Login | Gestor IXTV',
       csrfToken: data.csrfToken,
       error: Array.isArray(data.error) ? data.error : [],
     };

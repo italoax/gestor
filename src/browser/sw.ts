@@ -106,9 +106,9 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data.json();
   } catch {
-    data = { title: 'Gestor', body: event.data.text() };
+    data = { title: 'Gestor IXTV', body: event.data.text() };
   }
-  const title = data.title || 'ixstreaming';
+  const title = data.title || 'Gestor IXTV';
   const options = {
     body: data.body || '',
     icon: data.icon || '/icons/icon-192.png',

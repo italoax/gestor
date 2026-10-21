@@ -1,5 +1,5 @@
 import 'express-session';
-import type { PanelUser } from '../../backend/src/auth/auth.types.ts';
+import type { PanelUser } from '../../apps/api/src/auth/auth.types.ts';
 
 declare module 'express-session' {
   interface SessionData {
