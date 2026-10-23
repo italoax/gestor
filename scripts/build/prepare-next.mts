@@ -4,13 +4,13 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const nextVersion = require('next/package.json').version;
 const wasmVersion = require('@next/swc-wasm-nodejs/package.json').version;
-if (nextVersion !== '16.4.0' || wasmVersion !== nextVersion) {
+if (nextVersion !== '16.4.2' || wasmVersion !== nextVersion) {
   throw new Error(
-    'A compatibilidade SWC exige Next.js e @next/swc-wasm-nodejs na versão 16.4.0.',
+    'A compatibilidade SWC exige Next.js e @next/swc-wasm-nodejs na versão 16.4.2.',
   );
 }
 
-// Next 16.4.0 aplica pathToFileURL() a um nome de pacote, que não é um caminho.
+// Next 16.4.2 aplica pathToFileURL() a um nome de pacote, que não é um caminho.
 // Resolva o pacote instalado antes dessa conversão. O caminho de download e
 // todos os erros do compilador continuam sendo tratados pelo próprio Next.
 const compilerPath = require.resolve('next/dist/build/swc/index.js');
@@ -25,6 +25,6 @@ if (!source.includes(corrected)) {
   }
   writeFileSync(compilerPath, source.replace(original, corrected));
   console.log(
-    'SWC: resolução do pacote WebAssembly corrigida para Next.js 16.4.0.',
+    'SWC: resolução do pacote WebAssembly corrigida para Next.js 16.4.2.',
   );
 }
