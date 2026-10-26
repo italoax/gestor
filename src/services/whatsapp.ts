@@ -299,6 +299,26 @@ export async function enviarMidia(
     sessionHeaders(token),
   );
 }
+export async function enviarCobrancaPix(sessao, telefone, payload, token) {
+  const url = sessionUrl(
+    env.whatsapp.sessionSendPixPath ?? '/api/messages/send/pix',
+    sessao || env.whatsapp.sessionNameDefault,
+  );
+  if (!url)
+    return { ok: false, retrySafe: true, error: 'WA_SESSION_API_URL ausente.' };
+  return jsonRequest(
+    url,
+    {
+      session: sessao || env.whatsapp.sessionNameDefault,
+      number: normalizarTelefone(telefone),
+      amount: payload.amount,
+      body: payload.body,
+      pix: payload.pix,
+    },
+    'POST',
+    sessionHeaders(token),
+  );
+}
 export async function enviarAudio(sessao, telefone, urlAudio, token) {
   const to = normalizarTelefone(telefone);
   const urlPublica = resolverUrlMidia(urlAudio);
@@ -383,6 +403,41 @@ export async function enviarMensagemModelo(
   // Enriquece o cliente com a config PIX do user (se passada) pra a tag {pix}
   // e derivadas funcionarem. Nao muta o objeto original.
   const clienteFinal = { ...cliente, ...pix };
+  const cobrarPix = /\{\s*cobranca_pix\s*\}/i.test(modelo.mensagem || '');
+  if (cobrarPix) {
+    if (String(modelo.mediaPath ?? '').trim())
+      return {
+        ok: false,
+        retrySafe: true,
+        error: 'Use a cobrança Pix em um modelo sem anexo.',
+      };
+    const chave = String(
+      clienteFinal.pixChave ?? clienteFinal.pix_chave ?? '',
+    ).trim();
+    const nome = String(
+      clienteFinal.pixNome ?? clienteFinal.pix_nome ?? '',
+    ).trim();
+    const tipo = String(
+      clienteFinal.pixTipo ?? clienteFinal.pix_tipo ?? '',
+    ).trim();
+    if (!chave || !nome || !tipo)
+      return {
+        ok: false,
+        retrySafe: true,
+        error:
+          'Cadastre chave, nome do titular e tipo do Pix em Minha Conta para enviar a cobrança.',
+      };
+    if (
+      !/^\d{1,10}(\.\d{1,2})?$/.test(String(cliente.valor ?? '')) ||
+      Number(cliente.valor) <= 0
+    )
+      return {
+        ok: false,
+        retrySafe: true,
+        error:
+          'Informe um valor maior que zero com até duas casas decimais para a cobrança Pix.',
+      };
+  }
   if (
     /\{(?:link_cliente|link_pagamento|pagamento|link)\}/i.test(
       modelo.mensagem || '',
@@ -423,6 +478,21 @@ export async function enviarMensagemModelo(
   const mediaTipo = String(modelo.mediaTipo ?? '')
     .trim()
     .toLowerCase();
+  if (cobrarPix)
+    return enviarCobrancaPix(
+      sessao,
+      telefone,
+      {
+        amount: String(cliente.valor),
+        body: texto.trim() || 'Você recebeu uma solicitação de pagamento.',
+        pix: {
+          key: clienteFinal.pixChave ?? clienteFinal.pix_chave,
+          merchantName: clienteFinal.pixNome ?? clienteFinal.pix_nome,
+          keyType: clienteFinal.pixTipo ?? clienteFinal.pix_tipo,
+        },
+      },
+      token,
+    );
   if (mediaPath) {
     if (mediaTipo === 'audio') {
       return enviarAudio(sessao, telefone, mediaPath, token);

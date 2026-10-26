@@ -83,6 +83,8 @@ export const env = {
     sessionNameDefault: process.env.WA_SESSION_NAME_DEFAULT || 'default',
     sessionSendTextPath:
       process.env.WA_SESSION_SEND_TEXT_PATH ?? '/api/messages/send',
+    sessionSendPixPath:
+      process.env.WA_SESSION_SEND_PIX_PATH ?? '/api/messages/send/pix',
     sessionSendMediaPath:
       process.env.WA_SESSION_SEND_MEDIA_PATH ?? '/api/messages/send/media',
     sessionSendAudioPath:

@@ -22,6 +22,7 @@ const tags = [
   'vencimento_2',
   'resumo_acessos',
   'link_cliente',
+  'cobranca_pix',
 ];
 const normalize = (value) =>
   String(value || '')
@@ -223,6 +224,7 @@ function MessageEditor({
                     <option key={tag} value={`{${tag}}`}>
                       {`{${tag}}`}
                       {tag === 'link_cliente' ? ' — Renovar com PIX' : ''}
+                      {tag === 'cobranca_pix' ? ' — Cobrança com Pix' : ''}
                     </option>
                   ))}
                 </select>
@@ -239,6 +241,13 @@ function MessageEditor({
                   setText((event.target as HTMLTextAreaElement).value)
                 }
               />
+              {/\{\s*cobranca_pix\s*\}/i.test(text) && (
+                <p className="muted">
+                  Envia uma cobrança com o valor do cliente e o Pix de Minha
+                  Conta. Use sem anexo. Confira o recebimento no banco antes de
+                  confirmar o pagamento.
+                </p>
+              )}
             </div>
           </div>
         </div>
