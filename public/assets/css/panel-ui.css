@@ -34,12 +34,162 @@
   gap: 14px;
 }
 .wa-connect-modal .wa-qr-box {
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
   min-height: 0;
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      transparent 75%
+    ),
+    var(--surface-2);
+  color: var(--text);
+}
+.wa-connect-modal .wa-qr-box::before {
+  position: absolute;
+  inset: 10px;
+  border: 1px dashed color-mix(in srgb, var(--primary) 20%, var(--border));
+  border-radius: 12px;
+  content: '';
+  pointer-events: none;
+}
+.wa-connect-modal .wa-qr-box.is-ready {
   padding: 18px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgb(0 0 0 / 12%);
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
+}
+.wa-connect-modal .wa-qr-box.is-ready::before {
+  display: none;
+}
+.wa-connect-modal .wa-qr-placeholder {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+.wa-connect-modal .wa-qr-placeholder[hidden] {
+  display: none;
+}
+.wa-connect-modal .wa-qr-symbol {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary);
+}
+.wa-connect-modal .wa-qr-symbol .ui-icon {
+  width: 28px;
+  height: 28px;
+}
+.wa-connect-modal .is-loading .wa-qr-symbol::after {
+  position: absolute;
+  inset: -5px;
+  content: '';
+  border: 2px solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border-top-color: var(--primary);
+  border-radius: inherit;
+  animation: wa-connection-spin 1.6s linear infinite;
+}
+.wa-connect-modal .wa-qr-title {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.wa-connect-modal .wa-qr-description {
+  max-width: 220px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.wa-connect-modal .wa-qr-progress {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+.wa-connect-modal .wa-qr-progress i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: wa-connection-pulse 1.4s ease-in-out infinite;
+}
+.wa-connect-modal .wa-qr-progress i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.wa-connect-modal .wa-qr-progress i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+.wa-connect-modal .wa-pairing-code {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  overflow-wrap: anywhere;
+}
+.wa-connect-modal .wa-pairing-code[hidden],
+.wa-connect-modal .wa-qr-box:not(.is-loading) .wa-qr-progress,
+.wa-connect-modal .wa-qr-foot [data-wa-expira]:empty {
+  display: none;
+}
+.wa-connect-modal .is-error .wa-qr-symbol {
+  background: color-mix(in srgb, var(--danger, #e45b70) 10%, var(--surface));
+  color: var(--danger, #e45b70);
+}
+.wa-connect-modal .is-connected .wa-qr-symbol {
+  color: var(--success, #22c55e);
+}
+.wa-connect-modal .wa-connection-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.wa-connect-modal .is-error .wa-connection-dot {
+  background: var(--danger, #e45b70);
+}
+.wa-connect-modal .is-ready .wa-connection-dot,
+.wa-connect-modal .is-connected .wa-connection-dot {
+  background: var(--success, #22c55e);
+}
+@keyframes wa-connection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wa-connection-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-connect-modal .is-loading .wa-qr-symbol::after,
+  .wa-connect-modal .wa-qr-progress i {
+    animation: none;
+  }
 }
 .wa-connect-modal .wa-qr-img {
   width: 100%;
@@ -57,12 +207,6 @@
   gap: 8px;
   line-height: 1.5;
   text-align: center;
-}
-.wa-connect-modal [data-wa-aguardando] {
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--surface-2);
 }
 .wa-connect-modal .wa-connect-eyebrow {
   font-size: 10px;

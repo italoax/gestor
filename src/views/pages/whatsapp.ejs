@@ -88,13 +88,42 @@
     </div>
     <div class="modal-body wa-connect-body">
       <div class="wa-qr-col">
-        <div class="wa-qr-box" data-wa-qr-box>
-          <span class="wa-qr-msg" data-wa-qr-msg>Gerando QR Code...</span>
-          <img class="wa-qr-img" data-wa-qr-img hidden alt="QR Code" />
+        <div class="wa-qr-box is-loading" data-wa-qr-box aria-busy="true">
+          <div
+            class="wa-qr-placeholder"
+            data-wa-placeholder
+            role="status"
+            aria-live="polite"
+          >
+            <span class="wa-qr-symbol" aria-hidden="true"
+              ><%- include('../partials/ui-icon', { name: 'phone' }) %></span
+            >
+            <strong class="wa-qr-title" data-wa-qr-title
+              >Preparando sua conexão</strong
+            >
+            <p class="wa-qr-description" data-wa-qr-msg
+              >O QR Code aparecerá aqui em instantes.</p
+            >
+            <strong
+              class="wa-pairing-code"
+              data-wa-pairing-code
+              hidden
+            ></strong>
+            <span class="wa-qr-progress" aria-hidden="true"
+              ><i></i><i></i><i></i
+            ></span>
+          </div>
+          <img
+            class="wa-qr-img"
+            data-wa-qr-img
+            hidden
+            alt="QR Code para conectar o WhatsApp"
+          />
         </div>
-        <div class="wa-qr-foot" role="status" aria-live="polite"
+        <div class="wa-qr-foot is-loading" role="status" aria-live="polite"
+          ><span class="wa-connection-dot" aria-hidden="true"></span
           ><span data-wa-expira></span
-          ><span data-wa-aguardando>⟳ Aguardando leitura...</span></div
+          ><span data-wa-aguardando>Conectando ao WhatsApp</span></div
         >
       </div>
       <div class="wa-steps-col">
@@ -125,10 +154,7 @@
           <li>
             <div>
               <strong>Leia o QR Code</strong>
-              <p
-                >Aponte a câmera para o código ao lado e aguarde a
-                confirmação.</p
-              >
+              <p>Aponte a câmera para o QR Code e aguarde a confirmação.</p>
             </div>
           </li>
         </ol>
@@ -241,37 +267,49 @@
   var trigger = document.querySelector('[data-wa-connect-trigger]');
   var qrImg = modal && modal.querySelector('[data-wa-qr-img]');
   var qrMsg = modal && modal.querySelector('[data-wa-qr-msg]');
+  var qrBox = modal && modal.querySelector('[data-wa-qr-box]');
+  var qrPlaceholder = modal && modal.querySelector('[data-wa-placeholder]');
+  var qrTitle = modal && modal.querySelector('[data-wa-qr-title]');
+  var pairingCode = modal && modal.querySelector('[data-wa-pairing-code]');
+  var qrFoot = modal && modal.querySelector('.wa-qr-foot');
   var modalName = modal && modal.querySelector('[data-wa-modal-name]');
   var aguardando = modal && modal.querySelector('[data-wa-aguardando]');
   var pollConnect = null;
   var deviceAtual = null;
   pollCards();
 
+  function connectionVisual(kind, title, description, code) {
+    if (qrBox) { qrBox.className = 'wa-qr-box is-' + kind; qrBox.setAttribute('aria-busy', String(kind === 'loading')); }
+    if (qrPlaceholder) qrPlaceholder.hidden = kind === 'ready';
+    if (qrTitle) qrTitle.textContent = title || '';
+    if (qrMsg) qrMsg.textContent = description || '';
+    if (pairingCode) { pairingCode.hidden = kind !== 'pairing'; pairingCode.textContent = code || ''; }
+    if (qrImg) qrImg.hidden = kind !== 'ready';
+    if (qrFoot) qrFoot.className = 'wa-qr-foot is-' + kind;
+    if (aguardando) aguardando.textContent = { loading: 'Conectando ao WhatsApp', ready: 'Pronto para escanear', error: 'Conexão interrompida', connected: 'Conexão confirmada', pairing: 'Aguardando confirmação no celular' }[kind];
+  }
   function mostrarEstado(st) {
     if (!modal || disposed || !modal.isConnected) return;
     if (st.connected || st.status === 'conectado') {
-      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = '✅ Conectado!'; }
-      if (qrImg) qrImg.hidden = true;
+      connectionVisual('connected', 'WhatsApp conectado', 'Tudo pronto para enviar suas mensagens.');
       pararConnect();
       refreshTimer = setTimeout(function () { if (!disposed) window.gestorRefresh(); }, 900);
       return;
     }
-    if (st.qrCode) {
-      if (qrImg) { qrImg.hidden = false; qrImg.src = st.qrCode; }
-      if (qrMsg) qrMsg.hidden = true;
+    if (st.status === 'erro') {
+      connectionVisual('error', 'Não foi possível conectar', st.lastError || 'Tente novamente para gerar um novo QR Code.');
       return;
     }
-    // Status intermediarios: mostra mensagem clara em vez de QR generico
-    var msgPorStatus = {
-      'iniciando': '⏳ Iniciando sessão...',
-      'reconectando': '🔄 Reconectando ao WhatsApp...',
-      'qr': '⏳ Gerando QR Code...',
-      'pairing': '⏳ Gerando código de pareamento...',
-      'erro': st.lastError || 'Falha ao conectar.',
-      'desconectado': st.lastError || '⏳ Solicitando QR Code...',
-    };
-    if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = msgPorStatus[st.status] || 'Aguardando QR Code...'; }
-    if (qrImg) qrImg.hidden = true;
+    if (st.qrCode) {
+      if (qrImg) qrImg.src = st.qrCode;
+      connectionVisual('ready');
+      return;
+    }
+    if (st.pairingCode) {
+      connectionVisual('pairing', 'Seu código de conexão', 'Digite este código no WhatsApp do seu celular.', st.pairingCode);
+      return;
+    }
+    connectionVisual('loading', st.status === 'reconectando' ? 'Restabelecendo conexão' : 'Preparando sua conexão', 'O QR Code aparecerá aqui em instantes.');
   }
   function pararConnect() { if (pollConnect) { clearInterval(pollConnect); pollConnect = null; } }
   function pollStatusConnect() {
@@ -311,8 +349,7 @@
       // abre modal de conexão
       deviceAtual = id;
       if (modalName) modalName.textContent = card.getAttribute('data-nome') || '';
-      if (qrImg) qrImg.hidden = true;
-      if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Gerando QR Code... (pode levar 10s)'; }
+      connectionVisual('loading', 'Preparando sua conexão', 'O QR Code aparecerá aqui em instantes.');
       if (trigger) trigger.click();
       window.csrfFetch('/whatsapp/device/' + id + '/connect', { method: 'POST' })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -326,7 +363,7 @@
           btn.disabled = false;
           delete btn.dataset.loading;
           btn.innerHTML = originalText;
-          if (qrMsg) { qrMsg.hidden = false; qrMsg.textContent = 'Falha ao conectar. Tente novamente.'; }
+          connectionVisual('error', 'Não foi possível conectar', 'Tente novamente para gerar um novo QR Code.');
         });
       pararConnect();
       pollConnect = setInterval(pollStatusConnect, 3000);

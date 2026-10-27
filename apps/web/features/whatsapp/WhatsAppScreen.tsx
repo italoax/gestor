@@ -199,18 +199,38 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
   useEffect(() => {
     if (open && isConnected) setOpen(false);
   }, [open, isConnected]);
-  const message = busy
-    ? 'Iniciando sessão... (pode levar alguns segundos)'
-    : isConnected
-      ? 'Conectado!'
-      : state?.lastError ||
-        {
-          iniciando: 'Iniciando sessão...',
-          reconectando: 'Reconectando ao WhatsApp...',
-          qr: 'Gerando QR Code...',
-          pairing: 'Código de pareamento',
-        }[state?.status] ||
-        'Aguardando QR Code...';
+  const visualState =
+    !busy && state?.status === 'erro'
+      ? 'error'
+      : isConnected
+        ? 'connected'
+        : !busy && state?.qrCode
+          ? 'ready'
+          : !busy && state?.pairingCode
+            ? 'pairing'
+            : 'loading';
+  const connectionTitle = {
+    loading:
+      state?.status === 'reconectando'
+        ? 'Restabelecendo conexão'
+        : 'Preparando sua conexão',
+    error: 'Não foi possível conectar',
+    connected: 'WhatsApp conectado',
+    pairing: 'Seu código de conexão',
+  }[visualState];
+  const connectionDescription = {
+    loading: 'O QR Code aparecerá aqui em instantes.',
+    error: state?.lastError || 'Tente novamente para gerar um novo QR Code.',
+    connected: 'Tudo pronto para enviar suas mensagens.',
+    pairing: 'Digite este código no WhatsApp do seu celular.',
+  }[visualState];
+  const connectionStatus = {
+    loading: 'Conectando ao WhatsApp',
+    ready: 'Pronto para escanear',
+    error: 'Conexão interrompida',
+    connected: 'Conexão confirmada',
+    pairing: 'Aguardando confirmação no celular',
+  }[visualState];
   return (
     <>
       <div className="wa-device" data-whatsapp-device={device.id}>
@@ -292,24 +312,49 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
         >
           <div className="modal-body wa-connect-body">
             <div className="wa-qr-col">
-              <div className="wa-qr-box">
-                {!busy && !isConnected && state?.qrCode ? (
+              <div
+                className={`wa-qr-box is-${visualState}`}
+                aria-busy={visualState === 'loading'}
+              >
+                {visualState === 'ready' ? (
                   <img
                     className="wa-qr-img"
                     src={state.qrCode}
                     alt="QR Code para conectar o WhatsApp"
                   />
                 ) : (
-                  <span className="wa-qr-msg" role="status">
-                    {message}
-                    {!isConnected && state?.pairingCode && (
-                      <strong>{state.pairingCode}</strong>
+                  <div
+                    className="wa-qr-placeholder"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span className="wa-qr-symbol" aria-hidden="true">
+                      <Icon name="phone" />
+                    </span>
+                    <strong className="wa-qr-title">{connectionTitle}</strong>
+                    <p className="wa-qr-description">{connectionDescription}</p>
+                    {visualState === 'pairing' && (
+                      <strong className="wa-pairing-code">
+                        {state.pairingCode}
+                      </strong>
                     )}
-                  </span>
+                    {visualState === 'loading' && (
+                      <span className="wa-qr-progress" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
-              <div className="wa-qr-foot" role="status" aria-live="polite">
-                {isConnected ? 'Conexão confirmada.' : 'Aguardando conexão...'}
+              <div
+                className={`wa-qr-foot is-${visualState}`}
+                role="status"
+                aria-live="polite"
+              >
+                <span className="wa-connection-dot" aria-hidden="true" />
+                {connectionStatus}
               </div>
             </div>
             <div className="wa-steps-col">
@@ -341,8 +386,7 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
                   <div>
                     <strong>Leia o QR Code</strong>
                     <p>
-                      Aponte a câmera para o código ao lado e aguarde a
-                      confirmação.
+                      Aponte a câmera para o QR Code e aguarde a confirmação.
                     </p>
                   </div>
                 </li>
