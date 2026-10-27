@@ -75,7 +75,7 @@
     "helmet": "^8.2.0",
     "html-react-parser": "^6.1.8",
     "morgan": "^1.11.0",
-    "multer": "^2.2.0",
+    "multer": "^2.5.0",
     "mysql2": "^3.24.5",
     "next": "16.4.2",
     "prettier": "3.9.9",
@@ -90,6 +90,7 @@
   },
   "overrides": {
     "body-parser": "^2.4.0",
+    "multer": "$multer",
     "express-mysql-session": {
       "mysql2": "$mysql2"
     }
