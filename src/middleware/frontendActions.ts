@@ -5,10 +5,14 @@ export function exposeFrontendAction(req, res, next) {
   if (req.method !== 'POST' || req.get('x-gestor-action') !== '1')
     return next();
   res.set('Cache-Control', 'private, no-store');
-  const notices = () => ({
-    success: [...req.flash('success'), ...req.flash('modal-success')],
-    errors: [...req.flash('error'), ...req.flash('modal-error')],
-  });
+  // O encerramento de sessões destrói req.session antes de redirecionar.
+  const notices = () =>
+    req.session
+      ? {
+          success: [...req.flash('success'), ...req.flash('modal-success')],
+          errors: [...req.flash('error'), ...req.flash('modal-error')],
+        }
+      : { success: [], errors: [] };
   res.redirect = (statusOrPath, path) => {
     const messages = notices();
     return res

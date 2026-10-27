@@ -17,20 +17,20 @@
     <ul class="painel-links">
       <% paineis.forEach(painel => { %>
       <li>
-        <a
-          class="painel-link"
-          href="<%= painel.url %>"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Abrir <%= painel.nome %> em nova aba"
-        >
+        <div class="painel-link">
           <span class="aviso-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
           <span class="painel-link-info">
             <strong><%= painel.nome %></strong>
             <span><%= new URL(painel.url).hostname %></span>
           </span>
-          <span class="painel-link-action" aria-hidden="true">Abrir ↗</span>
-        </a>
+          <a
+            class="painel-link-action"
+            href="<%= painel.url %>"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Abrir <%= painel.nome %> em nova aba"
+          >Abrir ↗</a>
+        </div>
       </li>
       <% }) %>
     </ul>

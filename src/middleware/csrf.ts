@@ -34,10 +34,11 @@ export function csrfMiddleware(req, res, next) {
     (req.body && req.body._csrf) || req.get('x-csrf-token') || '',
   );
   const recusar = () => {
-    if (req.path === '/login') {
+    if (req.path === '/login' || req.path.startsWith('/login/')) {
       return res.status(403).render('pages/login', {
         title: 'Login',
         user: null,
+        twoFactorRequired: Boolean(req.session.twoFactorChallenge),
         error: [
           'Sua sessão expirou. Digite novamente suas credenciais para entrar.',
         ],

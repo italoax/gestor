@@ -31,55 +31,24 @@
         <small id="account-username-help">O usuário não pode ser alterado.</small>
       </label>
       <label class="field">
-        Senha atual
-        <input
-          class="input"
-          type="password"
-          name="current_password"
-          autocomplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          data-bwignore
-        />
-        <small>Use para alterar a senha, confirmar sua identidade ou encerrar sessões. Para mudar apenas o nome, deixe em branco.</small>
+        Nova senha
+        <input class="input" type="password" name="password" minlength="15" autocomplete="new-password" placeholder="Mínimo de 15 caracteres" />
+        <small>Deixe em branco para manter a senha atual.</small>
       </label>
       <label class="field">
-        Nova senha (mínimo de 15 caracteres)
-        <input
-          class="input"
-          type="password"
-          name="password"
-          minlength="15"
-          autocomplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          data-bwignore
-        />
+        Confirmar nova senha
+        <input class="input" type="password" name="password_confirm" autocomplete="new-password" placeholder="Repita a nova senha" />
       </label>
-      <label class="field">
-        Confirmar senha
-        <input
-          class="input"
-          type="password"
-          name="password_confirm"
-          autocomplete="off"
-          data-1p-ignore
-          data-lpignore="true"
-          data-bwignore
-        />
-      </label>
-      <section id="seguranca-sessoes" class="full">
-        <h3>Segurança e sessões</h3>
-        <p>As ações abaixo usam a senha atual informada acima.</p>
+      <div id="seguranca-sessoes" class="full">
         <div class="modal-actions">
-          <button class="btn btn-muted" type="submit" formaction="/minha-conta/confirmar" formnovalidate data-account-security-action>Confirmar identidade</button>
-          <button class="btn btn-muted" type="submit" formaction="/minha-conta/sessoes/revogar" formnovalidate data-account-security-action>Encerrar sessões</button>
+          <button class="btn btn-muted" type="submit" form="account-revoke-sessions-form">Encerrar sessões</button>
         </div>
-      </section>
+      </div>
       <div class="modal-actions account-actions full">
         <button class="btn btn-primary" type="submit" data-account-save> Salvar alterações </button>
       </div>
     </form>
+    <form id="account-revoke-sessions-form" method="post" action="/minha-conta/sessoes/revogar" hidden><%- csrfInput %></form>
   </div>
   <div class="card account-card">
     <h3 style="margin-top:0;">💠 Chave PIX</h3>

@@ -23,13 +23,7 @@ export function NoticesScreen({ data }: { data?: any }) {
           <ul className="painel-links">
             {panels.map((panel) => (
               <li key={panel.url}>
-                <a
-                  className="painel-link"
-                  href={panel.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Abrir ${panel.name} em nova aba`}
-                >
+                <div className="painel-link">
                   <span className="aviso-icon">
                     <Icon name="monitor" />
                   </span>
@@ -37,10 +31,16 @@ export function NoticesScreen({ data }: { data?: any }) {
                     <strong>{panel.name}</strong>
                     <span>{new URL(panel.url).hostname}</span>
                   </span>
-                  <span className="painel-link-action" aria-hidden="true">
+                  <a
+                    className="painel-link-action"
+                    href={panel.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Abrir ${panel.name} em nova aba`}
+                  >
                     Abrir ↗
-                  </span>
-                </a>
+                  </a>
+                </div>
               </li>
             ))}
           </ul>

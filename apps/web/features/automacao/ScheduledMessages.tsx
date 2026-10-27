@@ -1,4 +1,5 @@
 'use client';
+import { DeliveryDetail } from './DeliveryDetail.tsx';
 import { useEffect, useState } from 'react';
 import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { CsrfInput, Icon } from '../../../../src/frontend/clients/ui.tsx';
@@ -381,9 +382,11 @@ export function CampaignEditor({
 export function ScheduledMessages({
   data,
   onEdit,
+  onPending,
 }: {
   data: any;
   onEdit: (item: any) => void;
+  onPending: (item: any) => void;
 }) {
   const campaigns = data.regras.filter((item) => item.campanha);
   return (
@@ -432,7 +435,12 @@ export function ScheduledMessages({
                 </p>
                 {item.campanha.modo === 'semanal' && item.envioHoje && (
                   <p className="muted">
-                    {item.envioHoje.rotulo}: {item.envioHoje.detalhe}
+                    {item.envioHoje.rotulo}:{' '}
+                    <DeliveryDetail
+                      summary={item.envioHoje}
+                      title={item.titulo}
+                      onPending={() => onPending(item)}
+                    />
                   </p>
                 )}
               </div>

@@ -92,8 +92,9 @@
               aria-label="Envio de hoje"
             >
               <strong><%= r.envioHoje.rotulo %></strong>
-              <% if (r.envioHoje.estado !== 'vazio') { %><span><%= r.envioHoje.detalhe %></span
-              ><% } %>
+              <% if (r.envioHoje.estado !== 'vazio') { const pendingCount = Number(r.envioHoje.pendentes || 0); const pendingLabel = pendingCount + (pendingCount === 1 ? ' pendente' : ' pendentes'); const pendingPosition = pendingCount > 0 ? r.envioHoje.detalhe.indexOf(pendingLabel) : -1; %>
+              <span><% if (pendingPosition >= 0) { %><%= r.envioHoje.detalhe.slice(0, pendingPosition) %><button type="button" class="auto-pending-link auto-receb-link" data-regra-id="<%= r.id %>" data-regra-nome="<%= r.titulo %>" data-pendentes="1" aria-label="Ver <%= pendingLabel %> da regra <%= r.titulo %>"><%= pendingLabel %></button><%= r.envioHoje.detalhe.slice(pendingPosition + pendingLabel.length) %><% } else { %><%= r.envioHoje.detalhe %><% } %></span>
+              <% } %>
             </div>
             <% } %>
           </div>
@@ -556,12 +557,9 @@
   </div>
 </div>
 <div class="modal-overlay" id="modal-recebedores" aria-hidden="true" inert>
-  <div class="modal">
+  <div class="modal recipients-dialog">
     <div class="modal-header">
-      <div>
-        <h3>Clientes que vão receber</h3>
-        <p class="muted" data-receb-sub></p>
-      </div>
+      <h3>Envios pendentes</h3>
       <button
         class="modal-close"
         type="button"
@@ -571,7 +569,11 @@
       >
     </div>
     <div class="modal-body">
+      <p class="recipients-rule" data-receb-sub></p>
       <div class="receb-list" data-receb-list></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
     </div>
   </div>
 </div>
@@ -700,19 +702,30 @@
       if (sub) sub.textContent = b.getAttribute('data-regra-nome') || '';
       if (list) list.innerHTML = '<div class="receb-empty">Carregando…</div>';
       window.gestorSetModalState(recebModal, true);
-      fetch('/automacao/regra/' + encodeURIComponent(id) + '/recebedores', { headers: { Accept: 'application/json' } })
-        .then(function (r) { return r.json(); })
+      function loadRecipients(page) {
+      if (list) list.innerHTML = '<div class="receb-empty">Carregando…</div>';
+      fetch('/automacao/regra/' + encodeURIComponent(id) + '/recebedores?pendentes=1&pagina=' + page, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function (data) {
+          if (!data.ok) throw new Error();
           var cs = (data && data.clientes) || [];
-          if (!cs.length) { list.innerHTML = '<div class="receb-empty">Nenhum cliente atende a essa regra hoje.</div>'; return; }
-          list.innerHTML = cs.map(function (c) {
-            var iso = String(c.vencimento || '').slice(0, 10).split('-');
-            var venc = iso.length === 3 ? iso.reverse().join('/') : '';
-            var valor = Number(c.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            return '<div class="receb-row"><div class="receb-info"><strong>' + escapeHtml(c.nome) + '</strong><span>' + escapeHtml(c.telefone || '') + '</span><span>' + escapeHtml(c.servidor || '') + ' · ' + escapeHtml(c.plano || '') + ' · ' + escapeHtml(valor) + '</span></div><span class="receb-venc">' + escapeHtml(venc) + '</span></div>';
-          }).join('');
+          if (!cs.length) { list.innerHTML = '<div class="receb-empty">Nenhum cliente com envio pendente nesta regra.</div>'; return; }
+          list.innerHTML = '<ul class="receb-name-list">' + cs.map(function (c) {
+            return '<li>' + escapeHtml(c.nome) + '</li>';
+          }).join('') + '</ul>';
+          if (data.temMais || data.pagina > 1) {
+            var tools = document.createElement('div'); tools.className = 'recipients-pagination';
+            var previous = document.createElement('button'); previous.type = 'button'; previous.className = 'btn btn-muted'; previous.textContent = 'Anterior'; previous.disabled = data.pagina <= 1;
+            previous.addEventListener('click', function () { loadRecipients(data.pagina - 1); });
+            var label = document.createElement('span'); label.textContent = 'Página ' + data.pagina;
+            var next = document.createElement('button'); next.type = 'button'; next.className = 'btn btn-muted'; next.textContent = 'Próxima'; next.disabled = !data.temMais;
+            next.addEventListener('click', function () { loadRecipients(data.pagina + 1); });
+            tools.append(previous, label, next); list.appendChild(tools);
+          }
         })
         .catch(function () { list.textContent = ''; window.gestorShowNotice('Não foi possível carregar os clientes.', true); });
+      }
+      loadRecipients(1);
     });
   });
 

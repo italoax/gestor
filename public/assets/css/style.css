@@ -1582,6 +1582,17 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .login-link:hover {
   text-decoration: underline;
 }
+button.login-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+.login-restart {
+  margin-top: 16px;
+  text-align: center;
+}
 .login-btn {
   width: 100%;
   border-radius: 12px;

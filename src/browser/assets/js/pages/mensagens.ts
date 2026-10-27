@@ -29,10 +29,6 @@ window.gestorPageModules.initMessageTemplates = function ({
       if (desc) desc.value = btn.getAttribute('data-descricao') || '';
       (form.querySelector('[name="mensagem"]') as HTMLInputElement).value =
         btn.getAttribute('data-mensagem') || '';
-      (form.querySelector('[name="media_tipo"]') as HTMLInputElement).value =
-        btn.getAttribute('data-media-tipo') || '';
-      (form.querySelector('[name="media_path"]') as HTMLInputElement).value =
-        btn.getAttribute('data-media-path') || '';
       const title = modal.querySelector('.modal-header h3') as HTMLElement;
       if (title) setIconLabel(title, 'edit', 'Editar Template');
       setModalState(modal, true);
@@ -50,7 +46,7 @@ window.gestorPageModules.initMessageTemplates = function ({
   });
 };
 
-window.gestorPageModules.initMessageTags = function ({ setModalState }) {
+window.gestorPageModules.initMessageTags = function () {
   const params = new URLSearchParams(window.location.search);
   let text = '';
   if (params.get('saved') === '1') text = 'Mensagem salva com sucesso.';

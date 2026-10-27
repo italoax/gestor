@@ -8,6 +8,7 @@ import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { useSearchParams } from 'next/navigation';
 import { CampaignEditor, ScheduledMessages } from './ScheduledMessages.tsx';
 import { DispatchHistory } from './DispatchHistory.tsx';
+import { DeliveryDetail } from './DeliveryDetail.tsx';
 
 const triggers = [
   ['Todos', 'Todos os clientes'],
@@ -342,67 +343,101 @@ function Recipients({
     loading: boolean;
     clientes: any[];
     error?: boolean;
-  }>({ loading: true, clientes: [] });
+    more: boolean;
+  }>({ loading: true, clientes: [], more: false });
+  const [page, setPage] = useState(1);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/automacao/regra/${encodeURIComponent(item.id)}/recebedores`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      signal: controller.signal,
-    })
+    setState((current) => ({ ...current, loading: true, error: false }));
+    fetch(
+      `/automacao/regra/${encodeURIComponent(item.id)}/recebedores?pendentes=1&pagina=${page}`,
+      {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.any([
+          controller.signal,
+          AbortSignal.timeout(20000),
+        ]),
+      },
+    )
       .then(async (response) => {
         if (!response.ok) throw new Error();
         const data = await response.json();
         if (!data.ok || !Array.isArray(data.clientes)) throw new Error();
-        setState({ loading: false, clientes: data.clientes });
+        if (!controller.signal.aborted)
+          setState({
+            loading: false,
+            clientes: data.clientes,
+            more: Boolean(data.temMais),
+          });
       })
       .catch(() => {
         if (!controller.signal.aborted)
-          setState({ loading: false, error: true, clientes: [] });
+          setState({
+            loading: false,
+            error: true,
+            clientes: [],
+            more: false,
+          });
       });
     return () => controller.abort();
-  }, [item.id]);
+  }, [item.id, page]);
   return (
-    <NativeDialog title="Clientes que vão receber" onClose={onClose}>
+    <NativeDialog
+      title="Envios pendentes"
+      className="recipients-dialog"
+      onClose={onClose}
+      width={400}
+      footer={
+        <button type="button" className="btn btn-muted" onClick={onClose}>
+          Fechar
+        </button>
+      }
+    >
       <div className="modal-body">
-        <p className="muted">{item.titulo}</p>
-        <div className="receb-list">
+        <p className="recipients-rule">{item.titulo}</p>
+        <div className="receb-list" aria-busy={state.loading}>
           {state.loading ? (
-            <p role="status">Carregando...</p>
+            <p className="recipients-state" role="status">
+              Carregando...
+            </p>
           ) : state.error ? (
             <PanelNotice inline error>
               Não foi possível carregar os clientes.
             </PanelNotice>
           ) : !state.clientes.length ? (
-            <p>Nenhum cliente atende a essa regra hoje.</p>
+            <p className="recipients-state">
+              Nenhum cliente com envio pendente nesta regra.
+            </p>
           ) : (
-            state.clientes.map((client, index) => (
-              <div
-                className="receb-row"
-                key={`${client.id}-${client.acessoChave}-${index}`}
-              >
-                <div className="receb-info">
-                  <strong>{client.nome}</strong>
-                  <span>{client.telefone}</span>
-                  <span>
-                    {client.servidor} · {client.plano} ·{' '}
-                    {Number(client.valor || 0).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </span>
-                </div>
-                <span className="receb-venc">
-                  {String(client.vencimento || '')
-                    .slice(0, 10)
-                    .split('-')
-                    .reverse()
-                    .join('/')}
-                </span>
-              </div>
-            ))
+            <ul className="receb-name-list">
+              {state.clientes.map((client) => (
+                <li key={client.id}>{client.nome}</li>
+              ))}
+            </ul>
           )}
         </div>
+        {!state.loading && !state.error && (state.more || page > 1) && (
+          <div className="recipients-pagination">
+            <button
+              type="button"
+              className="btn btn-muted"
+              disabled={page === 1}
+              onClick={() => setPage((value) => value - 1)}
+            >
+              Anterior
+            </button>
+            <span>Página {page}</span>
+            <button
+              type="button"
+              className="btn btn-muted"
+              disabled={!state.more}
+              onClick={() => setPage((value) => value + 1)}
+            >
+              Próxima
+            </button>
+          </div>
+        )}
       </div>
     </NativeDialog>
   );
@@ -463,6 +498,7 @@ export function AutomationScreen({ data }: { data?: any }) {
           <ScheduledMessages
             data={data}
             onEdit={(item) => setScheduledEditor({ item })}
+            onPending={setRecipients}
           />
         ) : tab === 'regras' ? (
           <div className="auto-list">
@@ -544,7 +580,11 @@ export function AutomationScreen({ data }: { data?: any }) {
                         >
                           <strong>{item.envioHoje.rotulo}</strong>
                           {item.envioHoje.estado !== 'vazio' && (
-                            <span>{item.envioHoje.detalhe}</span>
+                            <DeliveryDetail
+                              summary={item.envioHoje}
+                              title={item.titulo}
+                              onPending={() => setRecipients(item)}
+                            />
                           )}
                         </div>
                       )}

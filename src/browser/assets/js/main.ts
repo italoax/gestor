@@ -147,24 +147,6 @@ async function initGestor() {
         accountForm.requestSubmit(save);
       }
     });
-    on(accountForm, 'submit', (event: SubmitEvent) => {
-      if (
-        !(event.submitter instanceof HTMLButtonElement) ||
-        !event.submitter.hasAttribute('data-account-security-action')
-      )
-        return;
-      const password = accountForm.elements.namedItem(
-        'current_password',
-      ) as HTMLInputElement;
-      if (!password?.value) {
-        event.preventDefault();
-        password?.focus();
-        showPanelNotice(
-          'Informe sua senha atual no campo acima para continuar.',
-          true,
-        );
-      }
-    });
   }
 
   // Preserva a posicao de rolagem ao salvar um formulario. Formularios que
@@ -548,7 +530,7 @@ async function initGestor() {
     },
   );
 
-  modules.initCatalogs({ setIconLabel, setModalState });
+  modules.initCatalogs({ setModalState });
 
   window.gestorClientFieldTools = { ...phone, setDateInputValue };
 
@@ -570,7 +552,7 @@ async function initGestor() {
 
   modules.initBillingRules({ setModalState });
 
-  modules.initMessageTags({ setModalState });
+  modules.initMessageTags();
 
   // Input masks for older fields that do not use the shared date component.
   const dateInputs = document.querySelectorAll(

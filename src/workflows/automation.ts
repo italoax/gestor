@@ -44,13 +44,13 @@ export function createAutomationWorkflow({
     if (t === 'apos cadastro') return `${d} dia(s) após cadastro`;
     return 'Todos os clientes';
   }
-  async function carregarEnvioHoje(userId, regra, today, historicoHoje) {
+  async function carregarStatusDestinatarios(userId, regra, today) {
     const { from, params } = consultaDestinatariosCobranca(
       userId,
       regra,
       today,
     );
-    const rows = await queryRows(
+    return queryRows(
       `SELECT alvo.id AS clienteId, COUNT(*) AS acessos,
               SUM(ce.status = 'enviado') AS enviados,
               SUM(ce.status IN ('erro', 'nao_enviado')) AS falhas,
@@ -64,6 +64,9 @@ export function createAutomationWorkflow({
         GROUP BY alvo.id`,
       { ...params, regraId: regra.id },
     );
+  }
+  async function carregarEnvioHoje(userId, regra, today, historicoHoje) {
+    const rows = await carregarStatusDestinatarios(userId, regra, today);
     // Uma renovação pode retirar um cliente dos elegíveis depois do envio.
     // Conserva a confirmação de hoje sem confundi-la com novos destinatários.
     const clientes = new Map(rows.map((row) => [String(row.clienteId), row]));
@@ -478,11 +481,64 @@ export function createAutomationWorkflow({
         try {
           const userId = input.session.user.id;
           const id = Number(input.params.id);
+          if (!Number.isSafeInteger(id) || id <= 0)
+            return reply.status(400).json({ ok: false, clientes: [] });
           const regra = await queryOne(
-            'SELECT tipo, periodo, campanha_config AS campanhaConfig, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano, filtro_arquivados AS filtroArquivados FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1',
+            'SELECT id, tipo, periodo, campanha_config AS campanhaConfig, filtro_servidor AS filtroServidor, filtro_plano AS filtroPlano, filtro_arquivados AS filtroArquivados FROM cobrancas WHERE id = :id AND user_id = :userId LIMIT 1',
             { id, userId },
           );
           if (!regra) return reply.json({ ok: false, clientes: [] });
+          if (String(input.query?.pendentes ?? '') === '1') {
+            await ensureCobrancasEnviosTable();
+            const today = dataReservaCampanha(
+              regra.campanhaConfig,
+              appTodayIso(),
+            );
+            const statuses = await carregarStatusDestinatarios(
+              userId,
+              { ...regra, id },
+              today,
+            );
+            const ids = statuses
+              .filter((row) => resumirEnviosCobranca([row]).pendentes === 1)
+              .map((row) => Number(row.clienteId))
+              .sort((a, b) => a - b);
+            const total = ids.length;
+            const requestedPage = Number(input.query?.pagina ?? 1);
+            const pagina =
+              Number.isSafeInteger(requestedPage) && requestedPage > 0
+                ? Math.min(requestedPage, Math.max(1, Math.ceil(total / 60)))
+                : 1;
+            const pageIds = ids.slice((pagina - 1) * 60, pagina * 60);
+            if (!pageIds.length)
+              return reply.json({
+                ok: true,
+                clientes: [],
+                total,
+                pagina,
+                temMais: false,
+              });
+            const { from, params } = consultaDestinatariosCobranca(
+              userId,
+              regra,
+              today,
+            );
+            const placeholders = pageIds.map((clienteId, index) => {
+              params[`pendingClient${index}`] = clienteId;
+              return `:pendingClient${index}`;
+            });
+            const clientes = await queryRows(
+              `SELECT DISTINCT id, nome ${from} AND id IN (${placeholders.join(',')}) ORDER BY nome ASC, id ASC`,
+              params,
+            );
+            return reply.json({
+              ok: true,
+              clientes: clientes.map(({ id, nome }) => ({ id, nome })),
+              total,
+              pagina,
+              temMais: pagina * 60 < total,
+            });
+          }
           const { from, params } = consultaDestinatariosCobranca(
             userId,
             regra,

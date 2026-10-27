@@ -2,6 +2,10 @@ import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
+import {
+  credentialRevision,
+  hasRecentAuthentication,
+} from '../services/sessionSecurity.ts';
 export function createAccountWorkflow({
   bcrypt,
   execute,
@@ -83,7 +87,7 @@ export function createAccountWorkflow({
           const password = String(input.body.password ?? '');
           const passwordConfirm = String(input.body.password_confirm ?? '');
           const account = await queryOne(
-            'SELECT username, password_hash AS passwordHash FROM users WHERE id = :id LIMIT 1',
+            'SELECT username, password_hash AS passwordHash, is_admin AS isAdmin, session_version AS sessionVersion FROM users WHERE id = :id LIMIT 1',
             { id },
           );
           if (!account) return reply.sendStatus(401);
@@ -95,7 +99,11 @@ export function createAccountWorkflow({
             input.flash('error', 'O usuário não pode ser alterado.');
             return reply.redirect('/minha-conta');
           }
-          if (password) {
+          if (passwordConfirm && !password) {
+            input.flash('error', 'Informe a nova senha antes de confirmá-la.');
+            return reply.redirect('/minha-conta');
+          }
+          if (password && !hasRecentAuthentication(input.session.security)) {
             const currentPassword = input.body.current_password;
             if (
               typeof currentPassword !== 'string' ||
@@ -105,7 +113,7 @@ export function createAccountWorkflow({
             ) {
               input.flash(
                 'error',
-                'Informe a senha atual correta para alterar a senha.',
+                'Por segurança, saia e entre novamente antes de alterar sua senha.',
               );
               return reply.redirect('/minha-conta');
             }
@@ -131,6 +139,15 @@ export function createAccountWorkflow({
               'UPDATE users SET name = :name, password_hash = :passwordHash WHERE id = :id',
               { id, name, passwordHash },
             );
+            if (input.session.security) {
+              input.session.security.credentialRevision = credentialRevision({
+                id,
+                username,
+                passwordHash,
+                isAdmin: account.isAdmin ?? input.session.user.isAdmin,
+                sessionVersion: account.sessionVersion,
+              });
+            }
           } else {
             await execute('UPDATE users SET name = :name WHERE id = :id', {
               id,

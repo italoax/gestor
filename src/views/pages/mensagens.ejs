@@ -50,8 +50,6 @@
             data-titulo="<%= m.titulo %>"
             data-descricao="<%= m.descricao || '' %>"
             data-mensagem="<%= m.mensagem || '' %>"
-            data-media-tipo="<%= m.mediaTipo || '' %>"
-            data-media-path="<%= m.mediaPath || '' %>"
             ><%- include('../partials/ui-icon', { name: 'edit' }) %></button
           >
           <form
@@ -89,16 +87,6 @@
         >×</button
       >
     </div>
-    <div class="modal-tabs">
-      <button class="tab-btn active" type="button" data-tab="mensagem"
-        ><%- include('../partials/ui-icon', { name: 'message' }) %>
-        Mensagem</button
-      >
-      <button class="tab-btn" type="button" data-tab="midia"
-        ><%- include('../partials/ui-icon', { name: 'image' }) %>
-        Mídia</button
-      >
-    </div>
     <form
       method="post"
       action="/mensagens"
@@ -109,9 +97,7 @@
       <%- csrfInput %>
       <input type="hidden" name="action" value="create_mensagem" />
       <input type="hidden" name="id" value="" />
-      <input type="hidden" name="media_tipo_atual" value="" />
-      <input type="hidden" name="media_path_atual" value="" />
-      <div class="tab-panel active" data-tab-panel="mensagem">
+      <div id="message-panel-mensagem">
         <div class="message-compose-grid">
         <div class="form-grid message-compose-fields">
           <label class="field full">
@@ -149,23 +135,6 @@
           </dl></section>
           <% }) %>
         </aside>
-        </div>
-      </div>
-      <div class="tab-panel" data-tab-panel="midia">
-        <div class="form-grid">
-          <label class="field">
-            <span>Tipo</span>
-            <select class="input" name="media_tipo">
-              <option value="">Nenhuma</option>
-              <option value="image">Imagem</option>
-              <option value="video">Vídeo</option>
-              <option value="audio">Áudio</option>
-              <option value="document">Documento</option>
-            </select>
-          </label>
-          <label class="field full"
-            ><span>Link ou caminho</span><input class="input" name="media_path"
-          /></label>
         </div>
       </div>
     </form>

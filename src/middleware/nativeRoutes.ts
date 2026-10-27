@@ -1,5 +1,4 @@
 import { requireAuth, createAdminAuthorization } from './auth.ts';
-import bcrypt from 'bcryptjs';
 import { execute, queryOne, queryRows } from '../db/mysql.ts';
 import { recordSecurityEvent } from '../security/runtimeSecurity.ts';
 import { createAccountSessionActions } from '../security/accountSessions.ts';
@@ -43,12 +42,10 @@ export function installNativeRouteMiddleware(app) {
   );
   const sessionAction = createAccountSessionActions({
     execute,
-    queryOne,
-    comparePassword: bcrypt.compare,
     audit: recordSecurityEvent,
   });
   app.post(
-    ['/minha-conta/confirmar', '/minha-conta/sessoes/revogar'],
+    '/minha-conta/sessoes/revogar',
     requireAuth,
     accountRateLimit,
     sessionAction,
@@ -78,7 +75,8 @@ export function installNativeRouteMiddleware(app) {
     res.set('Referrer-Policy', 'no-referrer');
     next();
   });
-  app.post('/login', loginRateLimit);
+  app.post(['/login', '/login/segundo-fator'], loginRateLimit);
+  app.post('/api/account/two-factor/:action', requireAuth, accountRateLimit);
   app.get('/area-cliente/login', portalRateLimit);
   app.post('/area-cliente/login', portalRateLimit);
   app.post('/minha-conta', requireAuth, accountRateLimit);
@@ -105,6 +103,8 @@ export function installNativeRouteMiddleware(app) {
       write &&
       ([
         '/login',
+        '/login/segundo-fator',
+        '/login/cancelar',
         '/register',
         '/logout',
         '/area-cliente/login',

@@ -10,6 +10,14 @@ export interface SessionSecurity {
   recentAuthAt?: number;
 }
 
+export function hasRecentAuthentication(
+  security: SessionSecurity | undefined,
+  now = Date.now(),
+) {
+  const at = security?.recentAuthAt ?? security?.authenticatedAt;
+  return Number.isFinite(at) && now >= at && now - at <= 15 * 60_000;
+}
+
 export function credentialRevision(user: {
   id?: unknown;
   username?: unknown;

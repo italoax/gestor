@@ -1,13 +1,5 @@
 export const TRANSACTIONS_PAGE_SIZES = [10, 50, 100] as const;
 
-export interface TransactionsPagination {
-  pagina: number;
-  porPagina: number;
-  temMais: boolean;
-  anteriorUrl: string | null;
-  proximaUrl: string | null;
-}
-
 export function transactionsFilters(query: Record<string, unknown> = {}) {
   return {
     busca:

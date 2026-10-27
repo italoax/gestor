@@ -133,6 +133,7 @@ export function nativePageData(
       title: 'Login | Gestor IXTV',
       csrfToken: data.csrfToken,
       error: Array.isArray(data.error) ? data.error : [],
+      twoFactorRequired: data.twoFactorRequired === true,
     };
   const catalog = view.replace(/^pages\//, '');
   if (catalogs[catalog])
@@ -284,7 +285,7 @@ export function nativePageData(
             'campanha',
           ]),
           envioHoje: item.envioHoje
-            ? pick(item.envioHoje, ['estado', 'rotulo', 'detalhe'])
+            ? pick(item.envioHoje, ['estado', 'rotulo', 'detalhe', 'pendentes'])
             : null,
         })),
         disparos: (data.disparos || []).map((item) => ({

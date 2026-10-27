@@ -32,7 +32,9 @@ export function createRateLimiters({
       windowMs: 15 * 60_000,
       limit: 5,
       skipSuccessfulRequests: true,
-      requestWasSuccessful: (_req, res) => res.locals.loginSucceeded === true,
+      requestWasSuccessful: (_req, res) =>
+        res.locals.loginSucceeded === true ||
+        res.locals.loginStepSucceeded === true,
     }),
     accountRateLimit: make('account-write', {
       windowMs: 15 * 60_000,

@@ -2,10 +2,14 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { describeNoticeError } from '../../../../src/browser/assets/js/ui/panel-feedback.ts';
+import { Icon } from '../../../../src/frontend/clients/ui.tsx';
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
 
 export function LoginScreen({ data }: { data?: any }) {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [recovery, setRecovery] = useState(false);
+  const twoFactor = data.twoFactorRequired === true;
   const [error, setError] = useState(() =>
     data.error?.[0] ? describeNoticeError(data.error[0]) : null,
   );
@@ -86,116 +90,210 @@ export function LoginScreen({ data }: { data?: any }) {
     }
   }
   return (
-    <main className="login-shell" data-react-page="login">
-      <section className="login-grid" aria-labelledby="login-title">
-        <div className="login-brand">
-          <div className="login-chip">Acesso Restrito</div>
-          <h1 id="login-title">Gestor IXTV</h1>
-          <p className="login-subtitle">
-            Controle clientes, cobranças e mensagens em um ambiente seguro e
-            rápido.
-          </p>
-          <div className="login-highlights">
-            {[
-              [
-                'green',
-                'Monitoramento em tempo real',
-                'Indicadores atualizados a cada acesso.',
-              ],
-              [
-                'blue',
-                'Fluxo de pagamentos',
-                'Histórico de cobranças com filtros inteligentes.',
-              ],
-              [
-                'gold',
-                'Mensagens automatizadas',
-                'Templates prontos para comunicação rápida.',
-              ],
-            ].map(([color, title, description]) => (
-              <div className="login-highlight" key={color}>
-                <span className={`dot dot-${color}`} />
-                <div>
-                  <strong>{title}</strong>
-                  <span>{description}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="login-footer-note">
-            <span>Precisa de acesso? Fale com o administrador.</span>
-          </div>
-        </div>
-        <div className="login-card">
-          <div className="login-card-header">
-            <h2>Entrar</h2>
-            <p>Use suas credenciais para continuar.</p>
-          </div>
-          {error && (
-            <PanelNotice
-              inline
-              error
-              title={
-                error.title === 'Não foi possível concluir'
-                  ? 'Não foi possível entrar'
-                  : error.title
-              }
-              text={error.text}
-              onClose={() => setError(null)}
-            />
-          )}
-          <form
-            className="login-form"
-            action="/login"
-            method="post"
-            autoComplete="on"
-            onSubmit={submit}
-            aria-busy={busy}
-          >
-            <input type="hidden" name="_csrf" defaultValue={data.csrfToken} />
-            <label className="login-field">
-              <span>Nome de usuário</span>
-              <input
-                type="text"
-                name="username"
-                placeholder="Seu usuário"
-                autoComplete="username"
-                required
-              />
-            </label>
-            <label className="login-field">
-              <span>Senha</span>
-              <div className="login-password-control">
-                <input
-                  id="login-password"
-                  type={visible ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Sua senha"
-                  autoComplete="current-password"
-                  required
+    <>
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/native-login.css')}
+        precedence="panel"
+      />
+      <main className="login-shell" data-react-page="login">
+        <section className="login-grid" aria-labelledby="login-title">
+          <div className="login-brand">
+            <div className="login-brand-top">
+              <span className="login-brand-logo">
+                <img
+                  src={publicAssetUrl('/assets/images/ixlogo.png')}
+                  width="192"
+                  height="192"
+                  alt="IXTV Streaming"
                 />
-                <button
-                  type="button"
-                  aria-controls="login-password"
-                  aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
-                  aria-pressed={visible}
-                  onClick={() => setVisible(!visible)}
-                >
-                  {visible ? 'Ocultar' : 'Mostrar'}
-                </button>
-              </div>
-            </label>
-            <div className="login-row">
-              <a className="login-link" href="#">
-                Esqueceu a senha?
-              </a>
+              </span>
+              <span className="login-chip">Acesso restrito</span>
             </div>
-            <button className="login-btn" type="submit" disabled={busy}>
-              {busy ? 'Entrando…' : 'Acessar painel'}
-            </button>
-          </form>
-        </div>
-      </section>
-    </main>
+            <h1 id="login-title">Gestor IXTV</h1>
+            <p className="login-subtitle">
+              Controle clientes, cobranças e mensagens em um ambiente seguro e
+              rápido.
+            </p>
+            <div className="login-highlights">
+              {[
+                [
+                  'chart',
+                  'Monitoramento em tempo real',
+                  'Indicadores atualizados a cada acesso.',
+                ],
+                [
+                  'card',
+                  'Fluxo de pagamentos',
+                  'Histórico de cobranças com filtros inteligentes.',
+                ],
+                [
+                  'message',
+                  'Mensagens automatizadas',
+                  'Templates prontos para comunicação rápida.',
+                ],
+              ].map(([icon, title, description]) => (
+                <div className="login-highlight" key={icon}>
+                  <span className="login-feature-icon">
+                    <Icon name={icon} />
+                  </span>
+                  <div>
+                    <strong>{title}</strong>
+                    <span>{description}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="login-footer-note">
+              <span>Precisa de acesso? Fale com o administrador.</span>
+            </div>
+          </div>
+          <div className="login-card">
+            <div className="login-card-header">
+              <span className="login-kicker">
+                {twoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA'}
+              </span>
+              <h2>
+                {twoFactor ? 'Verificação em duas etapas' : 'Entrar no painel'}
+              </h2>
+              <p>
+                {twoFactor
+                  ? 'Digite o código do Google Authenticator para acessar sua conta.'
+                  : 'Informe seu usuário e sua senha para continuar.'}
+              </p>
+            </div>
+            {error && (
+              <PanelNotice
+                inline
+                error
+                title={
+                  error.title === 'Não foi possível concluir'
+                    ? 'Não foi possível entrar'
+                    : error.title
+                }
+                text={error.text}
+                onClose={() => setError(null)}
+              />
+            )}
+            <form
+              className="login-form"
+              action={twoFactor ? '/login/segundo-fator' : '/login'}
+              method="post"
+              autoComplete="on"
+              onSubmit={submit}
+              aria-busy={busy}
+            >
+              <input type="hidden" name="_csrf" defaultValue={data.csrfToken} />
+              {twoFactor ? (
+                <label className="login-field">
+                  <span>
+                    {recovery
+                      ? 'Código de recuperação'
+                      : 'Código do autenticador'}
+                  </span>
+                  <input
+                    key={String(recovery)}
+                    name="code"
+                    type="text"
+                    inputMode={recovery ? 'text' : 'numeric'}
+                    autoComplete="one-time-code"
+                    placeholder={
+                      recovery ? 'xxxx-xxxx-xxxx-xxxx-xxxx' : '000000'
+                    }
+                    maxLength={recovery ? 24 : 6}
+                    pattern={recovery ? undefined : '[0-9]{6}'}
+                    autoFocus
+                    required
+                  />
+                </label>
+              ) : (
+                <>
+                  <label className="login-field">
+                    <span>Nome de usuário</span>
+                    <input
+                      type="text"
+                      name="username"
+                      placeholder="Seu usuário"
+                      autoComplete="username"
+                      required
+                    />
+                  </label>
+                  <label className="login-field">
+                    <span>Senha</span>
+                    <div className="login-password-control">
+                      <input
+                        id="login-password"
+                        type={visible ? 'text' : 'password'}
+                        name="password"
+                        placeholder="Sua senha"
+                        autoComplete="current-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        aria-controls="login-password"
+                        aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
+                        aria-pressed={visible}
+                        onClick={() => setVisible(!visible)}
+                      >
+                        {visible ? 'Ocultar' : 'Mostrar'}
+                      </button>
+                    </div>
+                  </label>
+                </>
+              )}
+              <div className="login-row">
+                {twoFactor ? (
+                  <button
+                    className="login-link"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setRecovery(!recovery)}
+                  >
+                    {recovery
+                      ? 'Usar Google Authenticator'
+                      : 'Usar código de recuperação'}
+                  </button>
+                ) : (
+                  <details className="login-help">
+                    <summary className="login-link">Esqueceu a senha?</summary>
+                    <p>
+                      Para recuperar seu acesso, fale com o administrador do
+                      sistema.
+                    </p>
+                  </details>
+                )}
+              </div>
+              <button className="login-btn" type="submit" disabled={busy}>
+                {busy && (
+                  <span className="login-submit-spinner" aria-hidden="true" />
+                )}
+                {busy
+                  ? 'Entrando…'
+                  : twoFactor
+                    ? 'Verificar e entrar'
+                    : 'Acessar painel'}
+              </button>
+            </form>
+            {twoFactor && (
+              <form
+                className="login-restart"
+                action="/login/cancelar"
+                method="post"
+              >
+                <input
+                  type="hidden"
+                  name="_csrf"
+                  defaultValue={data.csrfToken}
+                />
+                <button className="login-link" type="submit" disabled={busy}>
+                  Voltar ao login
+                </button>
+              </form>
+            )}
+          </div>
+        </section>
+      </main>
+    </>
   );
 }

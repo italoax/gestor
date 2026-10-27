@@ -4,6 +4,7 @@ import { listarRenovacoesPendentes } from '../../../src/services/renovacoesPende
 import bcrypt from 'bcryptjs';
 import { createLoginAttempts } from '../../../src/services/loginAttempts.ts';
 import { recordSecurityEvent } from '../../../src/security/runtimeSecurity.ts';
+import { twoFactor } from '../../../src/security/twoFactorDefaults.ts';
 import { createDefaultFeatures } from '../../../src/workflows/defaults.ts';
 import { urlPagamentoDoCliente } from '../../../src/workflows/payment-defaults.ts';
 import { createDefaultPaymentWorkflow } from '../../../src/workflows/payment-defaults.ts';
@@ -30,6 +31,7 @@ try {
     application,
     features: createDefaultFeatures(),
     auth: {
+      twoFactor,
       queryOne,
       comparePassword: bcrypt.compare,
       loginAttempts: createLoginAttempts({
@@ -64,6 +66,7 @@ try {
     handleError: createErrorHandler(env.nodeEnv),
     async initialize() {
       await db.query({ sql: 'SELECT 1', timeout: 5000 });
+      await twoFactor.initialize();
       if (env.localMode && process.env.GESTOR_COMPACT_LOGS !== 'true') {
         console.log('Modo local: automações desativadas; sessões em memória.');
       }

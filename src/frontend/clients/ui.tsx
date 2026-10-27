@@ -104,6 +104,12 @@ const paths = {
       <path d="M7 3v4m10-4v4M3 11h18" />
     </>
   ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
   phone: (
     <>
       <rect x="6" y="2" width="12" height="20" rx="3" />

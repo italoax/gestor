@@ -1,9 +1,6 @@
 import { confirmFormSubmission } from '../ui/panel-feedback.js';
 window.gestorPageModules = window.gestorPageModules || {};
-window.gestorPageModules.initCatalogs = function ({
-  setIconLabel,
-  setModalState,
-}) {
+window.gestorPageModules.initCatalogs = function ({ setModalState }) {
   (document.querySelectorAll('.edit-plano') as NodeListOf<HTMLElement>).forEach(
     (btn) => {
       btn.addEventListener('click', () => {

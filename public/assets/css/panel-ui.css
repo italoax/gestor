@@ -847,7 +847,23 @@ html:has(body.page-app) {
 .page-app .page-clientes .cli-expiry-access {
   min-height: 48px;
   align-content: center;
-  gap: 2px;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.page-app .page-clientes .cli-expiry-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: max-content;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  line-height: 1.4;
+}
+.page-app .page-clientes .cli-expiry-time .ui-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 .page-app .page-clientes .cli-expiry-access + .cli-expiry-access {
   margin-top: 0;
@@ -1106,10 +1122,14 @@ html:has(body.page-app) {
 
 /* Catalog controls and headings are reused by devices, apps, plans and servers. */
 .page-app .ui-toolbar {
+  --ui-toolbar-control-height: 52px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: stretch;
   gap: var(--ui-control-gap);
+}
+.page-app .ui-toolbar > :is(.panel-search, .input) {
+  min-height: var(--ui-toolbar-control-height);
 }
 .page-app .ui-toolbar-filter {
   grid-template-columns: minmax(0, 1fr) 170px auto;
@@ -1121,7 +1141,7 @@ html:has(body.page-app) {
 .page-app .ui-toolbar > .btn {
   width: auto;
   min-width: 0;
-  min-height: 46px;
+  min-height: var(--ui-toolbar-control-height);
   justify-content: center;
   padding: 12px 18px;
   font-size: 14px;
@@ -1601,6 +1621,143 @@ html:has(body.page-app) {
 }
 .page-app .auto-delivery > span {
   color: var(--muted);
+}
+.page-app .auto-pending-link {
+  appearance: none;
+  display: inline;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent-bright, var(--primary));
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.page-app .auto-pending-link:hover {
+  color: var(--primary);
+}
+.page-app .auto-pending-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.page-app .receb-name-list {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+  list-style: none;
+}
+.page-app .recipients-dialog {
+  --modal-body-padding: 16px 18px;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+}
+.page-app #modal-recebedores > .recipients-dialog {
+  width: min(400px, calc(100vw - 24px));
+}
+.page-app .recipients-dialog .modal-header {
+  gap: 12px;
+  padding: 10px 12px 10px 18px;
+}
+.page-app .recipients-dialog .modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.page-app .recipients-dialog .modal-close {
+  margin: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.page-app .recipients-dialog .modal-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.page-app .recipients-dialog .modal-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: var(--modal-body-padding);
+  overflow-y: auto;
+}
+.page-app .recipients-dialog .receb-list {
+  max-height: none;
+  overflow: visible;
+}
+.page-app .recipients-rule {
+  display: table;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--accent-bright, var(--primary));
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.page-app .receb-name-list li {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.page-app .receb-name-list li:last-child {
+  border-bottom: 0;
+}
+.page-app .recipients-dialog .modal-footer {
+  padding: 10px 18px;
+}
+.page-app .recipients-dialog .modal-footer .btn {
+  flex: 0 0 auto;
+  min-width: 88px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.page-app .recipients-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.page-app .recipients-pagination .btn {
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.page-app .recipients-state {
+  margin: 0;
+  padding: 20px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .page-app .recipients-dialog {
+    width: min(400px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    border-radius: 16px !important;
+  }
+  .page-app .recipients-dialog .modal-footer .btn {
+    min-height: 44px;
+  }
 }
 .page-app .auto-delivery[data-state='enviado'] {
   --delivery-color: var(--green);
@@ -3251,9 +3408,6 @@ html:has(body.page-app) {
     width: 44px;
     height: 44px;
   }
-  .page-app .ui-toolbar > .btn {
-    min-height: 44px;
-  }
   .page-app .account-card .form-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3366,35 +3520,35 @@ html:has(body.page-app) {
   background: var(--surface);
 }
 .painel-links {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   list-style: none;
   margin: 16px 0 0;
   padding: 0;
+}
+.painel-links > li {
+  min-width: 0;
 }
 .painel-links > li + li {
   border-top: 1px solid var(--border);
 }
 .painel-link {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 14px 0;
-  border-radius: 6px;
+  gap: 14px;
+  min-height: 76px;
+  padding: 14px 12px;
+  border-radius: 10px;
   color: var(--text);
-  text-decoration: none;
-}
-.painel-link:hover {
-  background: var(--surface-2);
-}
-.painel-link:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 4px;
 }
 .painel-link .aviso-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--accent-bright);
 }
 .painel-link-info {
   display: grid;
@@ -3402,16 +3556,63 @@ html:has(body.page-app) {
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: 14px;
+  line-height: 1.4;
 }
 .painel-link-info > span {
   color: var(--muted);
   font-size: 12px;
 }
 .painel-link-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: var(--accent-bright);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
   white-space: nowrap;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.painel-link-action:is(:hover, :focus-visible) {
+  border-color: var(--primary-strong);
+  background: var(--primary-strong);
+  color: #fff;
+}
+.painel-link-action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .avisos-paineis {
+    padding: 16px;
+  }
+  .painel-link {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px 0;
+  }
+  .painel-link .aviso-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .painel-link-action {
+    min-width: 68px;
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .painel-link-action {
+    transition: none;
+  }
 }
 .aviso-card {
   display: flex;
@@ -4069,38 +4270,18 @@ html:has(body.page-app) {
 .page-app .template-editor .modal-close {
   margin: 0;
 }
-.page-app .template-editor .modal-tabs {
-  position: static;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  flex-shrink: 0;
-  gap: 6px;
-  margin: 0;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.page-app .template-editor .tab-btn {
-  min-height: 44px;
-  padding: 8px 12px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 9px;
-}
-.page-app .template-editor .tab-btn.active {
-  color: var(--primary);
-  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
-  background: color-mix(in srgb, var(--primary) 12%, transparent);
+.page-app .template-editor :is(.modal-header, .modal-footer) {
+  padding: 12px 14px;
 }
 .page-app .template-editor .modal-body {
   flex: 0 1 auto;
   min-height: 0;
-  padding: 16px;
+  padding: 14px;
   overflow-y: auto;
 }
 .page-app .template-editor .form-grid {
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 10px;
 }
 .page-app .template-editor .field {
   display: grid;
@@ -4116,19 +4297,20 @@ html:has(body.page-app) {
   min-width: 0;
   min-height: 44px;
   border-radius: 10px;
+  font-size: 13px;
 }
 .page-app .template-editor .message-compose-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
   align-items: start;
-  gap: 24px;
+  gap: 16px;
 }
 .page-app .template-editor .message-compose-fields {
   align-content: start;
 }
 .page-app .template-editor .message-variables {
   min-width: 0;
-  padding: 18px;
+  padding: 12px;
   border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
   border-radius: 14px;
   background: color-mix(in srgb, var(--primary) 3%, var(--surface));
@@ -4215,17 +4397,24 @@ html:has(body.page-app) {
   color: var(--green);
 }
 .page-app .modal-overlay > .template-editor {
-  width: min(1000px, calc(100vw - 24px));
+  width: min(820px, calc(100vw - 24px));
   max-width: calc(100vw - 24px);
 }
 .page-app .template-editor textarea.input {
-  min-height: 280px;
-  max-height: 480px;
+  min-height: 220px;
+  max-height: 360px;
+  line-height: 1.55;
   resize: vertical;
+}
+.page-app .template-editor .message-variable-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.page-app .template-editor .message-variable {
+  padding: 9px;
 }
 @media (min-width: 761px) {
   .page-app .template-editor .message-compose-grid {
-    height: min(620px, calc(90dvh - 250px));
+    height: min(360px, calc(84dvh - 220px));
     align-items: stretch;
   }
   .page-app .template-editor .message-compose-fields {
@@ -4237,11 +4426,11 @@ html:has(body.page-app) {
   }
   .page-app .template-editor .message-compose-fields > .field:last-child {
     min-height: 0;
-    grid-template-rows: auto minmax(180px, 1fr) auto;
+    grid-template-rows: auto minmax(160px, 1fr);
   }
   .page-app .template-editor .message-compose-fields textarea.input {
     height: 100%;
-    min-height: 180px;
+    min-height: 160px;
     max-height: none;
     resize: none;
   }
@@ -4254,12 +4443,20 @@ html:has(body.page-app) {
   }
 }
 @media (max-width: 760px) {
+  .page-app .template-editor .input {
+    font-size: 16px;
+  }
   .page-app .template-editor .message-compose-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
+    gap: 14px;
   }
   .page-app .template-editor textarea.input {
     min-height: 180px;
+  }
+  .page-app .template-editor .message-variables {
+    max-height: 220px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
   }
 }
 @media (max-width: 360px) {

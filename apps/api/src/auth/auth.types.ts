@@ -6,6 +6,7 @@ export interface PanelUser {
   isAdmin: boolean;
 }
 export interface AuthDependencies {
+  twoFactor?: import('../../../../src/security/twoFactor.ts').TwoFactorService;
   queryOne(
     sql: string,
     params: Record<string, unknown>,

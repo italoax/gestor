@@ -1,28 +1,30 @@
+<% const isTwoFactor = typeof twoFactorRequired !== 'undefined' && twoFactorRequired; %>
+<link rel="stylesheet" href="<%= assetUrl('/assets/css/native-login.css') %>" />
 <main class="login-shell">
   <section class="login-grid" aria-labelledby="login-title">
     <div class="login-brand">
-      <div class="login-chip"> Acesso Restrito </div>
+      <div class="login-brand-top"><span class="login-brand-logo"><img src="<%= assetUrl('/assets/images/ixlogo.png') %>" width="192" height="192" alt="IXTV Streaming" /></span><span class="login-chip">Acesso restrito</span></div>
       <h1 id="login-title"> Gestor IXTV </h1>
       <p class="login-subtitle">
         Controle clientes, cobranças e mensagens em um ambiente seguro e rápido.
       </p>
       <div class="login-highlights">
         <div class="login-highlight">
-          <span class="dot dot-green"> </span>
+          <span class="login-feature-icon"><%- include('../partials/ui-icon', { name: 'chart' }) %></span>
           <div>
             <strong> Monitoramento em tempo real </strong>
             <span> Indicadores atualizados a cada acesso. </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-blue"> </span>
+          <span class="login-feature-icon"><%- include('../partials/ui-icon', { name: 'card' }) %></span>
           <div>
             <strong> Fluxo de pagamentos </strong>
             <span> Histórico de cobranças com filtros inteligentes. </span>
           </div>
         </div>
         <div class="login-highlight">
-          <span class="dot dot-gold"> </span>
+          <span class="login-feature-icon"><%- include('../partials/ui-icon', { name: 'message' }) %></span>
           <div>
             <strong> Mensagens automatizadas </strong>
             <span> Templates prontos para comunicação rápida. </span>
@@ -35,14 +37,21 @@
     </div>
     <div class="login-card">
       <div class="login-card-header">
-        <h2> Entrar </h2>
-        <p> Use suas credenciais para continuar. </p>
+        <span class="login-kicker"><%= isTwoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA' %></span>
+        <h2><%= isTwoFactor ? 'Verificação em duas etapas' : 'Entrar no painel' %></h2>
+        <p><%= isTwoFactor ? 'Digite o código do Google Authenticator ou um código de recuperação.' : 'Informe seu usuário e sua senha para continuar.' %></p>
       </div>
       <% if (error && error.length) { %>
       <%- include('../partials/panel-notice', {text: error[0], isError: true}) %>
       <% } %>
-      <form class="login-form" action="/login" method="post" autocomplete="on">
+      <form class="login-form" action="<%= isTwoFactor ? '/login/segundo-fator' : '/login' %>" method="post" autocomplete="on">
         <%- csrfInput %>
+        <% if (isTwoFactor) { %>
+        <label class="login-field">
+          <span>Código do aplicativo ou de recuperação</span>
+          <input type="text" name="code" autocomplete="one-time-code" maxlength="24" placeholder="Código de seis dígitos ou de recuperação" required autofocus />
+        </label>
+        <% } else { %>
         <label class="login-field">
           <span> Nome de usuário </span>
           <input
@@ -75,10 +84,14 @@
           </div>
         </label>
         <div class="login-row">
-          <a class="login-link" href="#"> Esqueceu a senha? </a>
+          <details class="login-help"><summary class="login-link">Esqueceu a senha?</summary><p>Para recuperar seu acesso, fale com o administrador do sistema.</p></details>
         </div>
-        <button class="login-btn" type="submit"> Acessar painel </button>
+        <% } %>
+        <button class="login-btn" type="submit"><%= isTwoFactor ? 'Verificar e entrar' : 'Acessar painel' %></button>
       </form>
+      <% if (isTwoFactor) { %>
+      <form class="login-restart" action="/login/cancelar" method="post"><%- csrfInput %><button class="login-link" type="submit">Voltar ao login</button></form>
+      <% } %>
     </div>
   </section>
 </main>

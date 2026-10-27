@@ -1,5 +1,4 @@
 import type { RowDataPacket } from 'mysql2/promise';
-import fs from 'node:fs';
 import path from 'node:path';
 import { db } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
@@ -112,27 +111,4 @@ export async function rodarBackupAgendado() {
   if (result.gerado)
     logger.info(`backup diario gerado: ${path.basename(result.arquivo)}`);
   return result;
-}
-// Lista os backups em disco (pro painel admin mostrar).
-export function listarBackups() {
-  if (!fs.existsSync(BACKUP_DIR)) return [];
-  return fs
-    .readdirSync(BACKUP_DIR)
-    .filter((f) => /^gestor-\d{4}-\d{2}-\d{2}\.sql(?:\.enc)?$/.test(f))
-    .sort()
-    .reverse()
-    .map((nome) => {
-      const st = fs.statSync(path.join(BACKUP_DIR, nome));
-      return {
-        nome,
-        tamanhoKb: Math.round(st.size / 1024),
-        data: nome.replace(/^gestor-/, '').replace(/\.sql(?:\.enc)?$/, ''),
-      };
-    });
-}
-export function caminhoBackup(nome) {
-  // Sanitiza: so aceita o padrao esperado, sem path traversal.
-  if (!/^gestor-\d{4}-\d{2}-\d{2}\.sql(?:\.enc)?$/.test(nome)) return null;
-  const p = path.join(BACKUP_DIR, nome);
-  return fs.existsSync(p) ? p : null;
 }

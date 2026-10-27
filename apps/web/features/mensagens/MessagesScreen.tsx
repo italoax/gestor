@@ -49,14 +49,13 @@ function MessageEditor({
   token?: string;
   onClose?: (...args: any[]) => any;
 }) {
-  const [tab, setTab] = useState('mensagem');
   const [text, setText] = useState(normalizeMessageVariables(item?.mensagem));
   const onSubmit = useNativeSubmit();
   return (
     <NativeDialog
       title={item ? 'Editar Template' : 'Novo Template'}
       className="template-editor"
-      width={1000}
+      width={820}
       onClose={onClose}
       footer={
         <>
@@ -73,41 +72,6 @@ function MessageEditor({
         </>
       }
     >
-      <div className="modal-tabs" role="tablist" aria-label="Dados do template">
-        {['mensagem', 'midia'].map((value) => (
-          <button
-            key={value}
-            className={`tab-btn ${tab === value ? 'active' : ''}`}
-            id={`message-tab-${value}`}
-            role="tab"
-            aria-selected={tab === value}
-            aria-controls={`message-panel-${value}`}
-            tabIndex={tab === value ? 0 : -1}
-            type="button"
-            onClick={() => setTab(value)}
-            onKeyDown={(event) => {
-              const next =
-                event.key === 'Home'
-                  ? 'mensagem'
-                  : event.key === 'End'
-                    ? 'midia'
-                    : ['ArrowLeft', 'ArrowRight'].includes(event.key)
-                      ? value === 'mensagem'
-                        ? 'midia'
-                        : 'mensagem'
-                      : null;
-              if (!next) return;
-              event.preventDefault();
-              setTab(next);
-              (
-                document.getElementById(`message-tab-${next}`) as HTMLElement
-              ).focus();
-            }}
-          >
-            {value === 'mensagem' ? 'Mensagem' : 'Mídia'}
-          </button>
-        ))}
-      </div>
       <form
         method="post"
         action="/mensagens"
@@ -115,20 +79,6 @@ function MessageEditor({
         className="modal-body"
         data-native-submit="1"
         onSubmit={onSubmit}
-        onInvalidCapture={(event) => {
-          if (
-            (event.target as HTMLInputElement).name === 'titulo' &&
-            tab !== 'mensagem'
-          ) {
-            event.preventDefault();
-            const input = event.target as HTMLInputElement;
-            setTab('mensagem');
-            requestAnimationFrame(() => {
-              input.focus();
-              input.reportValidity();
-            });
-          }
-        }}
       >
         <CsrfInput token={token} />
         <input
@@ -137,22 +87,7 @@ function MessageEditor({
           value={`${item ? 'update' : 'create'}_mensagem`}
         />
         <input type="hidden" name="id" value={item?.id || ''} />
-        <input
-          type="hidden"
-          name="media_tipo_atual"
-          value={item?.mediaTipo || ''}
-        />
-        <input
-          type="hidden"
-          name="media_path_atual"
-          value={item?.mediaPath || ''}
-        />
-        <div
-          role="tabpanel"
-          id="message-panel-mensagem"
-          aria-labelledby="message-tab-mensagem"
-          hidden={tab !== 'mensagem'}
-        >
+        <div id="message-panel-mensagem">
           <div className="message-compose-grid">
             <div className="form-grid message-compose-fields">
               <label className="field full">
@@ -187,13 +122,6 @@ function MessageEditor({
                     setText((event.target as HTMLTextAreaElement).value)
                   }
                 />
-                {/\{\s*cobranca_pix\s*\}/i.test(text) && (
-                  <p className="muted">
-                    Envia uma cobrança com o valor do cliente e o Pix de Minha
-                    Conta. Use sem anexo. Confira o recebimento no banco antes
-                    de confirmar o pagamento.
-                  </p>
-                )}
               </div>
             </div>
             <aside
@@ -234,37 +162,6 @@ function MessageEditor({
                 </section>
               ))}
             </aside>
-          </div>
-        </div>
-        <div
-          role="tabpanel"
-          id="message-panel-midia"
-          aria-labelledby="message-tab-midia"
-          hidden={tab !== 'midia'}
-        >
-          <div className="form-grid">
-            <label className="field">
-              <span>Tipo</span>
-              <select
-                className="input"
-                name="media_tipo"
-                defaultValue={item?.mediaTipo || ''}
-              >
-                <option value="">Nenhuma</option>
-                <option value="image">Imagem</option>
-                <option value="video">Vídeo</option>
-                <option value="audio">Áudio</option>
-                <option value="document">Documento</option>
-              </select>
-            </label>
-            <label className="field full">
-              <span>Link ou caminho</span>
-              <input
-                className="input"
-                name="media_path"
-                defaultValue={item?.mediaPath || ''}
-              />
-            </label>
           </div>
         </div>
       </form>

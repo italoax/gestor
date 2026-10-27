@@ -8,5 +8,12 @@ declare module 'express-session' {
     csrfToken?: string;
     cacheRevision?: number;
     security?: import('../services/sessionSecurity.ts').SessionSecurity;
+    twoFactorChallenge?: {
+      userId: number;
+      revision: string;
+      createdAt: number;
+      attempts: number;
+    };
+    twoFactorSetup?: { sealed: string; createdAt: number; revision: string };
   }
 }

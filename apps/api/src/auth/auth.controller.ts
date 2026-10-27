@@ -15,6 +15,7 @@ import {
   PANEL_SESSION_IDLE_MS,
   startSessionSecurity,
 } from '../../../../src/services/sessionSecurity.ts';
+import { TWO_FACTOR_CHALLENGE_MS } from '../../../../src/security/twoFactor.ts';
 interface AuthRequest extends Request {
   session: Request['session'] & {
     user?: PanelUser;
@@ -39,10 +40,21 @@ export class AuthController {
         request.get('x-csrf-token') === request.session.csrfToken;
       return response.status(valid ? 200 : 409).json({ ok: valid });
     }
-    return response.render('pages/login', { title: 'Login' });
+    const challenge = request.session.twoFactorChallenge;
+    const twoFactorRequired = Boolean(
+      challenge &&
+      challenge.attempts < 5 &&
+      Date.now() - challenge.createdAt < TWO_FACTOR_CHALLENGE_MS,
+    );
+    if (!twoFactorRequired) delete request.session.twoFactorChallenge;
+    return response.render('pages/login', {
+      title: 'Login',
+      twoFactorRequired,
+    });
   }
   @Post('login')
   async login(@Req() request: AuthRequest, @Res() response: Response) {
+    delete request.session.twoFactorChallenge;
     const username = String(request.body?.username ?? '').trim(),
       password = String(request.body?.password ?? '');
     const user = await this.auth.authenticate(username, password);
@@ -56,7 +68,78 @@ export class AuthController {
         error ? reject(error) : resolve(),
       ),
     );
-    const { credentialRevision, ...identity } = user;
+    if (user.twoFactorRequired) {
+      request.session.twoFactorChallenge = {
+        userId: user.id,
+        revision: user.credentialRevision,
+        createdAt: Date.now(),
+        attempts: 0,
+      };
+      request.session.cookie.maxAge = TWO_FACTOR_CHALLENGE_MS;
+      await new Promise<void>((resolve, reject) =>
+        request.session.save((error) => (error ? reject(error) : resolve())),
+      );
+      response.locals.loginStepSucceeded = true;
+      return response.redirect('/login');
+    }
+    return this.finishLogin(request, response, user);
+  }
+  @Post('login/segundo-fator')
+  async secondFactor(@Req() request: AuthRequest, @Res() response: Response) {
+    const challenge = request.session.twoFactorChallenge;
+    if (
+      !challenge ||
+      challenge.attempts >= 5 ||
+      Date.now() - challenge.createdAt >= TWO_FACTOR_CHALLENGE_MS
+    ) {
+      delete request.session.twoFactorChallenge;
+      request.flash(
+        'error',
+        'A verificação expirou. Entre novamente com seu usuário e senha.',
+      );
+      return response.redirect('/login');
+    }
+    challenge.attempts++;
+    const user = await this.auth.completeTwoFactor(
+      challenge,
+      request.body?.code,
+    );
+    if (!user) {
+      this.auth.recordAttempt('second-factor', null, request.ip);
+      if (challenge.attempts >= 5) delete request.session.twoFactorChallenge;
+      request.flash(
+        'error',
+        challenge.attempts >= 5
+          ? 'Limite de tentativas atingido. Entre novamente.'
+          : 'Código inválido ou já utilizado. Confira o aplicativo ou use um código de recuperação.',
+      );
+      return response.redirect('/login');
+    }
+    await new Promise<void>((resolve, reject) =>
+      request.session.regenerate((error) =>
+        error ? reject(error) : resolve(),
+      ),
+    );
+    return this.finishLogin(request, response, user);
+  }
+  @Post('login/cancelar')
+  cancelSecondFactor(@Req() request: AuthRequest, @Res() response: Response) {
+    delete request.session.twoFactorChallenge;
+    return response.redirect('/login');
+  }
+  private async finishLogin(
+    request: AuthRequest,
+    response: Response,
+    user: PanelUser & {
+      credentialRevision: string;
+      twoFactorRequired?: boolean;
+    },
+  ) {
+    const {
+      credentialRevision,
+      twoFactorRequired: _required,
+      ...identity
+    } = user;
     request.session.user = identity;
     request.session.security = startSessionSecurity(credentialRevision);
     request.session.cookie.maxAge = PANEL_SESSION_IDLE_MS;
@@ -64,7 +147,7 @@ export class AuthController {
       request.session.save((error) => (error ? reject(error) : resolve())),
     );
     response.locals.loginSucceeded = true;
-    this.auth.recordAttempt(username, user, request.ip);
+    this.auth.recordAttempt(user.username, user, request.ip);
     return response.redirect('/dashboard');
   }
   @Get('register')

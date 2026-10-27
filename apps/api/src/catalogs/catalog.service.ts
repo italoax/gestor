@@ -94,7 +94,14 @@ export class CatalogService {
       );
       if (current?.nome && current.nome !== nome)
         await db.execute(
-          `UPDATE clientes SET \`${config.singular}\` = :novo WHERE user_id = :userId AND \`${config.singular}\` = :antigo`,
+          `UPDATE clientes SET \`${config.singular}\` = CASE
+             WHEN \`${config.singular}\` = :antigo THEN :novo ELSE \`${config.singular}\` END,
+           plano_adicional = CASE
+             WHEN JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${config.singular}')) = :antigo
+               THEN JSON_SET(plano_adicional, '$.${config.singular}', :novo)
+             ELSE plano_adicional END
+           WHERE user_id = :userId AND (\`${config.singular}\` = :antigo
+             OR JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${config.singular}')) = :antigo)`,
           { userId, antigo: current.nome, novo: nome },
         );
       return { type: 'success', message: `${label} atualizado.` };
