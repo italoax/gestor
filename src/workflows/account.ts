@@ -36,6 +36,27 @@ export function createAccountWorkflow({
           const pixChave = toNullableString(input.body.pix_chave);
           const pixNome = toNullableString(input.body.pix_nome);
           const pixTipo = toNullableString(input.body.pix_tipo);
+          if (
+            pixChave &&
+            ['celular', 'telefone', 'phone'].includes(
+              String(pixTipo ?? '')
+                .toLowerCase()
+                .trim(),
+            )
+          ) {
+            const digits = pixChave.replace(/\D/g, '');
+            const international = digits.length === 11 ? `55${digits}` : digits;
+            if (
+              !/^[+\d().\s-]+$/.test(pixChave) ||
+              !/^55\d{2}9\d{8}$/.test(international)
+            ) {
+              input.flash(
+                'error',
+                'A chave Pix de celular deve ter DDD e 9 dígitos, incluindo o 9 inicial. Copie a chave cadastrada no app do banco.',
+              );
+              return reply.redirect('/minha-conta');
+            }
+          }
           await execute(
             'UPDATE users SET pix_chave = :pixChave, pix_nome = :pixNome, pix_tipo = :pixTipo WHERE id = :id',
             { id, pixChave, pixNome, pixTipo },
