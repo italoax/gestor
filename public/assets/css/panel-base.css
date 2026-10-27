@@ -8160,26 +8160,6 @@ tr.tx-row:focus-visible {
 }
 
 /* ============================================================
-   FIX: Login centralizado verticalmente no mobile
-   O style.css define min-height: auto no .login-shell,
-   o que impede o align-items:center de centralizar — card cola no topo.
-   100dvh = altura dinamica (conta com toolbar do mobile).
-   ============================================================ */
-@media (max-width: 720px) {
-  .login-shell {
-    min-height: 100vh !important;
-    min-height: 100dvh !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: calc(20px + var(--sat, 0px)) 16px calc(20px + var(--sab, 0px)) !important;
-  }
-  .login-grid {
-    margin: auto !important;
-  }
-}
-
-/* ============================================================
    SINO DE NOTIFICACOES — visual refinado
    - SVG limpo no lugar do emoji (escala bem em qualquer tela)
    - Badge maior so quando tem notificacao (pulse sutil)

@@ -15,6 +15,9 @@ const paths = {
   ),
   chart: <path d="M3 3v18h18M7 16v-5m5 5V7m5 9V4" />,
   bolt: <path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z" />,
+  shield: (
+    <path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6l8-3Zm-4 9 3 3 5-6" />
+  ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   logout: <path d="M10 4H4v16h6m4-12 4 4-4 4m-6-4h12" />,
   moon: <path d="M21 13a9 9 0 0 1-10-10 9 9 0 1 0 10 10Z" />,

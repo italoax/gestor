@@ -108,7 +108,10 @@ export function LoginScreen({ data }: { data?: any }) {
                   alt="IXTV Streaming"
                 />
               </span>
-              <span className="login-chip">Acesso restrito</span>
+              <span className="login-chip">
+                <Icon name="shield" />
+                Acesso restrito
+              </span>
             </div>
             <h1 id="login-title">Gestor IXTV</h1>
             <p className="login-subtitle">
