@@ -1,4 +1,5 @@
 import { renderClientPage } from '../services/clientPage.ts';
+import { messageVariables } from '../shared/messageVariables.ts';
 import { describeNoticeError } from '../browser/assets/js/ui/panel-feedback.ts';
 import {
   badgeStatusByVencimento,
@@ -11,6 +12,7 @@ import {
 } from '../services/format.ts';
 
 export function exposeFormatLocals(_req, res, next) {
+  res.locals.messageVariables = messageVariables;
   res.locals.describeNoticeError = describeNoticeError;
   res.locals.renderClientPage = renderClientPage;
   res.locals.formatMoney = formatMoney;

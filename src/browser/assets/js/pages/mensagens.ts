@@ -66,24 +66,4 @@ window.gestorPageModules.initMessageTags = function ({ setModalState }) {
       (params.toString() ? '?' + params.toString() : '');
     window.history.replaceState({}, '', newUrl);
   }
-  const tagSelect = document.querySelector(
-    '[data-insert-tag]',
-  ) as HTMLInputElement;
-  const msgTextarea = document.querySelector(
-    '[data-mensagem-text]',
-  ) as HTMLInputElement;
-  if (tagSelect && msgTextarea) {
-    tagSelect.addEventListener('change', () => {
-      const tag = tagSelect.value;
-      if (!tag) return;
-      const start = msgTextarea.selectionStart || 0;
-      const end = msgTextarea.selectionEnd || 0;
-      const text = msgTextarea.value;
-      msgTextarea.value = text.slice(0, start) + tag + text.slice(end);
-      const pos = start + tag.length;
-      msgTextarea.setSelectionRange(pos, pos);
-      msgTextarea.focus();
-      tagSelect.value = '';
-    });
-  }
 };

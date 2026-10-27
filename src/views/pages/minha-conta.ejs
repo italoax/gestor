@@ -1,38 +1,9 @@
 <div class="container page-account">
   <div class="card account-card">
-    <section id="seguranca-sessoes"
-      ><h3>Seguran?a e sess?es</h3
-      ><p
-        >Confirme sua senha para opera??es sens?veis ou encerre todos os
-        acessos.</p
-      >
-      <form
-        method="post"
-        action="/minha-conta/confirmar"
-        class="form-grid account-form-grid"
-        ><%- csrfInput %>
-        <label class="field full"
-          >Senha atual<input
-            class="input"
-            type="password"
-            name="current_password"
-            autocomplete="current-password"
-            required
-        /></label>
-        <div class="modal-actions full"
-          ><button class="btn btn-primary" type="submit"
-            >Confirmar identidade</button
-          ><button
-            class="btn btn-muted"
-            type="submit"
-            formaction="/minha-conta/sessoes/revogar"
-            >Encerrar todas as sess?es</button
-          ></div
-        >
-      </form>
-    </section>
     <form
       method="post"
+      action="/minha-conta"
+      data-account-profile-form
       class="form-grid account-form-grid"
       autocomplete="off"
       data-1p-ignore
@@ -45,20 +16,22 @@
         <input class="input" name="name" value="<%= account?.name || '' %>" required />
       </label>
       <label class="field">
-        Usuário
+        Usuário (fixo)
         <input
           class="input"
           name="username"
           value="<%= account?.username || '' %>"
+          readonly
+          aria-describedby="account-username-help"
           autocomplete="off"
           data-1p-ignore
           data-lpignore="true"
           data-bwignore
-          required
         />
+        <small id="account-username-help">O usuário não pode ser alterado.</small>
       </label>
       <label class="field">
-        Senha atual (para alterar usuário ou senha)
+        Senha atual
         <input
           class="input"
           type="password"
@@ -68,6 +41,7 @@
           data-lpignore="true"
           data-bwignore
         />
+        <small>Use para alterar a senha, confirmar sua identidade ou encerrar sessões. Para mudar apenas o nome, deixe em branco.</small>
       </label>
       <label class="field">
         Nova senha (mínimo de 15 caracteres)
@@ -94,8 +68,16 @@
           data-bwignore
         />
       </label>
-      <div class="modal-actions account-actions">
-        <button class="btn btn-primary"> Salvar alterações </button>
+      <section id="seguranca-sessoes" class="full">
+        <h3>Segurança e sessões</h3>
+        <p>As ações abaixo usam a senha atual informada acima.</p>
+        <div class="modal-actions">
+          <button class="btn btn-muted" type="submit" formaction="/minha-conta/confirmar" formnovalidate data-account-security-action>Confirmar identidade</button>
+          <button class="btn btn-muted" type="submit" formaction="/minha-conta/sessoes/revogar" formnovalidate data-account-security-action>Encerrar sessões</button>
+        </div>
+      </section>
+      <div class="modal-actions account-actions full">
+        <button class="btn btn-primary" type="submit" data-account-save> Salvar alterações </button>
       </div>
     </form>
   </div>
@@ -107,6 +89,8 @@
       . Ela vira texto que o cliente copia com um toque longo no WhatsApp. Use
       <code>{pix_bloco}</code>
       pra inserir um bloco pronto (nome + chave formatados).
+      Use <code>{cobranca_pix}</code> em um modelo sem anexo para enviar a cobrança
+      com o valor do cliente.
     </p>
     <form
       method="post"

@@ -1120,19 +1120,6 @@ input[data-date-mask]::-webkit-calendar-picker-indicator {
 .field.full {
   grid-column: 1 / -1;
 }
-.tag-select-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.tag-select {
-  min-width: 140px;
-  max-width: 180px;
-  height: 36px;
-  padding: 6px 10px;
-}
-
 .input-icon {
   display: flex;
   align-items: stretch;

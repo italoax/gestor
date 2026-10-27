@@ -1,29 +1,16 @@
 'use client';
 import { showPanelNotice } from '../../../../src/browser/assets/js/ui/panel-feedback.ts';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CsrfInput, Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { PanelSearch } from '../../../../src/frontend/components/PanelSearch.tsx';
 import { messagePreview } from '../../../../src/services/format.ts';
-
-const tags = [
-  'saudacao',
-  'nome',
-  'primeiro_nome',
-  'usuario',
-  'senha',
-  'plano',
-  'vencimento',
-  'valor',
-  'servidor',
-  'vencimento_1',
-  'vencimento_2',
-  'resumo_acessos',
-  'link_cliente',
-  'cobranca_pix',
-];
+import {
+  messageVariables,
+  normalizeMessageVariables,
+} from '../../../../src/shared/messageVariables.ts';
 const normalize = (value) =>
   String(value || '')
     .normalize('NFD')
@@ -63,36 +50,13 @@ function MessageEditor({
   onClose?: (...args: any[]) => any;
 }) {
   const [tab, setTab] = useState('mensagem');
-  const [text, setText] = useState(item?.mensagem || '');
-  const textarea = useRef(null);
-  const caret = useRef(null);
+  const [text, setText] = useState(normalizeMessageVariables(item?.mensagem));
   const onSubmit = useNativeSubmit();
-  useLayoutEffect(() => {
-    if (caret.current == null) return;
-    textarea.current.focus();
-    textarea.current.setSelectionRange(caret.current, caret.current);
-    caret.current = null;
-  }, [text]);
-  function insertTag(event) {
-    const tag = (event.target as HTMLInputElement).value;
-    if (!tag) return;
-    const { selectionStart, selectionEnd } = textarea.current;
-    const nextText =
-      text.slice(0, selectionStart) + tag + text.slice(selectionEnd);
-    const position = selectionStart + tag.length;
-    if (nextText === text) {
-      textarea.current.focus();
-      textarea.current.setSelectionRange(position, position);
-    } else {
-      caret.current = position;
-      setText(nextText);
-    }
-    (event.target as HTMLInputElement).value = '';
-  }
   return (
     <NativeDialog
       title={item ? 'Editar Template' : 'Novo Template'}
       className="template-editor"
+      width={1000}
       onClose={onClose}
       footer={
         <>
@@ -189,66 +153,87 @@ function MessageEditor({
           aria-labelledby="message-tab-mensagem"
           hidden={tab !== 'mensagem'}
         >
-          <div className="form-grid">
-            <label className="field full">
-              <span>Nome *</span>
-              <input
-                className="input"
-                name="titulo"
-                defaultValue={item?.titulo || ''}
-                placeholder="Ex.: Boas-vindas"
-                required
-              />
-            </label>
-            <label className="field full">
-              <span>Descrição</span>
-              <input
-                className="input"
-                name="descricao"
-                defaultValue={item?.descricao || ''}
-                placeholder="Opcional"
-              />
-            </label>
-            <div className="field full">
-              <div className="tag-select-row">
+          <div className="message-compose-grid">
+            <div className="form-grid message-compose-fields">
+              <label className="field full">
+                <span>Nome *</span>
+                <input
+                  className="input"
+                  name="titulo"
+                  defaultValue={item?.titulo || ''}
+                  placeholder="Ex.: Boas-vindas"
+                  required
+                />
+              </label>
+              <label className="field full">
+                <span>Descrição</span>
+                <input
+                  className="input"
+                  name="descricao"
+                  defaultValue={item?.descricao || ''}
+                  placeholder="Opcional"
+                />
+              </label>
+              <div className="field full">
                 <label htmlFor="message-text">Mensagem</label>
-                <select
-                  className="input tag-select"
-                  name="tags"
-                  aria-label="Inserir variável na mensagem"
-                  defaultValue=""
-                  onChange={insertTag}
-                >
-                  <option value="">+ Variável</option>
-                  {tags.map((tag) => (
-                    <option key={tag} value={`{${tag}}`}>
-                      {`{${tag}}`}
-                      {tag === 'link_cliente' ? ' — Renovar com PIX' : ''}
-                      {tag === 'cobranca_pix' ? ' — Cobrança com Pix' : ''}
-                    </option>
-                  ))}
-                </select>
+                <textarea
+                  id="message-text"
+                  className="input"
+                  name="mensagem"
+                  rows={6}
+                  placeholder="Digite a mensagem..."
+                  value={text}
+                  onChange={(event) =>
+                    setText((event.target as HTMLTextAreaElement).value)
+                  }
+                />
+                {/\{\s*cobranca_pix\s*\}/i.test(text) && (
+                  <p className="muted">
+                    Envia uma cobrança com o valor do cliente e o Pix de Minha
+                    Conta. Use sem anexo. Confira o recebimento no banco antes
+                    de confirmar o pagamento.
+                  </p>
+                )}
               </div>
-              <textarea
-                ref={textarea}
-                id="message-text"
-                className="input"
-                name="mensagem"
-                rows={6}
-                placeholder="Digite a mensagem..."
-                value={text}
-                onChange={(event) =>
-                  setText((event.target as HTMLTextAreaElement).value)
-                }
-              />
-              {/\{\s*cobranca_pix\s*\}/i.test(text) && (
-                <p className="muted">
-                  Envia uma cobrança com o valor do cliente e o Pix de Minha
-                  Conta. Use sem anexo. Confira o recebimento no banco antes de
-                  confirmar o pagamento.
-                </p>
-              )}
             </div>
+            <aside
+              className="message-variables"
+              aria-labelledby="message-variables-title"
+            >
+              <div className="message-variables-heading">
+                <span className="message-variables-icon">
+                  <Icon name="bolt" />
+                </span>
+                <div>
+                  <h4 id="message-variables-title">Variáveis da mensagem</h4>
+                  <p>Os códigos são substituídos pelos dados reais no envio.</p>
+                </div>
+              </div>
+              {['Cliente', 'Assinatura', 'Pagamentos'].map((group) => (
+                <section
+                  className="message-variable-group"
+                  key={group}
+                  aria-label={group}
+                >
+                  <h5>{group}</h5>
+                  <dl className="message-variable-grid">
+                    {messageVariables
+                      .filter((variable) => variable.group === group)
+                      .map(({ name, description }) => (
+                        <div
+                          className={`message-variable${name === 'cobranca_pix' ? ' message-variable--pix' : ''}`}
+                          key={name}
+                        >
+                          <dt>
+                            <code>{`{${name}}`}</code>
+                          </dt>
+                          <dd>{description}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                </section>
+              ))}
+            </aside>
           </div>
         </div>
         <div

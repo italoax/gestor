@@ -112,7 +112,8 @@
       <input type="hidden" name="media_tipo_atual" value="" />
       <input type="hidden" name="media_path_atual" value="" />
       <div class="tab-panel active" data-tab-panel="mensagem">
-        <div class="form-grid">
+        <div class="message-compose-grid">
+        <div class="form-grid message-compose-fields">
           <label class="field full">
             <span>Nome *</span>
             <input
@@ -126,37 +127,28 @@
             <span>Descrição</span>
             <input class="input" name="descricao" placeholder="Opcional" />
           </label>
-          <label class="field full">
-            <div class="tag-select-row">
-              <span>Mensagem</span>
-              <select class="input tag-select" name="tags" data-insert-tag>
-                <option value="">+ Variável</option>
-                <option value="{saudacao}">{saudacao}</option>
-                <option value="{nome}">{nome}</option>
-                <option value="{primeiro_nome}">{primeiro_nome}</option>
-                <option value="{usuario}">{usuario}</option>
-                <option value="{senha}">{senha}</option>
-                <option value="{plano}">{plano}</option>
-                <option value="{vencimento}">{vencimento}</option>
-                <option value="{valor}">{valor}</option>
-                <option value="{servidor}">{servidor}</option>
-                <option value="{vencimento_1}">{vencimento_1}</option>
-                <option value="{vencimento_2}">{vencimento_2}</option>
-                <option value="{resumo_acessos}">{resumo_acessos}</option>
-                <option value="{link_cliente}"
-                  >{link_cliente} — Renovar com PIX</option
-                >
-                <option value="{cobranca_pix}">{cobranca_pix} — Cobrança com Pix</option>
-              </select>
-            </div>
+          <div class="field full">
+            <label for="message-text">Mensagem</label>
             <textarea
+              id="message-text"
               class="input"
               name="mensagem"
               data-mensagem-text
               rows="6"
               placeholder="Digite a mensagem..."
             ></textarea>
-          </label>
+          </div>
+        </div>
+        <aside class="message-variables" aria-labelledby="message-variables-title">
+          <div class="message-variables-heading"><span class="message-variables-icon"><%- include('../partials/ui-icon', { name: 'bolt' }) %></span><div><h4 id="message-variables-title">Variáveis da mensagem</h4><p>Os códigos são substituídos pelos dados reais no envio.</p></div></div>
+          <% ['Cliente', 'Assinatura', 'Pagamentos'].forEach(function(group) { %>
+          <section class="message-variable-group" aria-label="<%= group %>"><h5><%= group %></h5><dl class="message-variable-grid">
+            <% (locals.messageVariables || []).filter(function(variable) { return variable.group === group; }).forEach(function(variable) { %>
+            <div class="message-variable<%= variable.name === 'cobranca_pix' ? ' message-variable--pix' : '' %>"><dt><code>{<%= variable.name %>}</code></dt><dd><%= variable.description %></dd></div>
+            <% }) %>
+          </dl></section>
+          <% }) %>
+        </aside>
         </div>
       </div>
       <div class="tab-panel" data-tab-panel="midia">

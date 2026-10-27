@@ -46,7 +46,7 @@ const MENSAGENS_PADRAO = [
   [
     'Link de pagamento',
     'Link PIX para renovação',
-    '{saudacao} {nome}! 💳 Segue o link para renovação do seu plano:\n\n🔗 *Link:* {url_renovacao}\n📦 *Plano:* {plano}\n💰 *Valor:* {valor}\n\nApós o pagamento, seu acesso é liberado! ✅',
+    '{saudacao} {nome}! 💳 Segue o link para renovação do seu plano:\n\n🔗 *Link:* {link_cliente}\n📦 *Plano:* {plano}\n💰 *Valor:* {valor}\n\nApós o pagamento, seu acesso é liberado! ✅',
   ],
   [
     'Renovação confirmada',

@@ -12,6 +12,10 @@ import { revealIptvPassword } from '../security/storedSecrets.ts';
 import { normalizeBrazilPhone } from '../shared/index.ts';
 import { tokenDoCliente, urlPagamentoDoCliente } from './linkCliente.ts';
 import { caminhoPagamento } from './linkPagamentoUrl.ts';
+import {
+  messageVariableName,
+  normalizeMessageVariables,
+} from '../shared/messageVariables.ts';
 function replaceSession(path, sessao) {
   const session = encodeURIComponent(
     sessao || env.whatsapp.sessionNameDefault || 'default',
@@ -197,36 +201,27 @@ export function montarMensagem(template, cliente) {
     vencimento_1: dataAcesso(acessos[0]?.vencimento ?? cliente.vencimento),
     vencimento_2: dataAcesso(acessos[1]?.vencimento),
     nome: nomeCompleto,
-    nome_completo: nomeCompleto,
     primeiro_nome: nomeCompleto.split(/\s+/)[0] ?? '',
-    cliente: nomeCompleto,
     saudacao,
     senha: revealIptvPassword(cliente.senha, cliente.user_id ?? cliente.userId),
     vencimento,
     valor,
     plano: String(cliente.plano ?? ''),
     usuario: String(cliente.user ?? ''),
-    user: String(cliente.user ?? ''),
-    telefone: String(cliente.telefone ?? ''),
     servidor: String(cliente.servidor ?? ''),
-    link_pagamento: linkPagamento,
     link_cliente: linkPagamento,
-    pagamento: linkPagamento,
-    link: linkPagamento,
     pix: pixChave,
-    chave_pix: pixChave,
+    pix_bloco: pixBloco,
+    cobranca_pix: '', // O envio trata este marcador como cobrança, não como texto.
+    // Campos legados: não são oferecidos em novos modelos.
+    telefone: String(cliente.telefone ?? ''),
     pix_nome: pixNome,
     pix_tipo: pixTipo,
-    pix_bloco: pixBloco,
   };
   return template
     .replace(/\{([^}]+)\}/g, (_, key) => {
-      const normalizedKey = key
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim();
-      return tags[normalizedKey] ?? '';
+      const normalizedKey = messageVariableName(key);
+      return Object.hasOwn(tags, normalizedKey) ? tags[normalizedKey] : '';
     })
     .replace(/\r\n/g, '\n');
 }
@@ -403,7 +398,8 @@ export async function enviarMensagemModelo(
   // Enriquece o cliente com a config PIX do user (se passada) pra a tag {pix}
   // e derivadas funcionarem. Nao muta o objeto original.
   const clienteFinal = { ...cliente, ...pix };
-  const cobrarPix = /\{\s*cobranca_pix\s*\}/i.test(modelo.mensagem || '');
+  const mensagem = normalizeMessageVariables(modelo.mensagem);
+  const cobrarPix = mensagem.includes('{cobranca_pix}');
   if (cobrarPix) {
     if (String(modelo.mediaPath ?? '').trim())
       return {
@@ -439,9 +435,7 @@ export async function enviarMensagemModelo(
       };
   }
   if (
-    /\{(?:link_cliente|link_pagamento|pagamento|link)\}/i.test(
-      modelo.mensagem || '',
-    ) &&
+    mensagem.includes('{link_cliente}') &&
     Number.isSafeInteger(Number(cliente.id)) &&
     Number(cliente.id) > 0
   ) {
@@ -455,9 +449,7 @@ export async function enviarMensagemModelo(
     clienteFinal.linkPagamentoCurto = url;
   }
   if (
-    /\{(?:link_cliente|link_pagamento|pagamento|link)\}/i.test(
-      modelo.mensagem || '',
-    ) &&
+    mensagem.includes('{link_cliente}') &&
     !clienteFinal.pagamentoToken &&
     !clienteFinal.pagamento_token
   ) {
@@ -472,7 +464,7 @@ export async function enviarMensagemModelo(
       };
     clienteFinal.pagamentoToken = pagamentoToken;
   }
-  const texto = montarMensagem(modelo.mensagem || '', clienteFinal);
+  const texto = montarMensagem(mensagem, clienteFinal);
   const telefone = String(cliente.telefone ?? '');
   const mediaPath = String(modelo.mediaPath ?? '').trim();
   const mediaTipo = String(modelo.mediaTipo ?? '')

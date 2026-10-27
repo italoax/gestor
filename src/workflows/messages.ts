@@ -2,6 +2,7 @@ import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
+import { normalizeMessageVariables } from '../shared/messageVariables.ts';
 export function createMessagesWorkflow({
   execute,
   queryRows,
@@ -54,7 +55,7 @@ export function createMessagesWorkflow({
     [
       'Link de pagamento',
       'Link PIX para renovação',
-      '{saudacao} {nome}! 💳 Segue o link para renovação do seu plano:\n\n🔗 *Link:* {url_renovacao}\n📦 *Plano:* {plano}\n💰 *Valor:* {valor}\n\nApós o pagamento, seu acesso é liberado! ✅',
+      '{saudacao} {nome}! 💳 Segue o link para renovação do seu plano:\n\n🔗 *Link:* {link_cliente}\n📦 *Plano:* {plano}\n💰 *Valor:* {valor}\n\nApós o pagamento, seu acesso é liberado! ✅',
     ],
     [
       'Renovação confirmada',
@@ -109,7 +110,10 @@ export function createMessagesWorkflow({
           reply.render('pages/mensagens', {
             title: 'Mensagens',
             subtitle: 'Templates de mensagem para envio automático e manual',
-            mensagens,
+            mensagens: mensagens.map((item) => ({
+              ...item,
+              mensagem: normalizeMessageVariables(item.mensagem),
+            })),
           });
         } catch (error) {
           raiseWorkflowError(error);
@@ -133,7 +137,9 @@ export function createMessagesWorkflow({
               id,
               titulo: String(input.body.titulo ?? '').trim(),
               descricao: toNullableString(input.body.descricao),
-              mensagem: toNullableString(input.body.mensagem),
+              mensagem: toNullableString(
+                normalizeMessageVariables(input.body.mensagem),
+              ),
               mediaTipo: toNullableString(input.body.media_tipo),
               mediaPath: toNullableString(input.body.media_path),
             };

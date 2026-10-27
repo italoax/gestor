@@ -1470,6 +1470,13 @@ html:has(body.page-app) {
 .page-app :is(.auto-list, .integ-list, .wa-list, .int-pag-grid, .status-list) {
   gap: var(--ui-card-gap);
 }
+.page-app .page-automacao .auto-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+}
+.page-app .auto-list > .auto-empty-state {
+  grid-column: 1 / -1;
+}
 .page-app .auto-panel.active {
   display: grid;
   gap: var(--ui-card-gap);
@@ -1663,6 +1670,54 @@ html:has(body.page-app) {
 .page-app .auto-rule-actions.is-rule-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px 44px;
+}
+/* Cada linha de cartões compartilha as alturas do cabeçalho, prévia e status. */
+@supports (grid-template-rows: subgrid) {
+  @media (min-width: 901px) {
+    .page-app .auto-list > .auto-rule:has(> .auto-rule-main) {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+      grid-template-rows: subgrid;
+      grid-row: span 4;
+      gap: 12px;
+    }
+    .page-app .auto-list .auto-rule-main {
+      grid-column: 1 / -1;
+      grid-row: 1 / span 3;
+      grid-template-columns: subgrid;
+      grid-template-rows: subgrid;
+      align-items: stretch;
+      row-gap: inherit;
+    }
+    .page-app .auto-list .auto-rule-main > .auto-rule-ico {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .page-app .auto-list .auto-rule-main > .auto-rule-body {
+      display: grid;
+      grid-column: 2;
+      grid-row: 1 / span 3;
+      grid-template-rows: subgrid;
+      row-gap: inherit;
+    }
+    .page-app .auto-list .auto-rule-header {
+      grid-row: 1;
+    }
+    .page-app .auto-list .auto-rule-heading {
+      align-self: stretch;
+      justify-content: space-between;
+    }
+    .page-app .auto-list .auto-rule-preview {
+      grid-row: 2;
+    }
+    .page-app .auto-list .auto-delivery {
+      grid-row: 3;
+    }
+    .page-app .auto-list .auto-rule-main + .auto-rule-actions {
+      grid-column: 1 / -1;
+      grid-row: 4;
+    }
+  }
 }
 .page-app .is-rule-actions form:has(.auto-force-send) {
   justify-content: flex-end;
@@ -4052,8 +4107,7 @@ html:has(body.page-app) {
   min-width: 0;
   gap: 6px;
 }
-.page-app .template-editor .field > span,
-.page-app .template-editor .tag-select-row > :is(label, span) {
+.page-app .template-editor .field > :is(label, span) {
   font-size: 12px;
   font-weight: 500;
 }
@@ -4063,24 +4117,155 @@ html:has(body.page-app) {
   min-height: 44px;
   border-radius: 10px;
 }
-.page-app .template-editor .tag-select-row {
+.page-app .template-editor .message-compose-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 160px);
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  align-items: start;
+  gap: 24px;
 }
-.page-app .template-editor .tag-select-row > :is(label, span) {
-  white-space: nowrap;
+.page-app .template-editor .message-compose-fields {
+  align-content: start;
+}
+.page-app .template-editor .message-variables {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--primary) 3%, var(--surface));
+}
+.page-app .message-variables-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.page-app .message-variables-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--accent-bright);
+}
+.page-app .message-variables-icon .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+.page-app .message-variables-heading h4 {
+  margin: 0 0 5px;
+  font-size: 14px;
   line-height: 1.4;
 }
-.page-app .template-editor .tag-select {
+.page-app .message-variables-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.page-app .message-variable-group + .message-variable-group {
+  margin-top: 18px;
+}
+.page-app .message-variable-group h5 {
+  margin: 0 0 9px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.page-app .message-variable-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.page-app .message-variable {
   min-width: 0;
-  max-width: 100%;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.page-app .message-variable code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-bright);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.page-app .message-variable dd {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.page-app .message-variable--pix {
+  border-color: color-mix(in srgb, var(--green) 32%, var(--border));
+  background: color-mix(in srgb, var(--green) 5%, var(--surface));
+}
+.page-app .message-variable--pix code {
+  color: var(--green);
+}
+.page-app .modal-overlay > .template-editor {
+  width: min(1000px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
 }
 .page-app .template-editor textarea.input {
-  min-height: 148px;
-  max-height: 360px;
+  min-height: 280px;
+  max-height: 480px;
   resize: vertical;
+}
+@media (min-width: 761px) {
+  .page-app .template-editor .message-compose-grid {
+    height: min(620px, calc(90dvh - 250px));
+    align-items: stretch;
+  }
+  .page-app .template-editor .message-compose-fields {
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: stretch;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .page-app .template-editor .message-compose-fields > .field:last-child {
+    min-height: 0;
+    grid-template-rows: auto minmax(180px, 1fr) auto;
+  }
+  .page-app .template-editor .message-compose-fields textarea.input {
+    height: 100%;
+    min-height: 180px;
+    max-height: none;
+    resize: none;
+  }
+  .page-app .template-editor .message-variables {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+@media (max-width: 760px) {
+  .page-app .template-editor .message-compose-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .page-app .template-editor textarea.input {
+    min-height: 180px;
+  }
+}
+@media (max-width: 360px) {
+  .page-app .message-variable-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .page-app .status-editor .modal-close {
   margin: 0;

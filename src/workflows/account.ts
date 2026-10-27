@@ -80,7 +80,6 @@ export function createAccountWorkflow({
         try {
           const id = input.session.user.id;
           const name = String(input.body.name ?? '').trim();
-          const username = String(input.body.username ?? '').trim();
           const password = String(input.body.password ?? '');
           const passwordConfirm = String(input.body.password_confirm ?? '');
           const account = await queryOne(
@@ -88,7 +87,15 @@ export function createAccountWorkflow({
             { id },
           );
           if (!account) return reply.sendStatus(401);
-          if (password || username !== account.username) {
+          const username = account.username;
+          if (
+            input.body.username != null &&
+            String(input.body.username).trim() !== username
+          ) {
+            input.flash('error', 'O usuário não pode ser alterado.');
+            return reply.redirect('/minha-conta');
+          }
+          if (password) {
             const currentPassword = input.body.current_password;
             if (
               typeof currentPassword !== 'string' ||
@@ -98,24 +105,13 @@ export function createAccountWorkflow({
             ) {
               input.flash(
                 'error',
-                'Informe a senha atual correta para alterar o usuário ou a senha.',
+                'Informe a senha atual correta para alterar a senha.',
               );
               return reply.redirect('/minha-conta');
             }
           }
-          if (!name || !username || name.length > 120 || username.length > 60) {
-            input.flash(
-              'error',
-              'Informe nome (até 120 caracteres) e usuário (até 60 caracteres).',
-            );
-            return reply.redirect('/minha-conta');
-          }
-          const existingUser = await queryOne(
-            'SELECT id FROM users WHERE username = :username AND id <> :id LIMIT 1',
-            { id, username },
-          );
-          if (existingUser) {
-            input.flash('error', 'Usuário já cadastrado em outra conta.');
+          if (!name || name.length > 120) {
+            input.flash('error', 'Informe um nome com até 120 caracteres.');
             return reply.redirect('/minha-conta');
           }
           if (password) {
@@ -132,21 +128,21 @@ export function createAccountWorkflow({
             }
             const passwordHash = await bcrypt.hash(password, 12);
             await execute(
-              'UPDATE users SET name = :name, username = :username, password_hash = :passwordHash WHERE id = :id',
-              { id, name, username, passwordHash },
+              'UPDATE users SET name = :name, password_hash = :passwordHash WHERE id = :id',
+              { id, name, passwordHash },
             );
           } else {
-            await execute(
-              'UPDATE users SET name = :name, username = :username WHERE id = :id',
-              { id, name, username },
-            );
+            await execute('UPDATE users SET name = :name WHERE id = :id', {
+              id,
+              name,
+            });
           }
           // Preserva isAdmin da sessao (senao o menu Admin some ao editar o perfil).
           input.session.user = { ...input.session.user, id, name, username };
-          if (password || username !== account.username)
+          if (password)
             await auditSecurity('credentials.changed', {
               userId: id,
-              reason: password ? 'password' : 'username',
+              reason: 'password',
             });
           console.info(
             JSON.stringify({
@@ -154,7 +150,6 @@ export function createAccountWorkflow({
               at: new Date().toISOString(),
               userId: id,
               passwordChanged: Boolean(password),
-              usernameChanged: username !== account.username,
             }),
           );
           input.flash('success', 'Conta atualizada.');

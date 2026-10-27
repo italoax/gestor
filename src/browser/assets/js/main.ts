@@ -1,4 +1,4 @@
-import { confirmFormSubmission } from './ui/panel-feedback.js';
+import { confirmFormSubmission, showPanelNotice } from './ui/panel-feedback.js';
 let gestorInitialization = 0;
 document.addEventListener('gestor:before-swap', () => gestorInitialization++);
 async function initGestor() {
@@ -126,6 +126,46 @@ async function initGestor() {
     if (__sig) o = Object.assign({}, o, { signal: __sig });
     target.addEventListener(type, handler, o);
   };
+
+  const accountForm = document.querySelector<HTMLFormElement>(
+    '[data-account-profile-form]',
+  );
+  if (accountForm) {
+    // Enter nos dados do perfil deve salvar, sem acionar as ações de segurança.
+    on(accountForm, 'keydown', (event: KeyboardEvent) => {
+      if (
+        event.key !== 'Enter' ||
+        event.isComposing ||
+        !(event.target instanceof HTMLInputElement)
+      )
+        return;
+      const save = accountForm.querySelector<HTMLButtonElement>(
+        '[data-account-save]',
+      );
+      if (save) {
+        event.preventDefault();
+        accountForm.requestSubmit(save);
+      }
+    });
+    on(accountForm, 'submit', (event: SubmitEvent) => {
+      if (
+        !(event.submitter instanceof HTMLButtonElement) ||
+        !event.submitter.hasAttribute('data-account-security-action')
+      )
+        return;
+      const password = accountForm.elements.namedItem(
+        'current_password',
+      ) as HTMLInputElement;
+      if (!password?.value) {
+        event.preventDefault();
+        password?.focus();
+        showPanelNotice(
+          'Informe sua senha atual no campo acima para continuar.',
+          true,
+        );
+      }
+    });
+  }
 
   // Preserva a posicao de rolagem ao salvar um formulario. Formularios que
   // navegam (submit nativo -> POST -> redirect -> reload) faziam a pagina voltar
