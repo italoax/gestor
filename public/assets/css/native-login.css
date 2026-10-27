@@ -42,27 +42,19 @@
 .login-brand-top {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 20px;
   margin-bottom: 26px;
 }
 .login-brand-logo {
   display: block;
-  position: relative;
   flex-shrink: 0;
-  width: 144px;
-  aspect-ratio: 300 / 145;
-  overflow: hidden;
-  mix-blend-mode: screen;
+  width: 172px;
+  line-height: 0;
 }
 .login-brand-logo img {
   display: block;
-  position: absolute;
-  width: 135%;
+  width: 100%;
   height: auto;
-  max-width: none;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
 }
 .login-page .login-chip {
   padding: 0;
@@ -73,6 +65,7 @@
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
+  white-space: nowrap;
 }
 .login-page .login-brand h1 {
   font-size: clamp(32px, 4vw, 42px);
@@ -328,7 +321,10 @@
     font-size: 25px;
   }
   .login-brand-logo {
-    width: 136px;
+    width: 148px;
+  }
+  .login-brand-top {
+    gap: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

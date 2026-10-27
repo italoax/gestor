@@ -14,6 +14,7 @@ npm-debug.log*
 # Backups do banco gerados em runtime
 backups/
 /gestor-data/
+/monitoring/
 
 .env.*
 !.env.example

@@ -1,4 +1,108 @@
 /* Componentes compartilhados do painel, carregados após os estilos das páginas. */
+.scheduler-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.scheduler-status-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.scheduler-status-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+.scheduler-status-icon .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+.scheduler-status-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.scheduler-status-copy strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.scheduler-status-copy > span {
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.scheduler-status[data-state='ok'] .scheduler-status-icon {
+  color: #32b987;
+  background: #32b98714;
+}
+.scheduler-status[data-state='warning'] {
+  border-color: #d69b3655;
+}
+.scheduler-status[data-state='warning'] .scheduler-status-icon {
+  color: #d69b36;
+  background: #d69b3614;
+}
+.scheduler-status-refresh {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.scheduler-status-refresh:hover {
+  border-color: var(--primary);
+}
+.scheduler-status-refresh:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.scheduler-status-refresh:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.scheduler-status-alert {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.scheduler-status-alert[hidden] {
+  display: none;
+}
+@media (max-width: 480px) {
+  .scheduler-status {
+    gap: 10px;
+    padding: 12px;
+  }
+  .scheduler-status-summary {
+    gap: 9px;
+  }
+  .scheduler-status-icon {
+    flex-basis: 26px;
+    height: 28px;
+  }
+  .scheduler-status-refresh {
+    padding: 7px;
+  }
+}
 .wa-connect-modal {
   width: min(720px, 100%);
 }
@@ -3577,7 +3681,10 @@ html:has(body.page-app) {
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
 }
 .painel-link-action:is(:hover, :focus-visible) {
   border-color: var(--primary-strong);

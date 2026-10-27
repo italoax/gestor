@@ -6,6 +6,11 @@ export class AutomationService {
   constructor(
     @Inject(BACKEND_RUNTIME) private readonly runtime: BackendRuntime,
   ) {}
+  status() {
+    if (!this.runtime.schedulerStatus)
+      throw new Error('Scheduler status unavailable.');
+    return this.runtime.schedulerStatus();
+  }
   list(input: WorkflowInput): Promise<WorkflowResponse> {
     const action = this.runtime.features?.['automation']?.list;
     if (!action) throw new Error('Automation workflow unavailable.');

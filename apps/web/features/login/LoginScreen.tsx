@@ -102,9 +102,9 @@ export function LoginScreen({ data }: { data?: any }) {
             <div className="login-brand-top">
               <span className="login-brand-logo">
                 <img
-                  src={publicAssetUrl('/assets/images/ixlogo.png')}
-                  width="192"
-                  height="192"
+                  src={publicAssetUrl('/assets/images/ixlogo.svg')}
+                  width="828"
+                  height="350"
                   alt="IXTV Streaming"
                 />
               </span>

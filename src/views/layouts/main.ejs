@@ -289,6 +289,17 @@
           </div>
         </header>
         <main class="app-content">
+          <section class="scheduler-status" data-scheduler-status data-state="neutral" aria-label="Status do agendador">
+            <div class="scheduler-status-summary" role="status" aria-live="polite">
+              <span class="scheduler-status-icon" aria-hidden="true"><%- include('../partials/ui-icon', { name: 'bolt' }) %></span>
+              <div class="scheduler-status-copy">
+                <strong data-scheduler-label>Verificando agendador</strong>
+                <span data-scheduler-check>Última verificação: aguardando confirmação</span>
+              </div>
+            </div>
+            <button class="scheduler-status-refresh" type="button" data-scheduler-refresh aria-label="Atualizar status do agendador">Atualizar</button>
+            <p class="scheduler-status-alert" data-scheduler-alert role="alert" hidden></p>
+          </section>
           <% if ((success && success.length) || (error && error.length)) { %>
           <%- include('../partials/panel-notice', { text: [...(success || []), ...(error || [])].join(' '), isError: Boolean(error && error.length), automatic: true }) %>
           <% } %>

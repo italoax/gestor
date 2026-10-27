@@ -20,6 +20,10 @@ export class AutomationController {
   constructor(
     @Inject(AutomationService) private readonly service: AutomationService,
   ) {}
+  @Get('/api/automacao/status')
+  async status(@Res() response: Response) {
+    response.set('Cache-Control', 'no-store').json(await this.service.status());
+  }
   @Get('/automacao')
   async list(@Req() request: Request, @Res() response: Response) {
     sendWorkflowResponse(

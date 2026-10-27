@@ -1,4 +1,5 @@
 import { safeError } from '../../../src/security/safeError.ts';
+import { readDefaultSchedulerHealth } from '../../../src/services/schedulerHealthDefaults.ts';
 import { stopWhenSupervisorExits } from '../../../src/services/supervisorLifecycle.ts';
 import { listarRenovacoesPendentes } from '../../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
@@ -72,6 +73,7 @@ try {
       }
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
+    schedulerStatus: readDefaultSchedulerHealth,
     startAutomations() {
       // O backup acompanha o backend, independentemente dos envios automáticos.
       startBackupScheduler();

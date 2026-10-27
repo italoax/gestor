@@ -4,6 +4,7 @@ import {
 } from '../../../frontend/whatsappIndicator.js';
 import { initReleaseNotice } from './ui/release-notice.js';
 import { initSessionActivity } from './ui/session-activity.js';
+import { initSchedulerStatus } from './ui/scheduler-status.js';
 import {
   confirmElementAction,
   confirmPanelAction,
@@ -479,6 +480,8 @@ window.__gestorInitShell = function () {
     on(window, 'focus', atualizarWaChip);
     on(window, 'pageshow', atualizarWaChip);
   }
+
+  initSchedulerStatus(shell, lifecycle.signal);
 
   // Copiar ID do cliente (botão ⧉ na tabela)
   on(document, 'click', function (e) {

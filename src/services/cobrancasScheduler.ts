@@ -1,4 +1,5 @@
 import { automationsEnabled } from '../security/automationPolicy.ts';
+import type { SchedulerObserver } from './schedulerHealth.ts';
 import type { RowDataPacket } from 'mysql2/promise';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { queryRows, queryOne, execute, withTransaction } from '../db/mysql.ts';
@@ -28,8 +29,10 @@ const logger = createLogger('agendador-cobrancas');
 let timer = null;
 // Evita sobrepor ciclos do timer enquanto um lote ainda está sendo enviado.
 let rodando = false;
+let observer: SchedulerObserver | undefined;
 const shutdownSignal = new AbortController();
 export async function stopCobrancasScheduler() {
+  observer?.stop();
   shutdownSignal.abort();
   if (timer) clearInterval(timer);
   timer = null;
@@ -61,9 +64,11 @@ function delayEntreEnvios(minOverride, maxOverride) {
   const maxMs = maxSec * 1000;
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
 }
-export function startCobrancasScheduler() {
+export function startCobrancasScheduler(monitor?: SchedulerObserver) {
   if (!automationsEnabled(env) || shutdownSignal.signal.aborted || timer)
     return;
+  observer = monitor;
+  observer?.start();
   const tick = () => {
     void executarCobrancasAutomaticas().catch((error) =>
       logger.error('erro no agendador de cobranças', error),
@@ -77,8 +82,14 @@ export async function executarCobrancasAutomaticas() {
     return { skipped: true };
   if (rodando) return { skipped: true };
   rodando = true;
+  observer?.checking();
   try {
-    return await executarCobrancasAutomaticasInterno();
+    const result = await executarCobrancasAutomaticasInterno();
+    observer?.idle();
+    return result;
+  } catch (error) {
+    observer?.failed();
+    throw error;
   } finally {
     rodando = false;
   }
@@ -101,6 +112,7 @@ async function executarCobrancasAutomaticasInterno() {
       WHERE c.automatica = 1 AND c.status = 'Ativo'`,
     { today },
   );
+  observer?.checked();
   for (const cobranca of cobrancas) {
     if (shutdownSignal.signal.aborted) return { skipped: true };
     let campanha;

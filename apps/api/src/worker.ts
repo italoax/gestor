@@ -1,4 +1,5 @@
 import { safeError } from '../../../src/security/safeError.ts';
+import { createDefaultSchedulerHeartbeat } from '../../../src/services/schedulerHealthDefaults.ts';
 import { stopWhenSupervisorExits } from '../../../src/services/supervisorLifecycle.ts';
 import {
   automationsEnabled,
@@ -51,7 +52,7 @@ try {
     startAutomations() {
       startEnabledAutomations(
         env,
-        startCobrancasScheduler,
+        () => startCobrancasScheduler(createDefaultSchedulerHeartbeat()),
         startStatusScheduler,
         () => historyRetention.start(),
       );

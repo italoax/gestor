@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="828" height="350" viewBox="0 0 828 350" fill="none">
+  <title>IXTV Streaming</title>
+  <g fill="#FAF9FC">
+    <path d="M18 0h50v157H18zM96 0h56l29 39 28-39h56l-63 75 67 82h-56l-32-47-34 47H90l64-82L96 0Z" />
+    <rect y="190" width="281" height="43" rx="21.5" />
+    <rect x="290" y="32" width="281" height="43" rx="21.5" />
+    <path d="M290 116h107v34h-32v109h-43V150h-32v-34ZM405 116h46l31 86 31-86h48l-57 143h-45l-54-143Z" />
+  </g>
+  <g stroke="#FAF9FC" stroke-width="11">
+    <circle cx="704" cy="146" r="117" />
+    <path d="m673 89 88 57-88 57V89Z" stroke-linejoin="round" />
+  </g>
+  <text x="138" y="340" fill="#BE68EF" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700" letter-spacing="15" textLength="574" lengthAdjust="spacing">STREAMING</text>
+</svg>
