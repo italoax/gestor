@@ -89,6 +89,7 @@
     "web-push": "^3.6.7"
   },
   "overrides": {
+    "body-parser": "^2.4.0",
     "express-mysql-session": {
       "mysql2": "$mysql2"
     }
