@@ -35,6 +35,7 @@ function DeleteMessage({ item, token }: { item?: any; token?: string }) {
         aria-label={`Apagar ${item.titulo}`}
       >
         <Icon name="trash" />
+        Excluir
       </button>
     </form>
   );
@@ -243,31 +244,40 @@ export function MessagesScreen({ data }: { data?: any }) {
             </p>
           </div>
         )}
-        <div className="msg-grid">
+        <div className="catalog-grid msg-grid">
           {filtered.map((item) => (
             <article
-              className="msg-card"
+              className="catalog-card catalog-communication msg-card"
               key={item.id}
               data-message-item={item.id}
             >
-              <div className="msg-card-head">
-                <strong>{item.titulo}</strong>
-                <div className="msg-actions">
-                  <button
-                    type="button"
-                    className="cli-ico-btn"
-                    aria-label={`Editar ${item.titulo}`}
-                    onClick={() => setEditor({ item })}
-                  >
-                    <Icon name="edit" />
-                  </button>
-                  <DeleteMessage item={item} token={data.page.csrfToken} />
+              <div className="catalog-card-head catalog-card-head--simple">
+                <span className="catalog-card-icon">
+                  <Icon name="message" />
+                </span>
+                <div className="catalog-card-title">
+                  <strong>{item.titulo}</strong>
                 </div>
               </div>
-              {item.descricao && (
-                <div className="msg-desc">{item.descricao}</div>
-              )}
-              <div className="msg-preview">{messagePreview(item.mensagem)}</div>
+              <div className="catalog-card-content">
+                {item.descricao && (
+                  <div className="catalog-card-context">{item.descricao}</div>
+                )}
+                <div className="catalog-message-preview">
+                  <span>{messagePreview(item.mensagem, 300)}</span>
+                </div>
+              </div>
+              <div className="catalog-card-actions">
+                <button
+                  type="button"
+                  className="cli-ico-btn"
+                  aria-label={`Editar ${item.titulo}`}
+                  onClick={() => setEditor({ item })}
+                >
+                  <Icon name="edit" /> Editar
+                </button>
+                <DeleteMessage item={item} token={data.page.csrfToken} />
+              </div>
             </article>
           ))}
         </div>

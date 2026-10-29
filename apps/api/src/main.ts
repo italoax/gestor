@@ -15,6 +15,10 @@ import { createBackend } from './create-backend.ts';
 import { createApplication } from '../../../src/app.ts';
 import { env } from '../../../src/config/env.ts';
 import { db, queryRows, queryOne, execute } from '../../../src/db/mysql.ts';
+import {
+  databaseStartupMessage,
+  waitForDatabase,
+} from '../../../src/db/startup.ts';
 import { jaSemeou, marcarSemeado } from '../../../src/services/catalogSeeds.ts';
 import { aplicativosConfig } from '../../../src/config/catalogs.ts';
 import { dispositivosConfig } from '../../../src/config/catalogs.ts';
@@ -66,7 +70,15 @@ try {
     },
     handleError: createErrorHandler(env.nodeEnv),
     async initialize() {
-      await db.query({ sql: 'SELECT 1', timeout: 5000 });
+      await waitForDatabase(
+        () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
+        {
+          onRetry: (attempt, code, delayMs) =>
+            console.warn(
+              `[Backend] MySQL indisponível (${code}); tentativa ${attempt}/3 em ${delayMs / 1000}s.`,
+            ),
+        },
+      );
       await twoFactor.initialize();
       if (env.localMode && process.env.GESTOR_COMPACT_LOGS !== 'true') {
         console.log('Modo local: automações desativadas; sessões em memória.');
@@ -109,7 +121,12 @@ try {
     console.error(
       '[Backend] MySQL atingiu um limite de recursos. Se for o limite de conexões por hora, aguarde a renovação da cota ou solicite a liberação à hospedagem.',
     );
-  else console.error('Erro ao iniciar o Gestor IXTV NestJS:', safeError(error));
+  else {
+    const databaseMessage = databaseStartupMessage(error);
+    if (databaseMessage) console.error(`[Backend] ${databaseMessage}`);
+    else
+      console.error('Erro ao iniciar o Gestor IXTV NestJS:', safeError(error));
+  }
   try {
     if (backend) await backend.close();
     else {

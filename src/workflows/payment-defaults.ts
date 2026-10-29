@@ -1,4 +1,5 @@
 import { createPaymentWorkflow } from '../services/paymentWorkflow.ts';
+import { claimPaymentCheck } from '../db/paymentChecks.ts';
 import { execute, queryOne, queryRows, withTransaction } from '../db/mysql.ts';
 import { env } from '../config/env.ts';
 import {
@@ -14,6 +15,7 @@ import { tokenPagamentoOriginal } from '../services/linkPagamentoUrl.ts';
 import { escolhasRenovacao } from '../services/renovacaoOpcoes.ts';
 export function createDefaultPaymentWorkflow() {
   return createPaymentWorkflow({
+    claimPaymentCheck,
     execute,
     queryOne,
     queryRows,

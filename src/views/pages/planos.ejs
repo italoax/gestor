@@ -36,19 +36,19 @@
     >
   </div>
   <% } else { %>
-  <div class="plano-grid">
+  <div class="catalog-grid plano-grid">
     <% planos.forEach(p => { %>
     <div
-      class="plano-card <%= p.ativo ? '' : 'plano-inativo' %>"
+      class="catalog-card plano-card <%= p.ativo ? '' : 'plano-inativo' %>"
       data-search-item
       data-search-text="<%= [p.nome, p.observacao, p.ativo ? 'Ativo' : 'Inativo'].filter(Boolean).join(' ') %>"
     >
-      <div class="plano-head">
-        <%- include('../partials/ui-icon', { name: 'package' }) %>
-        <strong><%= p.nome %></strong>
-        <span class="badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
+      <div class="catalog-card-head plano-head">
+        <span class="catalog-card-icon"><%- include('../partials/ui-icon', { name: 'package' }) %></span>
+        <div class="catalog-card-title"><strong><%= p.nome %></strong></div>
+        <span class="catalog-card-status badge <%= p.ativo ? 'badge-green' : 'badge-muted' %>"><%= p.ativo ? 'Ativo' : 'Inativo' %></span>
       </div>
-      <div class="plano-metrics">
+      <div class="catalog-card-metrics plano-metrics">
         <div
           ><span>Duração</span
           ><strong
@@ -65,9 +65,9 @@
         >
       </div>
       <% if (p.observacao) { %>
-      <p class="plano-desc"><%= p.observacao %></p>
+      <p class="catalog-card-description plano-desc"><%= p.observacao %></p>
       <% } %>
-      <div class="plano-actions">
+      <div class="catalog-card-actions plano-actions">
         <button
           class="btn btn-muted plano-edit edit-plano"
           type="button"

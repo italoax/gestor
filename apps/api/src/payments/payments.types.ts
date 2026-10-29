@@ -8,6 +8,7 @@ export type PaymentResponse =
     }
   | { kind: 'redirect'; status: number; path: string };
 export interface PaymentWorkflow {
+  reconcilePending?(afterId?: number, signal?: AbortSignal): Promise<number>;
   alias(alias: string): Promise<PaymentResponse>;
   page(
     token: string,

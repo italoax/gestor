@@ -1,7 +1,7 @@
 import {
   SCHEDULER_STALE_MS,
   type SchedulerHealth,
-} from '../../../../shared/schedulerHealth.js';
+} from '../../../../shared/schedulerHealth.ts';
 
 const labels: Record<SchedulerHealth['state'] | 'unavailable', string> = {
   idle: 'Agendador ativo',
@@ -70,8 +70,16 @@ export function initSchedulerStatus(
     month: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
   });
+  function nextPollAt() {
+    const now = Date.now();
+    const serverNow = snapshot
+      ? Date.parse(snapshot.serverNow) + Math.max(0, now - receivedAt)
+      : now;
+    // Consulta na virada e na metade do minuto, dando 2s para concluir a verificação.
+    const next = Math.floor((serverNow - 2000) / 30000) * 30000 + 32000;
+    return now + (next - serverNow);
+  }
   function render() {
     if (signal.aborted) return;
     if (!snapshot && Date.now() - startedAt >= SCHEDULER_STALE_MS)
@@ -132,6 +140,7 @@ export function initSchedulerStatus(
       snapshot = value;
       receivedAt = Date.now();
       unavailable = false;
+      nextCheck = nextPollAt();
     } catch {
       if (!signal.aborted) unavailable = true;
     } finally {
@@ -157,14 +166,14 @@ export function initSchedulerStatus(
     { signal },
   );
   window.addEventListener('online', () => void check(), { signal });
-  let nextCheck = Date.now() + 30_000;
+  let nextCheck = nextPollAt();
   timer = window.setInterval(() => {
     render();
     if (Date.now() >= nextCheck) {
-      nextCheck = Date.now() + 30_000;
+      nextCheck = nextPollAt();
       void check();
     }
-  }, 5000);
+  }, 1000);
   signal.addEventListener('abort', () => window.clearInterval(timer), {
     once: true,
   });

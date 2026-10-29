@@ -34,7 +34,7 @@ const shutdownSignal = new AbortController();
 export async function stopCobrancasScheduler() {
   observer?.stop();
   shutdownSignal.abort();
-  if (timer) clearInterval(timer);
+  if (timer) clearTimeout(timer);
   timer = null;
   while (rodando) await sleep(50);
 }
@@ -74,7 +74,18 @@ export function startCobrancasScheduler(monitor?: SchedulerObserver) {
       logger.error('erro no agendador de cobranças', error),
     );
   };
-  timer = setInterval(tick, 60000);
+  const schedule = () => {
+    if (shutdownSignal.signal.aborted) return;
+    // Recalcula a próxima virada; iniciar às 14:58:54 não desloca todos os ciclos.
+    timer = setTimeout(
+      () => {
+        schedule();
+        tick();
+      },
+      60000 - (Date.now() % 60000),
+    );
+  };
+  schedule();
   tick();
 }
 export async function executarCobrancasAutomaticas() {

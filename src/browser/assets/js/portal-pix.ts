@@ -1,3 +1,4 @@
+import { safeCheckoutUrl } from '../../../shared/paymentCheckout.ts';
 (() => {
   const form = document.querySelector('[data-pix-form]') as HTMLFormElement;
   if (!form) return;
@@ -61,14 +62,44 @@
       const response = await fetch(pagamentoUrl + '/criar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periodos: quantidade, selecao: planos }),
+        body: JSON.stringify({
+          periodos: quantidade,
+          selecao: planos,
+          payerName: (
+            form.querySelector('[name=payerName]') as HTMLInputElement
+          )?.value,
+          payerEmail: (
+            form.querySelector('[name=payerEmail]') as HTMLInputElement
+          )?.value,
+          payerDocument: (
+            form.querySelector('[name=payerDocument]') as HTMLInputElement
+          )?.value,
+        }),
       });
       const result = await response.json();
-      if (!response.ok || !result.ok || !result.qrText)
+      if (
+        !response.ok ||
+        !result.ok ||
+        (!result.qrText && !safeCheckoutUrl(result.checkoutUrl))
+      )
         throw Error(
           result.error || 'Não foi possível gerar o PIX. Tente novamente.',
         );
       code.value = result.qrText;
+      const checkout = safeCheckoutUrl(result.checkoutUrl);
+      if (checkout) {
+        const link = document.createElement('a');
+        link.href = checkout;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'portal-button';
+        link.textContent = 'Pagar no checkout Stripe';
+        details.prepend(link);
+        const label = code.closest('label');
+        if (label) label.hidden = true;
+        const copy = details.querySelector('[data-pix-copy]') as HTMLElement;
+        if (copy) copy.hidden = true;
+      }
       details.hidden = false;
       button.hidden = true;
       status.textContent = 'Aguardando pagamento.';

@@ -6,6 +6,7 @@ import { CsrfInput, Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import { SchedulerStatus } from '../../components/layout/SchedulerStatus.tsx';
 
 const connected = (state) => state?.connected || state?.status === 'conectado';
 const sessionExpiredMessage =
@@ -430,6 +431,18 @@ export function WhatsAppScreen({ data }: { data?: any }) {
             ))}
           </div>
         )}
+        <section
+          className="wa-scheduler-section"
+          aria-labelledby="wa-scheduler-title"
+        >
+          <header className="wa-scheduler-heading">
+            <h2 id="wa-scheduler-title">
+              <Icon name="bolt" /> Envios automáticos
+            </h2>
+            <p>Acompanhe o agendador das suas mensagens.</p>
+          </header>
+          <SchedulerStatus />
+        </section>
       </div>
     </NativePanel>
   );

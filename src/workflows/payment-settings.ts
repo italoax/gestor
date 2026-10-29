@@ -2,6 +2,8 @@ import {
   workflowResult,
   raiseWorkflowError,
 } from '../services/workflowReply.ts';
+import { paymentProviders } from '../frontend/paymentProviders.ts';
+import { X509Certificate, createPrivateKey } from 'node:crypto';
 export function createPaymentSettingsWorkflow({
   auditSecurity = async (..._args: any[]) => {},
   execute,
@@ -19,6 +21,27 @@ export function createPaymentSettingsWorkflow({
     openpix: ['app_id'],
     pagbank: ['access_token', 'ambiente'],
     pagarme: ['secret_key'],
+    abacatepay: ['api_key'],
+    pushinpay: ['access_token', 'ambiente'],
+    efi: [
+      'client_id',
+      'client_secret',
+      'chave_pix',
+      'certificate_pem',
+      'private_key_pem',
+      'ambiente',
+    ],
+    inter: [
+      'client_id',
+      'client_secret',
+      'chave_pix',
+      'certificate_pem',
+      'private_key_pem',
+      'conta_corrente',
+      'ambiente',
+    ],
+    stripe: ['secret_key'],
+    picpay: ['client_id', 'client_secret', 'api_base'],
   };
   return {
     list: (input) =>
@@ -55,6 +78,7 @@ export function createPaymentSettingsWorkflow({
               '',
             mensagemConfirmacaoId: preferencia?.mensagemId ?? null,
             providers: PROVIDER_LISTA,
+            providerCatalog: paymentProviders,
             providerNomes: PROVIDER_NOMES,
             credPorProvider,
             ativoPorProvider,
@@ -128,6 +152,67 @@ export function createPaymentSettingsWorkflow({
             }
           }
           const ativo = input.body[`ativo_${provider}`] === '1' && temAlgo;
+          const requiredFields =
+            {
+              efi: [
+                'client_id',
+                'client_secret',
+                'chave_pix',
+                'certificate_pem',
+              ],
+              inter: [
+                'client_id',
+                'client_secret',
+                'chave_pix',
+                'certificate_pem',
+                'private_key_pem',
+              ],
+              picpay: ['client_id', 'client_secret', 'api_base'],
+            }[provider] || [];
+          if (
+            ativo &&
+            !remove &&
+            requiredFields.some((field) => !credenciais[field])
+          ) {
+            input.flash(
+              'error',
+              'Preencha as credenciais obrigatórias deste provedor antes de ativá-lo.',
+            );
+            return reply.redirect('/integracao-pagamento');
+          }
+          if (ativo && ['efi', 'inter'].includes(provider)) {
+            try {
+              const pem = String(credenciais.certificate_pem).replace(
+                /\\n/g,
+                '\n',
+              );
+              const certificate = new X509Certificate(pem);
+              const key = createPrivateKey(
+                String(credenciais.private_key_pem || pem).replace(
+                  /\\n/g,
+                  '\n',
+                ),
+              );
+              if (
+                !certificate.checkPrivateKey(key) ||
+                Date.parse(certificate.validTo) <= Date.now()
+              )
+                throw new Error();
+            } catch {
+              input.flash(
+                'error',
+                'Informe um certificado PEM válido e sua chave privada correspondente, sem senha.',
+              );
+              return reply.redirect('/integracao-pagamento');
+            }
+          }
+          if (input.body[`ativo_${provider}`] === '1' && !temAlgo && !remove) {
+            input.flash(
+              'error',
+              'Informe a credencial do provedor antes de ativá-lo.',
+            );
+            return reply.redirect('/integracao-pagamento');
+          }
           await salvarConfig(userId, provider, credenciais, ativo);
           await auditSecurity('credentials.changed', {
             userId,

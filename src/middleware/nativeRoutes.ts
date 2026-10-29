@@ -77,6 +77,7 @@ export function installNativeRouteMiddleware(app) {
   });
   app.post(['/login', '/login/segundo-fator'], loginRateLimit);
   app.post('/api/account/two-factor/:action', requireAuth, accountRateLimit);
+  app.post('/api/session/confirm', requireAuth, accountRateLimit);
   app.get('/area-cliente/login', portalRateLimit);
   app.post('/area-cliente/login', portalRateLimit);
   app.post('/minha-conta', requireAuth, accountRateLimit);

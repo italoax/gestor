@@ -9,6 +9,10 @@ import express from 'express';
 import { createWorker } from './create-worker.ts';
 import { env } from '../../../src/config/env.ts';
 import { db, execute } from '../../../src/db/mysql.ts';
+import {
+  databaseStartupMessage,
+  waitForDatabase,
+} from '../../../src/db/startup.ts';
 import { ensureCobrancasEnviosSchema } from '../../../src/db/cobrancasEnviosSchema.ts';
 import { appTodayIso } from '../../../src/services/dates.ts';
 import { createLogger } from '../../../src/services/logger.ts';
@@ -22,8 +26,16 @@ import {
   stopStatusScheduler,
 } from '../../../src/services/statusScheduler.ts';
 import { createErrorHandler } from '../../../src/middleware/errorHandler.ts';
+import { createDefaultPaymentWorkflow } from '../../../src/workflows/payment-defaults.ts';
+import { createPaymentReconciliation } from '../../../src/services/paymentReconciliation.ts';
 
 const historyLogger = createLogger('historico-envios');
+const payments = createDefaultPaymentWorkflow();
+const paymentReconciliation = createPaymentReconciliation({
+  reconcile: (afterId, signal) => payments.reconcilePending(afterId, signal),
+  onError: (error) =>
+    historyLogger.error('Erro na confirmação dos pagamentos.', error),
+});
 const historyRetention = createAutomationHistoryRetention({
   enabled: () => automationsEnabled(env),
   today: appTodayIso,
@@ -46,7 +58,15 @@ try {
     application,
     handleError: createErrorHandler(env.nodeEnv),
     initialize: async () => {
-      await db.query({ sql: 'SELECT 1', timeout: 5000 });
+      await waitForDatabase(
+        () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
+        {
+          onRetry: (attempt, code, delayMs) =>
+            console.warn(
+              `[Worker] MySQL indisponível (${code}); tentativa ${attempt}/3 em ${delayMs / 1000}s.`,
+            ),
+        },
+      );
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
@@ -55,6 +75,7 @@ try {
         () => startCobrancasScheduler(createDefaultSchedulerHeartbeat()),
         startStatusScheduler,
         () => historyRetention.start(),
+        () => paymentReconciliation.start(),
       );
     },
     async stopAutomations() {
@@ -62,6 +83,7 @@ try {
         stopCobrancasScheduler(),
         stopStatusScheduler(),
         historyRetention.stop(),
+        paymentReconciliation.stop(),
       ]);
     },
     stopDevReload() {},
@@ -102,7 +124,11 @@ try {
     console.error(
       '[Worker] MySQL atingiu um limite de recursos. As automações não puderam iniciar; verifique a cota na hospedagem.',
     );
-  else console.error('Erro ao iniciar o worker NestJS:', safeError(error));
+  else {
+    const databaseMessage = databaseStartupMessage(error);
+    if (databaseMessage) console.error(`[Worker] ${databaseMessage}`);
+    else console.error('Erro ao iniciar o worker NestJS:', safeError(error));
+  }
   if (worker) await worker.close();
   else await db.end();
   process.exit(databaseLimit ? 78 : 1);

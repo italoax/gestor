@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
 import { panelShellData } from '../../lib/panelData.ts';
-import { SchedulerStatus } from './SchedulerStatus.tsx';
 
 const menu = [
   ['Dashboard', '/dashboard', 'chart'],
@@ -279,10 +278,7 @@ function PanelFrame({
             </div>
           </div>
         </header>
-        <main className="app-content">
-          <SchedulerStatus />
-          {children}
-        </main>
+        <main className="app-content">{children}</main>
       </div>
       <nav className="mobile-dock" aria-label="Atalhos principais">
         <a href="/dashboard" data-dock-link="">

@@ -8,6 +8,12 @@ export const PROVIDER_NOMES = {
   openpix: 'OpenPix / Woovi',
   pagbank: 'PagBank / PagSeguro',
   pagarme: 'Pagar.me',
+  abacatepay: 'AbacatePay',
+  pushinpay: 'PushinPay',
+  efi: 'Efí / Gerencianet',
+  inter: 'Banco Inter',
+  stripe: 'Stripe',
+  picpay: 'PicPay',
 };
 // Status normalizado entre os provedores. Sempre que rolar approved, é "approved".
 // Sempre que rolar rejected/cancelled/expired, é "rejected". Demais ficam "pending".
@@ -25,6 +31,8 @@ export function normalizeStatus(raw) {
       'expired',
       'overdue',
       'failed',
+      'denied',
+      'error',
     ].includes(s)
   )
     return 'rejected';
@@ -35,6 +43,11 @@ import { asaasProvider } from './providers/asaas.ts';
 import { openPixProvider } from './providers/openpix.ts';
 import { pagBankProvider } from './providers/pagbank.ts';
 import { pagarMeProvider } from './providers/pagarme.ts';
+import { abacatePayProvider } from './providers/abacatepay.ts';
+import { pushinPayProvider } from './providers/pushinpay.ts';
+import { efiProvider, interProvider } from './providers/bankPix.ts';
+import { stripeProvider } from './providers/stripe.ts';
+import { picPayProvider } from './providers/picpay.ts';
 import { queryRows, queryOne, execute } from '../db/mysql.ts';
 import {
   openStoredSecret,
@@ -49,6 +62,12 @@ const PROVIDERS = {
   openpix: openPixProvider,
   pagbank: { ...pagBankProvider, name: 'pagbank' },
   pagarme: { ...pagarMeProvider, name: 'pagarme' },
+  abacatepay: abacatePayProvider,
+  pushinpay: pushinPayProvider,
+  efi: efiProvider,
+  inter: interProvider,
+  stripe: stripeProvider,
+  picpay: picPayProvider,
 };
 export function getProvider(name) {
   return PROVIDERS[name] ?? null;
@@ -59,6 +78,12 @@ export const PROVIDER_LISTA = [
   'openpix',
   'pagbank',
   'pagarme',
+  'abacatepay',
+  'pushinpay',
+  'efi',
+  'inter',
+  'stripe',
+  'picpay',
 ];
 export async function carregarConfigsDoUsuario(userId) {
   const rows = await queryRows(

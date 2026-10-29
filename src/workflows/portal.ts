@@ -179,7 +179,8 @@ export function createPortalWorkflow({
       workflowResult(input, async (reply) => {
         try {
           const cliente = reply.locals.portalCliente;
-          const pix = Boolean(await escolherProvedor(cliente.user_id));
+          const paymentProvider = await escolherProvedor(cliente.user_id);
+          const pix = Boolean(paymentProvider);
           const escolhas = await escolhasRenovacao(cliente, (nome) =>
             queryOne(
               'SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1',
@@ -191,6 +192,7 @@ export function createPortalWorkflow({
             cliente,
             adicional: lerPlanoAdicional(cliente.plano_adicional),
             pix,
+            payerDetailsRequired: paymentProvider?.provider === 'picpay',
             escolhas,
             opcoesRenovacao: escolhas[0].opcoes,
             erro: input.flash('portal-error').join(' '),

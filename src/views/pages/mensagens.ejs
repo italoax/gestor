@@ -36,40 +36,53 @@
     >
   </div>
   <% } else { %>
-  <div class="msg-grid">
+  <div class="catalog-grid msg-grid">
     <% mensagens.forEach(m => { %>
-    <div class="msg-card" data-search-item data-search-text="<%= [m.titulo, m.descricao, m.mensagem].filter(Boolean).join(' ') %>">
-      <div class="msg-card-head">
-        <strong><%= m.titulo %></strong>
-        <div class="msg-actions">
-          <button
-            class="cli-ico-btn edit-mensagem"
-            type="button"
-            title="Editar"
-            data-id="<%= m.id %>"
-            data-titulo="<%= m.titulo %>"
-            data-descricao="<%= m.descricao || '' %>"
-            data-mensagem="<%= m.mensagem || '' %>"
-            ><%- include('../partials/ui-icon', { name: 'edit' }) %></button
-          >
-          <form
-            method="post"
-            action="/mensagens"
-            class="action-form delete-mensagem msg-del-form"
-          >
-            <%- csrfInput %>
-            <input type="hidden" name="action" value="delete_mensagem" />
-            <input type="hidden" name="id" value="<%= m.id %>" />
-            <button class="cli-ico-btn danger" type="submit" title="Apagar"
-              ><%- include('../partials/ui-icon', { name: 'trash' }) %></button
-            >
-          </form>
-        </div>
+    <div
+      class="catalog-card catalog-communication msg-card"
+      data-search-item
+      data-search-text="<%= [m.titulo, m.descricao, m.mensagem].filter(Boolean).join(' ') %>"
+    >
+      <div class="catalog-card-head catalog-card-head--simple">
+        <span class="catalog-card-icon"><%- include('../partials/ui-icon', { name: 'message' }) %></span>
+        <div class="catalog-card-title"
+          ><strong><%= m.titulo %></strong></div
+        >
       </div>
-      <% if (m.descricao) { %>
-      <div class="msg-desc"><%= m.descricao %></div>
-      <% } %>
-      <div class="msg-preview"><%= messagePreview(m.mensagem) %></div>
+      <div class="catalog-card-content">
+        <% if (m.descricao) { %>
+        <div class="catalog-card-context"><%= m.descricao %></div>
+        <% } %>
+        <div class="catalog-message-preview"
+          ><span><%= messagePreview(m.mensagem, 300) %></span></div
+        >
+      </div>
+      <div class="catalog-card-actions">
+        <button
+          class="cli-ico-btn edit-mensagem"
+          type="button"
+          title="Editar"
+          data-id="<%= m.id %>"
+          data-titulo="<%= m.titulo %>"
+          data-descricao="<%= m.descricao || '' %>"
+          data-mensagem="<%= m.mensagem || '' %>"
+          ><%- include('../partials/ui-icon', { name: 'edit' }) %>
+          Editar</button
+        >
+        <form
+          method="post"
+          action="/mensagens"
+          class="action-form delete-mensagem msg-del-form"
+        >
+          <%- csrfInput %>
+          <input type="hidden" name="action" value="delete_mensagem" />
+          <input type="hidden" name="id" value="<%= m.id %>" />
+          <button class="cli-ico-btn danger" type="submit" title="Apagar"
+            ><%- include('../partials/ui-icon', { name: 'trash' }) %>
+            Excluir</button
+          >
+        </form>
+      </div>
     </div>
     <% }) %>
   </div>
@@ -99,33 +112,33 @@
       <input type="hidden" name="id" value="" />
       <div id="message-panel-mensagem">
         <div class="message-compose-grid">
-        <div class="form-grid message-compose-fields">
-          <label class="field full">
-            <span>Nome *</span>
-            <input
-              class="input"
-              name="titulo"
-              placeholder="Ex.: Boas-vindas"
-              required
-            />
-          </label>
-          <label class="field full">
-            <span>Descrição</span>
-            <input class="input" name="descricao" placeholder="Opcional" />
-          </label>
-          <div class="field full">
-            <label for="message-text">Mensagem</label>
-            <textarea
-              id="message-text"
-              class="input"
-              name="mensagem"
-              data-mensagem-text
-              rows="6"
-              placeholder="Digite a mensagem..."
-            ></textarea>
+          <div class="form-grid message-compose-fields">
+            <label class="field full">
+              <span>Nome *</span>
+              <input
+                class="input"
+                name="titulo"
+                placeholder="Ex.: Boas-vindas"
+                required
+              />
+            </label>
+            <label class="field full">
+              <span>Descrição</span>
+              <input class="input" name="descricao" placeholder="Opcional" />
+            </label>
+            <div class="field full">
+              <label for="message-text">Mensagem</label>
+              <textarea
+                id="message-text"
+                class="input"
+                name="mensagem"
+                data-mensagem-text
+                rows="6"
+                placeholder="Digite a mensagem..."
+              ></textarea>
+            </div>
           </div>
-        </div>
-        <aside class="message-variables" aria-labelledby="message-variables-title">
+          <aside class="message-variables" aria-labelledby="message-variables-title">
           <div class="message-variables-heading"><span class="message-variables-icon"><%- include('../partials/ui-icon', { name: 'bolt' }) %></span><div><h4 id="message-variables-title">Variáveis da mensagem</h4><p>Os códigos são substituídos pelos dados reais no envio.</p></div></div>
           <% ['Cliente', 'Assinatura', 'Pagamentos'].forEach(function(group) { %>
           <section class="message-variable-group" aria-label="<%= group %>"><h5><%= group %></h5><dl class="message-variable-grid">

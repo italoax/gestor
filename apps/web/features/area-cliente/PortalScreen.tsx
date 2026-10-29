@@ -6,6 +6,8 @@ import { formatDateBr, formatMoney } from '../../../../src/services/format.ts';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { createPix, usePixPayment } from '../pagamentos/usePixPayment.ts';
 import { useRenewalSelection } from '../pagamentos/useRenewalSelection.ts';
+import { PayerDetails } from '../pagamentos/PayerDetails.tsx';
+import { safeCheckoutUrl } from '../../../../src/shared/paymentCheckout.ts';
 import { submitPortalLogin } from '../../lib/portalLogin.ts';
 import { watchPortalSession } from '../../../../src/browser/assets/js/ui/portal-session.ts';
 
@@ -138,9 +140,13 @@ function Renewal({ data }: { data?: any }) {
     code = useRef(null);
   async function submit(event) {
     event.preventDefault();
+    const fields = new FormData(event.currentTarget);
     const request = {
       periodos: Number(selection.periods),
       selecao: selection.selection || undefined,
+      payerEmail: String(fields.get('payerEmail') || ''),
+      payerName: String(fields.get('payerName') || ''),
+      payerDocument: String(fields.get('payerDocument') || ''),
     };
     pix.generate(async (signal) => {
       const auth = await fetch('/area-cliente/renovar', {
@@ -185,6 +191,9 @@ function Renewal({ data }: { data?: any }) {
             onSubmit={submit}
           >
             <CsrfInput token={data.csrfToken} />
+            {data.payerDetailsRequired && (
+              <PayerDetails disabled={pix.locked} />
+            )}
             {data.escolhas.length > 1 && (
               <label className="portal-field" style={{ marginBottom: 16 }}>
                 Quais servidores deseja renovar?
@@ -238,27 +247,40 @@ function Renewal({ data }: { data?: any }) {
             hidden={pix.phase !== 'pending'}
             style={{ marginTop: 20 }}
           >
-            <label className="portal-field">
-              PIX Copia e Cola
-              <textarea
-                ref={code}
-                className="portal-input"
-                data-pix-code
-                readOnly
-                rows={3}
-                style={{ resize: 'vertical', wordBreak: 'break-all' }}
-                value={pix.payment?.qrText || ''}
-              />
-            </label>
-            <button
-              type="button"
-              className="portal-button"
-              data-pix-copy
-              style={{ marginTop: 12 }}
-              onClick={() => pix.copy(code.current)}
-            >
-              {pix.copied ? 'Código PIX copiado!' : 'Copiar código PIX'}
-            </button>
+            {pix.payment?.checkoutUrl ? (
+              <a
+                className="portal-button"
+                href={safeCheckoutUrl(pix.payment.checkoutUrl) || undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Pagar no checkout Stripe ↗
+              </a>
+            ) : (
+              <>
+                <label className="portal-field">
+                  PIX Copia e Cola
+                  <textarea
+                    ref={code}
+                    className="portal-input"
+                    data-pix-code
+                    readOnly
+                    rows={3}
+                    style={{ resize: 'vertical', wordBreak: 'break-all' }}
+                    value={pix.payment?.qrText || ''}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="portal-button"
+                  data-pix-copy
+                  style={{ marginTop: 12 }}
+                  onClick={() => pix.copy(code.current)}
+                >
+                  {pix.copied ? 'Código PIX copiado!' : 'Copiar código PIX'}
+                </button>
+              </>
+            )}
           </div>
           <p
             data-pix-status

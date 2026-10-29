@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { Decimal } from 'decimal.js';
 import {
   authenticateWebhook,
@@ -23,6 +23,7 @@ export function createPaymentWorkflow({
   queryRows = undefined,
   withTransaction = undefined,
   webhookSecurity = webhookSecurityFor,
+  claimPaymentCheck = async (_id: number) => true,
 }) {
   const json = (status, data) => ({ kind: 'json' as const, status, data });
   const view = (status, name, data) => ({
@@ -72,13 +73,22 @@ export function createPaymentWorkflow({
     if (candidates.length !== 1) return { status: 409 };
     const pagamento = candidates[0];
     if (provider === 'pagarme') return { status: 503 };
-    const security = webhookSecurity(pagamento.userId, provider);
-    if (!security) return { status: 503 };
-    if (!authenticateWebhook(provider, body, request, security))
-      return { status: 401 };
-    const cfg = await configDoProvider(pagamento.userId, provider);
     const impl = getProvider(provider);
-    if (!cfg || !impl) return { status: 503 };
+    if (!impl) return { status: 503 };
+    if (impl.verifiedApi !== true) {
+      const security = webhookSecurity(pagamento.userId, provider);
+      if (!security) return { status: 503 };
+      if (!authenticateWebhook(provider, body, request, security))
+        return { status: 401 };
+    }
+    const cfg = await configDoProvider(pagamento.userId, provider);
+    if (!cfg) return { status: 503 };
+    if (impl.verifiedApi === true) {
+      // A callback is only a wake-up signal: approval comes from the authenticated
+      // provider API and must match the stored ID, amount, currency and reference.
+      if (!(await claimPaymentCheck(Number(pagamento.id))))
+        return { status: 200 };
+    }
     const status = await impl.consultarPagamento(
       cfg.credenciais,
       providerPaymentId,
@@ -91,7 +101,15 @@ export function createPaymentWorkflow({
       status.currency !== 'BRL' ||
       !new Decimal(status.amount).isFinite() ||
       !new Decimal(status.amount).equals(pagamento.valor) ||
-      status.externalReference !== expectedReference
+      !(
+        status.externalReference === expectedReference ||
+        (impl.name === 'picpay' &&
+          status.referenceDigest ===
+            createHash('sha256')
+              .update(expectedReference)
+              .digest('hex')
+              .slice(0, 32))
+      )
     )
       return { status: 422 };
     let approved = false;
@@ -157,6 +175,34 @@ export function createPaymentWorkflow({
   }
 
   return {
+    async reconcilePending(afterId = 0, signal?: AbortSignal) {
+      if (!queryRows || signal?.aborted) return 0;
+      const rows = await queryRows(
+        `SELECT id, provider, mp_payment_id AS providerId FROM pagamentos
+        WHERE id > :afterId AND provider IN ('abacatepay','pushinpay','efi','inter','stripe','picpay')
+        AND (status = 'pending' OR (status = 'approved' AND user_notificado = 0))
+        AND created_at > DATE_SUB(NOW(), INTERVAL 2 DAY) ORDER BY id LIMIT 40`,
+        { afterId },
+      );
+      for (let index = 0; index < rows.length; index += 3) {
+        if (signal?.aborted) return 0;
+        await Promise.all(
+          rows.slice(index, index + 3).map(async (row) => {
+            try {
+              await processarPagamento(
+                row.provider,
+                String(row.providerId),
+                {},
+                {},
+              );
+            } catch (error) {
+              console.warn('[pagamento/conciliar]', safeError(error));
+            }
+          }),
+        );
+      }
+      return rows.length === 40 ? Number(rows.at(-1).id) : 0;
+    },
     async alias(aliasValue) {
       try {
         const alias = String(aliasValue);
@@ -235,6 +281,9 @@ export function createPaymentWorkflow({
           escolhas,
           selecao: grupo.selecao,
           pagamento: pendente,
+          paymentProvider: provider.provider,
+          payerDetailsRequired:
+            getProvider(provider.provider)?.payerDetails === true,
           valorFormatado: formatMoney(selecionada.valor),
           opcoesRenovacao: opcoes,
           periodosSelecionados: selecionada.periodos,
@@ -254,6 +303,26 @@ export function createPaymentWorkflow({
         const provider = getProvider(providerCfg.provider);
         if (!provider)
           return json(503, { ok: false, error: 'Provedor não suportado.' });
+        const payerEmail = String(body?.payerEmail || '').trim();
+        const payerName = String(body?.payerName || '')
+          .replace(/[^\p{L}\d &]/gu, ' ')
+          .trim();
+        const payerDocument = String(body?.payerDocument || '')
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase();
+        if (
+          provider.payerDetails &&
+          (payerName.length < 3 ||
+            payerName.length > 255 ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payerEmail) ||
+            payerEmail.length > 254 ||
+            !/^(\d{11}|[A-Z0-9]{14})$/.test(payerDocument))
+        )
+          return json(400, {
+            ok: false,
+            error:
+              'Informe o nome completo, e-mail e CPF ou CNPJ do pagador para gerar o PIX.',
+          });
         if (!cliente.valor || cliente.valor <= 0) {
           return json(400, {
             ok: false,
@@ -302,7 +371,8 @@ export function createPaymentWorkflow({
             ok: true,
             pagamentoId: existente.id,
             mpPaymentId: existente.mpPaymentId,
-            qrText: existente.mpQrText,
+            qrText: provider.checkout ? '' : existente.mpQrText,
+            checkoutUrl: provider.checkout ? existente.mpQrText : undefined,
             qrBase64: existente.mpQrBase64,
             status: existente.status,
             provider: providerCfg.provider,
@@ -316,7 +386,10 @@ export function createPaymentWorkflow({
             0,
             250,
           ),
-          payerNome: cliente.nome,
+          payerNome: provider.payerDetails ? payerName : cliente.nome,
+          payerEmail,
+          payerDocument,
+          returnUrl: `${env.appUrl.replace(/\/$/, '')}/pagar/${encodeURIComponent(String(tokenValue))}`,
           customerReference: `cliente=${cliente.id}`,
           notificationUrl,
           externalReference,
@@ -338,7 +411,7 @@ export function createPaymentWorkflow({
             ),
             provider: providerCfg.provider,
             mpId: pix.id,
-            qrText: pix.qrText,
+            qrText: pix.checkoutUrl || pix.qrText,
             qrBase64: pix.qrBase64,
             status:
               normalizeStatus(pix.status) === 'approved'
@@ -357,6 +430,7 @@ export function createPaymentWorkflow({
           pagamentoId: insert.insertId,
           mpPaymentId: pix.id,
           qrText: pix.qrText,
+          checkoutUrl: pix.checkoutUrl,
           qrBase64: pix.qrBase64,
           status: pix.status,
           provider: providerCfg.provider,
@@ -411,6 +485,38 @@ export function createPaymentWorkflow({
         else if (provider === 'pagbank')
           id = String(body?.id ?? body?.charges?.[0]?.id ?? '');
         else if (provider === 'pagarme') id = String(body?.data?.id ?? '');
+        else if (provider === 'pushinpay')
+          id = String(body?.id ?? '').toLowerCase();
+        else if (provider === 'abacatepay')
+          id = String(
+            body?.data?.payment?.id ??
+              body?.data?.pixQrCode?.id ??
+              body?.data?.id ??
+              '',
+          );
+        else if (provider === 'stripe')
+          id = String(body?.data?.object?.id ?? '');
+        else if (provider === 'picpay')
+          id = String(
+            body?.merchantChargeId ?? body?.data?.merchantChargeId ?? '',
+          );
+        else if (provider === 'efi' || provider === 'inter') {
+          const entries = Array.isArray(body) ? body : body?.pix || [body];
+          if (!Array.isArray(entries) || entries.length > 100)
+            return { status: 400 };
+          for (const entry of entries) {
+            const txid = String(entry?.txid || '');
+            if (!/^[a-zA-Z0-9]{26,35}$/.test(txid)) continue;
+            const result = await processarPagamento(
+              provider,
+              txid,
+              body,
+              request,
+            );
+            if (result.status >= 400) return result;
+          }
+          return { status: 200 };
+        }
         // Eventos sem recurso suportado são reconhecidos sem processamento,
         // preservando probes de configuração e tipos não utilizados.
         if (!id) return { status: 200 };

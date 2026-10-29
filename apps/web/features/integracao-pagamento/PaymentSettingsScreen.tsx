@@ -4,7 +4,10 @@ import { paymentProviders } from '../../../../src/frontend/paymentProviders.ts';
 import { CsrfInput, Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
-import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
+import {
+  PaymentAuthorization,
+  useAuthorizedPaymentSubmit,
+} from './PaymentAuthorization.tsx';
 
 function SettingsForm({
   token,
@@ -15,7 +18,7 @@ function SettingsForm({
   action?: string;
   children?: React.ReactNode;
 }) {
-  const submit = useNativeSubmit();
+  const submit = useAuthorizedPaymentSubmit();
   return (
     <form method="post" action="/integracao-pagamento" onSubmit={submit}>
       <CsrfInput token={token} />
@@ -36,10 +39,15 @@ function ProviderEditor({
   onClose?: (...args: any[]) => any;
 }) {
   const info = paymentProviders[provider.id],
-    submit = useNativeSubmit();
+    submit = useAuthorizedPaymentSubmit();
   return (
     <NativeDialog
-      title={provider.nome}
+      title={
+        <span className="payment-provider-title">
+          <img src={info.icon} alt="" width="28" height="28" />
+          {provider.nome}
+        </span>
+      }
       onClose={onClose}
       footer={
         <>
@@ -83,11 +91,25 @@ function ProviderEditor({
                 <select
                   className="input"
                   name={`creds_${provider.id}_${name}`}
-                  defaultValue={provider.credentials[name] || 'producao'}
+                  defaultValue={provider.credentials?.[name] || 'producao'}
                 >
                   <option value="producao">Produção</option>
                   <option value="sandbox">Sandbox</option>
                 </select>
+              ) : name.endsWith('_pem') ? (
+                <textarea
+                  className="input payment-certificate"
+                  name={`creds_${provider.id}_${name}`}
+                  rows={4}
+                  defaultValue=""
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={
+                    provider.configuredFields?.[name]
+                      ? 'Configurado. Em branco mantém o atual.'
+                      : placeholder || ''
+                  }
+                />
               ) : (
                 <input
                   className="input"
@@ -139,176 +161,189 @@ export function PaymentSettingsScreen({ data }: { data?: any }) {
   const [editor, setEditor] = useState(null);
   const active = data.providers.filter((provider) => provider.ativo);
   return (
-    <NativePanel data={data} path="/integracao-pagamento">
-      <div
-        className="container page-integracao-pag"
-        data-react-page="integracao-pagamento"
-      >
-        <div className="ui-settings-grid">
-          <section className="card ui-settings-card">
-            <h2>Receber pagamentos por QR Code PIX</h2>
-            <p>
-              Conecte sua conta de pagamento para gerar QR Code e PIX Copia e
-              Cola nos links dos clientes.
-            </p>
-            <ol>
-              <li>
-                Escolha um provedor abaixo, informe a credencial e ative a
-                integração.
-              </li>
-              <li>Selecione a conta que receberá os pagamentos.</li>
-              <li>
-                Envie <code>{'{link_cliente}'}</code> na mensagem. O cliente
-                abre o link e gera o PIX.
-              </li>
-            </ol>
-            <SettingsForm token={data.page.csrfToken} action="provedor-padrao">
-              <label className="field">
-                Receber PIX por
-                <select
-                  className="input"
-                  name="provider"
-                  required
-                  defaultValue={
-                    active.some(
-                      (provider) => provider.id === data.providerPadrao,
-                    )
-                      ? data.providerPadrao
-                      : ''
-                  }
-                >
-                  <option value="">Escolha uma conta ativa</option>
-                  {active.map((provider) => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.nome}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="muted">
-                Uma chave PIX simples não habilita a confirmação automática.
-                Informe a credencial da integração. Salvar a configuração não
-                gera cobrança nem valida a credencial junto ao provedor.
-              </p>
-              <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={!active.length}
+    <PaymentAuthorization token={data.page.csrfToken}>
+      <NativePanel data={data} path="/integracao-pagamento">
+        <div
+          className="container page-integracao-pag"
+          data-react-page="integracao-pagamento"
+        >
+          <div className="ui-settings-grid">
+            <section className="card ui-settings-card payment-settings-card">
+              <div className="payment-settings-heading">
+                <span className="payment-settings-icon">
+                  <Icon name="card" />
+                </span>
+                <div>
+                  <h2>Conta de recebimento</h2>
+                  <p>
+                    Escolha a conta usada para gerar o QR Code e o PIX Copia e
+                    Cola dos clientes.
+                  </p>
+                </div>
+              </div>
+              <SettingsForm
+                token={data.page.csrfToken}
+                action="provedor-padrao"
               >
-                Salvar conta de recebimento
-              </button>
-            </SettingsForm>
-          </section>
-          <section className="card ui-settings-card">
-            <h2>Mensagem após confirmação do PIX</h2>
-            <p>
-              Escolha a mensagem enviada ao WhatsApp do cliente quando o
-              provedor confirmar o pagamento, inclusive quando a renovação for
-              manual.
-            </p>
-            <SettingsForm
-              token={data.page.csrfToken}
-              action="mensagem-confirmacao"
-            >
-              <label className="field">
-                Mensagem
-                <select
-                  className="input"
-                  name="mensagem_id"
-                  defaultValue={String(data.mensagemConfirmacaoId)}
+                <label className="field">
+                  Receber PIX por
+                  <select
+                    className="input"
+                    name="provider"
+                    required
+                    disabled={!active.length}
+                    defaultValue={
+                      active.some(
+                        (provider) => provider.id === data.providerPadrao,
+                      )
+                        ? data.providerPadrao
+                        : ''
+                    }
+                  >
+                    <option value="">Escolha uma conta ativa</option>
+                    {active.map((provider) => (
+                      <option key={provider.id} value={provider.id}>
+                        {provider.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="muted">
+                  {active.length
+                    ? 'O pagamento será confirmado pelo provedor. Salvar esta opção não gera cobrança.'
+                    : 'Configure e ative um provedor abaixo para escolher a conta de recebimento.'}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={!active.length}
                 >
-                  <option value="">Não enviar mensagem</option>
-                  {data.mensagens.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.titulo}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <p className="muted">
-                Cadastre seus modelos em <a href="/mensagens">Mensagens</a>. O
-                WhatsApp precisa estar conectado. Use um texto de confirmação de
-                pagamento; a renovação pode ainda estar em processamento.
+                  Salvar conta de recebimento
+                </button>
+              </SettingsForm>
+            </section>
+            <section className="card ui-settings-card payment-settings-card">
+              <div className="payment-settings-heading">
+                <span className="payment-settings-icon">
+                  <Icon name="message" />
+                </span>
+                <div>
+                  <h2>Confirmação no WhatsApp</h2>
+                  <p>
+                    Envie uma mensagem ao cliente quando o provedor confirmar o
+                    pagamento.
+                  </p>
+                </div>
+              </div>
+              <SettingsForm
+                token={data.page.csrfToken}
+                action="mensagem-confirmacao"
+              >
+                <label className="field">
+                  Mensagem
+                  <select
+                    className="input"
+                    name="mensagem_id"
+                    defaultValue={String(data.mensagemConfirmacaoId ?? '')}
+                  >
+                    <option value="">Não enviar mensagem</option>
+                    {data.mensagens.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.titulo}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="muted">
+                  Escolha um modelo de <a href="/mensagens">Mensagens</a> e
+                  mantenha o WhatsApp conectado. A renovação pode ainda estar em
+                  processamento.
+                </p>
+                <button className="btn btn-primary" type="submit">
+                  Salvar mensagem
+                </button>
+              </SettingsForm>
+            </section>
+          </div>
+          <div className="int-pag-intro">
+            <span className="int-pag-intro-ico">
+              <Icon name="bolt" />
+            </span>
+            <div>
+              <strong>Link de pagamento nas mensagens</strong>
+              <p>
+                Use <code>{'{link_cliente}'}</code> no modelo de mensagem. O
+                cliente abre o link e gera o PIX com o provedor escolhido.
               </p>
-              <button className="btn btn-primary" type="submit">
-                Salvar mensagem
-              </button>
-            </SettingsForm>
-          </section>
-        </div>
-        <div className="int-pag-intro">
-          <span className="int-pag-intro-ico">💡</span>
-          <div>
-            <strong>Como usar</strong>
-            <p>
-              Ative pelo menos um provedor PIX abaixo. Depois, insira a tag{' '}
-              <code>{'{link_cliente}'}</code> em qualquer template de mensagem —
-              o gestor troca pelo link de pagamento do cliente automaticamente
-              ao enviar.
-            </p>
+            </div>
+          </div>
+          <h3 className="int-pag-titulo">Formas de pagamento</h3>
+          <div className="int-pag-grid">
+            {data.providers.map((provider) => (
+              <div
+                key={provider.id}
+                className={`int-pag-card ${provider.ativo ? 'is-active' : ''}`}
+                style={
+                  {
+                    '--card-accent': paymentProviders[provider.id].color,
+                  } as React.CSSProperties
+                }
+                data-payment-provider={provider.id}
+              >
+                <div className="int-pag-card-head">
+                  <div className="int-pag-ico">
+                    <img
+                      src={paymentProviders[provider.id].icon}
+                      alt=""
+                      width="32"
+                      height="32"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="int-pag-card-info">
+                    <strong>{provider.nome}</strong>
+                    <span
+                      className={`badge ${provider.ativo ? 'badge-green' : 'badge-muted'}`}
+                    >
+                      {provider.ativo
+                        ? 'Ativo'
+                        : provider.configurado
+                          ? 'Configurado'
+                          : 'Inativo'}
+                    </span>
+                  </div>
+                </div>
+                <div className="int-pag-card-foot">
+                  <a
+                    className="int-pag-suporte"
+                    href={paymentProviders[provider.id].support}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Suporte ↗
+                  </a>
+                  <button
+                    className="btn btn-muted"
+                    type="button"
+                    onClick={() => setEditor(provider)}
+                  >
+                    <Icon name="edit" />{' '}
+                    {provider.configurado ? 'Editar' : 'Configurar'}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <h3 className="int-pag-titulo">Formas de pagamento</h3>
-        <div className="int-pag-grid">
-          {data.providers.map((provider) => (
-            <div
-              key={provider.id}
-              className={`int-pag-card ${provider.ativo ? 'is-active' : ''}`}
-              style={
-                {
-                  '--card-accent': paymentProviders[provider.id].color,
-                } as React.CSSProperties
-              }
-              data-payment-provider={provider.id}
-            >
-              <div className="int-pag-card-head">
-                <div className="int-pag-ico">
-                  <Icon name="card" />
-                </div>
-                <div className="int-pag-card-info">
-                  <strong>{provider.nome}</strong>
-                  <span
-                    className={`badge ${provider.ativo ? 'badge-green' : 'badge-muted'}`}
-                  >
-                    {provider.ativo
-                      ? 'Ativo'
-                      : provider.configurado
-                        ? 'Configurado'
-                        : 'Inativo'}
-                  </span>
-                </div>
-                <a
-                  className="int-pag-suporte"
-                  href={paymentProviders[provider.id].support}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Página do provedor"
-                >
-                  ↗ Suporte
-                </a>
-              </div>
-              <div className="int-pag-card-foot">
-                <span className="muted">PIX</span>
-                <button
-                  className={`btn ${provider.ativo ? 'btn-muted' : 'btn-primary'}`}
-                  type="button"
-                  onClick={() => setEditor(provider)}
-                >
-                  {provider.ativo ? 'Editar' : 'Ativar'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {editor && (
-        <ProviderEditor
-          provider={editor}
-          token={data.page.csrfToken}
-          appUrl={data.appUrl}
-          onClose={() => setEditor(null)}
-        />
-      )}
-    </NativePanel>
+        {editor && (
+          <ProviderEditor
+            provider={editor}
+            token={data.page.csrfToken}
+            appUrl={data.appUrl}
+            onClose={() => setEditor(null)}
+          />
+        )}
+      </NativePanel>
+    </PaymentAuthorization>
   );
 }

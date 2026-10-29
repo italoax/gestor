@@ -61,6 +61,13 @@
     <% }) %>
   </div>
   <% } %>
+  <section class="wa-scheduler-section" aria-labelledby="wa-scheduler-title">
+    <header class="wa-scheduler-heading">
+      <h2 id="wa-scheduler-title"><%- include('../partials/ui-icon', { name: 'bolt' }) %> Envios automáticos</h2>
+      <p>Acompanhe o agendador das suas mensagens.</p>
+    </header>
+    <%- include('../partials/scheduler-status') %>
+  </section>
 </div>
 <button
   hidden

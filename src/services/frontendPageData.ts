@@ -104,6 +104,8 @@ export function nativePageData(
           ])
         : null,
       pix: Boolean(data.pix),
+      payerDetailsRequired: data.payerDetailsRequired === true,
+      paymentProvider: data.paymentProvider || '',
       erro: data.erro || '',
       loginValue: data.loginValue || '',
       escolhas,
@@ -123,7 +125,17 @@ export function nativePageData(
         view === 'pages/pagar' ? cliente?.pagamentoToken || '' : undefined,
       pagamento:
         view === 'pages/pagar' && data.pagamento
-          ? pick(data.pagamento, ['id', 'mpQrText', 'mpQrBase64', 'status'])
+          ? {
+              ...pick(data.pagamento, [
+                'id',
+                'mpQrText',
+                'mpQrBase64',
+                'status',
+              ]),
+              ...(data.pagamento.provider === 'stripe'
+                ? { checkoutUrl: data.pagamento.mpQrText, mpQrText: '' }
+                : {}),
+            }
           : null,
     };
   }

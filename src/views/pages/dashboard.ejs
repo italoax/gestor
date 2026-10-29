@@ -565,10 +565,7 @@
         <div class="dist-list">
           <% proximos.forEach(c => { %>
           <a class="dist-row link" href="/clientes">
-            <span
-              ><%= c.nome %>
-              <em class="muted"><%= c.plano || 'Sem plano' %></em></span
-            >
+            <span><%= c.nome %></span>
             <span class="dash-pill <%= Number(c.dias) <= 1 ? 'today' : '' %>">
               <%= Number(c.dias) === 0 ? 'Hoje' : Number(c.dias) === 1 ? 'Amanhã' : 'em ' + c.dias + ' dias' %>
             </span>

@@ -1,11 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { safeCheckoutUrl } from '../../../../src/shared/paymentCheckout.ts';
 
 export function usePixPayment(initial = null) {
   const [payment, setPayment] = useState(initial);
-  const [phase, setPhase] = useState(initial?.qrText ? 'ready' : 'idle');
+  const [phase, setPhase] = useState(
+    initial?.qrText || initial?.checkoutUrl ? 'ready' : 'idle',
+  );
   const [message, setMessage] = useState(
-    initial?.qrText ? 'Aguardando pagamento.' : '',
+    initial?.qrText || initial?.checkoutUrl ? 'Aguardando pagamento.' : '',
   );
   const [copied, setCopied] = useState(false);
   const pending = useRef(false),
@@ -171,8 +174,8 @@ export async function createPix(basePath, selection, signal) {
         : fallback,
     );
   if (
-    typeof result.qrText !== 'string' ||
-    !result.qrText.trim() ||
+    (!(typeof result.qrText === 'string' && result.qrText.trim()) &&
+      !safeCheckoutUrl(result.checkoutUrl)) ||
     !Number.isSafeInteger(Number(result.pagamentoId)) ||
     Number(result.pagamentoId) <= 0
   )
@@ -182,5 +185,8 @@ export async function createPix(basePath, selection, signal) {
     id: result.pagamentoId,
     qrText: result.qrText,
     qrBase64: result.qrBase64 || '',
+    ...(safeCheckoutUrl(result.checkoutUrl)
+      ? { checkoutUrl: safeCheckoutUrl(result.checkoutUrl) }
+      : {}),
   };
 }

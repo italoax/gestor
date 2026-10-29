@@ -481,7 +481,8 @@ window.__gestorInitShell = function () {
     on(window, 'pageshow', atualizarWaChip);
   }
 
-  initSchedulerStatus(shell, lifecycle.signal);
+  if (!shell?.querySelector('[data-scheduler-react]'))
+    initSchedulerStatus(shell, lifecycle.signal);
 
   // Copiar ID do cliente (botão ⧉ na tabela)
   on(document, 'click', function (e) {

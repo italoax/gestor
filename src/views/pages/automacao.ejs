@@ -9,7 +9,7 @@
     return { cls: 'tipo-todos', label: 'Todos os clientes', ico: '👥' };
   }
 %>
-<div class="container page-automacao" data-search-scope>
+<div class="container page-automacao ui-catalog" data-search-scope>
   <div class="auto-tabs">
     <button class="auto-tab active" type="button" data-auto-tab="regras"
       ><%- include('../partials/ui-icon', { name: 'bolt' }) %>
@@ -42,68 +42,76 @@
       >
     </div>
     <% } else { %>
-    <div class="auto-list">
+    <div class="catalog-grid auto-list">
       <% regras.forEach(r => { const b = badgeTipo(r.tipo); const ativa = r.status === 'Ativo'; %>
-      <div class="auto-rule <%= ativa ? 'is-on' : '' %>" data-search-item>
-        <div class="auto-rule-main">
-          <span class="auto-rule-ico <%= b.cls %>"
-            ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %></span
+      <div
+        class="catalog-card catalog-communication <%= ativa ? '' : 'catalog-rule-inactive' %>"
+        data-search-item
+      >
+        <div class="catalog-card-head">
+          <span class="catalog-card-icon"><%- include('../partials/ui-icon', { name: 'bolt' }) %></span>
+          <div class="catalog-card-title"
+            ><strong><%= r.titulo %></strong></div
           >
-          <div class="auto-rule-body">
-            <div class="auto-rule-header">
-              <div class="auto-rule-heading">
-                <div class="auto-rule-top">
-                  <strong><%= r.titulo %></strong>
-                  <% if (r.descricao && r.descricao.trim().toLowerCase() !== b.label.toLowerCase()) { %>
-                  <small><%= r.descricao %></small>
-                  <% } %>
-                </div>
-                <span class="auto-badge <%= b.cls %>"
-                  ><%- include('../partials/ui-icon', { name: b.cls === 'tipo-cadastro' ? 'users' : b.ico }) %>
-                  <%= b.label %></span
-                >
-              </div>
-              <form method="post" action="/automacao" class="auto-toggle-form">
-                <%- csrfInput %>
-                <input type="hidden" name="action" value="toggle_regra" />
-                <input type="hidden" name="id" value="<%= r.id %>" />
-                <label class="auto-toggle-control">
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    class="switch"
-                    data-submit-on-change=""
-                    <%= ativa ? 'checked' : '' %>
-                    aria-label="Ativar regra <%= r.titulo %>"
-                  />
-                  <span><%= ativa ? 'Ativado' : 'Desativado' %></span>
-                </label>
-              </form>
-            </div>
-            <div class="auto-rule-preview">
-              <span class="auto-rule-preview-text"
-                ><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ') %></span
-              >
-            </div>
-            <% if (r.envioHoje) { %>
-            <div
-              class="auto-delivery"
-              data-state="<%= r.envioHoje.estado %>"
-              aria-label="Envio de hoje"
-            >
-              <strong><%= r.envioHoje.rotulo %></strong>
-              <% if (r.envioHoje.estado !== 'vazio') { const pendingCount = Number(r.envioHoje.pendentes || 0); const pendingLabel = pendingCount + (pendingCount === 1 ? ' pendente' : ' pendentes'); const pendingPosition = pendingCount > 0 ? r.envioHoje.detalhe.indexOf(pendingLabel) : -1; %>
-              <span><% if (pendingPosition >= 0) { %><%= r.envioHoje.detalhe.slice(0, pendingPosition) %><button type="button" class="auto-pending-link auto-receb-link" data-regra-id="<%= r.id %>" data-regra-nome="<%= r.titulo %>" data-pendentes="1" aria-label="Ver <%= pendingLabel %> da regra <%= r.titulo %>"><%= pendingLabel %></button><%= r.envioHoje.detalhe.slice(pendingPosition + pendingLabel.length) %><% } else { %><%= r.envioHoje.detalhe %><% } %></span>
-              <% } %>
-            </div>
-            <% } %>
-          </div>
-        </div>
-        <div class="auto-rule-actions is-rule-actions">
           <form
             method="post"
             action="/automacao"
-            class="auto-dispatch-form"
+            class="auto-toggle-form catalog-rule-toggle"
+          >
+            <%- csrfInput %>
+            <input type="hidden" name="action" value="toggle_regra" />
+            <input type="hidden" name="id" value="<%= r.id %>" />
+            <label class="auto-toggle-control">
+              <input
+                type="checkbox"
+                role="switch"
+                class="switch"
+                data-submit-on-change=""
+                <%= ativa ? 'checked' : '' %>
+                aria-label="Ativar regra <%= r.titulo %>"
+              />
+              <span><%= ativa ? 'Ativado' : 'Desativado' %></span>
+            </label>
+          </form>
+        </div>
+        <div class="catalog-card-content">
+          <div class="catalog-card-context">
+            <% if (r.descricao && r.descricao.trim().toLowerCase() !== b.label.toLowerCase()) { %>
+            <p><%= r.descricao %></p>
+            <% } %>
+            <p><%= b.label %></p>
+          </div>
+          <div class="catalog-message-preview"
+            ><span><%= (r.mensagemTexto || 'Sem template vinculado').replace(/\s+/g,' ') %></span></div
+          >
+          <% if (r.envioHoje) { %>
+          <div
+            class="auto-delivery"
+            data-state="<%= r.envioHoje.estado %>"
+            aria-label="Envio de hoje"
+          >
+            <strong><%= r.envioHoje.rotulo %></strong>
+            <% if (r.envioHoje.estado !== 'vazio') { const pendingCount = Number(r.envioHoje.pendentes || 0); const pendingLabel = pendingCount + (pendingCount === 1 ? ' pendente' : ' pendentes'); const pendingPosition = pendingCount > 0 ? r.envioHoje.detalhe.indexOf(pendingLabel) : -1; %>
+            <span
+              ><% if (pendingPosition >= 0) { %><%= r.envioHoje.detalhe.slice(0, pendingPosition) %><button
+                type="button"
+                class="auto-pending-link auto-receb-link"
+                data-regra-id="<%= r.id %>"
+                data-regra-nome="<%= r.titulo %>"
+                data-pendentes="1"
+                aria-label="Ver <%= pendingLabel %> da regra <%= r.titulo %>"
+                ><%= pendingLabel %></button
+              ><%= r.envioHoje.detalhe.slice(pendingPosition + pendingLabel.length) %><% } else { %><%= r.envioHoje.detalhe %><% } %></span
+            >
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+        <div class="catalog-card-actions catalog-card-actions--three">
+          <form
+            method="post"
+            action="/automacao"
+            class="action-form auto-dispatch-form"
             data-confirm="Forçar o envio dos pendentes desta regra hoje? Envios confirmados, em andamento ou sem confirmação segura não serão repetidos."
           >
             <%- csrfInput %>
@@ -114,7 +122,8 @@
               type="submit"
               title="Enviar pendentes"
               data-loading-text="Enviando pendentes..."
-              >Enviar</button
+              ><%- include('../partials/ui-icon', { name: 'bolt' }) %>
+              Enviar</button
             >
           </form>
           <button
@@ -139,14 +148,20 @@
             data-f-servidor="<%= r.filtroServidor || '' %>"
             data-f-plano="<%= r.filtroPlano || '' %>"
             data-f-arquivados="<%= r.filtroArquivados || '' %>"
-            ><%- include('../partials/ui-icon', { name: 'edit' }) %></button
+            ><%- include('../partials/ui-icon', { name: 'edit' }) %>
+            Editar</button
           >
-          <form method="post" action="/automacao" class="auto-del-form">
+          <form
+            method="post"
+            action="/automacao"
+            class="action-form auto-del-form"
+          >
             <%- csrfInput %>
             <input type="hidden" name="action" value="delete_regra" />
             <input type="hidden" name="id" value="<%= r.id %>" />
             <button class="cli-ico-btn danger" type="submit" title="Apagar"
-              ><%- include('../partials/ui-icon', { name: 'trash' }) %></button
+              ><%- include('../partials/ui-icon', { name: 'trash' }) %>
+              Excluir</button
             >
           </form>
         </div>
@@ -573,7 +588,9 @@
       <div class="receb-list" data-receb-list></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-muted" type="button" data-close-modal>Fechar</button>
+      <button class="btn btn-muted" type="button" data-close-modal
+        >Fechar</button
+      >
     </div>
   </div>
 </div>

@@ -6,62 +6,11 @@
   max-width: 1320px;
   margin-inline: auto;
 }
-.page-account .account-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 4px 0 28px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 28px;
-}
-.page-account .account-eyebrow {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--accent-bright);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-.page-account .account-intro p,
 .page-account .account-panel-heading p {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
-}
-.page-account .account-identity {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  max-width: 35%;
-}
-.page-account .account-avatar {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border));
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  color: var(--accent-bright);
-  font-size: 16px;
-  font-weight: 700;
-}
-.page-account .account-identity > div {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.page-account .account-identity strong {
-  font-size: 13px;
-}
-.page-account .account-identity > div > span {
-  color: var(--muted);
-  font-size: 12px;
 }
 .page-account .account-layout {
   display: grid;
@@ -581,22 +530,6 @@
   }
   .page-account .account-two-factor-form > .account-fields {
     max-width: none;
-  }
-  .page-account .account-intro {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 20px;
-    padding-bottom: 22px;
-    margin-bottom: 20px;
-  }
-  .page-account .account-identity {
-    max-width: 100%;
-  }
-  .page-account .account-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    font-size: 14px;
   }
   .page-account .account-layout,
   .page-account .account-column {

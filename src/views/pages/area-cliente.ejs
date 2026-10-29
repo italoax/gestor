@@ -153,6 +153,7 @@
             >
             <% if (pix) { %>
             <form method="post" action="/area-cliente/renovar" data-pix-form>
+              <% if (locals.payerDetailsRequired) { %><%- include('../partials/payment-payer-details') %><% } %>
               <%- csrfInput %>
               <% if (locals.escolhas?.length > 1) { %>
               <label class="portal-field" style="margin-bottom:16px">

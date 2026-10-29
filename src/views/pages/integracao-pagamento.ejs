@@ -57,6 +57,14 @@
       ],
     },
   };
+  Object.entries(locals.providerCatalog || {}).forEach(([id, meta]) => {
+    PROV_INFO[id] = {
+      cor: meta.color, suporteUrl: meta.support, ajuda: meta.help,
+      icone: meta.icon, webhook: '/webhook/' + id,
+      campos: meta.fields.map(([name, label, placeholder]) => ({ name, label, placeholder,
+        ...(name === 'ambiente' ? { tipo: 'select', opcoes: [['producao', 'Produção'], ['sandbox', 'Sandbox']] } : {}) })),
+    };
+  });
 %>
 <%
   const ativosCount = providers.filter(p => ativoPorProvider[p]).length;
@@ -156,7 +164,9 @@
       data-card-accent="<%= info.cor %>"
     >
       <div class="int-pag-card-head">
-        <div class="int-pag-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></div>
+        <div class="int-pag-ico"
+          ><img src="<%= info.icone || '/favicon.svg' %>" alt="" width="32" height="32"
+        /></div>
         <div class="int-pag-card-info">
           <strong><%= providerNomes[p] %></strong>
           <% if (ativo) { %>
@@ -206,7 +216,9 @@
   <div class="modal">
     <div class="modal-header">
       <h3
-        ><span class="int-pag-modal-ico"><%- include('../partials/ui-icon', { name: 'card' }) %></span>
+        ><span class="int-pag-modal-ico"
+          ><img src="<%= info.icone || '/favicon.svg' %>" alt="" width="28" height="28"
+        /></span>
         <%= providerNomes[p] %></h3
       >
       <button
@@ -252,6 +264,15 @@
             >
             <% }) %>
           </select>
+          <% } else if (c.name.endsWith('_pem')) { %>
+          <textarea
+            class="input payment-certificate"
+            name="creds_<%= p %>_<%= c.name %>"
+            rows="4"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="<%= (credPorProvider[p] || {})[c.name] ? 'Configurado. Em branco mantém o atual.' : c.placeholder || '' %>"
+          ></textarea>
           <% } else { %>
           <input
             class="input"

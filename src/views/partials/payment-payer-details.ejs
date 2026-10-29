@@ -1,0 +1,35 @@
+<div class="payment-payer-details">
+  <label class="field" style="display:grid;gap:8px;margin-bottom:16px"
+    >Nome completo do pagador
+    <input
+      class="input portal-input"
+      name="payerName"
+      autocomplete="name"
+      minlength="3"
+      maxlength="255"
+      required
+    />
+  </label>
+  <label class="field" style="display:grid;gap:8px;margin-bottom:16px"
+    >E-mail para o pagamento
+    <input
+      class="input portal-input"
+      type="email"
+      name="payerEmail"
+      autocomplete="email"
+      maxlength="254"
+      required
+    />
+  </label>
+  <label class="field" style="display:grid;gap:8px;margin-bottom:16px"
+    >CPF ou CNPJ do pagador
+    <input
+      class="input portal-input"
+      name="payerDocument"
+      autocomplete="off"
+      minlength="11"
+      maxlength="18"
+      required
+    />
+  </label>
+</div>

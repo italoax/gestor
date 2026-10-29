@@ -37,25 +37,25 @@
       >
     </div>
     <% } else { %>
-    <div class="disp-grid">
+    <div class="catalog-grid disp-grid">
       <% dispositivos.forEach(d => { %>
       <% const ativo = String(d.status) !== 'Inativo'; %>
       <div
-        class="disp-card device-card <%= ativo ? '' : 'device-inativo' %>"
+        class="catalog-card disp-card device-card <%= ativo ? '' : 'device-inativo' %>"
         data-search-item
         data-search-text="<%= d.nome %> <%= d.descricao || '' %> <%= ativo ? 'status-ativo' : 'status-inativo' %>"
       >
-        <div class="disp-card-top">
-          <span class="disp-ico"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
-          <div class="disp-info">
+        <div class="catalog-card-head disp-card-top">
+          <span class="catalog-card-icon"><%- include('../partials/ui-icon', { name: 'monitor' }) %></span>
+          <div class="catalog-card-title">
             <strong><%= d.nome %></strong>
           </div>
-          <span class="badge <%= ativo ? 'badge-green' : 'badge-muted' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
+          <span class="catalog-card-status badge <%= ativo ? 'badge-green' : 'badge-muted' %>"><%= ativo ? 'Ativo' : 'Inativo' %></span>
         </div>
         <% if (d.descricao) { %>
-        <p class="device-desc"><%= d.descricao %></p>
+        <p class="catalog-card-description device-desc"><%= d.descricao %></p>
         <% } %>
-        <div class="disp-actions">
+        <div class="catalog-card-actions disp-actions">
           <button
             class="btn btn-muted disp-edit edit-dispositivo"
             type="button"

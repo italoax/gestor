@@ -42,7 +42,7 @@
     >
   </div>
   <% } else { %>
-  <div class="srv-grid">
+  <div class="catalog-grid srv-grid">
     <% servidores.forEach(s => {
         // So renderizamos os campos que a UI realmente usa/edita. Campos legados
         // (link_painel, cobranca_por_telas, integracao, renovacao_automatica,
@@ -53,30 +53,28 @@
           + ` data-identificador="${esc(s.identificador)}" data-obs="${esc(s.observacaoServidor)}"`;
       %>
     <div
-      class="srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>"
+      class="catalog-card srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>"
       id="servidor-<%= s.id %>"
       data-search-item
       data-search-text="<%= [s.nome, s.identificador, s.observacaoServidor].filter(Boolean).join(' ') %>"
     >
-      <div class="srv-head">
-        <div class="srv-id">
-          <span class="srv-icon"><%- include('../partials/ui-icon', { name: '🗄️' }) %></span>
-          <div>
-            <strong><%= s.nome %></strong>
-            <% if (s.identificador) { %>
-            <small><%= s.identificador %></small>
-            <% } %>
-          </div>
+      <div class="catalog-card-head srv-head">
+        <span class="catalog-card-icon"><%- include('../partials/ui-icon', { name: 'server' }) %></span>
+        <div class="catalog-card-title">
+          <strong><%= s.nome %></strong>
+          <% if (s.identificador) { %>
+          <small><%= s.identificador %></small>
+          <% } %>
         </div>
-        <span class="srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
+        <span class="catalog-card-status srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
       </div>
-      <div class="srv-stats">
+      <div class="catalog-card-metrics srv-stats">
         <div class="srv-stat"
-          ><span>CRÉDITOS</span
+          ><span>Créditos</span
           ><strong class="srv-cred"><%= formatCredits(s.creditos) %></strong></div
         >
         <div class="srv-stat"
-          ><span>CLIENTES</span><strong><%= s.clientesTotal %></strong></div
+          ><span>Clientes</span><strong><%= s.clientesTotal %></strong></div
         >
         <div class="srv-stat"
           ><span>Custo por crédito</span
@@ -84,9 +82,9 @@
         >
       </div>
       <% if (s.observacaoServidor) { %>
-      <p class="srv-note"><%= s.observacaoServidor %></p>
+      <p class="catalog-card-description srv-note"><%= s.observacaoServidor %></p>
       <% } %>
-      <div class="srv-actions">
+      <div class="catalog-card-actions srv-actions">
         <button class="srv-act edit-servidor" type="button" <%- editData %>
           ><%- include('../partials/ui-icon', { name: 'edit' }) %>
           Editar</button
@@ -105,6 +103,7 @@
             aria-label="Excluir <%= s.nome %>"
             title="Excluir <%= s.nome %>"
             ><%- include('../partials/ui-icon', { name: 'trash' }) %>
+            Excluir
           </button>
         </form>
       </div>

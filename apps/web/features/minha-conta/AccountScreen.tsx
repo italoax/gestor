@@ -115,13 +115,6 @@ export function AccountScreen({ data }: { data?: any }) {
     'data-lpignore': 'true',
     'data-bwignore': '',
   };
-  const initials = String(account.name || account.username || 'IX')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => Array.from(part)[0])
-    .join('')
-    .toLocaleUpperCase('pt-BR');
   const pushLabel = {
     loading: 'Verificando…',
     unsupported: 'Indisponível',
@@ -137,21 +130,6 @@ export function AccountScreen({ data }: { data?: any }) {
         precedence="panel"
       />
       <div className="container page-account" data-react-page="minha-conta">
-        <header className="account-intro">
-          <div>
-            <span className="account-eyebrow">SUAS PREFERÊNCIAS</span>
-            <p>Seu perfil, seus recebimentos e sua segurança em um só lugar.</p>
-          </div>
-          <div className="account-identity">
-            <span className="account-avatar" aria-hidden="true">
-              {initials}
-            </span>
-            <div>
-              <strong>{account.name || 'Sua conta'}</strong>
-              <span>@{account.username || 'usuário'}</span>
-            </div>
-          </div>
-        </header>
         <div className="account-layout">
           <div className="account-column">
             <section

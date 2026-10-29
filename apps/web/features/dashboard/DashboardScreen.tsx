@@ -430,10 +430,7 @@ export function DashboardScreen({ data }: { data?: any }) {
                 <div className="dist-list">
                   {data.proximos.map((item) => (
                     <a key={item.id} className="dist-row link" href="/clientes">
-                      <span>
-                        {item.nome}{' '}
-                        <em className="muted">{item.plano || 'Sem plano'}</em>
-                      </span>
+                      <span>{item.nome}</span>
                       <span
                         className={`dash-pill ${Number(item.dias) <= 1 ? 'today' : ''}`}
                       >

@@ -4,21 +4,25 @@ import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { formatDateBr, formatMoney } from '../../../../src/services/format.ts';
 import { createPix, usePixPayment } from './usePixPayment.ts';
 import { useRenewalSelection } from './useRenewalSelection.ts';
+import { PayerDetails } from './PayerDetails.tsx';
+import { safeCheckoutUrl } from '../../../../src/shared/paymentCheckout.ts';
 
 export function PaymentScreen({ data }: { data?: any }) {
   const basePath = '/pagar/' + encodeURIComponent(data.pagamentoToken),
     selection = useRenewalSelection(data);
   const pix = usePixPayment(
-      data.pagamento?.mpQrText
+      data.pagamento?.mpQrText || safeCheckoutUrl(data.pagamento?.checkoutUrl)
         ? {
             basePath,
             id: data.pagamento.id,
             qrText: data.pagamento.mpQrText,
             qrBase64: data.pagamento.mpQrBase64 || '',
+            checkoutUrl: safeCheckoutUrl(data.pagamento.checkoutUrl),
           }
         : null,
     ),
-    code = useRef(null);
+    code = useRef(null),
+    payer = useRef<HTMLDivElement>(null);
   return (
     <>
       <link rel="stylesheet" href="/assets/css/native-payment.css" />
@@ -94,14 +98,27 @@ export function PaymentScreen({ data }: { data?: any }) {
             <div className="pay-amount" id="pay-amount">
               {formatMoney(selection.selected?.valor || 0)}
             </div>
+            {data.payerDetailsRequired &&
+              ['idle', 'busy'].includes(pix.phase) && (
+                <div ref={payer}>
+                  <PayerDetails disabled={pix.locked} />
+                </div>
+              )}
             {['idle', 'busy', 'ready'].includes(pix.phase) && (
               <button
                 className="pay-btn"
                 id="pay-btn"
                 type="button"
                 disabled={pix.phase === 'busy'}
-                onClick={() =>
-                  pix.phase === 'ready'
+                onClick={() => {
+                  if (
+                    payer.current &&
+                    !Array.from(payer.current.querySelectorAll('input')).every(
+                      (input) => input.reportValidity(),
+                    )
+                  )
+                    return;
+                  return pix.phase === 'ready'
                     ? pix.reveal()
                     : pix.generate((signal) =>
                         createPix(
@@ -109,17 +126,31 @@ export function PaymentScreen({ data }: { data?: any }) {
                           {
                             periodos: Number(selection.periods),
                             selecao: selection.selection || undefined,
+                            payerName:
+                              payer.current?.querySelector<HTMLInputElement>(
+                                '[name=payerName]',
+                              )?.value,
+                            payerEmail:
+                              payer.current?.querySelector<HTMLInputElement>(
+                                '[name=payerEmail]',
+                              )?.value,
+                            payerDocument:
+                              payer.current?.querySelector<HTMLInputElement>(
+                                '[name=payerDocument]',
+                              )?.value,
                           },
                           signal,
                         ),
-                      )
-                }
+                      );
+                }}
               >
                 {pix.phase === 'busy'
                   ? 'Gerando…'
-                  : pix.phase === 'ready'
-                    ? '📱 Ver código PIX'
-                    : '📱 Gerar código PIX'}
+                  : data.paymentProvider === 'stripe'
+                    ? 'Continuar com Stripe'
+                    : pix.phase === 'ready'
+                      ? '📱 Ver código PIX'
+                      : '📱 Gerar código PIX'}
               </button>
             )}
             {pix.phase === 'approved' && (
@@ -143,29 +174,42 @@ export function PaymentScreen({ data }: { data?: any }) {
               className={`pay-qr-box ${pix.phase === 'pending' ? 'on' : ''}`}
               id="pay-qr-box"
             >
-              {pix.payment?.qrBase64 && (
-                <img
-                  id="pay-qr-img"
-                  src={`data:image/png;base64,${pix.payment.qrBase64}`}
-                  alt="QR Code PIX"
-                />
+              {pix.payment?.checkoutUrl ? (
+                <a
+                  className="pay-btn"
+                  href={safeCheckoutUrl(pix.payment.checkoutUrl) || undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Pagar no checkout Stripe ↗
+                </a>
+              ) : (
+                <>
+                  {pix.payment?.qrBase64 && (
+                    <img
+                      id="pay-qr-img"
+                      src={`data:image/png;base64,${pix.payment.qrBase64}`}
+                      alt="QR Code PIX"
+                    />
+                  )}
+                  <textarea
+                    ref={code}
+                    className="pay-pix-code"
+                    id="pay-pix-code"
+                    readOnly
+                    value={pix.payment?.qrText || ''}
+                    aria-label="PIX Copia e Cola"
+                  />
+                  <button
+                    className="pay-copy"
+                    type="button"
+                    id="pay-copy"
+                    onClick={() => pix.copy(code.current)}
+                  >
+                    {pix.copied ? '✓ Copiado!' : '📋 Copiar código PIX'}
+                  </button>
+                </>
               )}
-              <textarea
-                ref={code}
-                className="pay-pix-code"
-                id="pay-pix-code"
-                readOnly
-                value={pix.payment?.qrText || ''}
-                aria-label="PIX Copia e Cola"
-              />
-              <button
-                className="pay-copy"
-                type="button"
-                id="pay-copy"
-                onClick={() => pix.copy(code.current)}
-              >
-                {pix.copied ? '✓ Copiado!' : '📋 Copiar código PIX'}
-              </button>
             </div>
             {pix.phase !== 'approved' && (
               <div className="pay-status-msg" id="pay-status-msg">

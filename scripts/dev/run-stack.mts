@@ -57,12 +57,12 @@ export async function runStack(listener?: PublicListener) {
   const runtimeEnv: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: development ? 'development' : 'production',
-    // O desenvolvimento não precisa migrar o banco remoto, gravar sessões
-    // no MySQL nem abrir um segundo pool para automações.
+    // --local mantém a opção de sessões em memória e envios desativados.
+    // O desenvolvimento normal segue a configuração usada em produção.
     LOCAL_MODE: localMode,
-    COOKIE_SECURE: explicitLocal ? 'false' : process.env.COOKIE_SECURE,
-    FRONTEND_HOST: explicitLocal ? '127.0.0.1' : process.env.FRONTEND_HOST,
-    APP_URL: development ? localUrl : process.env.APP_URL || localUrl,
+    COOKIE_SECURE: development ? 'false' : process.env.COOKIE_SECURE,
+    FRONTEND_HOST: development ? '127.0.0.1' : process.env.FRONTEND_HOST,
+    APP_URL: explicitLocal ? localUrl : process.env.APP_URL || localUrl,
     NEXT_BACKEND_URL: backendUrl,
     WORKER_PORT: String(workerPort),
     RUN_AUTOMATIONS:

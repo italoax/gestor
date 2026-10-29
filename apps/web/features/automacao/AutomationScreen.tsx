@@ -43,7 +43,11 @@ function ActionForm({
     <form
       method="post"
       action="/automacao"
-      className={action === 'toggle_regra' ? 'auto-toggle-form' : undefined}
+      className={
+        action === 'toggle_regra'
+          ? 'auto-toggle-form catalog-rule-toggle'
+          : 'action-form'
+      }
       onSubmit={submit}
     >
       <CsrfInput token={token} />
@@ -456,7 +460,10 @@ export function AutomationScreen({ data }: { data?: any }) {
   const [recipients, setRecipients] = useState(null);
   return (
     <NativePanel data={data} path="/automacao">
-      <div className="container page-automacao" data-react-page="automacao">
+      <div
+        className="container page-automacao ui-catalog"
+        data-react-page="automacao"
+      >
         <div className="auto-tabs auto-toolbar">
           <div
             className="auto-tab-options"
@@ -501,7 +508,7 @@ export function AutomationScreen({ data }: { data?: any }) {
             onPending={setRecipients}
           />
         ) : tab === 'regras' ? (
-          <div className="auto-list">
+          <div className="catalog-grid auto-list">
             {!data.regras.some((item) => !item.campanha) && (
               <div className="auto-empty-state">
                 <Icon name="bolt" />
@@ -516,81 +523,75 @@ export function AutomationScreen({ data }: { data?: any }) {
               .filter((item) => !item.campanha)
               .map((item) => (
                 <article
-                  className={`auto-rule ${item.status === 'Ativo' ? 'is-on' : ''}`}
+                  className={`catalog-card catalog-communication ${item.status === 'Ativo' ? '' : 'catalog-rule-inactive'}`}
                   key={item.id}
                   data-rule-item={item.id}
                 >
-                  <div className="auto-rule-main">
-                    <span className="auto-rule-ico">
+                  <div className="catalog-card-head">
+                    <span className="catalog-card-icon">
                       <Icon name="bolt" />
                     </span>
-                    <div className="auto-rule-body">
-                      <div className="auto-rule-header">
-                        <div className="auto-rule-heading">
-                          <div className="auto-rule-top">
-                            <strong>{item.titulo}</strong>
-                            {item.descricao &&
-                              item.descricao.trim().toLowerCase() !==
-                                triggerLabel(item.tipo).toLowerCase() && (
-                                <small>{item.descricao}</small>
-                              )}
-                          </div>
-                          <span className="auto-badge">
-                            {triggerLabel(item.tipo)}
-                          </span>
-                        </div>
-                        <ActionForm
-                          item={item}
-                          token={data.page.csrfToken}
-                          action="toggle_regra"
-                        >
-                          <label className="auto-toggle-control">
-                            <input
-                              type="checkbox"
-                              role="switch"
-                              className="switch"
-                              aria-label={`Ativar regra ${item.titulo}`}
-                              defaultChecked={item.status === 'Ativo'}
-                              onChange={(event) =>
-                                (
-                                  event.target as HTMLInputElement
-                                ).form.requestSubmit()
-                              }
-                            />
-                            <span>
-                              {item.status === 'Ativo'
-                                ? 'Ativado'
-                                : 'Desativado'}
-                            </span>
-                          </label>
-                        </ActionForm>
-                      </div>
-                      <div className="auto-rule-preview">
-                        <span className="auto-rule-preview-text">
-                          {(
-                            item.mensagemTexto || 'Sem template vinculado'
-                          ).replace(/\s+/g, ' ')}
-                        </span>
-                      </div>
-                      {item.envioHoje && (
-                        <div
-                          className="auto-delivery"
-                          data-state={item.envioHoje.estado}
-                          aria-label="Envio de hoje"
-                        >
-                          <strong>{item.envioHoje.rotulo}</strong>
-                          {item.envioHoje.estado !== 'vazio' && (
-                            <DeliveryDetail
-                              summary={item.envioHoje}
-                              title={item.titulo}
-                              onPending={() => setRecipients(item)}
-                            />
-                          )}
-                        </div>
-                      )}
+                    <div className="catalog-card-title">
+                      <strong>{item.titulo}</strong>
                     </div>
+                    <ActionForm
+                      item={item}
+                      token={data.page.csrfToken}
+                      action="toggle_regra"
+                    >
+                      <label className="auto-toggle-control">
+                        <input
+                          type="checkbox"
+                          role="switch"
+                          className="switch"
+                          aria-label={`Ativar regra ${item.titulo}`}
+                          defaultChecked={item.status === 'Ativo'}
+                          onChange={(event) =>
+                            (
+                              event.target as HTMLInputElement
+                            ).form.requestSubmit()
+                          }
+                        />
+                        <span>
+                          {item.status === 'Ativo' ? 'Ativado' : 'Desativado'}
+                        </span>
+                      </label>
+                    </ActionForm>
                   </div>
-                  <div className="auto-rule-actions is-rule-actions">
+                  <div className="catalog-card-content">
+                    <div className="catalog-card-context">
+                      {item.descricao &&
+                        item.descricao.trim().toLowerCase() !==
+                          triggerLabel(item.tipo).toLowerCase() && (
+                          <p>{item.descricao}</p>
+                        )}
+                      <p>{triggerLabel(item.tipo)}</p>
+                    </div>
+                    <div className="catalog-message-preview">
+                      <span>
+                        {(
+                          item.mensagemTexto || 'Sem template vinculado'
+                        ).replace(/\s+/g, ' ')}
+                      </span>
+                    </div>
+                    {item.envioHoje && (
+                      <div
+                        className="auto-delivery"
+                        data-state={item.envioHoje.estado}
+                        aria-label="Envio de hoje"
+                      >
+                        <strong>{item.envioHoje.rotulo}</strong>
+                        {item.envioHoje.estado !== 'vazio' && (
+                          <DeliveryDetail
+                            summary={item.envioHoje}
+                            title={item.titulo}
+                            onPending={() => setRecipients(item)}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="catalog-card-actions catalog-card-actions--three">
                     <ActionForm
                       item={item}
                       token={data.page.csrfToken}
@@ -613,7 +614,7 @@ export function AutomationScreen({ data }: { data?: any }) {
                       aria-label={`Editar ${item.titulo}`}
                       onClick={() => setEditor({ item })}
                     >
-                      <Icon name="edit" />
+                      <Icon name="edit" /> Editar
                     </button>
                     <ActionForm
                       item={item}
@@ -626,7 +627,7 @@ export function AutomationScreen({ data }: { data?: any }) {
                         type="submit"
                         aria-label={`Apagar ${item.titulo}`}
                       >
-                        <Icon name="trash" />
+                        <Icon name="trash" /> Excluir
                       </button>
                     </ActionForm>
                   </div>

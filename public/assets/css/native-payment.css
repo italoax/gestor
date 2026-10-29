@@ -246,3 +246,9 @@ body {
   resize: vertical;
   color: var(--text);
 }
+
+.pay-qr-box a.pay-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}

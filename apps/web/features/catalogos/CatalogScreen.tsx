@@ -85,7 +85,7 @@ function DeleteForm({
         title={`Excluir ${item.nome}`}
       >
         <Icon name="trash" />
-        {catalog !== 'servidores' && ' Excluir'}
+        Excluir
       </button>
     </form>
   );
@@ -428,46 +428,37 @@ export function CatalogScreen({ data }: { data?: any }) {
               </p>
             </div>
           )}
-          <div className={config.grid}>
+          <div className={`catalog-grid ${config.grid}`}>
             {filtered.map((item) => (
               <article
-                className={`${config.card} ${catalog === 'servidores' ? (Number(item.creditos) <= 0 ? 'srv-no-balance' : '') : !active(item) ? (catalog === 'planos' ? 'plano-inativo' : catalog === 'aplicativos' ? 'app-inativo' : 'device-inativo') : ''}`}
+                className={`catalog-card ${config.card} ${catalog === 'servidores' ? (Number(item.creditos) <= 0 ? 'srv-no-balance' : '') : !active(item) ? (catalog === 'planos' ? 'plano-inativo' : catalog === 'aplicativos' ? 'app-inativo' : 'device-inativo') : ''}`}
                 key={item.id}
                 data-catalog-item={item.id}
               >
                 <div
-                  className={
+                  className={`catalog-card-head ${
                     catalog === 'planos'
                       ? 'plano-head'
                       : catalog === 'servidores'
                         ? 'srv-head'
                         : 'disp-card-top'
-                  }
+                  }`}
                 >
-                  {catalog === 'servidores' ? (
-                    <div className="srv-id">
-                      <span className="srv-icon">
-                        <Icon name="server" />
-                      </span>
-                      <div>
-                        <strong>{item.nome}</strong>
-                        {item.identificador && (
-                          <small>{item.identificador}</small>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Icon name={config.icon} />
-                      <strong>{item.nome}</strong>
-                    </>
-                  )}
+                  <span className="catalog-card-icon">
+                    <Icon name={config.icon} />
+                  </span>
+                  <div className="catalog-card-title">
+                    <strong>{item.nome}</strong>
+                    {catalog === 'servidores' && item.identificador && (
+                      <small>{item.identificador}</small>
+                    )}
+                  </div>
                   <span
-                    className={
+                    className={`catalog-card-status ${
                       catalog === 'servidores'
                         ? 'srv-balance-badge'
                         : `badge ${active(item) ? 'badge-green' : 'badge-muted'}`
-                    }
+                    }`}
                   >
                     {catalog === 'servidores'
                       ? Number(item.creditos) > 0
@@ -479,7 +470,7 @@ export function CatalogScreen({ data }: { data?: any }) {
                   </span>
                 </div>
                 {catalog === 'planos' && (
-                  <div className="plano-metrics">
+                  <div className="catalog-card-metrics plano-metrics">
                     <div>
                       <span>Duração</span>
                       <strong>
@@ -507,19 +498,19 @@ export function CatalogScreen({ data }: { data?: any }) {
                 )}
                 {catalog === 'servidores' && (
                   <>
-                    <div className="srv-stats">
+                    <div className="catalog-card-metrics srv-stats">
                       <div className="srv-stat">
-                        <span>CRÉDITOS</span>
+                        <span>Créditos</span>
                         <strong className="srv-cred">
                           {number(item.creditos)}
                         </strong>
                       </div>
                       <div className="srv-stat">
-                        <span>CLIENTES</span>
+                        <span>Clientes</span>
                         <strong>{item.clientesTotal || 0}</strong>
                       </div>
                       <div className="srv-stat">
-                        <span>CUSTO POR CRÉDITO</span>
+                        <span>Custo por crédito</span>
                         <strong>{money(item.valorCred)}</strong>
                       </div>
                     </div>
@@ -527,7 +518,7 @@ export function CatalogScreen({ data }: { data?: any }) {
                 )}
                 {catalog === 'aplicativos' && (
                   <div
-                    className="app-valor"
+                    className="catalog-card-summary app-valor"
                     data-defined={Number(item.valorRenovacao) > 0}
                   >
                     <span>Valor de renovação</span>
@@ -542,7 +533,7 @@ export function CatalogScreen({ data }: { data?: any }) {
                   item.observacao ||
                   item.observacaoServidor) && (
                   <p
-                    className={
+                    className={`catalog-card-description ${
                       catalog === 'planos'
                         ? 'plano-desc'
                         : catalog === 'servidores'
@@ -550,7 +541,7 @@ export function CatalogScreen({ data }: { data?: any }) {
                           : catalog === 'aplicativos'
                             ? 'app-desc'
                             : 'device-desc'
-                    }
+                    }`}
                   >
                     {item.descricao ||
                       item.observacao ||
@@ -558,13 +549,13 @@ export function CatalogScreen({ data }: { data?: any }) {
                   </p>
                 )}
                 <div
-                  className={
+                  className={`catalog-card-actions ${
                     catalog === 'planos'
                       ? 'plano-actions'
                       : catalog === 'servidores'
                         ? 'srv-actions'
                         : 'disp-actions'
-                  }
+                  }`}
                 >
                   <button
                     type="button"

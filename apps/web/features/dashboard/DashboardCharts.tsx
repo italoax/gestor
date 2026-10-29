@@ -238,6 +238,11 @@ export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
                   : 'Distribuição de clientes por país'
               }
             >
+              <metadata>
+                Mapas: Victor Cazanave / SVG Maps.
+                https://github.com/VictorCazanave/svg-maps. Licença CC BY 4.0:
+                https://creativecommons.org/licenses/by/4.0/. Cores adaptadas.
+              </metadata>
               {map.locations.map((location) => {
                 const code = location.id
                     .replace(/[^a-z]/gi, '')
@@ -288,25 +293,6 @@ export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
           )}
         </div>
       </div>
-      <small className="muted native-map-credit">
-        Mapas:{' '}
-        <a
-          href="https://github.com/VictorCazanave/svg-maps"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Victor Cazanave / SVG Maps
-        </a>{' '}
-        ·{' '}
-        <a
-          href="https://creativecommons.org/licenses/by/4.0/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          CC BY 4.0
-        </a>{' '}
-        · cores adaptadas.
-      </small>
     </div>
   );
 }

@@ -75,13 +75,16 @@ export class PaymentsController {
     'webhook/openpix',
     'webhook/pagbank',
     'webhook/pagarme',
+    'webhook/abacatepay',
+    'webhook/pushinpay',
+    'webhook/efi',
+    'webhook/efi/pix',
+    'webhook/inter',
+    'webhook/stripe',
+    'webhook/picpay',
   ])
   async webhook(@Req() request: Request, @Res() response: Response) {
-    const provider = request.path
-      .replace(/\/$/, '')
-      .split('/')
-      .at(-1)!
-      .toLowerCase();
+    const provider = request.path.split('/').filter(Boolean)[1].toLowerCase();
     const result = await this.payments.webhook(provider, request.body ?? {}, {
       headers: request.headers,
       query: request.query,

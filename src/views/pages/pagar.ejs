@@ -118,6 +118,7 @@
               <% }) %>
             </select>
           </label>
+          <% if (locals.payerDetailsRequired && !pagamento) { %><%- include('../partials/payment-payer-details') %><% } %>
           <div class="pay-amount" id="pay-amount"><%= valorFormatado %></div>
           <button class="pay-btn" id="pay-btn" type="button">
             <% if (pagamento && pagamento.mpQrText) { %>
@@ -171,6 +172,8 @@
       const TOKEN = <%- JSON.stringify(cliente.pagamentoToken).replace(/</g, '\\u003c') %>;
       let pagamentoId = <%- pagamento ? pagamento.id : 'null' %>;
       let qrTextInicial = <%- pagamento && pagamento.mpQrText ? JSON.stringify(pagamento.mpQrText).replace(/</g, '\\u003c') : 'null' %>;
+      let checkoutInicial = <%- locals.paymentProvider === 'stripe' && pagamento ? JSON.stringify(pagamento.mpQrText).replace(/</g, '\\u003c') : 'null' %>;
+      if (checkoutInicial) qrTextInicial = null;
       let qrBase64Inicial = <%- pagamento && pagamento.mpQrBase64 ? JSON.stringify(pagamento.mpQrBase64).replace(/</g, '\\u003c') : 'null' %>;
 
       const btn = document.getElementById('pay-btn');
@@ -200,7 +203,15 @@
 
       let pollTimer = null;
 
-      function exibirQr(qrText, qrBase64) {
+      function exibirQr(qrText, qrBase64, checkoutUrl) {
+        let link = box.querySelector('[data-payment-checkout]');
+        if (checkoutUrl) {
+          const url = new URL(checkoutUrl);
+          if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com' || url.port || url.username || url.password) throw Error('Checkout inválido.');
+          if (!link) { link = document.createElement('a'); link.dataset.paymentCheckout = ''; link.className = 'pay-btn'; link.style.display = 'block'; link.style.textDecoration = 'none'; box.prepend(link); }
+          link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'Pagar no checkout Stripe'; link.hidden = false;
+        } else if (link) link.hidden = true;
+        img.hidden = Boolean(checkoutUrl); code.hidden = Boolean(checkoutUrl); copyBtn.hidden = Boolean(checkoutUrl);
         img.src = 'data:image/png;base64,' + qrBase64;
         code.textContent = qrText;
         box.classList.add('on');
@@ -230,17 +241,18 @@
       }
 
       btn.addEventListener('click', async () => {
-        if (qrTextInicial) {
-          exibirQr(qrTextInicial, qrBase64Inicial);
+        if (qrTextInicial || checkoutInicial) {
+          exibirQr(qrTextInicial, qrBase64Inicial, checkoutInicial);
           comecarPolling();
           return;
         }
+        if (!Array.from(document.querySelectorAll('.payment-payer-details input')).every(input => input.reportValidity())) return;
         btn.disabled = true;
         periodos.disabled = true;
         if (selecao) selecao.disabled = true;
         btn.innerHTML = '<span class="pay-spinner"></span>Gerando...';
         try {
-          const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value), selecao: selecao?.value }) });
+          const r = await fetch('/pagar/' + TOKEN + '/criar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodos: Number(periodos.value), selecao: selecao?.value, payerName: document.querySelector('[name=payerName]')?.value, payerEmail: document.querySelector('[name=payerEmail]')?.value, payerDocument: document.querySelector('[name=payerDocument]')?.value }) });
           const j = await r.json();
           if (!j.ok) {
             periodos.disabled = false;
@@ -251,7 +263,7 @@
             return;
           }
           pagamentoId = j.pagamentoId;
-          exibirQr(j.qrText, j.qrBase64);
+          exibirQr(j.qrText, j.qrBase64, j.checkoutUrl);
           comecarPolling();
         } catch (e) {
           periodos.disabled = false;
@@ -279,7 +291,7 @@
       });
 
       // Se já chegou com pagamento pendente recente, começa o polling automaticamente.
-      if (pagamentoId && qrTextInicial) comecarPolling();
+      if (pagamentoId && (qrTextInicial || checkoutInicial)) comecarPolling();
     })();
     </script>
   </body>
