@@ -368,7 +368,8 @@ export function createAutomationWorkflow({
           }
           if (action === 'toggle_regra') {
             await execute(
-              "UPDATE cobrancas SET status = IF(status = 'Ativo', 'Inativo', 'Ativo'), automatica = IF(status = 'Ativo', 0, 1) WHERE id = :id AND user_id = :userId",
+              // No MySQL, a atribuição seguinte já lê o status atualizado.
+              "UPDATE cobrancas SET status = IF(status = 'Ativo', 'Inativo', 'Ativo'), automatica = IF(status = 'Ativo', 1, 0) WHERE id = :id AND user_id = :userId",
               { id, userId },
             );
             return reply.redirect('/automacao');
