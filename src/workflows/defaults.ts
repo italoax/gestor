@@ -25,6 +25,10 @@ import {
   seedMensagensPadrao,
 } from '../services/catalogSeeds.ts';
 import { env } from '../config/env.ts';
+import {
+  defaultDeliveryMonitoring,
+  defaultDeliveryTracker,
+} from '../services/deliveryMonitoringDefaults.ts';
 import { automationsEnabled } from '../security/automationPolicy.ts';
 import { removerStatusExpirados } from '../services/statusRetention.ts';
 import { removerStatusWhatsapp } from '../services/statusRemoval.ts';
@@ -59,6 +63,9 @@ import { createAccountWorkflow } from './account.ts';
 import { createTransactionsWorkflow } from './transactions.ts';
 import { createMessagesWorkflow } from './messages.ts';
 import { createAutomationWorkflow } from './automation.ts';
+import { createAutomationPreview } from '../services/automationPreview.ts';
+import { montarMensagem } from '../services/whatsapp.ts';
+import { getPixConfig } from '../services/pixConfig.ts';
 import { createWhatsappWorkflow } from './whatsapp.ts';
 import { createStatusWorkflow } from './status.ts';
 import { createPaymentSettingsWorkflow } from './payment-settings.ts';
@@ -95,6 +102,16 @@ export function createDefaultFeatures() {
       toNullableString,
     }),
     automation: createAutomationWorkflow({
+      deliveryPreview: createAutomationPreview({
+        queryRows,
+        queryOne,
+        appTodayIso,
+        renderMessage: montarMensagem,
+        getPixConfig,
+        appUrl: env.appUrl,
+        enabled: automationsEnabled(env),
+      }),
+      deliveryCenter: defaultDeliveryMonitoring,
       agendamentoAtivo: automationsEnabled(env),
       withTransaction,
       execute,
@@ -106,7 +123,8 @@ export function createDefaultFeatures() {
       boolField,
       toNullableString,
       toNumber,
-      dispararRegraManual,
+      dispararRegraManual: (userId, ruleId) =>
+        dispararRegraManual(userId, ruleId, defaultDeliveryTracker),
       ensureCobrancasEnviosTable,
       jaSemeou,
       marcarSemeado,

@@ -9,7 +9,7 @@ import {
   transactionsPageUrl,
 } from '../../../../src/services/transactionsPage.ts';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
-import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
+import { TransactionDetails } from './TransactionDetails.tsx';
 
 const money = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
@@ -22,88 +22,6 @@ const dateBr = (value) => {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value);
 };
 const signedMoney = (value) => `${Number(value) < 0 ? '' : '+'}${money(value)}`;
-
-function TransactionDetails({
-  item,
-  onClose,
-}: {
-  item?: any;
-  onClose?: (...args: any[]) => any;
-}) {
-  const details = [
-    ['Pagamento', item.formaPagamento],
-    ['Plano', item.plano],
-    ['Servidor', item.servidor],
-    ['Descrição', item.descricao],
-    ...(item.duracao ? [['Duração', item.duracao]] : []),
-    [item.codigos ? 'Códigos' : 'Telas', item.codigos || item.telas],
-    ...(!item.codigos || Number(item.creditos) !== Number(item.codigos)
-      ? [['Créditos', Number(item.creditos || 0).toLocaleString('pt-BR')]]
-      : []),
-  ];
-  return (
-    <NativeDialog title="Detalhes da Transação" onClose={onClose} width={460}>
-      <div
-        className="modal-body"
-        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-        data-transaction-details={item.id}
-      >
-        <div
-          style={{ borderBottom: '1px solid var(--border)', paddingBottom: 12 }}
-        >
-          <div className="muted">{dateBr(item.data)}</div>
-          <strong style={{ fontSize: 18 }}>{item.clienteNome || '-'}</strong>
-        </div>
-        <div
-          style={{
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: 16,
-          }}
-        >
-          {[
-            ['Total recebido', signedMoney(item.valorVenda), 'tx-pos'],
-            ['Custo', money(item.custo), 'tx-neg'],
-            [
-              'Lucro',
-              signedMoney(item.lucro),
-              Number(item.lucro) < 0 ? 'tx-neg' : 'tx-pos',
-            ],
-          ].map(([label, value, color]) => (
-            <div
-              key={label}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 12,
-                paddingBlock: 5,
-              }}
-            >
-              <span>{label}</span>
-              <strong className={color}>{value}</strong>
-            </div>
-          ))}
-        </div>
-        <dl
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '10px 18px',
-            margin: 0,
-          }}
-        >
-          {details.map(([label, value]) => (
-            <div key={label} style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-              <dt className="muted">{label}</dt>
-              <dd style={{ margin: 0 }}>{value ?? '-'}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </NativeDialog>
-  );
-}
 
 function TransactionsContent({ data }: { data?: any }) {
   const [selected, setSelected] = useState(null);
@@ -334,7 +252,13 @@ function TransactionsContent({ data }: { data?: any }) {
                       {Number(item.creditos || 0)}
                     </td>
                     <td className="tx-neg">{money(item.custo)}</td>
-                    <td className="tx-pos">{signedMoney(item.valorVenda)}</td>
+                    <td
+                      className={
+                        Number(item.valorVenda) < 0 ? 'tx-neg' : 'tx-pos'
+                      }
+                    >
+                      {signedMoney(item.valorVenda)}
+                    </td>
                     <td
                       className={`tx-profit ${Number(item.lucro) < 0 ? 'tx-neg' : 'tx-pos'}`}
                     >

@@ -1,5 +1,7 @@
 import { safeError } from '../../../src/security/safeError.ts';
 import { readDefaultSchedulerHealth } from '../../../src/services/schedulerHealthDefaults.ts';
+import { createDeliveryWatchdog } from '../../../src/services/deliveryMonitoringDefaults.ts';
+import { ensureDeliveryMonitoringSchema } from '../../../src/db/deliveryMonitoringSchema.ts';
 import { stopWhenSupervisorExits } from '../../../src/services/supervisorLifecycle.ts';
 import { listarRenovacoesPendentes } from '../../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
@@ -30,6 +32,7 @@ import {
 } from '../../../src/services/backupScheduler.ts';
 
 const { app: application, stopDevReload } = createApplication();
+const deliveryWatchdog = createDeliveryWatchdog();
 let backend: Awaited<ReturnType<typeof createBackend>> | undefined;
 try {
   backend = await createBackend({
@@ -80,6 +83,7 @@ try {
         },
       );
       await twoFactor.initialize();
+      if (!env.localMode) await ensureDeliveryMonitoringSchema();
       if (env.localMode && process.env.GESTOR_COMPACT_LOGS !== 'true') {
         console.log('Modo local: automações desativadas; sessões em memória.');
       }
@@ -89,8 +93,11 @@ try {
     startAutomations() {
       // O backup acompanha o backend, independentemente dos envios automáticos.
       startBackupScheduler();
+      if (!env.localMode) deliveryWatchdog.start();
     },
-    stopAutomations: stopBackupScheduler,
+    async stopAutomations() {
+      await Promise.all([stopBackupScheduler(), deliveryWatchdog.stop()]);
+    },
     stopDevReload,
     closeSessionStores,
     closeDatabase: () => db.end(),

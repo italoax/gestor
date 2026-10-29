@@ -1,5 +1,4 @@
 <%
-  const historico = locals.historico || { pagina: 1, temMais: false };
   function badgeTipo(tipo) {
     const t = String(tipo).toLowerCase();
     if (t === 'vencimento') return { cls: 'tipo-antes', label: 'Antes do venc. do plano', ico: '⏰' };
@@ -14,10 +13,6 @@
     <button class="auto-tab active" type="button" data-auto-tab="regras"
       ><%- include('../partials/ui-icon', { name: 'bolt' }) %>
       Regras</button
-    >
-    <button class="auto-tab" type="button" data-auto-tab="disparos"
-      ><%- include('../partials/ui-icon', { name: 'send' }) %>
-      Disparos</button
     >
     <button
       class="btn btn-primary auto-new"
@@ -170,125 +165,7 @@
     </div>
     <% } %>
   </div>
-  <div class="auto-panel" data-auto-panel="disparos">
-    <form method="get" action="/automacao" class="auto-history-size-form">
-      <input type="hidden" name="aba" value="disparos" />
-      <select
-        class="input"
-        name="porPagina"
-        aria-label="Registros por página"
-        data-history-page-size
-      >
-        <% [10, 50, 100].forEach(size => { %>
-        <option value="<%= size %>" <%= Number(historico.porPagina || 10) === size ? 'selected' : '' %>
-          ><%= size %>
-          por página</option
-        >
-        <% }) %>
-      </select>
-    </form>
-    <% if (!disparos.length) { %>
-    <div class="cli-empty">
-      <div class="cli-empty-ico"><%- include('../partials/ui-icon', { name: '➤' }) %></div>
-      <h3>Nenhum envio neste período</h3>
-      <p class="muted">Os envios dos últimos 3 meses aparecerão aqui.</p>
-    </div>
-    <% } else { %>
-    <section class="auto-history" aria-label="Histórico de envios">
-      <%
-        const dias = new Map();
-        disparos.forEach(d => {
-          const quando = String(d.quando || '').match(/^(\d{2}\/\d{2}(?:\/\d{4})?)[,\s]+(\d{2}:\d{2})/);
-          const data = quando?.[1] || 'Data não informada';
-          const entradas = dias.get(data) || [];
-          entradas.push({ ...d, horario: quando?.[2] || d.quando || '—' });
-          dias.set(data, entradas);
-        });
-      %>
-      <div class="auto-history-days">
-        <% dias.forEach((entradas, data) => { %>
-        <article class="auto-history-day" data-history-date="<%= data %>">
-          <h3 class="auto-history-date"
-            ><%- include('../partials/ui-icon', { name: 'calendar' }) %><%= data %></h3
-          >
-          <div class="auto-history-table-wrap">
-            <table
-              class="auto-history-table"
-              aria-label="Envios de <%= data %>"
-            >
-              <thead>
-                <tr>
-                  <th>Horário</th>
-                  <th>Regra</th>
-                  <th>Clientes</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% entradas.forEach(d => { const total = Number(d.clientesCount || 0); const nomes = String(d.clientesNomes || ''); %>
-                <tr>
-                  <td class="auto-history-when"><%= d.horario %></td>
-                  <td class="auto-history-rule"><%= d.regraTitulo || 'Regra sem nome' %></td>
-                  <td class="auto-history-clients">
-                    <div>
-                      <span class="auto-history-count"
-                        ><%= total %>
-                        <%= total === 1 ? 'cliente' : 'clientes' %></span
-                      >
-                      <% if (d.clientesPorServidor?.length) { %>
-                      <div class="auto-history-servers">
-                        <% d.clientesPorServidor.forEach(grupo => { %>
-                        <div class="auto-history-server">
-                          <strong><%= grupo.servidor %></strong>
-                          <p><%= grupo.clientes.join(', ') %></p>
-                        </div>
-                        <% }) %>
-                      </div>
-                      <% } else { %>
-                      <p><%= nomes || 'Nenhum cliente identificado' %></p>
-                      <% } %>
-                    </div>
-                  </td>
-                  <td class="auto-history-status"
-                    ><span
-                      class="auto-history-badge"
-                      data-tone="<%= d.status==='enviado'?'success':d.status==='erro'?'danger':['incerto','pendente'].includes(d.status)?'warning':'muted' %>"
-                      ><%= d.status==='enviado'?'Enviado':d.status==='nao_enviado'?'Não enviado':d.status==='incerto'?'Sem confirmação':d.status==='erro'?'Erro':'Pendente' %></span
-                    ></td
-                  >
-                </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        </article>
-        <% }) %>
-      </div>
-    </section>
-    <% } %>
-    <% if (historico.pagina > 1 || historico.temMais) { %>
-    <nav class="auto-history-pagination" aria-label="Páginas do histórico">
-      <div
-        ><% if (historico.anteriorUrl) { %><a
-          class="btn btn-muted"
-          href="<%= historico.anteriorUrl %>"
-          >Anterior</a
-        ><% } %></div
-      >
-      <span
-        >Página
-        <%= historico.pagina %></span
-      >
-      <div
-        ><% if (historico.proximaUrl) { %><a
-          class="btn btn-muted"
-          href="<%= historico.proximaUrl %>"
-          >Próxima</a
-        ><% } %></div
-      >
-    </nav>
-    <% } %>
-  </div>
+
 </div>
 <div class="modal-overlay" id="modal-nova-regra" aria-hidden="true" inert>
   <div class="modal modal-lg">
@@ -596,26 +473,6 @@
 </div>
 <script nonce="<%= locals.cspNonce || '' %>">
 (function () {
-  document.querySelector('[data-history-page-size]')?.addEventListener('change', function () {
-    this.form.requestSubmit();
-  });
-  // Abas de página (Regras / Disparos)
-  document.querySelectorAll('[data-auto-tab]').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      document.querySelectorAll('[data-auto-tab]').forEach(function (t) { t.classList.remove('active'); });
-      tab.classList.add('active');
-      var key = tab.getAttribute('data-auto-tab');
-      var createButton = document.querySelector('.page-automacao .auto-new');
-      if (createButton) createButton.hidden = key === 'disparos';
-      document.querySelectorAll('[data-auto-panel]').forEach(function (p) {
-        p.classList.toggle('active', p.getAttribute('data-auto-panel') === key);
-      });
-    });
-  });
-  if (new URLSearchParams(location.search).get('aba') === 'disparos') {
-    document.querySelector('[data-auto-tab="disparos"]')?.click();
-  }
-
   var modal = document.getElementById('modal-nova-regra');
   if (!modal) return;
   var form = document.getElementById('modal-nova-regra-form');

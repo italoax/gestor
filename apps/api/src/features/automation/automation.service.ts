@@ -11,6 +11,16 @@ export class AutomationService {
       throw new Error('Scheduler status unavailable.');
     return this.runtime.schedulerStatus();
   }
+  monitor(input: WorkflowInput): Promise<WorkflowResponse> {
+    const action = this.runtime.features?.['automation']?.monitor;
+    if (!action) throw new Error('Delivery monitoring unavailable.');
+    return action(input);
+  }
+  preview(input: WorkflowInput): Promise<WorkflowResponse> {
+    const action = this.runtime.features?.['automation']?.preview;
+    if (!action) throw new Error('Delivery preview unavailable.');
+    return action(input);
+  }
   list(input: WorkflowInput): Promise<WorkflowResponse> {
     const action = this.runtime.features?.['automation']?.list;
     if (!action) throw new Error('Automation workflow unavailable.');

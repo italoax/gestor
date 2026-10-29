@@ -1,4 +1,5 @@
 import { regraPorVencimento } from '../services/cobrancaDestinatarios.ts';
+import { PreviewError } from '../services/automationPreview.ts';
 import { resumirEnviosCobranca } from '../services/cobrancaResumo.ts';
 import { createCampaignActions } from './campaigns.ts';
 import { lerCampanha, dataReservaCampanha } from '../services/campanhas.ts';
@@ -28,6 +29,8 @@ export function createAutomationWorkflow({
   jaSemeou,
   marcarSemeado,
   seedMensagensPadrao,
+  deliveryCenter = null,
+  deliveryPreview = null,
 }) {
   const campaigns = createCampaignActions({
     queryRows,
@@ -174,6 +177,38 @@ export function createAutomationWorkflow({
     });
   }
   return {
+    preview: (input) =>
+      workflowResult(input, async (reply) => {
+        reply.set('Cache-Control', 'private, no-store');
+        if (!deliveryPreview)
+          return reply
+            .status(503)
+            .json({ ok: false, error: 'Prévia indisponível.' });
+        try {
+          reply.json(await deliveryPreview(input.session.user.id, input.body));
+        } catch (error) {
+          if (error instanceof PreviewError)
+            return reply
+              .status(error.status)
+              .json({ ok: false, error: error.message });
+          throw error;
+        }
+      }),
+    monitor: (input) =>
+      workflowResult(input, async (reply) => {
+        if (!deliveryCenter)
+          return reply
+            .status(503)
+            .json({ error: 'Central de envios indisponível.' });
+        reply
+          .set('Cache-Control', 'private, no-store')
+          .json(
+            await deliveryCenter.snapshot(
+              input.session.user.id,
+              Number(input.query.pagina || 1),
+            ),
+          );
+      }),
     list: (input) =>
       workflowResult(input, async (reply) => {
         try {
@@ -400,7 +435,11 @@ export function createAutomationWorkflow({
                 `Disparo concluído: ${resultado.enviados} mensagem(ns) enviada(s).`,
               );
             }
-            return reply.redirect('/automacao');
+            return reply.redirect(
+              input.body.origem_tela === 'central'
+                ? '/automacao?aba=central'
+                : '/automacao',
+            );
           }
           const ativa = boolField(input.body.ativa);
           const tipo = String(input.body.tipo || 'Vencimento');

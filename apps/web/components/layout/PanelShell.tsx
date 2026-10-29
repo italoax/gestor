@@ -7,7 +7,6 @@ import {
   useState,
 } from 'react';
 import { PanelFlashNotice } from '../ui/PanelFlashNotice.tsx';
-import { PwaInstallButton } from '../pwa/PwaProvider.tsx';
 import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
@@ -237,7 +236,7 @@ function PanelFrame({
                   <li className="notif-empty">
                     <span className="notif-empty-title">Tudo em dia</span>
                     <span className="notif-empty-sub">
-                      Pagamentos recebidos e alertas de créditos aparecem aqui.
+                      Pagamentos, créditos e alertas de envios aparecem aqui.
                     </span>
                   </li>
                 </ul>
@@ -273,7 +272,6 @@ function PanelFrame({
                   <Icon name="card" />
                   <span>Integração de pagamento</span>
                 </a>
-                <PwaInstallButton />
               </nav>
             </div>
           </div>

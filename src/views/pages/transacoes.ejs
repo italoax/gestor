@@ -148,7 +148,9 @@
             <td><%= t.codigos ? '—' : t.telas %></td>
             <td class="<%= Number(t.creditos) < 0 ? 'tx-neg' : '' %>"><%= Number(t.creditos) %></td>
             <td class="tx-neg"><%= formatMoney(t.custo) %></td>
-            <td class="tx-pos">+<%= formatMoney(t.valorVenda) %></td>
+            <td class="<%= Number(t.valorVenda) < 0 ? 'tx-neg' : 'tx-pos' %>"
+              ><%= Number(t.valorVenda) < 0 ? '' : '+' %><%= formatMoney(t.valorVenda) %></td
+            >
             <td class="tx-profit <%= Number(t.lucro) < 0 ? 'tx-neg' : 'tx-pos' %>"
               ><%= Number(t.lucro) < 0 ? '' : '+' %><%= formatMoney(t.lucro) %></td
             >
@@ -201,9 +203,16 @@
   <% } %>
 </div>
 <div class="modal-overlay" id="modal-transacao-info" aria-hidden="true" inert>
-  <div class="modal" style="max-width:460px;">
+  <div
+    class="modal transaction-details"
+    role="dialog"
+    aria-labelledby="tx-info-heading"
+  >
     <div class="modal-header">
-      <h3>Detalhes da Transação</h3>
+      <h3 id="tx-info-heading"
+        ><span class="tx-detail-title-icon"><%- include('../partials/ui-icon', { name: 'file' }) %></span
+        >Detalhes da transação</h3
+      >
       <button
         class="modal-close"
         type="button"
@@ -212,152 +221,78 @@
         >×</button
       >
     </div>
-    <div
-      class="modal-body"
-      style="display:flex;flex-direction:column;gap:16px;"
+    <div class="modal-body tx-detail-body">
+      <div class="tx-detail-client">
+        <span class="tx-detail-avatar"><%- include('../partials/ui-icon', { name: 'users' }) %></span>
+        <div class="tx-detail-client-name"
+          ><span class="tx-detail-label">Cliente</span
+          ><strong id="tx-info-cliente">—</strong></div
+        >
+        <span class="tx-detail-date"
+          ><%- include('../partials/ui-icon', { name: 'calendar' }) %><span id="tx-info-data">—</span></span
+        >
+      </div>
+      <section class="tx-detail-total" aria-label="Total recebido">
+        <div class="tx-detail-total-top"
+          ><span class="tx-detail-label">Total recebido</span
+          ><span class="tx-detail-payment"
+            ><%- include('../partials/ui-icon', { name: 'card' }) %><span id="tx-info-pagamento">—</span></span
+          ></div
+        >
+        <strong class="tx-detail-amount" id="tx-info-total">—</strong>
+      </section>
+      <div class="tx-detail-finance">
+        <div class="tx-detail-finance-item tx-detail-cost"
+          ><span class="tx-detail-label">Custo</span
+          ><strong id="tx-info-custo">—</strong></div
+        >
+        <div class="tx-detail-finance-item tx-detail-profit"
+          ><span class="tx-detail-label">Lucro</span
+          ><strong id="tx-info-lucro">—</strong></div
+        >
+      </div>
+      <section class="tx-detail-subscription" aria-label="Dados da assinatura">
+        <h4>Dados da assinatura</h4>
+        <dl class="tx-detail-plan">
+          <div class="tx-detail-field"
+            ><span class="tx-detail-field-icon"><%- include('../partials/ui-icon', { name: 'package' }) %></span
+            ><div><dt>Plano</dt><dd id="tx-info-plano">—</dd></div></div
+          >
+          <div class="tx-detail-field"
+            ><span class="tx-detail-field-icon"><%- include('../partials/ui-icon', { name: 'server' }) %></span
+            ><div><dt>Servidor</dt><dd id="tx-info-servidor">—</dd></div></div
+          >
+        </dl>
+        <dl class="tx-detail-usage">
+          <div
+            ><dt
+              ><%- include('../partials/ui-icon', { name: 'monitor' }) %><span id="tx-info-quantidade-label"
+                >Telas</span
+              ></dt
+            ><dd id="tx-info-telas">—</dd></div
+          >
+          <div id="tx-info-creditos-group"
+            ><dt><%- include('../partials/ui-icon', { name: 'bolt' }) %>Créditos</dt
+            ><dd id="tx-info-creditos">—</dd></div
+          >
+          <div id="tx-info-duracao-group" hidden
+            ><dt><%- include('../partials/ui-icon', { name: 'clock' }) %>Duração</dt
+            ><dd id="tx-info-duracao">—</dd></div
+          >
+        </dl>
+      </section>
+      <div class="tx-detail-description"
+        ><%- include('../partials/ui-icon', { name: 'file' }) %><div
+          ><span class="tx-detail-label">Descrição</span
+          ><p id="tx-info-descricao">—</p></div
+        ></div
+      >
+    </div>
+    <div class="modal-footer"
+      ><span class="tx-detail-reference" id="tx-info-reference">Transação</span
+      ><button class="btn btn-primary" type="button" data-close-modal
+        >Fechar detalhes</button
+      ></div
     >
-      <div
-        style="display:flex;flex-direction:column;gap:2px;padding:2px 2px 12px;border-bottom:1px solid var(--border);"
-      >
-        <div style="font-size:12px;color:var(--muted);font-weight:500;"
-          ><%- include('../partials/ui-icon', { name: 'calendar' }) %>
-          <span id="tx-info-data">—</span></div
-        >
-        <div
-          id="tx-info-cliente"
-          style="font-size:18px;font-weight:700;color:var(--text);line-height:1.25;"
-          >—</div
-        >
-      </div>
-      <div
-        style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;"
-      >
-        <div
-          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
-        >
-          <span
-            style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Total recebido</span
-          >
-          <strong
-            id="tx-info-total"
-            style="font-size:15px;font-weight:700;color:#22c55e;"
-            >—</strong
-          >
-        </div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
-        >
-          <span
-            style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Custo</span
-          >
-          <strong
-            id="tx-info-custo"
-            style="font-size:15px;font-weight:700;color:#ef4444;"
-            >—</strong
-          >
-        </div>
-        <div style="height:1px;background:var(--border);margin:2px 0;"></div>
-        <div
-          style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;"
-        >
-          <span
-            style="font-size:12px;color:var(--text);text-transform:uppercase;letter-spacing:.06em;font-weight:800;"
-            >Lucro</span
-          >
-          <strong
-            id="tx-info-lucro"
-            style="font-size:22px;font-weight:800;color:#22c55e;letter-spacing:-.01em;"
-            >—</strong
-          >
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;">
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Pagamento</span
-          >
-          <span
-            id="tx-info-pagamento"
-            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-            >—</span
-          >
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Plano</span
-          >
-          <span
-            id="tx-info-plano"
-            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-            >—</span
-          >
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Servidor</span
-          >
-          <span
-            id="tx-info-servidor"
-            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-            >—</span
-          >
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Descrição</span
-          >
-          <span
-            id="tx-info-descricao"
-            style="font-size:13.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-            >—</span
-          >
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            id="tx-info-quantidade-label"
-            >Telas</span
-          >
-          <span
-            id="tx-info-telas"
-            style="font-size:13.5px;color:var(--text);font-weight:500;"
-            >—</span
-          >
-        </div>
-        <div
-          id="tx-info-creditos-group"
-          style="display:flex;flex-direction:column;gap:2px;min-width:0;"
-        >
-          <span
-            style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;"
-            >Créditos</span
-          >
-          <span
-            id="tx-info-creditos"
-            style="font-size:13.5px;color:var(--text);font-weight:500;"
-            >—</span
-          >
-        </div>
-        <div
-          id="tx-info-duracao-group"
-          style="display:flex;flex-direction:column;gap:2px;min-width:0;"
-          hidden
-        >
-          <span class="muted">Duração</span>
-          <span id="tx-info-duracao">—</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" type="button" data-close-modal
-        >Fechar</button
-      >
-    </div>
   </div>
 </div>

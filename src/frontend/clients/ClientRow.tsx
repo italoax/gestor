@@ -7,11 +7,24 @@ import {
   statusUrgency,
 } from '../../services/format.ts';
 
-function ExpiryDate({ date, hour }: { date: unknown; hour?: unknown }) {
+function ExpiryDate({
+  date,
+  hour,
+  status,
+  now,
+}: {
+  date: unknown;
+  hour?: unknown;
+  status: unknown;
+  now: Date;
+}) {
   const time = hour ? String(hour).slice(0, 5) : '';
+  const expiryStatus = statusByVencimento(status, date, now);
   return (
     <div className="cli-expiry-access">
-      <span className="cli-expiry-date">{formatDateBr(date)}</span>
+      <span className="cli-expiry-date" data-expiry-tone={expiryStatus.color}>
+        {formatDateBr(date)}
+      </span>
       {time && (
         <small className="cli-expiry-time" title="Horário de vencimento">
           <Icon name="clock" />
@@ -222,9 +235,19 @@ export function ClientRow({
         ) : null}
       </td>
       <td className="cli-venc">
-        <ExpiryDate date={c.vencimento} hour={c.horaVencimento} />
+        <ExpiryDate
+          date={c.vencimento}
+          hour={c.horaVencimento}
+          status={c.status}
+          now={sortNow}
+        />
         {c.adicional && (
-          <ExpiryDate date={c.adicional.vencimento} hour={c.horaVencimento} />
+          <ExpiryDate
+            date={c.adicional.vencimento}
+            hour={c.horaVencimento}
+            status={c.status}
+            now={sortNow}
+          />
         )}
       </td>
       <td>

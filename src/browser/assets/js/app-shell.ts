@@ -779,7 +779,7 @@ window.__gestorInitShell = function () {
           '</svg>' +
           '</span>' +
           '<span class="notif-empty-title">Tudo em dia</span>' +
-          '<span class="notif-empty-sub">Pagamentos recebidos e alertas de créditos aparecem aqui.</span>' +
+          '<span class="notif-empty-sub">Pagamentos, créditos e alertas de envios aparecem aqui.</span>' +
           '</li>';
         return;
       }

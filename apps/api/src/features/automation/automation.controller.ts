@@ -31,11 +31,25 @@ export class AutomationController {
       await this.service.list(workflowInput(request, response)),
     );
   }
+  @Get('/api/automacao/central')
+  async monitor(@Req() request: Request, @Res() response: Response) {
+    sendWorkflowResponse(
+      response,
+      await this.service.monitor(workflowInput(request, response)),
+    );
+  }
   @Post('/automacao')
   async change(@Req() request: Request, @Res() response: Response) {
     sendWorkflowResponse(
       response,
       await this.service.change(workflowInput(request, response)),
+    );
+  }
+  @Post('/api/automacao/previa')
+  async preview(@Req() request: Request, @Res() response: Response) {
+    sendWorkflowResponse(
+      response,
+      await this.service.preview(workflowInput(request, response)),
     );
   }
   @Get('/automacao/regra/:id/recebedores')

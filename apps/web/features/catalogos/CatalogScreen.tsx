@@ -434,6 +434,15 @@ export function CatalogScreen({ data }: { data?: any }) {
                 className={`catalog-card ${config.card} ${catalog === 'servidores' ? (Number(item.creditos) <= 0 ? 'srv-no-balance' : '') : !active(item) ? (catalog === 'planos' ? 'plano-inativo' : catalog === 'aplicativos' ? 'app-inativo' : 'device-inativo') : ''}`}
                 key={item.id}
                 data-catalog-item={item.id}
+                data-credit-balance={
+                  catalog === 'servidores'
+                    ? Number(item.creditos) <= 0
+                      ? 'empty'
+                      : Number(item.creditos) <= 3
+                        ? 'low'
+                        : 'available'
+                    : undefined
+                }
               >
                 <div
                   className={`catalog-card-head ${
@@ -462,7 +471,9 @@ export function CatalogScreen({ data }: { data?: any }) {
                   >
                     {catalog === 'servidores'
                       ? Number(item.creditos) > 0
-                        ? 'Com saldo'
+                        ? Number(item.creditos) <= 3
+                          ? 'Saldo baixo'
+                          : 'Com saldo'
                         : 'Sem saldo'
                       : active(item)
                         ? 'Ativo'
@@ -511,7 +522,9 @@ export function CatalogScreen({ data }: { data?: any }) {
                       </div>
                       <div className="srv-stat">
                         <span>Custo por crédito</span>
-                        <strong>{money(item.valorCred)}</strong>
+                        <strong data-value-tone="negative">
+                          {money(item.valorCred)}
+                        </strong>
                       </div>
                     </div>
                   </>

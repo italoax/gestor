@@ -9,36 +9,46 @@ export function consultaDestinatariosCobranca(userId, regra, today) {
   const json = (campo) =>
     `JSON_UNQUOTE(JSON_EXTRACT(plano_adicional, '$.${campo}')) COLLATE utf8mb4_unicode_ci`;
   const fonte = `(SELECT id, user_id, nome, telefone, vencimento, valor, plano, servidor, user, senha,
-      pagamento_token AS pagamentoToken, status, arquivado, created_at,
+      pagamento_token AS pagamentoToken, pagamento_curto AS pagamentoCurto, status, arquivado, created_at,
       'principal' AS acessoChave, plano_adicional IS NOT NULL AS temMultiplosAcessos
     FROM clientes WHERE user_id = :userId
     UNION ALL
     SELECT id, user_id, nome, telefone, CAST(${json('vencimento')} AS DATE),
       CAST(${json('valor')} AS DECIMAL(12,2)), ${json('plano')}, ${json('servidor')}, ${json('user')}, NULL,
-      pagamento_token, status, arquivado, created_at, ${json('id')}, 1
+      pagamento_token, pagamento_curto, status, arquivado, created_at, ${json('id')}, 1
     FROM clientes WHERE user_id = :userId AND plano_adicional IS NOT NULL) acessos`;
   const tipo = String(regra.tipo).toLowerCase().trim();
   const params: Record<string, unknown> = { userId, today };
-  let where = "user_id = :userId AND status = 'Ativo'";
+  const conditions = [{ sql: "status = 'Ativo'", reason: 'Cliente inativo' }];
   const campanha = lerCampanha(regra.campanhaConfig);
   if (campanha) {
     const ids = campanha.clientesIds.map((id, index) => {
       params['campanhaCliente' + index] = id;
       return ':campanhaCliente' + index;
     });
-    where += ` AND id IN (${ids.join(',')})`;
+    conditions.push({
+      sql: `id IN (${ids.join(',')})`,
+      reason: 'Fora da seleção deste envio',
+    });
   }
   const arquivados = String(regra.filtroArquivados || '')
     .toLowerCase()
     .trim();
-  if (arquivados === 'arquivado') where += ' AND arquivado = 1';
-  else if (arquivados !== 'todos') where += ' AND arquivado = 0';
+  if (arquivados === 'arquivado')
+    conditions.push({ sql: 'arquivado = 1', reason: 'Cliente não arquivado' });
+  else if (arquivados !== 'todos')
+    conditions.push({ sql: 'arquivado = 0', reason: 'Cliente arquivado' });
   if (tipo === 'apos cadastro') {
-    where +=
-      " AND DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro";
+    conditions.push({
+      sql: "DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro",
+      reason: 'Cadastro fora do período da regra',
+    });
     params.periodoCadastro = Math.abs(Number(regra.periodo) || 0);
   } else if (regraPorVencimento(regra)) {
-    where += ' AND DATEDIFF(vencimento, :today) = :periodoAlvo';
+    conditions.push({
+      sql: 'DATEDIFF(vencimento, :today) = :periodoAlvo',
+      reason: 'Vencimento fora do período da regra',
+    });
     const dias = Math.abs(Number(regra.periodo) || 0);
     params.periodoAlvo =
       tipo === 'vence hoje'
@@ -50,14 +60,28 @@ export function consultaDestinatariosCobranca(userId, regra, today) {
             : Number(regra.periodo) || 0;
   }
   if (regra.filtroServidor) {
-    where += ' AND servidor = :filtroServidor';
+    conditions.push({
+      sql: 'servidor = :filtroServidor',
+      reason: 'Servidor diferente do filtro',
+    });
     params.filtroServidor = regra.filtroServidor;
   }
   if (regra.filtroPlano) {
-    where += ' AND plano = :filtroPlano';
+    conditions.push({
+      sql: 'plano = :filtroPlano',
+      reason: 'Plano diferente do filtro',
+    });
     params.filtroPlano = regra.filtroPlano;
   }
-  return { from: `FROM ${fonte} WHERE ${where}`, params };
+  const where = ['user_id = :userId', ...conditions.map(({ sql }) => sql)].join(
+    ' AND ',
+  );
+  return {
+    from: `FROM ${fonte} WHERE ${where}`,
+    params,
+    source: fonte,
+    conditions,
+  };
 }
 // Campanhas gerais e de boas-vindas continuam enviando uma mensagem por cadastro.
 export function selecionarDestinatarios(rows, regra) {

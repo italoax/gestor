@@ -7,8 +7,9 @@ import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { useSearchParams } from 'next/navigation';
 import { CampaignEditor, ScheduledMessages } from './ScheduledMessages.tsx';
-import { DispatchHistory } from './DispatchHistory.tsx';
 import { DeliveryDetail } from './DeliveryDetail.tsx';
+import { DeliveryCenter } from './DeliveryCenter.tsx';
+import { DeliveryPreview } from './DeliveryPreview.tsx';
 
 const triggers = [
   ['Todos', 'Todos os clientes'],
@@ -73,6 +74,7 @@ function RuleEditor({
   );
   const [message, setMessage] = useState(String(item?.mensagemId || ''));
   const [batches, setBatches] = useState(truthy(item?.envioLotes));
+  const [preview, setPreview] = useState<string | null>(null);
   const submit = useNativeSubmit();
   const days = item
     ? item.diasSemanaLista || []
@@ -89,251 +91,281 @@ function RuleEditor({
     </label>
   );
   return (
-    <NativeDialog
-      title={item ? 'Editar Regra' : 'Nova Regra'}
-      width={800}
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-muted" type="button" onClick={onClose}>
-            Cancelar
-          </button>
-          <button
-            className="btn btn-primary"
-            type="submit"
-            form="react-rule-form"
-          >
-            Salvar regra
-          </button>
-        </>
-      }
-    >
-      <form
-        method="post"
-        action="/automacao"
-        id="react-rule-form"
-        className="modal-body"
-        onSubmit={submit}
+    <>
+      <NativeDialog
+        title={item ? 'Editar Regra' : 'Nova Regra'}
+        width={800}
+        onClose={onClose}
+        footer={
+          <>
+            <button className="btn btn-muted" type="button" onClick={onClose}>
+              Cancelar
+            </button>
+            <button
+              className="btn btn-muted"
+              type="button"
+              onClick={() => {
+                const form = document.getElementById(
+                  'react-rule-form',
+                ) as HTMLFormElement;
+                const body = new URLSearchParams();
+                new FormData(form).forEach((value, key) =>
+                  body.append(key, String(value)),
+                );
+                body.set('rascunho', '1');
+                setPreview(body.toString());
+              }}
+            >
+              Ver prévia
+            </button>
+            <button
+              className="btn btn-primary"
+              type="submit"
+              form="react-rule-form"
+            >
+              Salvar regra
+            </button>
+          </>
+        }
       >
-        <CsrfInput token={data.page.csrfToken} />
-        <input
-          type="hidden"
-          name="action"
-          value={`${item ? 'update' : 'create'}_regra`}
-        />
-        <input type="hidden" name="id" value={item?.id || ''} />
-        <input
-          type="hidden"
-          name="rodape_antiban"
-          value={truthy(item?.rodapeAntiban) ? '1' : '0'}
-        />
-        <section className="auto-form-section">
-          <h4>Regra e gatilho</h4>
-          {input('Nome da regra *', 'nome', item?.titulo, { required: true })}
-          <div className="auto-trigger-list">
-            {triggers.map(([value, label]) => (
-              <label
-                key={value}
-                className={`auto-trigger ${type === value ? 'is-selected' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name="tipo"
-                  value={value}
-                  checked={type === value}
-                  onChange={() => setType(value)}
-                />
-                <div>
-                  <strong>{label}</strong>
-                </div>
-              </label>
-            ))}
-          </div>
-          <div
-            className="auto-period"
-            hidden={!['Vencimento', 'Vencidos', 'Apos cadastro'].includes(type)}
-          >
-            <span className="auto-label">
-              {type === 'Vencimento'
-                ? 'Quanto tempo antes do vencimento do plano?'
-                : type === 'Vencidos'
-                  ? 'Quanto tempo após o vencimento do plano?'
-                  : 'Quanto tempo após o cadastro?'}
-            </span>
-            <div className="auto-period-row">
-              {input('Período', 'periodo', item?.periodo ?? 3, {
-                type: 'number',
-                min: 0,
-              })}
-              {['Dias', 'Minutos'].map((unit) => (
-                <label className="auto-seg sm" key={unit}>
+        <form
+          method="post"
+          action="/automacao"
+          id="react-rule-form"
+          className="modal-body"
+          onSubmit={submit}
+        >
+          <CsrfInput token={data.page.csrfToken} />
+          <input
+            type="hidden"
+            name="action"
+            value={`${item ? 'update' : 'create'}_regra`}
+          />
+          <input type="hidden" name="id" value={item?.id || ''} />
+          <input
+            type="hidden"
+            name="rodape_antiban"
+            value={truthy(item?.rodapeAntiban) ? '1' : '0'}
+          />
+          <section className="auto-form-section">
+            <h4>Regra e gatilho</h4>
+            {input('Nome da regra *', 'nome', item?.titulo, { required: true })}
+            <div className="auto-trigger-list">
+              {triggers.map(([value, label]) => (
+                <label
+                  key={value}
+                  className={`auto-trigger ${type === value ? 'is-selected' : ''}`}
+                >
                   <input
                     type="radio"
-                    name="tipo_periodo"
-                    value={unit}
-                    defaultChecked={
-                      unit.toLowerCase() ===
-                      String(item?.tipoPeriodo || 'Dias').toLowerCase()
-                    }
+                    name="tipo"
+                    value={value}
+                    checked={type === value}
+                    onChange={() => setType(value)}
                   />
-                  <span>{unit}</span>
+                  <div>
+                    <strong>{label}</strong>
+                  </div>
                 </label>
               ))}
             </div>
-          </div>
-        </section>
-        <section className="auto-form-section">
-          <h4>Mensagem</h4>
-          <label className="field full">
-            <span>Template de mensagem *</span>
-            <select
-              className="input"
-              name="mensagem_id"
-              value={message}
-              onChange={(event) =>
-                setMessage((event.target as HTMLSelectElement).value)
+            <div
+              className="auto-period"
+              hidden={
+                !['Vencimento', 'Vencidos', 'Apos cadastro'].includes(type)
               }
             >
-              <option value="">Selecione um template...</option>
-              {data.mensagens.map((row) => (
-                <option value={row.id} key={row.id}>
-                  {row.titulo}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="auto-preview">
-            {data.mensagens.find((row) => String(row.id) === message)
-              ?.mensagem || 'Selecione um template para ver a prévia.'}
-          </div>
-          <small className="muted">
-            As variáveis serão substituídas pelos dados reais no envio.
-          </small>
-        </section>
-        <section className="auto-form-section">
-          <h4>Configurações de envio</h4>
-          <label className="switch-field">
-            <span>Regra ativa</span>
-            <input
-              type="checkbox"
-              name="ativa"
-              className="switch"
-              value="1"
-              defaultChecked={!item || item.status === 'Ativo'}
-            />
-          </label>
-          <div className="auto-box">
-            <div className="auto-box-title">Agendamento</div>
-            {input(
-              'Horário',
-              'hora_envio',
-              String(item?.horaEnvio || '09:00').slice(0, 5),
-              { type: 'time' },
-            )}
-            <div className="auto-days">
-              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(
-                (label, index) => (
-                  <label className="auto-day" key={label}>
+              <span className="auto-label">
+                {type === 'Vencimento'
+                  ? 'Quanto tempo antes do vencimento do plano?'
+                  : type === 'Vencidos'
+                    ? 'Quanto tempo após o vencimento do plano?'
+                    : 'Quanto tempo após o cadastro?'}
+              </span>
+              <div className="auto-period-row">
+                {input('Período', 'periodo', item?.periodo ?? 3, {
+                  type: 'number',
+                  min: 0,
+                })}
+                {['Dias', 'Minutos'].map((unit) => (
+                  <label className="auto-seg sm" key={unit}>
                     <input
-                      type="checkbox"
-                      name="dias_semana[]"
-                      value={index}
-                      defaultChecked={days.map(String).includes(String(index))}
+                      type="radio"
+                      name="tipo_periodo"
+                      value={unit}
+                      defaultChecked={
+                        unit.toLowerCase() ===
+                        String(item?.tipoPeriodo || 'Dias').toLowerCase()
+                      }
                     />
-                    <span>{label}</span>
+                    <span>{unit}</span>
                   </label>
-                ),
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="auto-box">
-            <div className="auto-box-title">Intervalo entre envios</div>
+          </section>
+          <section className="auto-form-section">
+            <h4>Mensagem</h4>
+            <label className="field full">
+              <span>Template de mensagem *</span>
+              <select
+                className="input"
+                name="mensagem_id"
+                value={message}
+                onChange={(event) =>
+                  setMessage((event.target as HTMLSelectElement).value)
+                }
+              >
+                <option value="">Selecione um template...</option>
+                {data.mensagens.map((row) => (
+                  <option value={row.id} key={row.id}>
+                    {row.titulo}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="auto-preview">
+              {data.mensagens.find((row) => String(row.id) === message)
+                ?.mensagem || 'Selecione um template para ver a prévia.'}
+            </div>
             <small className="muted">
-              Tempo aleatório entre cada mensagem para evitar bloqueios.
+              As variáveis serão substituídas pelos dados reais no envio.
             </small>
-            <div className="form-grid">
-              {input('Mín (seg)', 'min_delay', item ? item.minDelay : 5, {
-                type: 'number',
-                min: 0,
-              })}
-              {input('Máx (seg)', 'max_delay', item ? item.maxDelay : 15, {
-                type: 'number',
-                min: 0,
-              })}
-            </div>
-          </div>
-          <div className="auto-box">
+          </section>
+          <section className="auto-form-section">
+            <h4>Configurações de envio</h4>
             <label className="switch-field">
-              <span>Envio em lotes</span>
+              <span>Regra ativa</span>
               <input
                 type="checkbox"
-                name="envio_lotes"
-                value="1"
+                name="ativa"
                 className="switch"
-                checked={batches}
-                onChange={(event) =>
-                  setBatches((event.target as HTMLInputElement).checked)
-                }
+                value="1"
+                defaultChecked={!item || item.status === 'Ativo'}
               />
             </label>
-            <div className="form-grid" hidden={!batches}>
+            <div className="auto-box">
+              <div className="auto-box-title">Agendamento</div>
               {input(
-                'Mensagens por lote',
-                'lote_tamanho',
-                item?.loteTamanho ?? 20,
-                { type: 'number', min: 1 },
+                'Horário',
+                'hora_envio',
+                String(item?.horaEnvio || '09:00').slice(0, 5),
+                { type: 'time' },
               )}
-              {input(
-                'Pausa entre lotes (seg)',
-                'lote_pausa',
-                item?.lotePausa ?? 60,
-                { type: 'number', min: 0 },
-              )}
+              <div className="auto-days">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(
+                  (label, index) => (
+                    <label className="auto-day" key={label}>
+                      <input
+                        type="checkbox"
+                        name="dias_semana[]"
+                        value={index}
+                        defaultChecked={days
+                          .map(String)
+                          .includes(String(index))}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ),
+                )}
+              </div>
             </div>
-          </div>
-          <div className="auto-box">
-            <div className="auto-box-title">Para quais clientes enviar?</div>
-            <div className="form-grid">
-              {[
-                [
-                  'Servidor',
-                  'filtro_servidor',
-                  data.servidores,
-                  item?.filtroServidor,
-                ],
-                ['Plano', 'filtro_plano', data.planos, item?.filtroPlano],
-              ].map(([label, name, rows, value]) => (
-                <label className="field" key={name}>
-                  <span>{label}</span>
+            <div className="auto-box">
+              <div className="auto-box-title">Intervalo entre envios</div>
+              <small className="muted">
+                Tempo aleatório entre cada mensagem para evitar bloqueios.
+              </small>
+              <div className="form-grid">
+                {input('Mín (seg)', 'min_delay', item ? item.minDelay : 5, {
+                  type: 'number',
+                  min: 0,
+                })}
+                {input('Máx (seg)', 'max_delay', item ? item.maxDelay : 15, {
+                  type: 'number',
+                  min: 0,
+                })}
+              </div>
+            </div>
+            <div className="auto-box">
+              <label className="switch-field">
+                <span>Envio em lotes</span>
+                <input
+                  type="checkbox"
+                  name="envio_lotes"
+                  value="1"
+                  className="switch"
+                  checked={batches}
+                  onChange={(event) =>
+                    setBatches((event.target as HTMLInputElement).checked)
+                  }
+                />
+              </label>
+              <div className="form-grid" hidden={!batches}>
+                {input(
+                  'Mensagens por lote',
+                  'lote_tamanho',
+                  item?.loteTamanho ?? 20,
+                  { type: 'number', min: 1 },
+                )}
+                {input(
+                  'Pausa entre lotes (seg)',
+                  'lote_pausa',
+                  item?.lotePausa ?? 60,
+                  { type: 'number', min: 0 },
+                )}
+              </div>
+            </div>
+            <div className="auto-box">
+              <div className="auto-box-title">Para quais clientes enviar?</div>
+              <div className="form-grid">
+                {[
+                  [
+                    'Servidor',
+                    'filtro_servidor',
+                    data.servidores,
+                    item?.filtroServidor,
+                  ],
+                  ['Plano', 'filtro_plano', data.planos, item?.filtroPlano],
+                ].map(([label, name, rows, value]) => (
+                  <label className="field" key={name}>
+                    <span>{label}</span>
+                    <select
+                      className="input"
+                      name={name}
+                      defaultValue={value || ''}
+                    >
+                      <option value="">Todos</option>
+                      {rows.map((row) => (
+                        <option key={row.id}>{row.nome}</option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+                <label className="field">
+                  <span>Arquivados</span>
                   <select
                     className="input"
-                    name={name}
-                    defaultValue={value || ''}
+                    name="filtro_arquivados"
+                    defaultValue={item?.filtroArquivados || ''}
                   >
-                    <option value="">Todos</option>
-                    {rows.map((row) => (
-                      <option key={row.id}>{row.nome}</option>
-                    ))}
+                    <option value="">Não arquivado</option>
+                    <option>Arquivado</option>
+                    <option value="todos">Todos</option>
                   </select>
                 </label>
-              ))}
-              <label className="field">
-                <span>Arquivados</span>
-                <select
-                  className="input"
-                  name="filtro_arquivados"
-                  defaultValue={item?.filtroArquivados || ''}
-                >
-                  <option value="">Não arquivado</option>
-                  <option>Arquivado</option>
-                  <option value="todos">Todos</option>
-                </select>
-              </label>
+              </div>
             </div>
-          </div>
-        </section>
-      </form>
-    </NativeDialog>
+          </section>
+        </form>
+      </NativeDialog>
+      {preview !== null && (
+        <DeliveryPreview
+          request={preview}
+          token={data.page.csrfToken}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </>
   );
 }
 function Recipients({
@@ -448,16 +480,22 @@ function Recipients({
 }
 export function AutomationScreen({ data }: { data?: any }) {
   const params = useSearchParams();
+  const requestedTab =
+    params?.get('aba') === 'disparos' ? 'central' : params?.get('aba');
   const [tab, setTab] = useState(
-    ['envios', 'disparos'].includes(params?.get('aba'))
-      ? params.get('aba')
-      : 'regras',
+    ['central', 'envios'].includes(requestedTab) ? requestedTab : 'regras',
   );
   const [editor, setEditor] = useState(null);
   const [scheduledEditor, setScheduledEditor] = useState<{ item: any } | null>(
     null,
   );
   const [recipients, setRecipients] = useState(null);
+  const [previewRule, setPreviewRule] = useState(null);
+  useEffect(() => {
+    setTab(
+      ['central', 'envios'].includes(requestedTab) ? requestedTab : 'regras',
+    );
+  }, [requestedTab]);
   return (
     <NativePanel data={data} path="/automacao">
       <div
@@ -470,7 +508,7 @@ export function AutomationScreen({ data }: { data?: any }) {
             role="group"
             aria-label="Abas de automação"
           >
-            {['regras', 'envios', 'disparos'].map((value) => (
+            {['regras', 'central', 'envios'].map((value) => (
               <button
                 type="button"
                 key={value}
@@ -480,13 +518,13 @@ export function AutomationScreen({ data }: { data?: any }) {
               >
                 {value === 'regras'
                   ? 'Regras'
-                  : value === 'envios'
-                    ? 'Envios automáticos'
-                    : 'Disparos'}
+                  : value === 'central'
+                    ? 'Central de envios'
+                    : 'Envios automáticos'}
               </button>
             ))}
           </div>
-          {tab !== 'disparos' && (
+          {tab !== 'central' && (
             <button
               type="button"
               className="btn btn-primary auto-new"
@@ -501,13 +539,15 @@ export function AutomationScreen({ data }: { data?: any }) {
             </button>
           )}
         </div>
-        {tab === 'envios' ? (
+        {tab === 'central' ? (
+          <DeliveryCenter token={data.page.csrfToken} />
+        ) : tab === 'envios' ? (
           <ScheduledMessages
             data={data}
             onEdit={(item) => setScheduledEditor({ item })}
             onPending={setRecipients}
           />
-        ) : tab === 'regras' ? (
+        ) : (
           <div className="catalog-grid auto-list">
             {!data.regras.some((item) => !item.campanha) && (
               <div className="auto-empty-state">
@@ -591,7 +631,15 @@ export function AutomationScreen({ data }: { data?: any }) {
                       </div>
                     )}
                   </div>
-                  <div className="catalog-card-actions catalog-card-actions--three">
+                  <div className="catalog-card-actions">
+                    <button
+                      className="cli-ico-btn"
+                      type="button"
+                      onClick={() => setPreviewRule(item)}
+                      aria-label={`Ver prévia de ${item.titulo}`}
+                    >
+                      <Icon name="eye" /> Prévia
+                    </button>
                     <ActionForm
                       item={item}
                       token={data.page.csrfToken}
@@ -634,12 +682,6 @@ export function AutomationScreen({ data }: { data?: any }) {
                 </article>
               ))}
           </div>
-        ) : (
-          <DispatchHistory
-            key={data.historico?.pagina || 1}
-            rows={data.disparos}
-            history={data.historico}
-          />
         )}
       </div>
       {editor && (
@@ -654,6 +696,15 @@ export function AutomationScreen({ data }: { data?: any }) {
       )}
       {recipients && (
         <Recipients item={recipients} onClose={() => setRecipients(null)} />
+      )}
+      {previewRule && (
+        <DeliveryPreview
+          request={new URLSearchParams({
+            id: String(previewRule.id),
+          }).toString()}
+          token={data.page.csrfToken}
+          onClose={() => setPreviewRule(null)}
+        />
       )}
     </NativePanel>
   );

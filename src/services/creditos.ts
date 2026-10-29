@@ -13,8 +13,8 @@ export function consumoRenovacao(telas, periodos, creditosPorPeriodo = 1) {
   if (!Number.isFinite(creditosPorPeriodo) || creditosPorPeriodo <= 0) {
     throw new CreditosError('Consumo de créditos do plano inválido.');
   }
-  // O consumo do plano vale por acesso no servidor, independentemente das telas.
-  const consumo = Number((periodos * creditosPorPeriodo).toFixed(2));
+  // Cada tela consome os créditos do plano em cada período renovado.
+  const consumo = Number((telas * periodos * creditosPorPeriodo).toFixed(2));
   if (!Number.isFinite(consumo) || consumo <= 0)
     throw new CreditosError('Consumo de créditos inválido.');
   return consumo;

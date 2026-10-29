@@ -1,5 +1,9 @@
 import { automationsEnabled } from '../security/automationPolicy.ts';
 import type { SchedulerObserver } from './schedulerHealth.ts';
+import type {
+  DeliveryTracker,
+  DeliveryOrigin,
+} from '../shared/deliveryMonitoring.ts';
 import type { RowDataPacket } from 'mysql2/promise';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { queryRows, queryOne, execute, withTransaction } from '../db/mysql.ts';
@@ -30,6 +34,43 @@ let timer = null;
 // Evita sobrepor ciclos do timer enquanto um lote ainda está sendo enviado.
 let rodando = false;
 let observer: SchedulerObserver | undefined;
+let tracker: DeliveryTracker | undefined;
+async function enviarComRegistro(
+  monitor: DeliveryTracker | undefined,
+  rule,
+  client,
+  origin: DeliveryOrigin,
+  reference: Date,
+  send,
+) {
+  let attempt: string | undefined;
+  try {
+    attempt = await monitor?.begin(rule, client, origin, reference);
+  } catch (error) {
+    logger.error('não foi possível registrar o início do envio', error);
+  }
+  try {
+    const result = await send();
+    if (attempt)
+      await monitor!
+        .finish(attempt, result)
+        .catch((error) =>
+          logger.error(
+            'não foi possível registrar o resultado do envio',
+            error,
+          ),
+        );
+    return result;
+  } catch (error) {
+    if (attempt)
+      await monitor!
+        .finish(attempt, { ok: false, retrySafe: false })
+        .catch((logError) =>
+          logger.error('não foi possível registrar o erro do envio', logError),
+        );
+    throw error;
+  }
+}
 const shutdownSignal = new AbortController();
 export async function stopCobrancasScheduler() {
   observer?.stop();
@@ -64,10 +105,14 @@ function delayEntreEnvios(minOverride, maxOverride) {
   const maxMs = maxSec * 1000;
   return minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
 }
-export function startCobrancasScheduler(monitor?: SchedulerObserver) {
+export function startCobrancasScheduler(
+  monitor?: SchedulerObserver,
+  deliveryTracker?: DeliveryTracker,
+) {
   if (!automationsEnabled(env) || shutdownSignal.signal.aborted || timer)
     return;
   observer = monitor;
+  tracker = deliveryTracker;
   observer?.start();
   const tick = () => {
     void executarCobrancasAutomaticas().catch((error) =>
@@ -112,7 +157,7 @@ async function executarCobrancasAutomaticasInterno() {
   const weekday = appWeekday(now);
   const today = appTodayIso(now);
   const cobrancas = await queryRows(
-    `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
+    `SELECT c.id, c.titulo, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
             (DATE(c.ultima_execucao) = :today) AS jaRodouHoje, c.min_delay AS minDelay, c.max_delay AS maxDelay,
             c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
             c.filtro_arquivados AS filtroArquivados,
@@ -124,198 +169,223 @@ async function executarCobrancasAutomaticasInterno() {
     { today },
   );
   observer?.checked();
+  const errors: unknown[] = [];
   for (const cobranca of cobrancas) {
-    if (shutdownSignal.signal.aborted) return { skipped: true };
-    let campanha;
     try {
-      campanha = lerCampanha(cobranca.campanhaConfig);
-    } catch (error) {
-      logger.error('configuração de campanha inválida', error);
-      await execute(
-        "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId",
-        { id: cobranca.id, userId: cobranca.userId },
-      );
-      continue;
-    }
-    const unico = campanha?.modo === 'unico';
-    if (campanhaExpirada(campanha, today)) {
-      await execute(
-        "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId AND status='Ativo'",
-        { id: cobranca.id, userId: cobranca.userId },
-      );
-      continue;
-    }
-    if (
-      unico &&
-      !campanhaPodeExecutar(
-        campanha,
-        today,
-        hhmm,
-        String(cobranca.horaEnvio).slice(0, 5),
-      )
-    )
-      continue;
-    // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
-    if (
-      !unico &&
-      cobranca.horaEnvio &&
-      hhmm < String(cobranca.horaEnvio).slice(0, 5)
-    )
-      continue;
-    if (!unico && !deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
-    if (!unico && cobranca.jaRodouHoje) continue;
-    const { from, params } = consultaDestinatariosCobranca(
-      cobranca.userId,
-      cobranca,
-      appTodayIso(now),
-    );
-    const clientes = agruparAvisosCobranca(
-      await queryRows(
-        `SELECT * ${from} ORDER BY id, acessoChave = 'principal' DESC`,
-        params,
-      ),
-      cobranca,
-    );
-    // Sessão do WhatsApp = dispositivo principal do usuário (não o servidor do cliente).
-    const sessaoWa =
-      (
-        await queryRows(
-          'SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1',
-          { userId: cobranca.userId },
-        )
-      )[0]?.sessao ?? '';
-    // Se o usuário não tem nenhum dispositivo cadastrado, pula a regra inteira —
-    // antes caía no session "default" e mandava pelo dispositivo de outra conta.
-    if (!sessaoWa) {
-      logger.warn(
-        `regra ${cobranca.id} sem dispositivo WhatsApp do usuário ${cobranca.userId}; pulando`,
-      );
-      continue;
-    }
-    // Config PIX do dono da regra — alimenta a tag {pix} nas mensagens automaticas.
-    // Buscada 1x por cobranca (o service cacheia 60s de qualquer forma).
-    const pixCfg = await getPixConfig(cobranca.userId);
-    let enviadosNestaCobranca = 0;
-    let falhasSeguidas = 0;
-    let circuitBreaker = false;
-    let interrompida = false;
-    for (const grupo of clientes) {
       if (shutdownSignal.signal.aborted) return { skipped: true };
-      // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
-      if (enviadosNestaCobranca > 0)
-        await esperarEnvio(
-          delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay),
+      let campanha;
+      try {
+        campanha = lerCampanha(cobranca.campanhaConfig);
+      } catch (error) {
+        logger.error('configuração de campanha inválida', error);
+        await execute(
+          "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId",
+          { id: cobranca.id, userId: cobranca.userId },
         );
-      // Envio em lotes: a cada N mensagens, pausa o tempo configurado antes de continuar.
-      if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
-        const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
-        if (enviadosNestaCobranca % tamanho === 0) {
-          const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
-          if (pausaSec > 0) await esperarEnvio(pausaSec * 1000);
-        }
+        continue;
       }
-      if (shutdownSignal.signal.aborted) return { skipped: true };
-      if (campanha) {
+      const unico = campanha?.modo === 'unico';
+      if (campanhaExpirada(campanha, today)) {
+        await execute(
+          "UPDATE cobrancas SET status='Pausada', automatica=0 WHERE id=:id AND user_id=:userId AND status='Ativo'",
+          { id: cobranca.id, userId: cobranca.userId },
+        );
+        continue;
+      }
+      if (
+        unico &&
+        !campanhaPodeExecutar(
+          campanha,
+          today,
+          hhmm,
+          String(cobranca.horaEnvio).slice(0, 5),
+        )
+      )
+        continue;
+      // Robusto a minuto perdido / reinício: dispara no primeiro tick a partir da hora configurada.
+      if (
+        !unico &&
+        cobranca.horaEnvio &&
+        hhmm < String(cobranca.horaEnvio).slice(0, 5)
+      )
+        continue;
+      if (!unico && !deveExecutarNoDia(cobranca.diasSemana, weekday)) continue;
+      if (!unico && cobranca.jaRodouHoje) continue;
+      const { from, params } = consultaDestinatariosCobranca(
+        cobranca.userId,
+        cobranca,
+        appTodayIso(now),
+      );
+      const clientes = agruparAvisosCobranca(
+        await queryRows(
+          `SELECT * ${from} ORDER BY id, acessoChave = 'principal' DESC`,
+          params,
+        ),
+        cobranca,
+      );
+      // Sessão do WhatsApp = dispositivo principal do usuário (não o servidor do cliente).
+      const sessaoWa =
+        (
+          await queryRows(
+            'SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1',
+            { userId: cobranca.userId },
+          )
+        )[0]?.sessao ?? '';
+      // Se o usuário não tem nenhum dispositivo cadastrado, pula a regra inteira —
+      // antes caía no session "default" e mandava pelo dispositivo de outra conta.
+      if (!sessaoWa) {
+        logger.warn(
+          `regra ${cobranca.id} sem dispositivo WhatsApp do usuário ${cobranca.userId}; pulando`,
+        );
+        continue;
+      }
+      // Config PIX do dono da regra — alimenta a tag {pix} nas mensagens automaticas.
+      // Buscada 1x por cobranca (o service cacheia 60s de qualquer forma).
+      const pixCfg = await getPixConfig(cobranca.userId);
+      let enviadosNestaCobranca = 0;
+      let falhasSeguidas = 0;
+      let circuitBreaker = false;
+      let interrompida = false;
+      for (const grupo of clientes) {
+        if (shutdownSignal.signal.aborted) return { skipped: true };
+        // Espaça os envios (menos antes do primeiro) para não disparar em rajada.
+        if (enviadosNestaCobranca > 0)
+          await esperarEnvio(
+            delayEntreEnvios(cobranca.minDelay, cobranca.maxDelay),
+          );
+        // Envio em lotes: a cada N mensagens, pausa o tempo configurado antes de continuar.
+        if (cobranca.envioLotes && enviadosNestaCobranca > 0) {
+          const tamanho = Math.max(1, Number(cobranca.loteTamanho) || 20);
+          if (enviadosNestaCobranca % tamanho === 0) {
+            const pausaSec = Math.max(0, Number(cobranca.lotePausa) || 60);
+            if (pausaSec > 0) await esperarEnvio(pausaSec * 1000);
+          }
+        }
+        if (shutdownSignal.signal.aborted) return { skipped: true };
+        // Releia depois das pausas: desativar uma regra também deve parar seu lote.
         const atual = await queryOne(
-          'SELECT status, campanha_config AS campanhaConfig FROM cobrancas WHERE id=:id AND user_id=:userId',
+          'SELECT status, automatica, campanha_config AS campanhaConfig FROM cobrancas WHERE id=:id AND user_id=:userId',
           { id: cobranca.id, userId: cobranca.userId },
         );
         if (
           !atual ||
           atual.status !== 'Ativo' ||
-          JSON.stringify(lerCampanha(atual.campanhaConfig)) !==
-            JSON.stringify(campanha)
+          !Number(atual.automatica) ||
+          (campanha &&
+            JSON.stringify(lerCampanha(atual.campanhaConfig)) !==
+              JSON.stringify(campanha))
         ) {
           interrompida = true;
           break;
         }
-      }
-      const reservados = await reservarGrupoCobranca(
-        cobranca,
-        grupo.acessosCobranca,
-        now,
-      );
-      if (!reservados.length) continue;
-      const acessos = reservados.map((r) => r.cliente);
-      const cliente = {
-        ...contextoAvisoCobranca(acessos),
-        acessosCobranca: acessos,
-      };
-      enviadosNestaCobranca += 1;
-      // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
-      // então não precisamos de rodapé anti-ban — o conteúdo nunca é idêntico entre clientes.
-      const mensagemBase =
-        campanha?.mensagem ||
-        cobranca.mensagem ||
-        'Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.';
-      const result = await enviarMensagemModeloComRetry(
-        sessaoWa,
-        cliente,
-        {
-          mensagem: regraPorVencimento(cobranca)
-            ? mensagemCobrancaPorAcesso(mensagemBase, cliente)
-            : mensagemBase,
-          mediaTipo: campanha ? null : cobranca.mediaTipo,
-          mediaPath: campanha ? null : cobranca.mediaPath,
-        },
-        undefined,
-        undefined,
-        pixCfg,
-      );
-      await finalizarGrupoCobranca(
-        reservados.map((r) => r.id),
-        result.ok,
-        result.error,
-        !result.ok && result.retrySafe !== true,
-      );
-      // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
-      // Pausa a regra (status 'Pausada' não bate no WHERE do agendador) pra não
-      // continuar martelando e piorar a situação.
-      if (result.ok) {
-        falhasSeguidas = 0;
-      } else {
-        falhasSeguidas += 1;
-        if (falhasSeguidas >= 5) {
-          circuitBreaker = true;
-          break;
+        const reservados = await reservarGrupoCobranca(
+          cobranca,
+          grupo.acessosCobranca,
+          now,
+        );
+        if (!reservados.length) continue;
+        const acessos = reservados.map((r) => r.cliente);
+        const cliente = {
+          ...contextoAvisoCobranca(acessos),
+          acessosCobranca: acessos,
+        };
+        enviadosNestaCobranca += 1;
+        // Cada mensagem já fica diferente pelos placeholders ({nome}, {vencimento}, {valor}…),
+        // então não precisamos de rodapé anti-ban — o conteúdo nunca é idêntico entre clientes.
+        const mensagemBase =
+          campanha?.mensagem ||
+          cobranca.mensagem ||
+          'Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.';
+        const result = await enviarComRegistro(
+          tracker,
+          cobranca,
+          cliente,
+          'automatico',
+          now,
+          () =>
+            enviarMensagemModeloComRetry(
+              sessaoWa,
+              cliente,
+              {
+                mensagem: regraPorVencimento(cobranca)
+                  ? mensagemCobrancaPorAcesso(mensagemBase, cliente)
+                  : mensagemBase,
+                mediaTipo: campanha ? null : cobranca.mediaTipo,
+                mediaPath: campanha ? null : cobranca.mediaPath,
+              },
+              undefined,
+              undefined,
+              pixCfg,
+            ),
+        );
+        await finalizarGrupoCobranca(
+          reservados.map((r) => r.id),
+          result.ok,
+          result.error,
+          !result.ok && result.retrySafe !== true,
+        );
+        // Circuit-breaker: 5 erros seguidos = WhatsApp provavelmente caiu/banido.
+        // Pausa a regra (status 'Pausada' não bate no WHERE do agendador) pra não
+        // continuar martelando e piorar a situação.
+        if (result.ok) {
+          falhasSeguidas = 0;
+        } else {
+          falhasSeguidas += 1;
+          if (falhasSeguidas >= 5) {
+            circuitBreaker = true;
+            break;
+          }
         }
       }
-    }
-    if (circuitBreaker) {
-      await execute("UPDATE cobrancas SET status = 'Pausada' WHERE id = :id", {
-        id: cobranca.id,
-      });
-      console.warn(
-        `Regra ${cobranca.id} pausada por 5 falhas seguidas de envio.`,
-      );
-    }
-    if (shutdownSignal.signal.aborted) return { skipped: true };
-    if (interrompida) continue;
-    if (unico) {
-      await execute(
-        `UPDATE cobrancas SET
+      if (circuitBreaker) {
+        await execute(
+          "UPDATE cobrancas SET status = 'Pausada' WHERE id = :id",
+          {
+            id: cobranca.id,
+          },
+        );
+        console.warn(
+          `Regra ${cobranca.id} pausada por 5 falhas seguidas de envio.`,
+        );
+      }
+      if (shutdownSignal.signal.aborted) return { skipped: true };
+      if (interrompida) continue;
+      if (unico) {
+        await execute(
+          `UPDATE cobrancas SET
         status=IF((SELECT COUNT(*) FROM cobrancas_envios WHERE cobranca_id=:id AND data_envio=:data AND status='enviado')=:total,'Concluído','Pausada'),
         automatica=0 WHERE id=:id AND user_id=:userId AND status='Ativo'`,
-        {
-          id: cobranca.id,
-          userId: cobranca.userId,
-          data: campanha.data,
-          total: clientes.length,
-        },
+          {
+            id: cobranca.id,
+            userId: cobranca.userId,
+            data: campanha.data,
+            total: clientes.length,
+          },
+        );
+      }
+      await execute(
+        'UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id',
+        { id: cobranca.id, ultimaExecucao: appNowSql(now) },
       );
+    } catch (error) {
+      errors.push(error);
+      logger.error(`erro ao executar a regra ${cobranca.id}`, error);
     }
-    await execute(
-      'UPDATE cobrancas SET ultima_execucao = :ultimaExecucao WHERE id = :id',
-      { id: cobranca.id, ultimaExecucao: appNowSql(now) },
-    );
   }
+  // Uma regra com problema não bloqueia as demais, mas o monitor indica a falha.
+  if (errors.length)
+    throw new AggregateError(errors, 'Falha ao executar regras de cobrança.');
   return {};
 }
 // Disparo manual de uma regra (botão "▶" no card da automação). Ignora hora_envio,
 // dias da semana e ultima_execucao do dia, mas continua passando pela reserva em
 // cobrancas_envios — então clientes que já receberam hoje por essa regra não
 // recebem duas vezes (segura contra cliques duplos no botão).
-export async function dispararRegraManual(userId, regraId) {
+export async function dispararRegraManual(
+  userId,
+  regraId,
+  deliveryTracker?: DeliveryTracker,
+) {
   if (
     !Number.isSafeInteger(Number(userId)) ||
     Number(userId) <= 0 ||
@@ -325,7 +395,7 @@ export async function dispararRegraManual(userId, regraId) {
     return { ok: false, error: 'Regra inválida.' };
   await ensureCobrancasEnviosTable();
   const cobranca = await queryOne(
-    `SELECT c.id, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
+    `SELECT c.id, c.titulo, c.user_id AS userId, c.tipo, c.periodo, c.hora_envio AS horaEnvio, c.dias_semana AS diasSemana,
             0 AS jaRodouHoje, c.min_delay AS minDelay, c.max_delay AS maxDelay,
             c.filtro_servidor AS filtroServidor, c.filtro_plano AS filtroPlano,
             c.filtro_arquivados AS filtroArquivados,
@@ -411,19 +481,27 @@ export async function dispararRegraManual(userId, regraId) {
     const mensagemBase =
       cobranca.mensagem ||
       'Olá {nome}, seu plano {plano} vence em {vencimento}. Valor: {valor}.';
-    const result = await enviarMensagemModeloComRetry(
-      sessaoWa,
+    const result = await enviarComRegistro(
+      deliveryTracker,
+      cobranca,
       cliente,
-      {
-        mensagem: regraPorVencimento(cobranca)
-          ? mensagemCobrancaPorAcesso(mensagemBase, cliente)
-          : mensagemBase,
-        mediaTipo: cobranca.mediaTipo,
-        mediaPath: cobranca.mediaPath,
-      },
-      undefined,
-      undefined,
-      pixCfg,
+      'manual',
+      now,
+      () =>
+        enviarMensagemModeloComRetry(
+          sessaoWa,
+          cliente,
+          {
+            mensagem: regraPorVencimento(cobranca)
+              ? mensagemCobrancaPorAcesso(mensagemBase, cliente)
+              : mensagemBase,
+            mediaTipo: cobranca.mediaTipo,
+            mediaPath: cobranca.mediaPath,
+          },
+          undefined,
+          undefined,
+          pixCfg,
+        ),
     );
     await finalizarGrupoCobranca(
       reservados.map((r) => r.id),

@@ -30,6 +30,8 @@
     "security:tls": "node --import tsx scripts/security/security-tls.mts",
     "start": "node --v8-pool-size=1 --import tsx scripts/dev/run-stack.mts",
     "diagnose:processes": "node --v8-pool-size=1 --import tsx scripts/dev/inspect-processes.mts",
+    "monitor:deliveries": "node --import tsx scripts/monitor/check-deliveries.mts",
+    "monitor:install:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/monitor/install-windows.ps1",
     "dev:backend": "node --watch --import tsx scripts/dev/start-backend.mts",
     "start:backend": "node --import tsx scripts/dev/start-backend.mts",
     "start:worker": "node --import tsx scripts/dev/start-worker.mts",

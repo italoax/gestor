@@ -56,7 +56,7 @@ export function initSchedulerStatus(
   const alert = root.querySelector<HTMLElement>('[data-scheduler-alert]')!;
   const refresh = root.querySelector<HTMLButtonElement>(
     '[data-scheduler-refresh]',
-  )!;
+  );
   let snapshot: SchedulerHealth | undefined;
   let receivedAt = 0;
   let unavailable = false;
@@ -113,7 +113,7 @@ export function initSchedulerStatus(
     const message = messages[state] || '';
     if (alert.textContent !== message) alert.textContent = message;
     alert.hidden = !message;
-    refresh.disabled = pending || unauthorized;
+    if (refresh) refresh.disabled = pending || unauthorized;
   }
   async function check() {
     if (signal.aborted || pending || unauthorized || document.hidden) return;
@@ -148,7 +148,7 @@ export function initSchedulerStatus(
       render();
     }
   }
-  refresh.addEventListener('click', () => void check(), { signal });
+  refresh?.addEventListener('click', () => void check(), { signal });
   document.addEventListener(
     'visibilitychange',
     () => {

@@ -97,6 +97,12 @@ window.gestorPageModules.initTransactions = function ({
         'modal-transacao-info',
       ) as HTMLElement;
       if (!modal) return;
+      const reference = document.getElementById('tx-info-reference');
+      const transactionId = btn.closest('tr')?.getAttribute('data-id');
+      if (reference)
+        reference.textContent = transactionId
+          ? `Transação #${transactionId}`
+          : 'Transação';
       const put = (id, attr) => {
         const el = document.getElementById(id) as HTMLInputElement;
         if (el) el.textContent = btn.getAttribute(attr) || '—';
@@ -125,19 +131,24 @@ window.gestorPageModules.initTransactions = function ({
       put('tx-info-custo', 'data-custo');
       put('tx-info-total', 'data-total');
       put('tx-info-lucro', 'data-lucro');
-      // Aplica cor + sinal correto no Lucro (inline style — independente de CSS file)
+      // Sinal e cor acompanham o resultado financeiro da transação.
       const lucroEl = document.getElementById('tx-info-lucro') as HTMLElement;
       if (lucroEl) {
         const neg = btn.getAttribute('data-lucro-neg') === '1';
         const raw = btn.getAttribute('data-lucro') || '—';
         lucroEl.textContent = neg || raw.startsWith('-') ? raw : '+' + raw;
-        lucroEl.style.color = neg ? '#ef4444' : '#22c55e';
+        lucroEl
+          .closest('.tx-detail-profit')
+          ?.classList.toggle('is-negative', neg);
       }
       const totalEl = document.getElementById('tx-info-total') as HTMLElement;
       if (totalEl) {
         const raw = btn.getAttribute('data-total') || '—';
         totalEl.textContent =
           raw.startsWith('+') || raw.startsWith('-') ? raw : '+' + raw;
+        totalEl
+          .closest('.tx-detail-total')
+          ?.classList.toggle('is-negative', raw.startsWith('-'));
       }
       setModalState(modal, true);
     });

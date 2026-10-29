@@ -1,5 +1,7 @@
 import { safeError } from '../../../src/security/safeError.ts';
 import { createDefaultSchedulerHeartbeat } from '../../../src/services/schedulerHealthDefaults.ts';
+import { defaultDeliveryTracker } from '../../../src/services/deliveryMonitoringDefaults.ts';
+import { ensureDeliveryMonitoringSchema } from '../../../src/db/deliveryMonitoringSchema.ts';
 import { stopWhenSupervisorExits } from '../../../src/services/supervisorLifecycle.ts';
 import {
   automationsEnabled,
@@ -67,12 +69,17 @@ try {
             ),
         },
       );
+      if (!env.localMode) await ensureDeliveryMonitoringSchema();
     },
     checkDatabase: () => db.query({ sql: 'SELECT 1', timeout: 5000 }),
     startAutomations() {
       startEnabledAutomations(
         env,
-        () => startCobrancasScheduler(createDefaultSchedulerHeartbeat()),
+        () =>
+          startCobrancasScheduler(
+            createDefaultSchedulerHeartbeat(),
+            defaultDeliveryTracker,
+          ),
         startStatusScheduler,
         () => historyRetention.start(),
         () => paymentReconciliation.start(),

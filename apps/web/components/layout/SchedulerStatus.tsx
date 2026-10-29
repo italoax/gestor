@@ -3,13 +3,16 @@ import { useEffect, useRef } from 'react';
 import { Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { initSchedulerStatus } from '../../../../src/browser/assets/js/ui/scheduler-status.ts';
 
-export function SchedulerStatus() {
+export function SchedulerStatus({
+  showRefresh = true,
+  refreshKey = 0,
+}: { showRefresh?: boolean; refreshKey?: number } = {}) {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const controller = new AbortController();
     initSchedulerStatus(container.current, controller.signal);
     return () => controller.abort();
-  }, []);
+  }, [refreshKey]);
   return (
     <div ref={container} data-scheduler-react="">
       <section
@@ -33,14 +36,16 @@ export function SchedulerStatus() {
             </span>
           </div>
         </div>
-        <button
-          className="scheduler-status-refresh"
-          type="button"
-          data-scheduler-refresh=""
-          aria-label="Atualizar status do agendador"
-        >
-          Atualizar
-        </button>
+        {showRefresh && (
+          <button
+            className="scheduler-status-refresh"
+            type="button"
+            data-scheduler-refresh=""
+            aria-label="Atualizar status do agendador"
+          >
+            Atualizar
+          </button>
+        )}
         <p
           className="scheduler-status-alert"
           data-scheduler-alert=""

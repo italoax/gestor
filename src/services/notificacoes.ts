@@ -11,14 +11,14 @@ export async function listarNotificacoes(userId, limite = 30) {
   return queryRows(
     `SELECT id, titulo, mensagem, tipo, url, icone, lida, created_at AS createdAt,
             CASE WHEN tipo = 'renovacao_pendente' THEN pagamento_id ELSE NULL END AS pagamentoId
-       FROM notificacoes WHERE user_id = :userId AND tipo IN ('creditos', 'renovacao_pendente', 'pagamento') AND lida <> 2
+       FROM notificacoes WHERE user_id = :userId AND tipo IN ('creditos', 'renovacao_pendente', 'pagamento', 'automacao') AND lida <> 2
        ORDER BY (tipo = 'renovacao_pendente') DESC, id DESC LIMIT :limite`,
     { userId, limite },
   );
 }
 export async function contarNaoLidas(userId) {
   const row = await queryOne(
-    `SELECT COUNT(*) AS total FROM notificacoes WHERE user_id = :userId AND tipo IN ('creditos', 'renovacao_pendente', 'pagamento') AND lida = 0`,
+    `SELECT COUNT(*) AS total FROM notificacoes WHERE user_id = :userId AND tipo IN ('creditos', 'renovacao_pendente', 'pagamento', 'automacao') AND lida = 0`,
     { userId },
   );
   return Number(row?.total ?? 0);
@@ -37,13 +37,13 @@ export async function marcarLida(userId, id) {
 }
 export async function excluirNotificacao(userId, id) {
   await execute(
-    `UPDATE notificacoes SET lida = 2 WHERE id = :id AND user_id = :userId AND tipo IN ('creditos', 'pagamento')`,
+    `UPDATE notificacoes SET lida = 2 WHERE id = :id AND user_id = :userId AND tipo IN ('creditos', 'pagamento', 'automacao')`,
     { id, userId },
   );
 }
 export async function limparTodas(userId) {
   await execute(
-    `UPDATE notificacoes SET lida = 2 WHERE user_id = :userId AND tipo IN ('creditos', 'pagamento')`,
+    `UPDATE notificacoes SET lida = 2 WHERE user_id = :userId AND tipo IN ('creditos', 'pagamento', 'automacao')`,
     { userId },
   );
 }

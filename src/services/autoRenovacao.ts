@@ -65,7 +65,7 @@ function isoSqlDate(d) {
  *  - Pega plano.periodo (dias) — fallback 30 se não achar
  *  - Pega servidor.valorCred — fallback 0
  *  - Novo vencimento = max(hoje, venc atual) + 1 × periodo
- *  - Custo = períodos × créditos do plano × valorCred
+ *  - Custo = telas × períodos × créditos do plano × valorCred
  *  - UPDATE cliente: vencimento novo, pago_em, valor_pago, status='Ativo'
  *  - Valida e debita créditos do plano em transação; saldo insuficiente bloqueia a renovação
  *  - INSERT em transacoes ("Renovação automática (PIX)")
@@ -152,7 +152,7 @@ export async function renovarClienteAutomatico(
         { nome: cliente.servidor, userId },
       );
       const valorCred = Number(servidor?.valorCred ?? 0);
-      // PIX consome os créditos do plano uma vez por período e acesso.
+      // PIX usa a mesma regra da renovação manual: créditos por tela e período.
       const telasN = consumoRenovacao(
         Number(cliente.telas),
         periodos,

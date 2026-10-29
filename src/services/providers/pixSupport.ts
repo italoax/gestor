@@ -51,17 +51,23 @@ export function oauthToken(
     expires: Date.now() + 60000,
     promise: undefined as unknown as Promise<string>,
   };
-  entry.promise = load().then((result) => {
-    if (!result.access_token)
-      throw new Error('O provedor não retornou a autorização.');
-    entry.expires =
-      Date.now() +
-      Math.max(
-        1000,
-        Math.min(3600000, (Number(result.expires_in) || 120) * 1000 - 60000),
-      );
-    return String(result.access_token);
-  });
+  entry.promise = Promise.resolve()
+    .then(load)
+    .then((result) => {
+      if (!result.access_token)
+        throw new Error('O provedor não retornou a autorização.');
+      entry.expires =
+        Date.now() +
+        Math.max(
+          1000,
+          Math.min(3600000, (Number(result.expires_in) || 120) * 1000 - 60000),
+        );
+      return String(result.access_token);
+    })
+    .catch((error) => {
+      if (tokens.get(key) === entry) tokens.delete(key);
+      throw error;
+    });
   tokens.set(key, entry);
   return entry.promise;
 }

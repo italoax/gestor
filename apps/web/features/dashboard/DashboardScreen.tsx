@@ -186,16 +186,23 @@ export function DashboardScreen({ data }: { data?: any }) {
                   <Icon name="money" /> {label}
                 </div>
                 {[
-                  ['receita', '↗ Receita', 'pos'],
-                  ['custo', '↘ Custo', 'neg'],
-                  ['lucro', '↗ Lucro', 'info'],
-                ].map(([field, title, color]) => (
+                  ['receita', '↗ Receita'],
+                  ['custo', '↘ Custo'],
+                  ['lucro', '↗ Lucro'],
+                ].map(([field, title]) => (
                   <div
                     className={`rc-row ${field === 'lucro' ? 'total' : ''}`}
                     key={field}
                   >
                     <span>{title}</span>
-                    <strong className={color}>
+                    <strong
+                      data-value-tone={
+                        field === 'custo' ||
+                        Number(stats.receitaCusto[key][field]) < 0
+                          ? 'negative'
+                          : 'positive'
+                      }
+                    >
                       {formatMoney(stats.receitaCusto[key][field])}
                     </strong>
                   </div>
@@ -239,7 +246,16 @@ export function DashboardScreen({ data }: { data?: any }) {
             ].map(([label, key]) => (
               <div className="fin-card" key={key}>
                 <span className="fin-label">{label}</span>
-                <strong className="fin-value">
+                <strong
+                  className="fin-value"
+                  data-value-tone={
+                    Number(stats.financeiro[key]) < 0
+                      ? 'negative'
+                      : key === 'projecao'
+                        ? 'info'
+                        : 'positive'
+                  }
+                >
                   {formatMoney(stats.financeiro[key])}
                 </strong>
                 {key === 'recebidoMes' && (
@@ -366,7 +382,15 @@ export function DashboardScreen({ data }: { data?: any }) {
                     ].map(([label, key, color]) => (
                       <div className={`perf-card ${color}`} key={key}>
                         <span>{label}</span>
-                        <strong>{formatMoney(performance[key])}</strong>
+                        <strong
+                          data-value-tone={
+                            key === 'custo' || Number(performance[key]) < 0
+                              ? 'negative'
+                              : 'positive'
+                          }
+                        >
+                          {formatMoney(performance[key])}
+                        </strong>
                       </div>
                     ))}
                   </div>

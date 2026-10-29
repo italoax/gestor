@@ -54,6 +54,7 @@
       %>
     <div
       class="catalog-card srv-card <%= Number(s.creditos) <= 0 ? 'srv-no-balance' : '' %>"
+      data-credit-balance="<%= Number(s.creditos) <= 0 ? 'empty' : Number(s.creditos) <= 3 ? 'low' : 'available' %>"
       id="servidor-<%= s.id %>"
       data-search-item
       data-search-text="<%= [s.nome, s.identificador, s.observacaoServidor].filter(Boolean).join(' ') %>"
@@ -66,7 +67,9 @@
           <small><%= s.identificador %></small>
           <% } %>
         </div>
-        <span class="catalog-card-status srv-balance-badge"><%= Number(s.creditos) <= 0 ? 'Sem saldo' : 'Com saldo' %></span>
+        <span class="catalog-card-status srv-balance-badge"
+          ><%= Number(s.creditos) <= 0 ? 'Sem saldo' : Number(s.creditos) <= 3 ? 'Saldo baixo' : 'Com saldo' %></span
+        >
       </div>
       <div class="catalog-card-metrics srv-stats">
         <div class="srv-stat"
@@ -78,7 +81,9 @@
         >
         <div class="srv-stat"
           ><span>Custo por crédito</span
-          ><strong><%= formatMoney(s.valorCred) %></strong></div
+          ><strong data-value-tone="negative"
+            ><%= formatMoney(s.valorCred) %></strong
+          ></div
         >
       </div>
       <% if (s.observacaoServidor) { %>

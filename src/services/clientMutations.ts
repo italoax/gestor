@@ -280,7 +280,7 @@ export function createClientMutationWorkflow({
             : valor;
         const telas = Number(body.telas);
         const creditosGastos = Number(body.creditos_gastos);
-        // Consumo por acesso = períodos renovados × créditos do plano.
+        // Consumo = telas × períodos renovados × créditos do plano.
         const planoRenovacao = await queryOne(
           'SELECT credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1',
           { userId, nome: plano },
