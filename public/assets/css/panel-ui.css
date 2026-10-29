@@ -3973,7 +3973,7 @@ html[data-theme='light'] .page-app .page-transacoes {
   }
   .page-app .mobile-dock {
     position: fixed;
-    inset: auto 8px 0;
+    inset: auto 8px 6px;
     z-index: 120;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3981,10 +3981,9 @@ html[data-theme='light'] .page-app .page-transacoes {
     width: auto;
     max-width: 440px;
     margin-inline: auto;
-    /* A área segura fica dentro da barra, sem criar uma faixa vazia no Safari. */
-    padding: 4px 4px calc(4px + var(--sab, 0px));
+    padding: 4px;
     border: 1px solid var(--border);
-    border-radius: 28px 28px 0 0;
+    border-radius: 28px;
     background: color-mix(in srgb, var(--surface-2) 92%, transparent);
     box-shadow: 0 8px 30px rgb(0 0 0 / 24%);
     backdrop-filter: blur(16px);
