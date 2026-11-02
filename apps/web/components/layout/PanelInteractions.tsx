@@ -162,7 +162,18 @@ export function PanelInteractions({ path }: { path: string }) {
       buttons.forEach((button) => {
         button.disabled = true;
       });
-      showNotice({ text: 'Aguarde um instante.', pending: true });
+      const renewalMessage =
+        ['add_pagamento', 'renovar_planos'].includes(
+          String(data.get('action')),
+        ) &&
+        data.get('enviar_mensagem_renovacao') !== '0' &&
+        Number(data.get('mensagem_pagamento_id')) > 0;
+      showNotice({
+        text: renewalMessage
+          ? 'Aguardando confirmação de envio no WhatsApp para salvar a renovação.'
+          : 'Aguarde um instante.',
+        pending: true,
+      });
       const originalUrl = location.href;
       try {
         const result = await postPanelAction(url.href, body);

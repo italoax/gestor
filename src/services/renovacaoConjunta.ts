@@ -296,6 +296,9 @@ export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
         'INSERT INTO renovacoes_conjuntas (user_id, chave, cliente_id) VALUES (:userId, :chave, :clienteId)',
         { userId, chave: pedido.chave, clienteId },
       );
-    return { duplicado: false, itens: resultados, total };
+    const resultado = { duplicado: false, itens: resultados, total };
+    // Falhas na confirmação revertem os vencimentos, vendas, créditos e a chave.
+    await pedido.antesDeConfirmar?.({ ...resultado, cliente }, conn);
+    return resultado;
   });
 }

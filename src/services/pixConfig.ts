@@ -1,11 +1,14 @@
 import { queryOne } from '../db/mysql.ts';
 const cache = new Map();
 const TTL_MS = 60000;
-export async function getPixConfig(userId) {
+export async function getPixConfig(userId, connection?) {
   const agora = Date.now();
   const cached = cache.get(userId);
   if (cached && cached.expira > agora) return cached.valor;
-  const row = await queryOne(
+  const one = connection
+    ? async (sql, params) => (await connection.query(sql, params))[0][0]
+    : queryOne;
+  const row = await one(
     `SELECT pix_chave AS pixChave, pix_nome AS pixNome, pix_tipo AS pixTipo
        FROM users WHERE id = :userId LIMIT 1`,
     { userId },

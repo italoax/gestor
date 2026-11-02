@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import crypto from 'node:crypto';
 import { readClientHistory } from '../../../../src/services/clientHistory.ts';
+import { revealIptvPassword } from '../../../../src/security/storedSecrets.ts';
 import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
 import {
   escolhasRenovacao,
@@ -96,6 +97,16 @@ export class ClientsService {
   }
   history(userId: number, id: unknown) {
     return readClientHistory(this.db, userId, id);
+  }
+  async password(userId: number, rawId: unknown) {
+    const id = Number(rawId);
+    if (!Number.isSafeInteger(id) || id < 1) return null;
+    const client = await this.db.queryOne(
+      'SELECT senha FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
+      { id, userId },
+    );
+    if (!client) return null;
+    return { ok: true, senha: revealIptvPassword(client.senha, userId) };
   }
   async renewalOptions(userId: number, id: unknown) {
     const client = await this.db.queryOne(

@@ -108,7 +108,8 @@ export function RenewalModals({
   const { single, multi, preference, singleErrors, multiErrors } = renewal;
   const singleId = 'modal-add-pagamento-form',
     multiId = 'renovar-planos-form';
-  const blocked = preference.pending || !preference.ready;
+  const blocked = (kind) =>
+    renewal.sendMessage[kind] && (preference.pending || !preference.ready);
   function props(name, kind = 'single', type = 'input', required = true) {
     const state = kind === 'single' ? single : multi;
     const errors = kind === 'single' ? singleErrors : multiErrors;
@@ -138,29 +139,59 @@ export function RenewalModals({
   function message(kind) {
     const id = kind === 'single' ? singleId : multiId;
     const errors = kind === 'single' ? singleErrors : multiErrors;
-    const error = preference.error || errors.mensagem_pagamento_id;
+    const checked = renewal.sendMessage[kind];
+    const error = checked
+      ? preference.error || errors.mensagem_pagamento_id
+      : '';
     return (
       <div className="field full">
-        <label htmlFor={`${id}-message`}>Mensagem no WhatsApp</label>
+        <input
+          type="hidden"
+          name="enviar_mensagem_renovacao"
+          value={checked ? '1' : '0'}
+        />
+        <label
+          className="renewal-message-toggle"
+          htmlFor={`${id}-send-message`}
+        >
+          <input
+            type="checkbox"
+            id={`${id}-send-message`}
+            checked={checked}
+            onChange={(event) =>
+              renewal.toggleMessage(kind, event.currentTarget.checked)
+            }
+          />
+          <span>Enviar mensagem no WhatsApp</span>
+        </label>
+        <small>
+          {checked
+            ? 'A renovação só será salva após a confirmação do envio.'
+            : 'A renovação será salva sem enviar mensagem.'}
+        </small>
+        <label htmlFor={`${id}-message`} hidden={!checked}>
+          Modelo da mensagem
+        </label>
         <select
           className="input"
           id={`${id}-message`}
           name="mensagem_pagamento_id"
           data-last-message-select=""
           value={preference.value}
-          disabled={preference.pending}
+          disabled={!checked || preference.pending}
+          hidden={!checked}
           onChange={(event) => renewal.saveMessage(event.currentTarget.value)}
           aria-invalid={Boolean(error)}
           aria-describedby={`${id}-error-mensagem_pagamento_id`}
         >
-          <option value="">Não enviar WhatsApp</option>
+          <option value="">Selecione uma mensagem</option>
           {mensagens.map((m) => (
             <option key={m.id} value={m.id}>
               {m.titulo}
             </option>
           ))}
         </select>
-        {preference.pending && (
+        {checked && preference.pending && (
           <small role="status">Sincronizando mensagem…</small>
         )}
         <small
@@ -171,7 +202,7 @@ export function RenewalModals({
         >
           {error}
         </small>
-        {preference.error && (
+        {checked && preference.error && (
           <button
             className="btn btn-muted"
             type="button"
@@ -225,7 +256,9 @@ export function RenewalModals({
             className="btn btn-primary"
             type="submit"
             form={singleId}
-            disabled={blocked || !single.id || renewal.submitting.single}
+            disabled={
+              blocked('single') || !single.id || renewal.submitting.single
+            }
           >
             {renewal.submitting.single ? 'Renovando…' : 'Renovar'}
           </button>
@@ -447,7 +480,7 @@ export function RenewalModals({
             type="submit"
             form={multiId}
             disabled={
-              blocked ||
+              blocked('multi') ||
               multi.loading ||
               Boolean(multi.error) ||
               !multi.chave ||

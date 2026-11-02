@@ -1,4 +1,5 @@
 import { confirmFormSubmission, showPanelNotice } from './ui/panel-feedback.js';
+import { initPasswordField } from './ui/password-field.js';
 let gestorInitialization = 0;
 document.addEventListener('gestor:before-swap', () => gestorInitialization++);
 async function initGestor() {
@@ -67,40 +68,7 @@ async function initGestor() {
     document.querySelectorAll(
       '[data-password-field]',
     ) as NodeListOf<HTMLElement>
-  ).forEach((field) => {
-    const input = field.querySelector('input') as HTMLInputElement;
-    const toggle = field.querySelector('[data-password-toggle]') as HTMLElement;
-    const feedback = field.querySelector(
-      '[data-password-feedback]',
-    ) as HTMLElement;
-    const reset = () => {
-      input.type = 'password';
-      toggle.setAttribute('aria-label', 'Mostrar senha');
-      toggle.title = 'Mostrar senha';
-      toggle.setAttribute('aria-pressed', 'false');
-      const label = toggle.querySelector(
-        '[data-password-toggle-label]',
-      ) as HTMLElement;
-      if (label) label.textContent = 'Mostrar';
-      feedback.textContent = '';
-    };
-    toggle.onclick = () => {
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      toggle.setAttribute(
-        'aria-label',
-        show ? 'Ocultar senha' : 'Mostrar senha',
-      );
-      toggle.title = toggle.getAttribute('aria-label');
-      toggle.setAttribute('aria-pressed', String(show));
-      const label = toggle.querySelector(
-        '[data-password-toggle-label]',
-      ) as HTMLElement;
-      if (label) label.textContent = show ? 'Ocultar' : 'Mostrar';
-    };
-    if (input.form) input.form.addEventListener('reset', reset);
-    reset();
-  });
+  ).forEach(initPasswordField);
   // Re-executavel (pjax): a cada init abortamos os listeners globais do init
   // anterior pra nao acumular. Listeners de document/window/topbar (casca
   // persistente) sao registrados via on(...) que injeta o { signal }; os de

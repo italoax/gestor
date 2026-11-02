@@ -396,9 +396,17 @@ export const ClientsModals = memo(function ClientsModals({
                     data-bwignore=""
                   />
                 </label>
-                <div className="field password-field" data-password-field="">
+                <div
+                  className="field password-field"
+                  data-password-field=""
+                  data-password-saved-url={
+                    clientForm.editing && clientForm.clientId
+                      ? `/api/clientes/${encodeURIComponent(clientForm.clientId)}/senha`
+                      : undefined
+                  }
+                >
                   <label htmlFor="cliente-senha">
-                    {clientForm.editing ? 'Nova senha IPTV' : 'Senha'}
+                    {clientForm.editing ? 'Senha IPTV' : 'Senha'}
                   </label>
                   <div className="password-control">
                     <input
@@ -411,7 +419,7 @@ export const ClientsModals = memo(function ClientsModals({
                       maxLength={190}
                       placeholder={
                         clientForm.editing
-                          ? 'Em branco mantém a senha atual'
+                          ? 'Clique em Mostrar para consultar'
                           : undefined
                       }
                       autoComplete="off"
@@ -447,6 +455,11 @@ export const ClientsModals = memo(function ClientsModals({
                     role="status"
                     aria-live="polite"
                   ></span>
+                  {clientForm.editing && (
+                    <small className="muted">
+                      Deixe em branco para manter ou digite uma nova senha.
+                    </small>
+                  )}
                   {clientForm.editing && (
                     <label>
                       <input type="checkbox" name="limpar_senha" value="1" />{' '}
@@ -1207,26 +1220,6 @@ export const ClientsModals = memo(function ClientsModals({
             <button className="btn btn-muted" type="button" data-close-modal="">
               Cancelar
             </button>
-            {step > 0 && (
-              <button
-                className="btn btn-muted"
-                type="button"
-                onClick={() =>
-                  clientForm.setTab(['dados', 'plano', 'apps'][step - 1])
-                }
-              >
-                Anterior
-              </button>
-            )}
-            {step < 2 && (
-              <button
-                className="btn btn-muted"
-                type="button"
-                onClick={clientForm.nextStep}
-              >
-                Continuar
-              </button>
-            )}
             <button
               className="btn btn-primary"
               type="submit"

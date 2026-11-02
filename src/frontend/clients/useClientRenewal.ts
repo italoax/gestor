@@ -49,6 +49,16 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
   const [singleErrors, setSingleErrors] = useState({});
   const [multiErrors, setMultiErrors] = useState({});
   const [preference, setPreference] = useState(emptyPreference);
+  const [messageChoice, setMessageChoice] = useState({
+    single: null,
+    multi: null,
+  });
+  const sendMessage = {
+    single:
+      messageChoice.single ?? (!preference.ready || Boolean(preference.value)),
+    multi:
+      messageChoice.multi ?? (!preference.ready || Boolean(preference.value)),
+  };
   const [submitting, setSubmitting] = useState({ single: false, multi: false });
   const submittingRef = useRef({ single: false, multi: false });
   const preferenceClient = useRef(null),
@@ -113,6 +123,7 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
   }, [mensagens, csrfToken]);
 
   function openModal(id) {
+    setMessageChoice({ single: null, multi: null });
     submittingRef.current = { single: false, multi: false };
     setSubmitting(submittingRef.current);
     const other =
@@ -297,9 +308,11 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
         errors[name] = 'Informe uma data válida.';
     }
     const message = ensurePreference().getState();
-    if (message.pending || !message.ready)
+    if (sendMessage[kind] && (message.pending || !message.ready))
       errors.mensagem_pagamento_id =
         message.error || 'Aguarde a sincronização da mensagem.';
+    else if (sendMessage[kind] && !message.value)
+      errors.mensagem_pagamento_id = 'Selecione a mensagem do WhatsApp.';
     if (kind === 'multi' && (multi.loading || multi.error || !multi.chave))
       errors.selecao = multi.error || 'Aguarde o carregamento dos planos.';
     (kind === 'single' ? setSingleErrors : setMultiErrors)(errors);
@@ -321,6 +334,15 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
     singleErrors,
     multiErrors,
     preference,
+    sendMessage,
+    toggleMessage: (kind, checked) => {
+      setMessageChoice((previous) => ({ ...previous, [kind]: checked }));
+      (kind === 'single' ? setSingleErrors : setMultiErrors)((previous) => {
+        const next: Record<string, any> = { ...previous };
+        delete next.mensagem_pagamento_id;
+        return next;
+      });
+    },
     submitting,
     onPageClick,
     updateSingle,

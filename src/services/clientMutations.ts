@@ -25,6 +25,7 @@ export function createClientMutationWorkflow({
   renovarPlanosDoCliente,
   validarPlanoAdicional,
   recordClientActivity = async (_event: any, _connection?: any) => {},
+  runClientOperation = (_userId, _body, run) => run(enviarMensagemModelo),
 }) {
   function normalizePhoneInput(prefixValue, phoneValue) {
     const prefixDigits =
@@ -44,8 +45,11 @@ export function createClientMutationWorkflow({
   // Sessão do WhatsApp para envio = a do dispositivo principal cadastrado
   // (a mesma que o painel conecta/mostra como "Conectado"). Evita usar o nome
   // do servidor do cliente como sessão, que causava "WhatsApp não conectado".
-  async function sessaoWhatsappPrincipal(userId) {
-    const rows = await queryRows(
+  async function sessaoWhatsappPrincipal(userId, connection?) {
+    const read = connection
+      ? async (sql, params) => (await connection.query(sql, params))[0]
+      : queryRows;
+    const rows = await read(
       'SELECT sessao FROM whatsapp_devices WHERE user_id = :userId ORDER BY principal DESC, id ASC LIMIT 1',
       { userId },
     );
@@ -78,7 +82,71 @@ export function createClientMutationWorkflow({
     else await execute(sql, params);
   }
 
-  return async function mutateClient(userId, body) {
+  function mensagemDaRenovacao(body) {
+    // O campo explícito prevalece sobre modelos antigos enviados pelo formulário.
+    if (body.enviar_mensagem_renovacao === '0') return 0;
+    const id = Number(body.mensagem_pagamento_id);
+    if (body.enviar_mensagem_renovacao === '1' || id) {
+      if (!Number.isSafeInteger(id) || id <= 0)
+        throw new CreditosError(
+          'Selecione a mensagem do WhatsApp antes de renovar.',
+        );
+      return id;
+    }
+    return 0;
+  }
+
+  async function confirmarMensagemRenovacao(
+    userId,
+    cliente,
+    mensagemId,
+    connection,
+    sendMessage = enviarMensagemModelo,
+  ) {
+    try {
+      const [mensagens, sessao, pix] = await Promise.all([
+        connection.query(
+          'SELECT id, titulo, mensagem, media_tipo AS mediaTipo, media_path AS mediaPath FROM mensagens WHERE id = :mensagemId AND user_id = :userId LIMIT 1',
+          { mensagemId, userId },
+        ),
+        sessaoWhatsappPrincipal(userId, connection),
+        getPixConfig(userId, connection),
+      ]);
+      const mensagem = mensagens[0][0];
+      if (!mensagem)
+        throw new CreditosError(
+          'Renovação não salva: a mensagem escolhida não foi encontrada.',
+        );
+      if (!sessao)
+        throw new CreditosError(
+          'Renovação não salva: cadastre um dispositivo em WhatsApp antes de enviar mensagens.',
+        );
+      const envio = await sendMessage(
+        sessao,
+        cliente,
+        mensagem,
+        undefined,
+        pix,
+        { connection },
+      );
+      if (envio.pending || (envio.ok && envio.confirmed !== true))
+        throw new CreditosError(
+          'Renovação não salva: envio sem confirmação do WhatsApp. A mensagem ainda pode chegar. Confira a conversa antes de tentar novamente.',
+        );
+      if (!envio.ok)
+        throw new CreditosError(
+          'Renovação não salva: não foi possível enviar a mensagem pelo WhatsApp. ' +
+            (envio.error || 'Confira a conexão e tente novamente.'),
+        );
+    } catch (error) {
+      if (error instanceof CreditosError) throw error;
+      throw new CreditosError(
+        'Renovação não salva: envio sem confirmação do WhatsApp. A mensagem ainda pode chegar. Confira a conversa antes de tentar novamente.',
+      );
+    }
+  }
+
+  async function mutateClient(userId, body, sendMessage) {
     const notices = [];
     const flash = (type, message) => notices.push({ type, message });
     const redirect = (path) => ({ redirect: path, notices });
@@ -110,6 +178,7 @@ export function createClientMutationWorkflow({
         return redirect('/clientes?arquivados=1');
       }
       if (action === 'renovar_planos') {
+        const mensagemId = mensagemDaRenovacao(body);
         const resultado = await renovarPlanosDoCliente(userId, id, {
           selecao: String(body.selecao),
           periodos: Number(body.periodos),
@@ -117,6 +186,46 @@ export function createClientMutationWorkflow({
           formaPagamento: String(body.forma_pagamento),
           vencimentoPrincipal: body.vencimento_principal,
           vencimentoAdicional: body.vencimento_adicional,
+          antesDeConfirmar: mensagemId
+            ? async ({ cliente, itens, total }, connection) => {
+                const adicional = lerPlanoAdicional(cliente.plano_adicional);
+                const resumo = itens
+                  .map((item) => {
+                    const [ano, mes, dia] = item.vencimento.split('-');
+                    return `${item.servidor} — renovado até ${dia}/${mes}/${ano}`;
+                  })
+                  .join('\n');
+                await confirmarMensagemRenovacao(
+                  userId,
+                  {
+                    ...cliente,
+                    valor: total,
+                    resumo_acessos: resumo,
+                    acessosCobranca: itens,
+                    servidor: itens.map((item) => item.servidor).join(' + '),
+                    plano: [...new Set(itens.map((item) => item.plano))].join(
+                      ' + ',
+                    ),
+                    vencimento: itens[0].vencimento,
+                    user: itens
+                      .map((item) =>
+                        item.chave === 'principal'
+                          ? cliente.user
+                          : adicional?.user,
+                      )
+                      .filter(Boolean)
+                      .join(' / '),
+                    senha:
+                      itens.length === 1 && itens[0].chave === 'principal'
+                        ? cliente.senha
+                        : null,
+                  },
+                  mensagemId,
+                  connection,
+                  sendMessage,
+                );
+              }
+            : undefined,
         });
         if (!resultado.duplicado) {
           await verificarCreditosServidor(userId, '', 0, 0);
@@ -156,89 +265,17 @@ export function createClientMutationWorkflow({
             }
           }
         }
-        const mensagemId = Number(body.mensagem_pagamento_id);
-        if (!resultado.duplicado && mensagemId) {
-          // Envio ocorre após a transação; uma falha no WhatsApp não desfaz a renovação.
-          try {
-            const [cliente, mensagem, sessao] = await Promise.all([
-              queryOne(
-                'SELECT * FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
-                { id, userId },
-              ),
-              queryOne(
-                'SELECT id, titulo, mensagem, media_tipo AS mediaTipo, media_path AS mediaPath FROM mensagens WHERE id = :mensagemId AND user_id = :userId LIMIT 1',
-                { mensagemId, userId },
-              ),
-              sessaoWhatsappPrincipal(userId),
-            ]);
-            if (!cliente || !mensagem)
-              throw new Error('Mensagem escolhida ou cliente não encontrado.');
-            if (!sessao)
-              throw new Error(
-                'Cadastre um dispositivo em WhatsApp antes de enviar mensagens.',
-              );
-            const itens = resultado.itens;
-            const adicional = lerPlanoAdicional(cliente.plano_adicional);
-            const resumo = itens
-              .map((item) => {
-                const [ano, mes, dia] = item.vencimento.split('-');
-                return (
-                  item.servidor +
-                  ' — renovado até ' +
-                  dia +
-                  '/' +
-                  mes +
-                  '/' +
-                  ano
-                );
-              })
-              .join('\n');
-            const contexto = {
-              ...cliente,
-              valor: resultado.total,
-              resumo_acessos: resumo,
-              acessosCobranca: itens,
-              servidor: itens.map((item) => item.servidor).join(' + '),
-              plano: [...new Set(itens.map((item) => item.plano))].join(' + '),
-              vencimento: itens[0].vencimento,
-              user: itens
-                .map((item) =>
-                  item.chave === 'principal' ? cliente.user : adicional?.user,
-                )
-                .filter(Boolean)
-                .join(' / '),
-              senha:
-                itens.length === 1 && itens[0].chave === 'principal'
-                  ? cliente.senha
-                  : null,
-            };
-            const envio = await enviarMensagemModelo(
-              sessao,
-              contexto,
-              mensagem,
-              undefined,
-              await getPixConfig(userId),
-            );
-            if (!envio.ok)
-              throw new Error(envio.error || 'Falha ao enviar mensagem.');
-            flash(
-              'modal-success',
-              'Mensagem de renovação enviada pelo WhatsApp.',
-            );
-          } catch (error) {
-            flash(
-              'modal-error',
-              'Renovação salva, mas não foi possível enviar a mensagem: ' +
-                (error instanceof Error ? error.message : String(error)),
-            );
-          }
-        }
         flash(
           'modal-success',
           resultado.duplicado
             ? 'Renovação já registrada.'
             : `Renovação registrada. Total: R$ ${resultado.total.toFixed(2).replace('.', ',')}.`,
         );
+        if (mensagemId && !resultado.duplicado)
+          flash(
+            'modal-success',
+            'Mensagem de renovação enviada pelo WhatsApp.',
+          );
         return redirect('/clientes');
       }
       if (action === 'add_pagamento') {
@@ -258,6 +295,7 @@ export function createClientMutationWorkflow({
           flash('modal-success', 'Pagamento ja registrado.');
           return redirect('/clientes');
         }
+        const mensagemPagamentoId = mensagemDaRenovacao(body);
         const vencimento = normalizeDateInput(body.vencimento);
         const pagoEm = normalizeDateInput(body.pago_em);
         if (!vencimento || (String(body.pago_em ?? '').trim() && !pagoEm)) {
@@ -366,7 +404,7 @@ export function createClientMutationWorkflow({
           );
           // Registra a renovação na aba Transações.
           const [cliRows] = await conn.query(
-            'SELECT nome, plano, servidor, telas, valor_pago AS valorPago, custo_pagamento AS custoPagamento, forma_pagamento AS formaPagamento FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
+            'SELECT *, valor_pago AS valorPago, custo_pagamento AS custoPagamento, forma_pagamento AS formaPagamento FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
             { id, userId },
           );
           const cliTx = cliRows[0];
@@ -388,6 +426,16 @@ export function createClientMutationWorkflow({
                 valorVenda: Number(cliTx.valorPago) || 0,
               },
               conn,
+            );
+          }
+          if (mensagemPagamentoId) {
+            if (!cliTx) throw new CreditosError('Cliente não encontrado.');
+            await confirmarMensagemRenovacao(
+              userId,
+              cliTx,
+              mensagemPagamentoId,
+              conn,
+              sendMessage,
             );
           }
           return saldo;
@@ -464,54 +512,8 @@ export function createClientMutationWorkflow({
             ? 'Pagamento registrado com sucesso e acesso renovado no painel Sigma.'
             : 'Pagamento registrado com sucesso.',
         );
-        const mensagemPagamentoId = Number(body.mensagem_pagamento_id);
-        if (mensagemPagamentoId) {
-          const [clientes, mensagens] = await Promise.all([
-            queryRows(
-              'SELECT * FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
-              { id, userId },
-            ),
-            queryRows(
-              'SELECT id, titulo, mensagem, media_tipo AS mediaTipo, media_path AS mediaPath FROM mensagens WHERE id = :mensagemId AND user_id = :userId LIMIT 1',
-              { mensagemId: mensagemPagamentoId, userId },
-            ),
-          ]);
-          const cliente = clientes[0];
-          const mensagem = mensagens[0];
-          if (cliente && mensagem) {
-            const sessao = await sessaoWhatsappPrincipal(userId);
-            if (!sessao) {
-              flash(
-                'modal-error',
-                'Pagamento salvo, mas você não tem dispositivo WhatsApp cadastrado — cadastre em WhatsApp antes de enviar mensagens.',
-              );
-            } else {
-              const result = await enviarMensagemModelo(
-                sessao,
-                cliente,
-                mensagem,
-                undefined,
-                await getPixConfig(userId),
-              );
-              if (result.ok) {
-                flash(
-                  'modal-success',
-                  'Mensagem enviada ao cliente pelo WhatsApp.',
-                );
-              } else {
-                flash(
-                  'modal-error',
-                  `Pagamento salvo, mas não foi possível enviar a mensagem: ${result.error || 'erro desconhecido'}`,
-                );
-              }
-            }
-          } else {
-            flash(
-              'modal-error',
-              'Pagamento salvo, mas a mensagem escolhida não foi encontrada.',
-            );
-          }
-        }
+        if (mensagemPagamentoId)
+          flash('modal-success', 'Mensagem enviada ao cliente pelo WhatsApp.');
         return redirect('/clientes');
       }
       if (action === 'send_whatsapp') {
@@ -567,7 +569,7 @@ export function createClientMutationWorkflow({
           flash('modal-error', 'Digite uma mensagem ou anexe uma mídia.');
           return redirect('/clientes');
         }
-        const result = await enviarMensagemModelo(
+        const result = await sendMessage(
           sessao,
           cliente,
           {
@@ -592,6 +594,11 @@ export function createClientMutationWorkflow({
             );
           });
           flash('modal-success', `Mensagem enviada para ${cliente.nome}.`);
+        } else if (result.pending) {
+          flash(
+            'modal-error',
+            'Envio sem confirmação do WhatsApp. Confira a conversa antes de reenviar; a mensagem pode ainda ser enviada.',
+          );
         } else {
           flash(
             'modal-error',
@@ -923,7 +930,7 @@ export function createClientMutationWorkflow({
               };
               // Não bloqueia o cadastro se o envio falhar, mas mostra o erro no flash
               // pra usuário não ficar achando que mandou quando não mandou.
-              const send = await enviarMensagemModelo(
+              const send = await sendMessage(
                 sessao,
                 clienteCriado,
                 tpl,
@@ -956,5 +963,9 @@ export function createClientMutationWorkflow({
       }
       throw error;
     }
-  };
+  }
+  return (userId, body) =>
+    runClientOperation(userId, body, (sendMessage) =>
+      mutateClient(userId, body, sendMessage),
+    );
 }

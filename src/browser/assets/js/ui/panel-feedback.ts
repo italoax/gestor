@@ -9,6 +9,8 @@ export function describeNoticeError(
       : typeof value?.message === 'string'
         ? value.message.trim()
         : '';
+  if (/envio(?: da mensagem)? (?:ficou )?sem confirma[çc][aã]o/i.test(message))
+    return { title: 'Envio sem confirmação', text: message };
   if (
     value?.name === 'TimeoutError' ||
     /^(?:ETIMEDOUT|UND_ERR_(?:CONNECT|HEADERS|BODY)_TIMEOUT)$/.test(

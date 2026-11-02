@@ -1,4 +1,6 @@
 import { createClientMutationWorkflow } from '../services/clientMutations.ts';
+import { createClientOperationGuard } from '../services/clientMutationOperations.ts';
+import { ensureClientMutationOperationsSchema } from '../db/clientMutationOperationsSchema.ts';
 import crypto from 'node:crypto';
 import { createClientActivityWriter } from '../services/clientHistory.ts';
 import { execute, queryOne, queryRows, withTransaction } from '../db/mysql.ts';
@@ -38,6 +40,12 @@ export function createDefaultClientMutationWorkflow() {
     toNullableString,
     toNumber,
     enviarMensagemModelo,
+    runClientOperation: createClientOperationGuard({
+      ensureSchema: ensureClientMutationOperationsSchema,
+      execute,
+      queryOne,
+      sendMessage: enviarMensagemModelo,
+    }),
     getPixConfig,
     CreditosError,
     consumoRenovacao,

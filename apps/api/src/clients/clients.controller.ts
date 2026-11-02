@@ -93,6 +93,19 @@ export class ClientsController {
           .status(404)
           .json({ ok: false, error: 'Cliente não encontrado.' });
   }
+  @Get('api/clientes/:id/senha')
+  async password(@Req() request: ClientsRequest, @Res() response: Response) {
+    response.set('Cache-Control', 'private, no-store');
+    const result = await this.clients.password(
+      request.session.user.id,
+      request.params.id,
+    );
+    return result
+      ? response.json(result)
+      : response
+          .status(404)
+          .json({ ok: false, error: 'Cliente não encontrado.' });
+  }
   @Get('clientes/preferencias/mensagem-pagamento')
   async preference(@Req() request: ClientsRequest, @Res() response: Response) {
     return response

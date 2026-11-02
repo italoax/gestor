@@ -365,26 +365,6 @@ export function useClientForm() {
       target?.focus();
     });
   }
-  function nextStep() {
-    const fields = Array.from(
-      ref.current.querySelectorAll('[data-required="1"]'),
-    ) as HTMLInputElement[];
-    const invalid = fields.filter(
-      (field) => field.dataset.tab === tab && validationMessage(field),
-    );
-    setErrors((previous) => ({
-      ...previous,
-      ...Object.fromEntries(
-        invalid.map((field) => [field.name, validationMessage(field)]),
-      ),
-    }));
-    if (invalid.length) {
-      focusField(invalid[0].name);
-      return;
-    }
-    const steps = ['dados', 'plano', 'apps'];
-    setTab(steps[Math.min(2, steps.indexOf(tab) + 1)]);
-  }
   function onPageClick(event) {
     const button = (event.target as HTMLInputElement).closest(
       'button',
@@ -412,7 +392,6 @@ export function useClientForm() {
     tab,
     setTab,
     focusField,
-    nextStep,
     total,
     errors,
     errorCountForTab: (name: string) =>

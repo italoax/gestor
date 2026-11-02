@@ -5,6 +5,8 @@ export interface WhatsappResult {
   response?: string | Record<string, any> | null;
   messageId?: string;
   retrySafe?: boolean;
+  confirmed?: boolean;
+  pending?: boolean;
 }
 
 import { env } from '../config/env.ts';
@@ -56,13 +58,69 @@ function traduzirErroWhatsapp(error) {
 // um fetch sem timeout pendurava a request do painel até o WhatsApp responder
 // (podia ser 60s+), travando o agendador e o submit do formulário.
 const WHATSAPP_FETCH_TIMEOUT_MS = 30000;
+const UNCONFIRMED_MESSAGE =
+  'Envio sem confirmação do WhatsApp. Confira a conversa antes de reenviar; a mensagem pode ainda ser enviada.';
+
+// Um HTTP 200 ou um ID gerado localmente não confirmam que o WhatsApp aceitou
+// a mensagem. Confirmação de transporte também não significa entrega ou leitura.
+export function confirmarResultadoEnvio(
+  result: WhatsappResult,
+): WhatsappResult {
+  if (!result.ok && result.retrySafe === true)
+    return { ...result, confirmed: false, pending: false };
+  const data =
+    typeof result.response === 'object' && result.response !== null
+      ? result.response
+      : {};
+  const messageId = [
+    result.messageId,
+    data.messageId,
+    data.key?.id,
+    data.response?.key?.id,
+    data.messages?.[0]?.id,
+  ].find((id) => typeof id === 'string' && id.trim().length > 0);
+  const state = String(data.status ?? '').toLowerCase();
+  const queued =
+    result.status === 202 ||
+    data.queued === true ||
+    data.pending === true ||
+    data.confirmed === false ||
+    ['queued', 'pending', 'processing', 'accepted'].includes(state);
+  const acknowledgement = data.response?.status ?? data.status;
+  if (
+    result.ok &&
+    messageId &&
+    !queued &&
+    !data.error &&
+    !data.lastError &&
+    (data.confirmed === true || [2, 3, 4, 5].includes(acknowledgement))
+  )
+    return {
+      ...result,
+      messageId: messageId.trim(),
+      confirmed: true,
+      pending: false,
+    };
+  return {
+    ...result,
+    ok: false,
+    messageId,
+    confirmed: false,
+    pending: true,
+    retrySafe: false,
+    error: UNCONFIRMED_MESSAGE,
+  };
+}
 async function jsonRequest(
   url,
   payload,
   method = 'POST',
   headers: Record<string, any> = {},
   timeoutMs = WHATSAPP_FETCH_TIMEOUT_MS,
+  requireConfirmation = false,
 ): Promise<WhatsappResult> {
+  const finish = (result: WhatsappResult) =>
+    requireConfirmation ? confirmarResultadoEnvio(result) : result;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -87,7 +145,7 @@ async function jsonRequest(
       const error =
         traduzirErroWhatsapp(json.error ?? json.lastError) ||
         `Erro HTTP ${response.status}`;
-      return {
+      return finish({
         ok: false,
         status: response.status,
         response: data,
@@ -96,14 +154,18 @@ async function jsonRequest(
           [400, 401, 403, 404, 422].includes(response.status) ||
           (response.status === 500 &&
             error.startsWith('WhatsApp não conectado.')),
-      };
+      });
     }
     const json = typeof data === 'object' && data !== null ? data : null;
     const messages = Array.isArray(json?.messages) ? json.messages : [];
-    const messageId = String(
-      json?.messageId ?? messages[0]?.id ?? json?.key?.id ?? '',
-    );
-    return { ok: true, status: response.status, response: data, messageId };
+    const rawId = json?.messageId ?? messages[0]?.id ?? json?.key?.id;
+    const messageId = typeof rawId === 'string' ? rawId : '';
+    return finish({
+      ok: true,
+      status: response.status,
+      response: data,
+      messageId,
+    });
   } catch (error) {
     const aborted = error instanceof Error && error.name === 'AbortError';
     // Somente falhas ao abrir a conexão garantem que o POST não foi enviado.
@@ -112,7 +174,7 @@ async function jsonRequest(
       error instanceof Error
         ? String((error.cause as { code?: string } | undefined)?.code ?? '')
         : '';
-    return {
+    return finish({
       ok: false,
       retrySafe: [
         'ECONNREFUSED',
@@ -123,7 +185,7 @@ async function jsonRequest(
       error: aborted
         ? `Timeout: a API do WhatsApp não respondeu em ${timeoutMs / 1000}s.`
         : traduzirErroWhatsapp(error),
-    };
+    });
   } finally {
     clearTimeout(timeoutId);
   }
@@ -263,6 +325,8 @@ export async function enviarTexto(sessao, telefone, mensagem, token) {
     },
     'POST',
     sessionHeaders(token),
+    WHATSAPP_FETCH_TIMEOUT_MS,
+    true,
   );
 }
 export async function enviarMidia(
@@ -292,6 +356,8 @@ export async function enviarMidia(
     },
     'POST',
     sessionHeaders(token),
+    WHATSAPP_FETCH_TIMEOUT_MS,
+    true,
   );
 }
 export async function enviarCobrancaPix(sessao, telefone, payload, token) {
@@ -312,6 +378,8 @@ export async function enviarCobrancaPix(sessao, telefone, payload, token) {
     },
     'POST',
     sessionHeaders(token),
+    WHATSAPP_FETCH_TIMEOUT_MS,
+    true,
   );
 }
 export async function enviarAudio(sessao, telefone, urlAudio, token) {
@@ -332,6 +400,8 @@ export async function enviarAudio(sessao, telefone, urlAudio, token) {
     },
     'POST',
     sessionHeaders(token),
+    WHATSAPP_FETCH_TIMEOUT_MS,
+    true,
   );
 }
 // Publica um Status (story) do WhatsApp via microserviço Baileys.
@@ -394,6 +464,7 @@ export async function enviarMensagemModelo(
   modelo,
   token,
   pix,
+  options: { connection?: any } = {},
 ) {
   // Enriquece o cliente com a config PIX do user (se passada) pra a tag {pix}
   // e derivadas funcionarem. Nao muta o objeto original.
@@ -439,7 +510,10 @@ export async function enviarMensagemModelo(
     Number.isSafeInteger(Number(cliente.id)) &&
     Number(cliente.id) > 0
   ) {
-    const url = await urlPagamentoDoCliente(Number(cliente.id));
+    const url = await urlPagamentoDoCliente(
+      Number(cliente.id),
+      options.connection,
+    );
     if (!url)
       return {
         ok: false,
@@ -455,7 +529,9 @@ export async function enviarMensagemModelo(
   ) {
     const id = Number(cliente.id);
     const pagamentoToken =
-      Number.isSafeInteger(id) && id > 0 ? await tokenDoCliente(id) : null;
+      Number.isSafeInteger(id) && id > 0
+        ? await tokenDoCliente(id, options.connection)
+        : null;
     if (!pagamentoToken)
       return {
         ok: false,
