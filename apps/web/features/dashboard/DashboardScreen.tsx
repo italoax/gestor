@@ -5,6 +5,7 @@ import { formatMoney } from '../../../../src/services/format.ts';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { GeographyMap, SeriesChart } from './DashboardCharts.tsx';
 import { DashboardAttention } from './DashboardAttention.tsx';
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
 
 const width = (value) => `${Math.max(0, Math.min(100, Number(value) || 0))}%`;
 function Distribution({
@@ -60,7 +61,11 @@ export function DashboardScreen({ data }: { data?: any }) {
   const { stats, acessos, chart, performance } = data;
   return (
     <NativePanel data={data} path="/dashboard">
-      <link rel="stylesheet" href="/assets/css/native-dashboard.css" />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/native-dashboard.css')}
+        precedence="panel"
+      />
       <div className="container dash" data-react-page="dashboard">
         <DashboardAttention data={data.attention} />
         <div className="ui-summary ui-summary-4">
