@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { Icon, CsrfInput } from '../../../../src/frontend/clients/ui.tsx';
 import { PanelInteractions } from './PanelInteractions.tsx';
 import { panelShellData } from '../../lib/panelData.ts';
+import { ThemeSelector } from '../ui/ThemeSelector.tsx';
 
 const menu = [
   ['Dashboard', '/dashboard', 'chart'],
@@ -179,19 +180,7 @@ function PanelFrame({
                 <Icon name="phone" />
               </span>
             </a>
-            <button
-              className="theme-toggle"
-              type="button"
-              data-theme-toggle=""
-              aria-label="Alternar tema claro/escuro"
-            >
-              <span className="ui-theme-sun">
-                <Icon name="sun" />
-              </span>
-              <span className="ui-theme-moon">
-                <Icon name="moon" />
-              </span>
-            </button>
+            <ThemeSelector />
             <div className="notif-wrap" data-notif-wrap="">
               <button
                 className="topbar-icon notif-bell-btn"

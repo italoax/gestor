@@ -15,5 +15,14 @@ export function PanelStyles() {
       precedence="panel"
     />
   ));
-  return <>{styles}</>;
+  return (
+    <>
+      {styles}
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/themes.css')}
+        precedence="panel-theme"
+      />
+    </>
+  );
 }

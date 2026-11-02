@@ -9,32 +9,35 @@
     <title>Sem conexão — Gestor IXTV</title>
     <meta name="theme-color" content="#6366f1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script src="/assets/js/offline.js" defer></script>
+    <script src="/assets/js/offline.js"></script>
     <style>
       :root {
-        --bg: #0b1220;
-        --surface: #111a2e;
-        --border: rgba(148, 163, 184, 0.18);
-        --text: #e5e9f2;
-        --muted: #94a3b8;
-        --primary: #6366f1;
-        --primary-strong: #4f46e5;
+        color-scheme: dark;
+        --bg: #000000;
+        --surface: #0a0a0a;
+        --border: #202020;
+        --text: #f5f5f5;
+        --muted: #a1a1aa;
+        --primary: #cc98eb;
+        --button-primary: #783393;
+        --primary-strong: #8b3daa;
+      }
+      :root[data-theme="dark"] {
+        --bg: #14161b;
+        --surface: #1d2027;
+        --border: #3b424f;
+        --text: #f1f3f8;
+        --muted: #b5bdcb;
       }
       :root[data-theme="light"] {
-        --bg: #f4f6fb;
+        color-scheme: light;
+        --bg: #f7f8fa;
         --surface: #ffffff;
-        --border: rgba(15, 23, 42, 0.10);
-        --text: #0f172a;
-        --muted: #64748b;
-      }
-      @media (prefers-color-scheme: light) {
-        :root:not([data-theme="dark"]) {
-          --bg: #f4f6fb;
-          --surface: #ffffff;
-          --border: rgba(15, 23, 42, 0.10);
-          --text: #0f172a;
-          --muted: #64748b;
-        }
+        --border: #d5dae3;
+        --text: #192232;
+        --muted: #566173;
+        --primary: #783393;
+        --primary-strong: #64277c;
       }
       * { box-sizing: border-box; }
       html, body { height: 100%; margin: 0; }
@@ -83,11 +86,13 @@
         font-size: 15px;
         font-weight: 600;
         color: #fff;
-        background: var(--primary);
+        background: var(--button-primary);
         transition: background 0.15s ease, transform 0.05s ease;
       }
       .btn:hover { background: var(--primary-strong); }
       .btn:active { transform: translateY(1px); }
+      .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+      @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
       .status {
         margin-top: 14px;
         font-size: 12.5px;

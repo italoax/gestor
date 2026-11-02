@@ -7,6 +7,12 @@ export function StatusBadge({ status }: { status?: any }) {
 }
 
 const paths = {
+  oled: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" />
+    </>
+  ),
   eye: (
     <>
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />

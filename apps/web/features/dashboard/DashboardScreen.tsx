@@ -1,6 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { Icon } from '../../../../src/frontend/clients/ui.tsx';
+import { useRef } from 'react';
+import {
+  DashboardIcon as Icon,
+  useDashboardMotion,
+} from './DashboardMotion.tsx';
 import { formatMoney } from '../../../../src/services/format.ts';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { GeographyMap, SeriesChart } from './DashboardCharts.tsx';
@@ -13,16 +17,21 @@ function Distribution({
   items,
   money = false,
   empty,
+  icon = 'chart',
 }: {
   title?: React.ReactNode;
   items?: any;
   money?: boolean;
   empty?: any;
+  icon?: string;
 }) {
   return (
-    <div className="dist-card">
+    <div className="dist-card dash-motion-card" data-dash-reveal>
       <div className="dist-head spread">
-        <span>{title}</span>
+        <span className="dash-distribution-title">
+          <Icon name={icon} />
+          {title}
+        </span>
         <span className="dist-total">
           Total:{' '}
           <strong>
@@ -59,6 +68,8 @@ function Distribution({
 }
 export function DashboardScreen({ data }: { data?: any }) {
   const { stats, acessos, chart, performance } = data;
+  const dashboard = useRef<HTMLDivElement>(null);
+  useDashboardMotion(dashboard);
   return (
     <NativePanel data={data} path="/dashboard">
       <link
@@ -66,7 +77,11 @@ export function DashboardScreen({ data }: { data?: any }) {
         href={publicAssetUrl('/assets/css/native-dashboard.css')}
         precedence="panel"
       />
-      <div className="container dash" data-react-page="dashboard">
+      <div
+        className="container dash"
+        data-react-page="dashboard"
+        ref={dashboard}
+      >
         <DashboardAttention data={data.attention} />
         <div className="ui-summary ui-summary-4">
           {[
@@ -104,7 +119,8 @@ export function DashboardScreen({ data }: { data?: any }) {
             ],
           ].map(([label, value, foot, color, icon, href]) => (
             <Link
-              className={`stat-box accent-${color} dash-action-link`}
+              className={`stat-box accent-${color} dash-action-link dash-motion-card`}
+              data-dash-reveal
               key={label}
               href={href}
               prefetch={false}
@@ -112,7 +128,9 @@ export function DashboardScreen({ data }: { data?: any }) {
             >
               <div>
                 <span className="stat-label">{label}</span>
-                <strong className="stat-value">{value}</strong>
+                <strong className="stat-value" data-dash-number>
+                  {value}
+                </strong>
                 <small className="stat-foot">{foot}</small>
               </div>
               <div className="stat-icon">
@@ -122,7 +140,7 @@ export function DashboardScreen({ data }: { data?: any }) {
           ))}
         </div>
         {acessos && (
-          <section className="dash-access">
+          <section className="dash-access dash-motion-card" data-dash-reveal>
             <div className="dash-access-heading">
               <h3>
                 <Icon name="server" /> Acessos por servidor
@@ -132,7 +150,7 @@ export function DashboardScreen({ data }: { data?: any }) {
             <div className="dash-access-overview">
               <div className="dash-access-main">
                 <span>Clientes cadastrados</span>
-                <strong>{acessos.clientes}</strong>
+                <strong data-dash-number>{acessos.clientes}</strong>
                 <small>
                   <b>{acessos.comUm}</b> com 1 acesso <span>·</span>{' '}
                   <b>{acessos.comDois}</b> com 2 acessos
@@ -140,7 +158,9 @@ export function DashboardScreen({ data }: { data?: any }) {
               </div>
               <div className="dash-access-main">
                 <span>Total de acessos</span>
-                <strong className="dash-access-total">{acessos.total}</strong>
+                <strong className="dash-access-total" data-dash-number>
+                  {acessos.total}
+                </strong>
                 <small>
                   {acessos.clientes} principais + {acessos.comDois} adicionais
                 </small>
@@ -199,7 +219,11 @@ export function DashboardScreen({ data }: { data?: any }) {
               ['Mensal', 'mes'],
               ['Mês Anterior', 'mesAnterior'],
             ].map(([label, key]) => (
-              <div className="rc-card" key={key}>
+              <div
+                className="rc-card dash-motion-card"
+                key={key}
+                data-dash-reveal
+              >
                 <div className="rc-head">
                   <Icon name="money" /> {label}
                 </div>
@@ -214,6 +238,7 @@ export function DashboardScreen({ data }: { data?: any }) {
                   >
                     <span>{title}</span>
                     <strong
+                      data-dash-number
                       data-value-tone={
                         field === 'custo' ||
                         Number(stats.receitaCusto[key][field]) < 0
@@ -240,7 +265,8 @@ export function DashboardScreen({ data }: { data?: any }) {
               ['Venceu Ontem', 'ontem', 'red'],
             ].map(([label, key, color]) => (
               <Link
-                className={`venc-card accent-${color} dash-action-link`}
+                className={`venc-card accent-${color} dash-action-link dash-motion-card`}
+                data-dash-reveal
                 key={key}
                 href={`/clientes?vencimento=${key}`}
                 prefetch={false}
@@ -249,7 +275,7 @@ export function DashboardScreen({ data }: { data?: any }) {
                 <span className="venc-label">
                   <Icon name="calendar" /> {label}
                 </span>
-                <strong className="venc-value">
+                <strong className="venc-value" data-dash-number>
                   {stats.vencimentos[key].total}
                 </strong>
                 <small>{formatMoney(stats.vencimentos[key].valor)}</small>
@@ -271,10 +297,18 @@ export function DashboardScreen({ data }: { data?: any }) {
               ['Mês Anterior', 'recebidoMesAnterior'],
               ['Projeção Mensal', 'projecao'],
             ].map(([label, key]) => (
-              <div className="fin-card" key={key}>
-                <span className="fin-label">{label}</span>
+              <div
+                className="fin-card dash-motion-card"
+                key={key}
+                data-dash-reveal
+              >
+                <span className="fin-label">
+                  <Icon name={key === 'projecao' ? 'chart' : 'money'} />
+                  {label}
+                </span>
                 <strong
                   className="fin-value"
+                  data-dash-number
                   data-value-tone={
                     Number(stats.financeiro[key]) < 0
                       ? 'negative'
@@ -291,7 +325,11 @@ export function DashboardScreen({ data }: { data?: any }) {
                       stats.financeiro.variacaoMes >= 0 ? 'pos' : 'neg'
                     }
                   >
-                    {stats.financeiro.variacaoMes >= 0 ? '↗' : '↘'}{' '}
+                    <Icon
+                      name={
+                        stats.financeiro.variacaoMes >= 0 ? 'growth' : 'decline'
+                      }
+                    />
                     {stats.financeiro.variacaoMes}% vs mês anterior
                   </small>
                 )}
@@ -307,9 +345,11 @@ export function DashboardScreen({ data }: { data?: any }) {
             <Icon name="chart" /> Gráficos
           </h3>
           <div className="chart-grid">
-            <div className="chart-card">
+            <div className="chart-card dash-motion-card" data-dash-reveal>
               <div className="chart-head">
-                <strong>↗ Faturamento x Custo x Lucro</strong>
+                <strong>
+                  <Icon name="chart" /> Faturamento x Custo x Lucro
+                </strong>
               </div>
               <SeriesChart
                 title="Faturamento, custo e lucro por dia"
@@ -319,14 +359,22 @@ export function DashboardScreen({ data }: { data?: any }) {
                   {
                     label: 'Faturamento',
                     values: chart.receita,
-                    color: '#6366f1',
+                    color: 'var(--chart-1)',
                   },
-                  { label: 'Custo', values: chart.custo, color: '#ef4444' },
-                  { label: 'Lucro', values: chart.lucro, color: '#22c55e' },
+                  {
+                    label: 'Custo',
+                    values: chart.custo,
+                    color: 'var(--chart-2)',
+                  },
+                  {
+                    label: 'Lucro',
+                    values: chart.lucro,
+                    color: 'var(--chart-3)',
+                  },
                 ]}
               />
             </div>
-            <div className="chart-card">
+            <div className="chart-card dash-motion-card" data-dash-reveal>
               <div className="chart-head">
                 <strong>
                   <Icon name="users" /> Novos Clientes
@@ -340,7 +388,7 @@ export function DashboardScreen({ data }: { data?: any }) {
                   {
                     label: 'Novos clientes',
                     values: chart.novos,
-                    color: '#eab308',
+                    color: 'var(--chart-4)',
                   },
                 ]}
               />
@@ -369,28 +417,35 @@ export function DashboardScreen({ data }: { data?: any }) {
           <div className="dist-grid">
             <Distribution
               title="Top Aplicativos"
+              icon="phone"
               items={data.topAplicativos}
               empty="Sem dados de aplicativos"
             />
             <Distribution
               title="Top Dispositivos"
+              icon="monitor"
               items={data.topDispositivos}
               empty="Sem dados de dispositivos"
             />
             <Distribution
               title="Formas de Pagamento"
+              icon="card"
               items={data.formasPagamento}
               money
               empty="Sem transações registradas"
             />
             <Distribution
               title="Distribuição de Planos"
+              icon="package"
               items={data.planosDist}
               empty="Sem dados de planos"
             />
-            <div className="dist-card">
+            <div className="dist-card dash-motion-card" data-dash-reveal>
               <div className="dist-head spread">
-                <span>Performance por Servidor</span>
+                <span className="dash-distribution-title">
+                  <Icon name="server" />
+                  Performance por Servidor
+                </span>
                 <span className="dist-total">
                   {performance.itens.reduce(
                     (sum, item) => sum + Number(item.total || 0),
@@ -468,12 +523,13 @@ export function DashboardScreen({ data }: { data?: any }) {
             </div>
             <Distribution
               title="Top Indicações"
+              icon="users"
               items={data.indicacoes}
               empty="Nenhuma indicação registrada"
             />
             <GeographyMap kind="estados" data={data.estados} />
             <GeographyMap kind="paises" data={data.paises} />
-            <div className="dist-card span-2">
+            <div className="dist-card span-2 dash-motion-card" data-dash-reveal>
               <div className="dist-head">
                 <Icon name="clock" /> Próximos vencimentos
               </div>

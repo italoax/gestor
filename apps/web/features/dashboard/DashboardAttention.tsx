@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Icon } from '../../../../src/frontend/clients/ui.tsx';
+import { DashboardIcon as Icon } from './DashboardMotion.tsx';
 import { formatMoney } from '../../../../src/services/format.ts';
 import type { DashboardAttention as AttentionData } from '../../../../src/services/dashboardAttention.ts';
 
@@ -161,7 +161,8 @@ export function DashboardAttention({
         <ul className="dash-attention-list">
           {groups.map((group) => (
             <li
-              className="dash-attention-item"
+              className="dash-attention-item dash-motion-card"
+              data-dash-reveal
               data-priority={group.tone}
               data-attention-group={group.key}
               key={group.key}
@@ -178,6 +179,7 @@ export function DashboardAttention({
               </div>
               <strong
                 className="dash-attention-count"
+                data-dash-number
                 aria-label={`${group.count} ${group.key === 'renewals' ? 'pagamentos' : group.key === 'deliveries' ? 'envios' : 'clientes'}`}
               >
                 {group.count}

@@ -35,7 +35,8 @@
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/modals.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/panel-ui.css') %>" />
     <link rel="stylesheet" href="<%= assetUrl('/assets/css/visual-effects.css') %>" />
-    <script nonce="<%= locals.cspNonce || '' %>">(function(){try{var t=localStorage.getItem('gestor-theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
+    <link rel="stylesheet" href="<%= assetUrl('/assets/css/themes.css') %>" />
+    <script nonce="<%= locals.cspNonce || '' %>"><%- locals.themeBootstrapSource || '' %></script>
   </head>
   <%
     // Layout tolerante: se algum render chegar aqui sem ter passado por exposeLocals
@@ -140,17 +141,7 @@
                   } catch (e) {}
                 })();
               </script>
-            <button
-              class="theme-toggle"
-              type="button"
-              data-theme-toggle
-              aria-label="Alternar tema claro/escuro"
-              title="Alternar tema"
-              ><span class="ui-theme-sun"><%- include('../partials/ui-icon', { name: 'sun' }) %></span
-              ><span class="ui-theme-moon"
-                ><%- include('../partials/ui-icon', { name: 'moon' }) %></span
-              ></button
-            >
+            <%- include('../partials/theme-selector') %>
             <div class="notif-wrap" data-notif-wrap>
               <button
                 class="topbar-icon notif-bell-btn"

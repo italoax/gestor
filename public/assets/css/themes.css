@@ -1,0 +1,637 @@
+/* Tokens do painel e da autenticação. Site público e portal têm paletas próprias. */
+:is(.page-app, .login-page) {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #101010;
+  --surface-3: #181818;
+  --input-bg: #000000;
+  --navigation-bg: #000000;
+  --border: #202020;
+  --control-border: #62626b;
+  --text: #f5f5f5;
+  --muted: #a1a1aa;
+  --primary: #cc98eb;
+  --primary-strong: #dcb6f3;
+  --accent-bright: #dcb6f3;
+  --button-primary: #783393;
+  --button-primary-hover: #8b3daa;
+  --on-primary: #ffffff;
+  --success: #6adea4;
+  --danger: #ff98a4;
+  --warning: #f3c66c;
+  --info: #90bdff;
+  --button-success: #116b43;
+  --button-danger: #a22538;
+  --button-warning: #e5b347;
+  --button-info: #2457a4;
+  --green: var(--success);
+  --red: var(--danger);
+  --yellow: var(--warning);
+  --blue: var(--info);
+  --purple: var(--primary);
+  --tint: 255, 255, 255;
+  --surf-a: 10, 10, 10;
+  --surf-b: 10, 10, 10;
+  --accent-rgb: 204, 152, 235;
+  --focus: #cc98eb;
+  --chart-1: #cba0ec;
+  --chart-2: #ff98a4;
+  --chart-3: #6adea4;
+  --chart-4: #f3c66c;
+  --chart-grid: #303036;
+  --chart-map-low: #19242d;
+  --chart-map-high: #90bdff;
+  --map-empty: #17171c;
+  --shadow: 0 8px 24px rgb(0 0 0 / 16%);
+  --shadow-sm: none;
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-dialog: 18px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --ui-section-gap: var(--space-4);
+  --ui-card-gap: var(--space-4);
+  --ui-control-gap: var(--space-3);
+  --ui-radius: var(--radius-card);
+  --ui-control-radius: var(--radius-control);
+  --font-sans:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  accent-color: var(--button-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+:root[data-theme='dark'] :is(.page-app, .login-page) {
+  --bg: #14161b;
+  --surface: #1d2027;
+  --surface-2: #262b34;
+  --surface-3: #303744;
+  --input-bg: #181b21;
+  --navigation-bg: #181b21;
+  --border: #3b424f;
+  --control-border: #737f92;
+  --text: #f1f3f8;
+  --muted: #b5bdcb;
+  --surf-a: 29, 32, 39;
+  --surf-b: 29, 32, 39;
+  --chart-grid: #414956;
+  --chart-map-low: #283a4b;
+  --map-empty: #333b48;
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 10%);
+}
+:root[data-theme='light'] :is(.page-app, .login-page) {
+  color-scheme: light;
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-3: #e6eaf0;
+  --input-bg: #ffffff;
+  --navigation-bg: #ffffff;
+  --border: #d5dae3;
+  --control-border: #8993a3;
+  --text: #192232;
+  --muted: #566173;
+  --primary: #783393;
+  --primary-strong: #64277c;
+  --accent-bright: #783393;
+  --button-primary: #783393;
+  --button-primary-hover: #64277c;
+  --success: #166c43;
+  --danger: #b0253a;
+  --warning: #805600;
+  --info: #2457a4;
+  --tint: 25, 34, 50;
+  --surf-a: 255, 255, 255;
+  --surf-b: 255, 255, 255;
+  --accent-rgb: 120, 51, 147;
+  --focus: #783393;
+  --chart-1: #783393;
+  --chart-2: #b0253a;
+  --chart-3: #166c43;
+  --chart-4: #805600;
+  --chart-grid: #d5dae3;
+  --chart-map-low: #e2eaf4;
+  --chart-map-high: #2457a4;
+  --map-empty: #e9edf3;
+  --shadow: 0 8px 24px rgb(25 34 50 / 9%);
+  --shadow-sm: 0 2px 8px rgb(25 34 50 / 4%);
+}
+
+/* Uma hierarquia de superfícies compartilhada por todas as telas. */
+:root[data-theme] :is(.page-app, .login-page),
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(button, input, select, textarea) {
+  font-family: var(--font-sans);
+}
+:root[data-theme] :is(.page-app, .login-page) {
+  --tone-positive: var(--success);
+  --tone-negative: var(--danger);
+  --tone-warning: var(--warning);
+  --tone-info: var(--info);
+  --tone-purple: var(--primary);
+}
+:root[data-theme] .page-app :is(.app-shell, .app-main, .app-content) {
+  background: var(--bg);
+}
+:root[data-theme] .page-app :is(.sidebar, .topbar2, .mobile-dock) {
+  background: var(--navigation-bg);
+  background-image: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+:root[data-theme]
+  .page-app
+  :is(
+    .card,
+    .stat-box,
+    .rc-card,
+    .venc-card,
+    .fin-card,
+    .chart-card,
+    .dist-card,
+    .disp-card,
+    .plano-card,
+    .srv-card,
+    .msg-card,
+    .int-pag-card,
+    .wa-device,
+    .auto-rule,
+    .catalog-card,
+    .cli-table-card,
+    .account-card,
+    .dash-access,
+    .dash-attention,
+    .client-filter-panel,
+    .client-bulk-bar
+  ) {
+  background-color: var(--surface);
+  background-image: none;
+  border-color: var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+:root[data-theme] .page-app .fx-backdrop,
+:root[data-theme] .page-app .fx-scroll-line {
+  display: none;
+}
+:root[data-theme] .page-app .app-content .fx-spotlight {
+  background-image: none;
+}
+:root[data-theme]
+  .page-app
+  :is(.sidebar-link.active, .sidebar-link[aria-current='page']) {
+  background: color-mix(in srgb, var(--primary) 11%, var(--navigation-bg));
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+:root[data-theme]
+  .page-app
+  .mobile-dock
+  > :is(.is-active, [aria-expanded='true']) {
+  background: var(--navigation-bg);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--primary) 60%, var(--border));
+}
+
+/* Formulários: contraste próprio para o contorno e foco consistente. */
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(.input, .login-field input, .login-field select, .login-field textarea) {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--control-border);
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(input, textarea)::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+:root[data-theme] .page-app .panel-search {
+  background: var(--input-bg);
+  border-color: var(--control-border);
+}
+:root[data-theme] .page-app :is(.phone-control, .password-control) {
+  background: var(--input-bg);
+  border-color: var(--control-border);
+  border-radius: var(--radius-control);
+}
+:root[data-theme]
+  .page-app
+  :is(.phone-control, .password-control):focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+:root[data-theme] :is(.page-app, .login-page) :is(.modal-overlay, dialog) {
+  --modal-error-color: var(--danger);
+  --modal-error-border: var(--danger);
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(
+    .input.input-error,
+    .input[aria-invalid='true'],
+    .phone-control:has([aria-invalid='true']),
+    .password-control:has([aria-invalid='true']),
+    .server-picker[data-invalid='true']
+  ) {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 5%, var(--input-bg));
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(
+    .input[aria-invalid='true']:focus-visible,
+    .phone-control:has([aria-invalid='true']):focus-within,
+    .password-control:has([aria-invalid='true']):focus-within
+  ) {
+  outline: 2px solid var(--danger);
+  outline-offset: 2px;
+}
+:root[data-theme] .page-app .panel-search .input {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+:root[data-theme] .page-app .panel-search:focus-within {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  .panel-search
+  .input:focus-visible {
+  outline: none;
+}
+:root[data-theme] :is(.page-app, .login-page) :is(input, select, textarea) {
+  accent-color: var(--button-primary);
+}
+
+/* Botões: cor de preenchimento separada da cor de links e ícones. */
+:root[data-theme] :is(.page-app, .login-page) .btn {
+  border-radius: var(--radius-control);
+  font-weight: 600;
+  background-image: none;
+  box-shadow: none;
+  text-shadow: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+:root[data-theme] :is(.page-app, .login-page) :is(.btn-primary, .login-submit) {
+  background: var(--button-primary);
+  border-color: var(--button-primary);
+  color: var(--on-primary);
+  box-shadow: none;
+}
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(.btn-primary, .login-submit):hover:not(:disabled) {
+  background: var(--button-primary-hover);
+  border-color: var(--button-primary-hover);
+}
+:root[data-theme]
+  .page-app
+  :is(.btn-muted, .btn-ghost, .btn-outline, .topbar-icon, .theme-toggle) {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+:root[data-theme]
+  .page-app
+  :is(.btn-muted, .btn-ghost, .btn-outline):hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--control-border);
+}
+:root[data-theme] .page-app .btn-success {
+  background: var(--button-success);
+  border-color: var(--button-success);
+  color: #fff;
+}
+:root[data-theme] .page-app .btn-danger {
+  background: var(--button-danger);
+  border-color: var(--button-danger);
+  color: #fff;
+}
+:root[data-theme] .page-app .btn-warning {
+  background: var(--button-warning);
+  border-color: var(--button-warning);
+  color: #211800;
+}
+:root[data-theme] .page-app .btn-info {
+  background: var(--button-info);
+  border-color: var(--button-info);
+  color: #fff;
+}
+:root[data-theme] .page-app .wa-connect-btn:not(.is-on) {
+  background: var(--button-success);
+  color: #fff;
+}
+:root[data-theme]
+  .page-app
+  :is(.topbar-avatar, .admin-tab.active, .panel-notice-primary) {
+  background: var(--button-primary);
+  color: var(--on-primary);
+  border-color: var(--button-primary);
+}
+:root[data-theme] .page-app .topbar-badge {
+  background: var(--button-danger);
+  color: #fff;
+}
+:root[data-theme] .page-app .sidebar-badge {
+  background: var(--button-warning);
+  color: #211800;
+}
+:root[data-theme] .page-app .switch:checked {
+  background: var(--button-primary);
+  border-color: var(--button-primary);
+}
+:root[data-theme]
+  .page-app
+  .cli-ico-btn:is(.open-payment, .open-multi-payment) {
+  background: var(--button-primary) !important;
+  color: var(--on-primary) !important;
+  border-color: var(--button-primary) !important;
+  box-shadow: none !important;
+}
+:root[data-theme]
+  .page-app
+  .cli-ico-btn:is(.open-payment, .open-multi-payment):hover {
+  background: var(--button-primary-hover) !important;
+}
+:root[data-theme]
+  .page-app
+  :is(
+    .cli-ico-btn,
+    .topbar-chip,
+    .account-menu,
+    .notif-panel,
+    .cli-menu-pop,
+    .dropdown-menu,
+    [role='tooltip']
+  ) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+  background-image: none;
+}
+:root[data-theme]
+  .page-app
+  :is(.cli-menu-item, .account-menu a, .notif-item):hover {
+  background: var(--surface-3);
+}
+:root[data-theme] .page-app .topbar-chip.is-on {
+  background: color-mix(in srgb, var(--success) 10%, var(--navigation-bg));
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+  color: var(--success);
+}
+:root[data-theme] .page-app .topbar-chip.is-off {
+  background: color-mix(in srgb, var(--danger) 10%, var(--navigation-bg));
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+}
+
+/* Tabelas, filtros, paginação e estados sem dados. */
+:root[data-theme] .page-app :is(.table, .cli-table) :is(th, td) {
+  border-color: var(--border);
+}
+:root[data-theme] .page-app :is(.table, .cli-table) thead th {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+:root[data-theme] .page-app :is(.table, .cli-table) tbody tr {
+  background-color: var(--surface);
+}
+:root[data-theme] .page-app :is(.table, .cli-table) tbody tr:hover {
+  background-color: var(--surface-2);
+}
+:root[data-theme] .page-app :is(.table, .cli-table) tbody tr.is-selected {
+  background-color: color-mix(in srgb, var(--primary) 10%, var(--surface));
+}
+:root[data-theme]
+  .page-app
+  :is(
+    .cli-table-foot,
+    .rc-head,
+    .dist-head,
+    .pagination,
+    .auto-empty-state,
+    .cli-empty,
+    .dist-empty
+  ) {
+  color: var(--muted);
+  border-color: var(--border);
+  background-image: none;
+}
+:root[data-theme]
+  .page-app
+  :is(.muted, .text-muted, .empty-state p, .loading-state) {
+  color: var(--muted);
+}
+
+/* Mesmos estados semânticos em indicadores, badges e alertas. */
+:root[data-theme]
+  .page-app
+  :is(.badge-green, .status-nao-vencido, .status-ativo) {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border));
+}
+:root[data-theme] .page-app :is(.badge-red, .status-vencido) {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+}
+:root[data-theme]
+  .page-app
+  :is(.badge-yellow, .status-today, .status-pra-vencer) {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--border));
+}
+:root[data-theme] .page-app :is(.badge-blue, .badge-info) {
+  color: var(--info);
+  background: color-mix(in srgb, var(--info) 10%, var(--surface));
+}
+:root[data-theme] .page-app :is(.badge-muted, .status-inativo) {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+:root[data-theme] .page-app :is(.pos, .text-success) {
+  color: var(--success);
+}
+:root[data-theme] .page-app :is(.neg, .text-danger) {
+  color: var(--danger);
+}
+:root[data-theme] .page-app .panel-notice[data-state='info'] {
+  --notice-color: var(--info);
+}
+:root[data-theme] .page-app :is(.delivery-center-alert, .client-bulk-warning) {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: color-mix(in srgb, var(--warning) 5%, var(--surface));
+}
+:root[data-theme]
+  .page-app
+  :is(
+    .delivery-center-delay,
+    .delivery-center-metrics [data-attention='true'] strong
+  ) {
+  color: var(--warning);
+}
+
+/* Modais e menus usam a mesma elevação em todas as páginas. */
+:root[data-theme]
+  :is(.page-app, .login-page)
+  :is(.modal, .react-dialog, .react-catalog-dialog) {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow);
+}
+:root[data-theme] .page-app :is(.modal-header, .modal-footer) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:root[data-theme] .page-app :is(.modal-close, .modal-footer .btn-muted) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme] .page-app dialog::backdrop {
+  background: rgb(0 0 0 / 68%);
+  backdrop-filter: blur(3px);
+}
+:root[data-theme] .page-app .map-area {
+  stroke: var(--control-border);
+}
+:root[data-theme] .page-app .map-scale {
+  background: linear-gradient(
+    to bottom,
+    var(--chart-map-high),
+    var(--chart-map-low)
+  );
+}
+:root[data-theme] .page-app .native-chart text {
+  fill: var(--muted);
+}
+:root[data-theme] .page-app .native-chart line {
+  stroke: var(--chart-grid);
+}
+
+/* Seletor nativo: teclado, VoiceOver e o seletor de opções do iPhone. */
+.theme-selector {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  flex: 0 0 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control, 10px);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+.theme-selector > select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+.theme-selector:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.theme-selector .ui-icon {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+.login-theme-control {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  z-index: 5;
+}
+:root[data-theme] .login-page .login-shell {
+  position: relative;
+  padding-top: max(80px, calc(24px + env(safe-area-inset-top, 0px)));
+}
+:root[data-theme] .login-page :is(.login-grid, .login-card) {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+:root[data-theme] .login-page .login-grid {
+  background: var(--bg);
+}
+:root[data-theme]
+  .login-page
+  :is(.login-field > span, .login-card-header h2, .login-brand h1) {
+  color: var(--text);
+}
+:root[data-theme]
+  .login-page
+  :is(.login-footer-note, .login-card-header p, .login-subtitle) {
+  color: var(--muted);
+}
+:root[data-theme]
+  .login-page
+  :is(.login-kicker, .login-chip, .login-feature-icon) {
+  color: var(--primary);
+  border-color: var(--border);
+  background: transparent;
+}
+:root[data-theme='light'] .login-page .login-brand-logo img {
+  filter: brightness(0.45);
+}
+@media (max-width: 600px) {
+  :root[data-theme]
+    :is(.page-app, .login-page)
+    :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    font-size: 16px;
+  }
+  :root[data-theme] .page-app .theme-selector {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.page-app, .login-page),
+  :is(.page-app, .login-page) *,
+  :is(.page-app, .login-page) *::before,
+  :is(.page-app, .login-page) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

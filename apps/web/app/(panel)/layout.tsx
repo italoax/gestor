@@ -4,6 +4,7 @@ import { loadSitePage } from '../../lib/siteBackend.ts';
 import { PersistentPanel } from '../../components/layout/PanelShell.tsx';
 import { PanelStyles } from '../../components/layout/PanelStyles.tsx';
 import { panelShellData } from '../../lib/panelData.ts';
+import { panelStatusBootstrap } from '../../../../src/shared/panelStatus.ts';
 
 export default async function PanelLayout({
   children,
@@ -22,6 +23,11 @@ export default async function PanelLayout({
   return (
     <>
       <PanelStyles />
+      <script
+        id="restore-panel-status"
+        nonce={request.get('x-nonce') || undefined}
+        dangerouslySetInnerHTML={{ __html: panelStatusBootstrap(data.user.id) }}
+      />
       <PersistentPanel data={panelShellData(data, pageUrl.pathname)}>
         {children}
       </PersistentPanel>

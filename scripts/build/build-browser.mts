@@ -47,6 +47,7 @@ const shellEntry = path.join(sourceRoot, 'app-shell.ts');
 const panelEntry = path.join(sourceRoot, 'panel-runtime.ts');
 const classicEntries = [
   'main',
+  'offline',
   'navigation',
   'login',
   'portal-login',

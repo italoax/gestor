@@ -1,33 +1,14 @@
 (function () {
   // Mapas de distribuição do dashboard: Brasil por UF e Mundo por país (coropléticos).
-  // A geometria vem de @svg-maps via CDN, carregada sob demanda. Se o CDN falhar,
+  // A geometria vem dos assets locais de @svg-maps. Se o carregamento falhar,
   // as listas "Top Estados / Top Países" renderizadas no servidor continuam visíveis.
 
   const geo = window.__geoData || { estados: {}, paises: {} };
 
-  // Escala de cor: teal (baixo) -> vermelho (alto), igual à legenda lateral.
-  const STOPS = [
-    [45, 212, 191],
-    [34, 197, 94],
-    [234, 179, 8],
-    [249, 115, 22],
-    [239, 68, 68],
-  ];
-
   const DIACRITICOS = /\p{Diacritic}/gu;
 
-  function lerp(a, b, t) {
-    return Math.round(a + (b - a) * t);
-  }
-
   function colorFor(ratio) {
-    const r = Math.max(0, Math.min(1, ratio));
-    const seg = r * (STOPS.length - 1);
-    const i = Math.min(STOPS.length - 2, Math.floor(seg));
-    const t = seg - i;
-    const c0 = STOPS[i];
-    const c1 = STOPS[i + 1];
-    return `rgb(${lerp(c0[0], c1[0], t)}, ${lerp(c0[1], c1[1], t)}, ${lerp(c0[2], c1[2], t)})`;
+    return `color-mix(in srgb, var(--chart-map-high) ${20 + Math.max(0, Math.min(1, ratio)) * 80}%, var(--chart-map-low))`;
   }
 
   function norm(s) {
@@ -80,11 +61,7 @@
     return id.slice(-2).toUpperCase();
   }
 
-  const emptyFill = (
-    getComputedStyle(document.documentElement).getPropertyValue(
-      '--map-empty',
-    ) || 'rgba(148,163,184,.14)'
-  ).trim();
+  const emptyFill = 'var(--map-empty)';
 
   function renderMap(container, mapData, counts, code) {
     const valores = Object.values(counts).map(Number);

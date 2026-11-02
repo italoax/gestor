@@ -18,6 +18,13 @@ const triggers = [
   ['Vencidos', 'Após vencimento do plano'],
   ['Apos cadastro', 'Após cadastro'],
 ];
+const triggerPresentation = {
+  Todos: ['Todos os clientes', 'Envie para toda a base.'],
+  Vencimento: ['Antes de vencer', 'Lembrete antecipado.'],
+  'Vence hoje': ['No vencimento', 'No dia em que o plano vence.'],
+  Vencidos: ['Após vencer', 'Cobrança após o vencimento.'],
+  'Apos cadastro': ['Após o cadastro', 'Boas-vindas para novos clientes.'],
+};
 const truthy = (value) => Boolean(Number(value));
 function triggerLabel(type?: string) {
   return (
@@ -75,6 +82,16 @@ function RuleEditor({
   const [message, setMessage] = useState(String(item?.mensagemId || ''));
   const [batches, setBatches] = useState(truthy(item?.envioLotes));
   const [preview, setPreview] = useState<string | null>(null);
+  const selectedMessage = data.mensagens.find(
+    (row) => String(row.id) === message,
+  );
+  function showPreview() {
+    const form = document.getElementById('react-rule-form') as HTMLFormElement;
+    const body = new URLSearchParams();
+    new FormData(form).forEach((value, key) => body.append(key, String(value)));
+    body.set('rascunho', '1');
+    setPreview(body.toString());
+  }
   const submit = useNativeSubmit();
   const days = item
     ? item.diasSemanaLista || []
@@ -93,30 +110,21 @@ function RuleEditor({
   return (
     <>
       <NativeDialog
-        title={item ? 'Editar Regra' : 'Nova Regra'}
-        width={800}
+        title={
+          <>
+            {item ? 'Editar regra' : 'Nova regra'}
+            <span className="auto-rule-subtitle">
+              Defina quando e como enviar sua mensagem.
+            </span>
+          </>
+        }
+        width={760}
+        className="automation-rule-dialog"
         onClose={onClose}
         footer={
           <>
             <button className="btn btn-muted" type="button" onClick={onClose}>
               Cancelar
-            </button>
-            <button
-              className="btn btn-muted"
-              type="button"
-              onClick={() => {
-                const form = document.getElementById(
-                  'react-rule-form',
-                ) as HTMLFormElement;
-                const body = new URLSearchParams();
-                new FormData(form).forEach((value, key) =>
-                  body.append(key, String(value)),
-                );
-                body.set('rascunho', '1');
-                setPreview(body.toString());
-              }}
-            >
-              Ver prévia
             </button>
             <button
               className="btn btn-primary"
@@ -148,27 +156,36 @@ function RuleEditor({
             value={truthy(item?.rodapeAntiban) ? '1' : '0'}
           />
           <section className="auto-form-section">
-            <h4>Regra e gatilho</h4>
-            {input('Nome da regra *', 'nome', item?.titulo, { required: true })}
-            <div className="auto-trigger-list">
-              {triggers.map(([value, label]) => (
-                <label
-                  key={value}
-                  className={`auto-trigger ${type === value ? 'is-selected' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="tipo"
-                    value={value}
-                    checked={type === value}
-                    onChange={() => setType(value)}
-                  />
-                  <div>
-                    <strong>{label}</strong>
-                  </div>
-                </label>
-              ))}
-            </div>
+            <h4 className="auto-rule-section-title">
+              <span aria-hidden="true">01</span> Quando enviar
+            </h4>
+            {input('Nome da regra *', 'nome', item?.titulo, {
+              required: true,
+              placeholder: 'Ex.: Lembrete de renovação',
+            })}
+            <fieldset className="auto-rule-triggers">
+              <legend>Escolha o gatilho</legend>
+              <div className="auto-trigger-list">
+                {triggers.map(([value]) => (
+                  <label
+                    key={value}
+                    className={`auto-trigger ${type === value ? 'is-selected' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="tipo"
+                      value={value}
+                      checked={type === value}
+                      onChange={() => setType(value)}
+                    />
+                    <span className="auto-trigger-copy">
+                      <strong>{triggerPresentation[value][0]}</strong>
+                      <small>{triggerPresentation[value][1]}</small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <div
               className="auto-period"
               hidden={
@@ -187,25 +204,32 @@ function RuleEditor({
                   type: 'number',
                   min: 0,
                 })}
-                {['Dias', 'Minutos'].map((unit) => (
-                  <label className="auto-seg sm" key={unit}>
-                    <input
-                      type="radio"
-                      name="tipo_periodo"
-                      value={unit}
-                      defaultChecked={
-                        unit.toLowerCase() ===
-                        String(item?.tipoPeriodo || 'Dias').toLowerCase()
-                      }
-                    />
-                    <span>{unit}</span>
-                  </label>
-                ))}
+                <fieldset className="auto-rule-units">
+                  <legend>Unidade</legend>
+                  <div className="auto-rule-unit-options">
+                    {['Dias', 'Minutos'].map((unit) => (
+                      <label className="auto-seg sm" key={unit}>
+                        <input
+                          type="radio"
+                          name="tipo_periodo"
+                          value={unit}
+                          defaultChecked={
+                            unit.toLowerCase() ===
+                            String(item?.tipoPeriodo || 'Dias').toLowerCase()
+                          }
+                        />
+                        <span>{unit}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               </div>
             </div>
           </section>
           <section className="auto-form-section">
-            <h4>Mensagem</h4>
+            <h4 className="auto-rule-section-title">
+              <span aria-hidden="true">02</span> Mensagem
+            </h4>
             <label className="field full">
               <span>Template de mensagem *</span>
               <select
@@ -224,16 +248,31 @@ function RuleEditor({
                 ))}
               </select>
             </label>
-            <div className="auto-preview">
-              {data.mensagens.find((row) => String(row.id) === message)
-                ?.mensagem || 'Selecione um template para ver a prévia.'}
+            <div className="auto-rule-message-heading">
+              <span>Conteúdo da mensagem</span>
+              <button
+                className="btn btn-muted auto-rule-preview-action"
+                type="button"
+                onClick={showPreview}
+              >
+                <Icon name="eye" /> Ver prévia
+              </button>
+            </div>
+            <div
+              className="auto-preview auto-rule-message-preview"
+              data-empty={!selectedMessage?.mensagem}
+            >
+              {selectedMessage?.mensagem ||
+                'O conteúdo aparece aqui ao selecionar um template.'}
             </div>
             <small className="muted">
               As variáveis serão substituídas pelos dados reais no envio.
             </small>
           </section>
           <section className="auto-form-section">
-            <h4>Configurações de envio</h4>
+            <h4 className="auto-rule-section-title">
+              <span aria-hidden="true">03</span> Configurações de envio
+            </h4>
             <label className="switch-field">
               <span>Regra ativa</span>
               <input

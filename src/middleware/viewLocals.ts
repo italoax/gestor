@@ -1,4 +1,5 @@
 import { renderClientPage } from '../services/clientPage.ts';
+import { themeBootstrapSource } from '../shared/theme.ts';
 import { messageVariables } from '../shared/messageVariables.ts';
 import { describeNoticeError } from '../browser/assets/js/ui/panel-feedback.ts';
 import {
@@ -12,6 +13,7 @@ import {
 } from '../services/format.ts';
 
 export function exposeFormatLocals(_req, res, next) {
+  res.locals.themeBootstrapSource = themeBootstrapSource;
   res.locals.messageVariables = messageVariables;
   res.locals.describeNoticeError = describeNoticeError;
   res.locals.renderClientPage = renderClientPage;

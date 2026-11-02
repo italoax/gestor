@@ -1,9 +1,20 @@
 <% const isTwoFactor = typeof twoFactorRequired !== 'undefined' && twoFactorRequired; %>
 <link rel="stylesheet" href="<%= assetUrl('/assets/css/native-login.css') %>" />
 <main class="login-shell">
+  <div class="login-theme-control"><%- include('../partials/theme-selector') %></div>
   <section class="login-grid" aria-labelledby="login-title">
     <div class="login-brand">
-      <div class="login-brand-top"><span class="login-brand-logo"><img src="<%= assetUrl('/assets/images/ixlogo.svg') %>" width="828" height="350" alt="IXTV Streaming" /></span><span class="login-chip"><%- include('../partials/ui-icon', { name: 'shield' }) %>Acesso restrito</span></div>
+      <div class="login-brand-top"
+        ><span class="login-brand-logo"
+          ><img
+            src="<%= assetUrl('/assets/images/ixlogo.svg') %>"
+            width="828"
+            height="350"
+            alt="IXTV Streaming" /></span
+        ><span class="login-chip"
+          ><%- include('../partials/ui-icon', { name: 'shield' }) %>Acesso restrito</span
+        ></div
+      >
       <h1 id="login-title"> Gestor IXTV </h1>
       <p class="login-subtitle">
         Controle clientes, cobranças e mensagens em um ambiente seguro e rápido.
@@ -44,12 +55,25 @@
       <% if (error && error.length) { %>
       <%- include('../partials/panel-notice', {text: error[0], isError: true}) %>
       <% } %>
-      <form class="login-form" action="<%= isTwoFactor ? '/login/segundo-fator' : '/login' %>" method="post" autocomplete="on">
+      <form
+        class="login-form"
+        action="<%= isTwoFactor ? '/login/segundo-fator' : '/login' %>"
+        method="post"
+        autocomplete="on"
+      >
         <%- csrfInput %>
         <% if (isTwoFactor) { %>
         <label class="login-field">
           <span>Código do aplicativo ou de recuperação</span>
-          <input type="text" name="code" autocomplete="one-time-code" maxlength="24" placeholder="Código de seis dígitos ou de recuperação" required autofocus />
+          <input
+            type="text"
+            name="code"
+            autocomplete="one-time-code"
+            maxlength="24"
+            placeholder="Código de seis dígitos ou de recuperação"
+            required
+            autofocus
+          />
         </label>
         <% } else { %>
         <label class="login-field">
@@ -84,13 +108,25 @@
           </div>
         </label>
         <div class="login-row">
-          <details class="login-help"><summary class="login-link">Esqueceu a senha?</summary><p>Para recuperar seu acesso, fale com o administrador do sistema.</p></details>
+          <details class="login-help"
+            ><summary class="login-link">Esqueceu a senha?</summary
+            ><p
+              >Para recuperar seu acesso, fale com o administrador do
+              sistema.</p
+            ></details
+          >
         </div>
         <% } %>
-        <button class="login-btn" type="submit"><%= isTwoFactor ? 'Verificar e entrar' : 'Acessar painel' %></button>
+        <button class="login-btn" type="submit"
+          ><%= isTwoFactor ? 'Verificar e entrar' : 'Acessar painel' %></button
+        >
       </form>
       <% if (isTwoFactor) { %>
-      <form class="login-restart" action="/login/cancelar" method="post"><%- csrfInput %><button class="login-link" type="submit">Voltar ao login</button></form>
+      <form class="login-restart" action="/login/cancelar" method="post"
+        ><%- csrfInput %><button class="login-link" type="submit"
+          >Voltar ao login</button
+        ></form
+      >
       <% } %>
     </div>
   </section>

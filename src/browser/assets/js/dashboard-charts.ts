@@ -3,20 +3,22 @@
   const charts = [];
   document.addEventListener(
     'gestor:before-swap',
-    () => charts.forEach((chart) => chart.destroy()),
+    () => {
+      document.removeEventListener('gestor:theme-change', updateTheme);
+      charts.forEach((chart) => chart.destroy());
+    },
     { once: true },
   );
   var d = window.__dashData;
 
-  var css = getComputedStyle(document.documentElement);
+  var css = getComputedStyle(document.body);
   var muted = (css.getPropertyValue('--muted') || '#97a3b4').trim();
-  var border = (css.getPropertyValue('--border') || '#2c333c').trim();
-  // Cores alinhadas aos tokens indigo do painel.
+  var border = (css.getPropertyValue('--chart-grid') || '#303036').trim();
   var COR = {
-    receita: '#6366f1',
-    custo: '#ef4444',
-    lucro: '#22c55e',
-    novos: '#eab308',
+    receita: css.getPropertyValue('--chart-1').trim() || '#cba0ec',
+    custo: css.getPropertyValue('--chart-2').trim() || '#ff98a4',
+    lucro: css.getPropertyValue('--chart-3').trim() || '#6adea4',
+    novos: css.getPropertyValue('--chart-4').trim() || '#f3c66c',
   };
 
   Chart.defaults.color = muted;
@@ -55,7 +57,7 @@
     };
   }
 
-  var gridCfg = { color: border + '66', drawBorder: false };
+  var gridCfg = { color: border, drawBorder: false };
   function baseOpts(moneyTip) {
     return {
       responsive: true,
@@ -118,4 +120,28 @@
       }),
     );
   }
+  function updateTheme() {
+    const tokens = getComputedStyle(document.body);
+    const colors = [1, 2, 3, 4].map((index) =>
+      tokens.getPropertyValue('--chart-' + index).trim(),
+    );
+    const text = tokens.getPropertyValue('--muted').trim();
+    Chart.defaults.color = text;
+    charts.forEach((chart) => {
+      chart.options.color = text;
+      chart.options.scales.y.grid.color = tokens
+        .getPropertyValue('--chart-grid')
+        .trim();
+      for (const axis of ['x', 'y'])
+        chart.options.scales[axis].ticks.color = text;
+      chart.data.datasets.forEach((dataset, index) => {
+        const color = colors[chart.canvas.id === 'chartNovos' ? 3 : index];
+        dataset.borderColor = color;
+        dataset.pointBackgroundColor = color;
+        dataset.backgroundColor = fill(chart.ctx, color);
+      });
+      chart.update('none');
+    });
+  }
+  document.addEventListener('gestor:theme-change', updateTheme);
 })();

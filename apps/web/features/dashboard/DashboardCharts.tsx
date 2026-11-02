@@ -42,7 +42,7 @@ export function SeriesChart({
                     x2="650"
                     y1={y(value)}
                     y2={y(value)}
-                    stroke="var(--border)"
+                    stroke="var(--chart-grid)"
                   />
                   <text
                     x="44"
@@ -59,6 +59,8 @@ export function SeriesChart({
             {series.map((item) => (
               <g key={item.label}>
                 <polyline
+                  className="dash-series-line"
+                  pathLength="1"
                   fill="none"
                   stroke={item.color}
                   strokeWidth="2.5"
@@ -68,10 +70,11 @@ export function SeriesChart({
                 />
                 {labels.map((label, index) => (
                   <circle
+                    className="dash-series-point"
                     key={index}
                     cx={x(index)}
                     cy={y(item.values[index])}
-                    r={labels.length === 1 ? 4 : 2.5}
+                    r={active === index || labels.length === 1 ? 4 : 2.5}
                     fill={item.color}
                   >
                     <title>
@@ -153,18 +156,8 @@ export function SeriesChart({
     </div>
   );
 }
-const stops = [
-  [45, 212, 191],
-  [34, 197, 94],
-  [234, 179, 8],
-  [249, 115, 22],
-  [239, 68, 68],
-];
 function heat(ratio) {
-  const segment = Math.max(0, Math.min(1, ratio)) * 4,
-    index = Math.min(3, Math.floor(segment)),
-    t = segment - index;
-  return `rgb(${stops[index].map((value, channel) => Math.round(value + (stops[index + 1][channel] - value) * t)).join(',')})`;
+  return `color-mix(in srgb, var(--chart-map-high) ${20 + Math.max(0, Math.min(1, ratio)) * 80}%, var(--chart-map-low))`;
 }
 export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
   const container = useRef<HTMLDivElement>(null);
@@ -209,7 +202,11 @@ export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
   );
   const max = Math.max(1, ...Object.values(counts));
   return (
-    <div className="dist-card map-card" ref={container}>
+    <div
+      className="dist-card map-card dash-motion-card"
+      data-dash-reveal
+      ref={container}
+    >
       <div className="dist-head spread">
         <span>
           {kind === 'estados'
@@ -230,7 +227,7 @@ export function GeographyMap({ data, kind }: { data?: any; kind?: any }) {
           {map ? (
             <svg
               viewBox={map.viewBox}
-              className="map-svg"
+              className="map-svg dash-map-enter"
               role="img"
               aria-label={
                 kind === 'estados'

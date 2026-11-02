@@ -4,6 +4,7 @@ import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { describeNoticeError } from '../../../../src/browser/assets/js/ui/panel-feedback.ts';
 import { Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { publicAssetUrl } from '../../lib/publicAssets.ts';
+import { ThemeSelector } from '../../components/ui/ThemeSelector.tsx';
 
 export function LoginScreen({ data }: { data?: any }) {
   const [visible, setVisible] = useState(false);
@@ -97,6 +98,9 @@ export function LoginScreen({ data }: { data?: any }) {
         precedence="panel"
       />
       <main className="login-shell" data-react-page="login">
+        <div className="login-theme-control">
+          <ThemeSelector />
+        </div>
         <section className="login-grid" aria-labelledby="login-title">
           <div className="login-brand">
             <div className="login-brand-top">

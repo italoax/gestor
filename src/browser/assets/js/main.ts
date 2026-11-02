@@ -1,5 +1,7 @@
 import { confirmFormSubmission, showPanelNotice } from './ui/panel-feedback.js';
+import { installTheme } from '../../../shared/theme.js';
 import { initPasswordField } from './ui/password-field.js';
+installTheme();
 let gestorInitialization = 0;
 document.addEventListener('gestor:before-swap', () => gestorInitialization++);
 async function initGestor() {
@@ -308,22 +310,20 @@ async function initGestor() {
     });
   }
 
-  // Alternância de tema claro/escuro (persistido em localStorage).
+  // Compatibilidade com o botão de tema de páginas abertas antes da atualização.
   (
     document.querySelectorAll(
       '[data-theme-toggle]',
     ) as NodeListOf<HTMLInputElement>
   ).forEach((btn) => {
     on(btn, 'click', () => {
-      const isLight =
-        document.documentElement.getAttribute('data-theme') === 'light';
-      const next = isLight ? 'dark' : 'light';
-      if (next === 'light')
-        document.documentElement.setAttribute('data-theme', 'light');
-      else document.documentElement.removeAttribute('data-theme');
-      try {
-        localStorage.setItem('gestor-theme', next);
-      } catch (e) {}
+      const themes = ['oled', 'light', 'dark', 'system'];
+      const controller = installTheme();
+      controller.setPreference(
+        themes[
+          (themes.indexOf(controller.getPreference()) + 1) % themes.length
+        ],
+      );
     });
   });
 

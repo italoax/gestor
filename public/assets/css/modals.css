@@ -11,31 +11,267 @@ html:has(dialog:is(.react-dialog, .react-catalog-dialog)[open]) {
 }
 
 /* Automação em um formulário contínuo, sem navegação por etapas. */
-:is(#modal-nova-regra, #react-rule-form) .auto-form-section {
+#modal-nova-regra .auto-form-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-:is(#modal-nova-regra, #react-rule-form)
-  .auto-form-section
-  + .auto-form-section {
+#modal-nova-regra .auto-form-section + .auto-form-section {
   border-top: 1px solid var(--border);
   margin-top: 16px;
   padding-top: 14px;
 }
-:is(#modal-nova-regra, #react-rule-form) .auto-form-section h4 {
+#modal-nova-regra .auto-form-section h4 {
   margin: 0;
   font-size: 14px;
   color: var(--text);
 }
-:is(#modal-nova-regra, #react-rule-form) .auto-trigger-list {
+#modal-nova-regra .auto-trigger-list {
   gap: 6px;
 }
-:is(#modal-nova-regra, #react-rule-form) .auto-trigger {
+#modal-nova-regra .auto-trigger {
   padding: 10px 12px;
 }
-:is(#modal-nova-regra, #react-rule-form) .auto-box {
+#modal-nova-regra .auto-box {
   padding: 12px;
+}
+
+/* Editor de regras: gatilhos legíveis e ações sempre acessíveis no celular. */
+.page-app .automation-rule-dialog {
+  --modal-body-padding: 20px;
+  --modal-header-padding: 18px 20px;
+  --modal-footer-padding: 14px 20px;
+}
+.page-app .automation-rule-dialog .auto-rule-subtitle {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.page-app .automation-rule-dialog .auto-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.page-app .automation-rule-dialog .auto-form-section + .auto-form-section {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 24px;
+}
+.page-app .automation-rule-dialog .auto-rule-section-title {
+  margin: 0;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.page-app .automation-rule-dialog .auto-rule-section-title > span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+.page-app .automation-rule-dialog :is(.auto-rule-triggers, .auto-rule-units) {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.page-app
+  .automation-rule-dialog
+  :is(.auto-rule-triggers, .auto-rule-units)
+  > legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.page-app .automation-rule-dialog .auto-trigger-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.page-app .automation-rule-dialog .auto-trigger {
+  position: relative;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px;
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.page-app .automation-rule-dialog .auto-trigger:last-child {
+  grid-column: 1 / -1;
+  min-height: 64px;
+}
+.page-app .automation-rule-dialog .auto-trigger input {
+  position: static;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  opacity: 1;
+}
+.page-app .automation-rule-dialog .auto-trigger:has(input:checked) {
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  border-color: var(--primary);
+}
+.page-app .automation-rule-dialog .auto-trigger:hover:not(:has(input:checked)) {
+  background: var(--surface-2);
+}
+.page-app .automation-rule-dialog .auto-trigger-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.page-app .automation-rule-dialog .auto-trigger strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+.page-app .automation-rule-dialog .auto-trigger small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.page-app
+  .automation-rule-dialog
+  :is(.auto-trigger, .auto-seg, .auto-day):has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.page-app .automation-rule-dialog .auto-period {
+  padding: 14px;
+  background: var(--surface-2);
+}
+.page-app .automation-rule-dialog .auto-period > .auto-label {
+  margin-bottom: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.page-app .automation-rule-dialog .auto-period-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: end;
+  gap: 12px;
+}
+.page-app .automation-rule-dialog .auto-period-row .input {
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+  height: 44px;
+}
+.page-app .automation-rule-dialog .auto-rule-unit-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.page-app .automation-rule-dialog .auto-rule-units legend {
+  margin-bottom: 6px;
+}
+.page-app .automation-rule-dialog .auto-seg {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.page-app .automation-rule-dialog .auto-seg > span {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.page-app .automation-rule-dialog .auto-seg:has(input:checked) > span {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary);
+}
+.page-app .automation-rule-dialog .auto-rule-message-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.page-app .automation-rule-dialog .auto-rule-preview-action {
+  min-height: 44px;
+  padding: 8px 12px;
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+.page-app .automation-rule-dialog .auto-rule-message-preview {
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-style: normal;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.page-app
+  .automation-rule-dialog
+  .auto-rule-message-preview[data-empty='true'] {
+  color: var(--muted);
+}
+.page-app .automation-rule-dialog .auto-day input:checked + span {
+  background: var(--button-primary);
+  border-color: var(--button-primary);
+  color: var(--on-primary);
+}
+.page-app .automation-rule-dialog .modal-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 10px;
+}
+.page-app .automation-rule-dialog .modal-footer .btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  margin: 0;
+}
+@media (min-width: 601px) {
+  .page-app .automation-rule-dialog .auto-trigger-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .page-app .automation-rule-dialog .auto-trigger:last-child {
+    grid-column: span 2;
+    min-height: 72px;
+  }
+}
+@media (max-width: 600px) {
+  .page-app .automation-rule-dialog {
+    --modal-body-padding: 16px;
+    --modal-header-padding: 14px 16px;
+    --modal-footer-padding: 12px 16px;
+  }
+  .page-app .automation-rule-dialog .auto-trigger {
+    gap: 8px;
+    padding: 10px;
+  }
+  .page-app .automation-rule-dialog .auto-trigger strong {
+    font-size: 12px;
+  }
 }
 
 /* Catálogos: formulários compactos com os campos principais. */

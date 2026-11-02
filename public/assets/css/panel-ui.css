@@ -1,53 +1,49 @@
 /* Componentes compartilhados do painel, carregados após os estilos das páginas. */
 
-/* OLED somente no painel: os tokens públicos e a área do cliente permanecem próprios. */
-:root:not([data-theme='light']) .page-app {
-  color-scheme: dark;
-  --bg: #000000;
-  --surface: #050505;
-  --surface-2: #101010;
-  --surf-a: 5, 5, 5;
-  --surf-b: 0, 0, 0;
-  --border: #292929;
-  --text: #f5f5f5;
-  --muted: #b0b0b0;
-  --shadow: 0 12px 32px rgb(0 0 0 / 65%);
-  --map-empty: rgb(255 255 255 / 6%);
-  background: var(--bg);
-  color: var(--text);
-}
-:root:not([data-theme='light'])
-  .page-app
-  :is(.sidebar, .topbar2, .mobile-dock) {
-  background: #000000;
-  background-image: none;
-}
-:root:not([data-theme='light']) .page-app :is(.input, .cli-menu-pop) {
-  background: var(--surface-2);
-  border-color: var(--border);
-}
-:root:not([data-theme='light']) .page-app .panel-search {
-  background: #000000;
-  background-image: none;
-}
-:root:not([data-theme='light']) .page-app .panel-search .input {
-  background: transparent;
-  box-shadow: none;
-}
-:root:not([data-theme='light'])
-  .page-app
-  .mobile-dock
-  > :is(.is-active, [aria-expanded='true']) {
-  background: #000000;
-  color: var(--accent-bright);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--primary) 50%, transparent);
-}
-:root:not([data-theme='light']) .page-app .fx-backdrop {
+/* O bootstrap restaura a preferência antes da primeira pintura, sem depender
+   da hidratação React para escolher o ícone do cabeçalho. */
+.theme-selector [data-theme-icon] {
   display: none;
 }
-:root:not([data-theme='light']) .page-app .app-content .fx-spotlight {
-  background-image: none;
+:root:not([data-theme-preference]) .theme-selector [data-theme-icon='oled'],
+:root[data-theme-preference='light'] .theme-selector [data-theme-icon='light'],
+:root[data-theme-preference='dark'] .theme-selector [data-theme-icon='dark'],
+:root[data-theme-preference='oled'] .theme-selector [data-theme-icon='oled'],
+:root[data-theme-preference='system']
+  .theme-selector
+  [data-theme-icon='system'] {
+  display: inline-flex;
+}
+/* Snapshot recente da mesma conta: reserva o estado visual até a consulta
+   confirmar a conexão, sem alterar classes gerenciadas pelo React. */
+:root[data-wa-cached='connected']
+  .page-app
+  [data-wa-chip]:not(.is-on):not(.is-off) {
+  --wa-cached-tone: var(--success);
+  --wa-cached-ring: 25%;
+}
+:root[data-wa-cached='disconnected']
+  .page-app
+  [data-wa-chip]:not(.is-on):not(.is-off) {
+  --wa-cached-tone: var(--danger);
+  --wa-cached-ring: 22%;
+}
+:root[data-wa-cached] .page-app [data-wa-chip]:not(.is-on):not(.is-off) {
+  background: color-mix(
+    in srgb,
+    var(--wa-cached-tone) 10%,
+    var(--navigation-bg)
+  );
+  border-color: color-mix(in srgb, var(--wa-cached-tone) 35%, var(--border));
+  color: var(--wa-cached-tone);
+}
+:root[data-wa-cached]
+  .page-app
+  [data-wa-chip]:not(.is-on):not(.is-off)
+  .wa-dot {
+  background: var(--wa-cached-tone);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--wa-cached-tone) var(--wa-cached-ring), transparent);
 }
 
 .delivery-center {
@@ -4098,6 +4094,19 @@ html[data-theme='light'] .page-app .page-transacoes {
   font-size: 12px;
   font-weight: 500;
 }
+.page-app .renewal-editor .renewal-message-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.page-app .renewal-editor .renewal-message-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  accent-color: var(--primary);
+}
 .page-app .renewal-editor .input {
   width: 100%;
   min-width: 0;
@@ -5490,20 +5499,6 @@ html[data-theme='light'] .transaction-details {
 }
 
 /* Cor comunica resultado, urgência e disponibilidade sem alterar o layout. */
-.page-app {
-  --tone-positive: #38d98a;
-  --tone-negative: #f58289;
-  --tone-warning: #f4c06a;
-  --tone-info: #83b7ff;
-  --tone-purple: #c49aef;
-}
-html[data-theme='light'] .page-app {
-  --tone-positive: #16804e;
-  --tone-negative: #c83b47;
-  --tone-warning: #93600b;
-  --tone-info: #285eb2;
-  --tone-purple: #7840ad;
-}
 .page-app
   :is(.dash, .ui-catalog .catalog-card-metrics)
   [data-value-tone='positive'] {

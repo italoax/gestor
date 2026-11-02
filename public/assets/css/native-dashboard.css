@@ -208,3 +208,302 @@
   overflow: auto;
   margin-top: 8px;
 }
+
+/* Microinterações locais. Conteúdo e cores vêm dos dados e tokens existentes. */
+.page-app .dash .dash-motion-card {
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+.dash-motion-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  vertical-align: middle;
+  line-height: 0;
+  transform-origin: center;
+  --dash-icon-motion: dash-icon-lift;
+}
+.dash-motion-icon[data-dash-icon='users'] {
+  --dash-icon-motion: dash-users-nod;
+}
+.dash-motion-icon[data-dash-icon='money'] {
+  --dash-icon-motion: dash-money-tilt;
+}
+.dash-motion-icon[data-dash-icon='growth'] {
+  --dash-icon-motion: dash-growth-rise;
+}
+.dash-motion-icon[data-dash-icon='decline'] {
+  --dash-icon-motion: dash-decline-fall;
+}
+.dash-motion-icon[data-dash-icon='warning'] {
+  --dash-icon-motion: dash-icon-nudge;
+}
+.page-app .dash .stat-icon {
+  opacity: 1;
+  filter: none;
+}
+.page-app .dash :is(.fin-label, .dash-distribution-title, .chart-head strong) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-app .dash .fin-label .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+.page-app .dash .fin-card small:is(.pos, .neg) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-app .dash .fin-card small .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+.page-app .dash [data-dash-number] {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+.page-app .dash .dash-attention-action {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+.page-app .dash .dash-attention-action > span,
+.page-app .dash .dash-action-hint > span {
+  display: inline-block;
+  transition: transform 180ms ease;
+}
+.page-app .dash .dash-motion-card:focus-within {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+.page-app .dash .dash-motion-card:focus-within .dash-motion-icon {
+  animation: var(--dash-icon-motion) 280ms ease-out;
+}
+.page-app .dash .dash-motion-card:focus-within .dash-icon-bar {
+  animation: dash-icon-bars 260ms ease-out;
+}
+.page-app .dash .dash-attention-action:focus-visible > span {
+  transform: translateX(3px);
+}
+.page-app .dash .dash-action-link:active,
+.page-app .dash .dash-attention-action:active {
+  transform: scale(0.99);
+}
+.dash-icon-bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.dash-icon-bar:nth-of-type(3) {
+  animation-delay: 15ms;
+}
+.dash-icon-bar:nth-of-type(4) {
+  animation-delay: 30ms;
+}
+.dash-series-point {
+  transition:
+    r 180ms ease,
+    opacity 180ms ease;
+}
+.page-app .dash[data-dash-motion='on'] [data-dash-entered='true'] {
+  animation: dash-card-enter 240ms ease-out var(--dash-entry-delay, 0ms)
+    backwards;
+}
+.dash[data-dash-motion='on'] [data-dash-entered='true'] [data-dash-number] {
+  animation: dash-number-enter 200ms ease-out var(--dash-entry-delay, 0ms)
+    backwards;
+}
+.dash[data-dash-motion='on'] [data-dash-entered='true'] .dash-series-line {
+  stroke-dasharray: 1;
+  animation: dash-series-draw 260ms ease-out backwards;
+}
+.dash[data-dash-motion='on'] [data-dash-entered='true'] .meter > i {
+  transform-origin: left center;
+  animation: dash-meter-enter 240ms ease-out backwards;
+}
+.dash[data-dash-motion='on'] .dash-map-enter {
+  animation: dash-card-enter 240ms ease-out;
+}
+.dash[data-dash-paused='true'] *,
+.page-app:has(.dash[data-dash-paused='true']) .topbar2 *::after,
+.page-app:has(.dash[data-dash-paused='true']) .notif-bell-svg {
+  animation-play-state: paused !important;
+}
+.page-app:has(.dash[data-react-page='dashboard'])
+  .notif-bell-btn.has-unread
+  .notif-bell-svg {
+  transform-origin: center 3px;
+  animation: dash-bell-ring 300ms ease-out;
+}
+.page-app:has(.dash[data-react-page='dashboard']) .notif-bell-svg {
+  transition:
+    transform 180ms ease,
+    color 180ms ease;
+}
+.page-app:has(.dash[data-react-page='dashboard'])
+  .notif-bell-btn.has-unread
+  .topbar-badge {
+  animation: dash-number-enter 200ms ease-out;
+}
+.page-app:has(.dash[data-dash-motion='on']) .topbar-chip.is-on .wa-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--success);
+  border-radius: 50%;
+  opacity: 0;
+  animation: dash-status-pulse 280ms ease-out 2;
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .page-app .dash .dash-motion-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    box-shadow: var(--shadow);
+  }
+  .page-app .dash .dash-motion-card:hover .dash-motion-icon {
+    animation: var(--dash-icon-motion) 280ms ease-out;
+  }
+  .page-app .dash .dash-motion-card:hover .dash-icon-bar {
+    animation: dash-icon-bars 260ms ease-out;
+  }
+  .page-app .dash .dash-motion-card:hover .dash-action-hint > span,
+  .page-app .dash .dash-attention-action:hover > span {
+    transform: translateX(3px);
+  }
+  .page-app:has(.dash[data-react-page='dashboard'])
+    .notif-bell-btn:hover
+    .notif-bell-svg {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes dash-card-enter {
+  from {
+    opacity: 0.8;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes dash-number-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes dash-icon-lift {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes dash-users-nod {
+  50% {
+    transform: translateY(-1px) rotate(-5deg);
+  }
+}
+@keyframes dash-money-tilt {
+  50% {
+    transform: translateY(-1px) rotate(6deg);
+  }
+}
+@keyframes dash-growth-rise {
+  50% {
+    transform: translate(2px, -2px);
+  }
+}
+@keyframes dash-decline-fall {
+  50% {
+    transform: translate(2px, 2px);
+  }
+}
+@keyframes dash-icon-nudge {
+  25% {
+    transform: rotate(-4deg);
+  }
+  65% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes dash-icon-bars {
+  from {
+    transform: scaleY(0.55);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes dash-series-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes dash-meter-enter {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes dash-bell-ring {
+  20% {
+    transform: rotate(-9deg);
+  }
+  55% {
+    transform: rotate(7deg);
+  }
+  80% {
+    transform: rotate(-3deg);
+  }
+}
+@keyframes dash-status-pulse {
+  from {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-app .dash .dash-motion-card,
+  .page-app .dash .dash-attention-action,
+  .page-app .dash .dash-attention-action > span,
+  .page-app .dash .dash-action-hint > span,
+  .page-app .dash .dash-series-point {
+    transition: none !important;
+  }
+  .page-app .dash .dash-motion-card:hover,
+  .page-app .dash .dash-action-link:active,
+  .page-app .dash .dash-attention-action:active,
+  .page-app .dash .dash-attention-action > span,
+  .page-app .dash .dash-action-hint > span {
+    transform: none !important;
+  }
+  .page-app .dash *,
+  .page-app:has(.dash[data-react-page='dashboard']) .notif-bell-svg,
+  .page-app:has(.dash[data-react-page='dashboard']) .topbar-badge,
+  .page-app:has(.dash[data-react-page='dashboard'])
+    .topbar-chip
+    .wa-dot::after {
+    animation: none !important;
+  }
+  .page-app:has(.dash[data-react-page='dashboard']) .notif-bell-svg {
+    transform: none !important;
+    transition: none !important;
+  }
+}
