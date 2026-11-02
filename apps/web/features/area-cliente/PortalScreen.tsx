@@ -10,6 +10,7 @@ import { PayerDetails } from '../pagamentos/PayerDetails.tsx';
 import { safeCheckoutUrl } from '../../../../src/shared/paymentCheckout.ts';
 import { submitPortalLogin } from '../../lib/portalLogin.ts';
 import { watchPortalSession } from '../../../../src/browser/assets/js/ui/portal-session.ts';
+import { RenewalTracking, usePortalRenewals } from './RenewalTracking.tsx';
 
 function PortalLogin({ data }: { data?: any }) {
   const [error, setError] = useState(data.erro),
@@ -134,10 +135,19 @@ function PortalLogin({ data }: { data?: any }) {
     </section>
   );
 }
-function Renewal({ data }: { data?: any }) {
+function Renewal({
+  data,
+  onApproved,
+}: {
+  data?: any;
+  onApproved?: () => void;
+}) {
   const selection = useRenewalSelection(data),
     pix = usePixPayment(),
     code = useRef(null);
+  useEffect(() => {
+    if (pix.phase === 'approved') onApproved?.();
+  }, [pix.phase, onApproved]);
   async function submit(event) {
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
@@ -309,8 +319,19 @@ function Renewal({ data }: { data?: any }) {
   );
 }
 export function PortalScreen({ data }: { data?: any }) {
+  const tracking = usePortalRenewals(data);
   const logout = useNativeSubmit(),
-    cliente = data.cliente;
+    cliente = data.cliente
+      ? {
+          ...data.cliente,
+          ...(tracking.assinatura
+            ? {
+                vencimento: tracking.assinatura.vencimento,
+                statusLabel: tracking.assinatura.statusLabel,
+              }
+            : {}),
+        }
+      : null;
   useEffect(() => {
     if (cliente) return watchPortalSession();
   }, [cliente?.id]);
@@ -380,7 +401,10 @@ export function PortalScreen({ data }: { data?: any }) {
                           ['Valor', formatMoney(data.adicional.valor)],
                           [
                             'Vencimento',
-                            formatDateBr(data.adicional.vencimento),
+                            formatDateBr(
+                              tracking.assinatura?.vencimentoAdicional ||
+                                data.adicional.vencimento,
+                            ),
                           ],
                           ['Telas', data.adicional.telas],
                           ...(data.adicional.user
@@ -396,8 +420,9 @@ export function PortalScreen({ data }: { data?: any }) {
                     </>
                   )}
                 </section>
-                <Renewal data={data} />
+                <Renewal data={data} onApproved={tracking.refresh} />
               </div>
+              <RenewalTracking tracking={tracking} />
             </>
           ) : (
             <PortalLogin data={data} />

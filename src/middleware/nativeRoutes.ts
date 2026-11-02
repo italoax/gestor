@@ -96,6 +96,7 @@ export function installNativeRouteMiddleware(app) {
         '/area-cliente/login',
         '/area-cliente',
         '/area-cliente/sessao',
+        '/area-cliente/renovacoes',
       ].includes(path) ||
         /^\/(?:r\/[^/]+|(?:pagar|p)\/[^/]+|pagar\/[^/]+\/status\/[^/]+)$/.test(
           path,

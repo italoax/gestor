@@ -58,8 +58,7 @@ function Recover({ rule, token }) {
   );
 }
 export function DeliveryCenter({ token }: { token?: string }) {
-  const [page, setPage] = useState(1),
-    [revision, setRevision] = useState(0);
+  const [page, setPage] = useState(1);
   const [data, setData] = useState<any>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true);
@@ -96,7 +95,7 @@ export function DeliveryCenter({ token }: { token?: string }) {
               1000;
         if (!response.ok)
           throw Error(
-            'Não foi possível verificar os envios. Tente atualizar novamente.',
+            'Não foi possível verificar os envios. A atualização será tentada novamente automaticamente.',
           );
         const value = await response.json();
         if (
@@ -113,7 +112,7 @@ export function DeliveryCenter({ token }: { token?: string }) {
       } catch (error) {
         if (alive && !controller.signal.aborted)
           setError(
-            'Não foi possível verificar os envios. Tente atualizar novamente.',
+            'Não foi possível verificar os envios. A atualização será tentada novamente automaticamente.',
           );
       } finally {
         inFlight = false;
@@ -135,7 +134,7 @@ export function DeliveryCenter({ token }: { token?: string }) {
       controller.abort();
       document.removeEventListener('visibilitychange', resume);
     };
-  }, [page, revision]);
+  }, [page]);
   const late =
     data?.rules.filter((rule) => rule.state === 'atrasado').length || 0;
   const failed =
@@ -148,17 +147,8 @@ export function DeliveryCenter({ token }: { token?: string }) {
           <h2>Central de envios</h2>
           <p>Acompanhe os horários e recupere os pendentes com segurança.</p>
         </div>
-        <button
-          className="btn btn-muted"
-          type="button"
-          onClick={() => setRevision((value) => value + 1)}
-          disabled={loading}
-        >
-          <Icon name="clock" />
-          {loading ? 'Verificando…' : 'Atualizar'}
-        </button>
       </header>
-      <SchedulerStatus showRefresh={false} refreshKey={revision} />
+      <SchedulerStatus showRefresh={false} />
       {error && (
         <p className="delivery-center-alert" role="alert">
           {error} Os dados anteriores podem estar desatualizados.

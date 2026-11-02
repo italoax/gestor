@@ -1,5 +1,6 @@
 import { createClientMutationWorkflow } from '../services/clientMutations.ts';
 import crypto from 'node:crypto';
+import { createClientActivityWriter } from '../services/clientHistory.ts';
 import { execute, queryOne, queryRows, withTransaction } from '../db/mysql.ts';
 import { appNowSql, appTodayIso } from '../services/dates.ts';
 import {
@@ -47,5 +48,6 @@ export function createDefaultClientMutationWorkflow() {
     lerPlanoAdicional,
     renovarPlanosDoCliente,
     validarPlanoAdicional,
+    recordClientActivity: createClientActivityWriter(execute),
   });
 }

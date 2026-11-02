@@ -62,6 +62,14 @@ export class PortalController {
       await this.service.renew(workflowInput(request, response)),
     );
   }
+  @Get('/area-cliente/renovacoes')
+  @UseGuards(PortalAuthGuard)
+  async renewalStatus(@Req() request: Request, @Res() response: Response) {
+    sendWorkflowResponse(
+      response,
+      await this.service.renewalStatus(workflowInput(request, response)),
+    );
+  }
   @Get('/acessos-clientes')
   @UseGuards(ClientsAuthGuard)
   async accesses(@Req() request: Request, @Res() response: Response) {

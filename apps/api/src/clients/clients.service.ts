@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import crypto from 'node:crypto';
+import { readClientHistory } from '../../../../src/services/clientHistory.ts';
 import { BACKEND_RUNTIME, type BackendRuntime } from '../runtime.ts';
 import {
   escolhasRenovacao,
@@ -92,6 +93,9 @@ export class ClientsService {
     };
 
     return pageData;
+  }
+  history(userId: number, id: unknown) {
+    return readClientHistory(this.db, userId, id);
   }
   async renewalOptions(userId: number, id: unknown) {
     const client = await this.db.queryOne(

@@ -241,7 +241,7 @@ export function useClientRenewal({ planos, servidores, mensagens, csrfToken }) {
       if (name === 'valor')
         next.basePrice =
           Number(value) / Math.max(1, Number(previous.creditos_gastos) || 1);
-      return ['plano', 'servidor', 'creditos_gastos'].includes(name)
+      return ['plano', 'servidor', 'creditos_gastos', 'telas'].includes(name)
         ? calculateRenewal(next, planos, servidores)
         : next;
     });

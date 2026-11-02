@@ -2,6 +2,7 @@ import { safeError } from '../../../src/security/safeError.ts';
 import { readDefaultSchedulerHealth } from '../../../src/services/schedulerHealthDefaults.ts';
 import { createDeliveryWatchdog } from '../../../src/services/deliveryMonitoringDefaults.ts';
 import { ensureDeliveryMonitoringSchema } from '../../../src/db/deliveryMonitoringSchema.ts';
+import { ensureClientHistorySchema } from '../../../src/services/clientHistory.ts';
 import { stopWhenSupervisorExits } from '../../../src/services/supervisorLifecycle.ts';
 import { listarRenovacoesPendentes } from '../../../src/services/renovacoesPendentes.ts';
 import bcrypt from 'bcryptjs';
@@ -84,6 +85,7 @@ try {
       );
       await twoFactor.initialize();
       if (!env.localMode) await ensureDeliveryMonitoringSchema();
+      await ensureClientHistorySchema(execute);
       if (env.localMode && process.env.GESTOR_COMPACT_LOGS !== 'true') {
         console.log('Modo local: automações desativadas; sessões em memória.');
       }

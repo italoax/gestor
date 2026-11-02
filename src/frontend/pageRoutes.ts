@@ -58,10 +58,10 @@ export function isUnknownPageNavigation(
     /\.[^/]+$/.test(pathname) ||
     /^\/(?:healthz|notificacoes)\/?$/.test(pathname) ||
     /^\/r\/[^/]+\/?$/.test(pathname) ||
-    /^\/clientes\/(?:[^/]+\/(?:planos-renovacao|link-pagamento)|preferencias\/mensagem-pagamento)\/?$/.test(
+    /^\/clientes\/(?:[^/]+\/(?:planos-renovacao|link-pagamento|historico)|preferencias\/mensagem-pagamento)\/?$/.test(
       pathname,
     ) ||
-    /^\/(?:whatsapp\/status|status\/(?:historico|[^/]+\/imagem)|minha-conta\/backup|automacao\/clientes|automacao\/regra\/[^/]+\/recebedores|pagar\/[^/]+\/status\/[^/]+|area-cliente\/(?:__frontend\/session|sessao))\/?$/.test(
+    /^\/(?:whatsapp\/status|status\/(?:historico|[^/]+\/imagem)|minha-conta\/backup|automacao\/clientes|automacao\/regra\/[^/]+\/recebedores|pagar\/[^/]+\/status\/[^/]+|area-cliente\/(?:__frontend\/session|sessao|renovacoes))\/?$/.test(
       pathname,
     )
   )

@@ -24,6 +24,7 @@ export function createClientMutationWorkflow({
   lerPlanoAdicional,
   renovarPlanosDoCliente,
   validarPlanoAdicional,
+  recordClientActivity = async (_event: any, _connection?: any) => {},
 }) {
   function normalizePhoneInput(prefixValue, phoneValue) {
     const prefixDigits =
@@ -578,6 +579,18 @@ export function createClientMutationWorkflow({
           await getPixConfig(userId),
         );
         if (result.ok) {
+          await recordClientActivity({
+            userId,
+            clientId: id,
+            type: 'mensagem',
+            title: 'Mensagem enviada',
+            detail: 'Envio manual pelo WhatsApp.',
+          }).catch(() => {
+            flash(
+              'error',
+              'A mensagem foi enviada, mas não foi possível registrar o histórico.',
+            );
+          });
           flash('modal-success', `Mensagem enviada para ${cliente.nome}.`);
         } else {
           flash(
@@ -687,8 +700,9 @@ export function createClientMutationWorkflow({
         // Pelo mesmo motivo `enviar_boas_vindas` ficou FORA deste UPDATE: é um flag de
         // cadastro (só lido ao criar, pra disparar o template) e sumiu do form de edição —
         // mantê-lo aqui zeraria a coluna do cliente a cada vez que ele fosse editado.
-        await execute(
-          `UPDATE clientes SET nome = :nome, user = :user, telefone = :telefone, vencimento = :vencimento,
+        await withTransaction(async (connection) => {
+          await connection.execute(
+            `UPDATE clientes SET nome = :nome, user = :user, telefone = :telefone, vencimento = :vencimento,
              plano = :plano, valor = :valor, status = :status, servidor = :servidor, telas = :telas,
              creditos_gastos = :creditosGastos,
              pago_em = COALESCE(:pagoEm, pago_em),
@@ -703,27 +717,38 @@ export function createClientMutationWorkflow({
              dispositivo = :dispositivo, aplicativo = :aplicativo,
              sigma_customer_id = COALESCE(:sigmaCustomerId, sigma_customer_id), plano_adicional = :planoAdicional
           WHERE id = :id AND user_id = :userId`,
-          {
-            ...data,
-            limparSenha: body.limpar_senha === '1' ? 1 : 0,
-            planoAdicional,
-            pontosFidelidadeOrNull:
-              body.pontos_fidelidade === undefined
-                ? null
-                : data.pontosFidelidade,
-            // toNumber() devolve 0 quando o campo não veio — converto para null aqui pra
-            // que COALESCE preserve o valor antigo (em vez de sobrescrever com 0).
-            valorPagoOrNull:
-              body.valor_pago !== undefined && String(body.valor_pago).trim()
-                ? data.valorPago
-                : null,
-            custoPagamentoOrNull:
-              body.custo_pagamento !== undefined &&
-              String(body.custo_pagamento).trim()
-                ? data.custoPagamento
-                : null,
-          },
-        );
+            {
+              ...data,
+              limparSenha: body.limpar_senha === '1' ? 1 : 0,
+              planoAdicional,
+              pontosFidelidadeOrNull:
+                body.pontos_fidelidade === undefined
+                  ? null
+                  : data.pontosFidelidade,
+              // toNumber() devolve 0 quando o campo não veio — converto para null aqui pra
+              // que COALESCE preserve o valor antigo (em vez de sobrescrever com 0).
+              valorPagoOrNull:
+                body.valor_pago !== undefined && String(body.valor_pago).trim()
+                  ? data.valorPago
+                  : null,
+              custoPagamentoOrNull:
+                body.custo_pagamento !== undefined &&
+                String(body.custo_pagamento).trim()
+                  ? data.custoPagamento
+                  : null,
+            },
+          );
+          await recordClientActivity(
+            {
+              userId,
+              clientId: id,
+              type: 'cadastro',
+              title: 'Cadastro atualizado',
+              detail: 'Dados do cadastro revisados pelo responsável.',
+            },
+            connection,
+          );
+        });
         flash('success', 'Cliente atualizado.');
       } else {
         // Dedup anti-duplo-submit (defesa em profundidade, além da trava de front):

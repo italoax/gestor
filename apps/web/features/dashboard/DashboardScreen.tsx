@@ -1,8 +1,10 @@
 'use client';
+import Link from 'next/link';
 import { Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { formatMoney } from '../../../../src/services/format.ts';
 import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { GeographyMap, SeriesChart } from './DashboardCharts.tsx';
+import { DashboardAttention } from './DashboardAttention.tsx';
 
 const width = (value) => `${Math.max(0, Math.min(100, Number(value) || 0))}%`;
 function Distribution({
@@ -60,6 +62,7 @@ export function DashboardScreen({ data }: { data?: any }) {
     <NativePanel data={data} path="/dashboard">
       <link rel="stylesheet" href="/assets/css/native-dashboard.css" />
       <div className="container dash" data-react-page="dashboard">
+        <DashboardAttention data={data.attention} />
         <div className="ui-summary ui-summary-4">
           {[
             [
@@ -68,6 +71,7 @@ export function DashboardScreen({ data }: { data?: any }) {
               `${data.ativosPercent}% da base`,
               'green',
               'users',
+              '/clientes?situacao=ativos',
             ],
             [
               'Vencidos',
@@ -75,6 +79,7 @@ export function DashboardScreen({ data }: { data?: any }) {
               `${data.vencidosPercent}% da carteira`,
               'red',
               'warning',
+              '/clientes?situacao=vencidos',
             ],
             [
               'Total de Clientes',
@@ -82,6 +87,7 @@ export function DashboardScreen({ data }: { data?: any }) {
               'Cada cadastro conta uma vez',
               'blue',
               'users',
+              '/clientes',
             ],
             [
               'Servidores',
@@ -89,9 +95,16 @@ export function DashboardScreen({ data }: { data?: any }) {
               'Painéis cadastrados',
               'purple',
               'server',
+              '/servidores',
             ],
-          ].map(([label, value, foot, color, icon]) => (
-            <div className={`stat-box accent-${color}`} key={label}>
+          ].map(([label, value, foot, color, icon, href]) => (
+            <Link
+              className={`stat-box accent-${color} dash-action-link`}
+              key={label}
+              href={href}
+              prefetch={false}
+              aria-label={`${label}: ${value}. Ver ${label === 'Servidores' ? 'servidores' : 'clientes'}.`}
+            >
               <div>
                 <span className="stat-label">{label}</span>
                 <strong className="stat-value">{value}</strong>
@@ -100,7 +113,7 @@ export function DashboardScreen({ data }: { data?: any }) {
               <div className="stat-icon">
                 <Icon name={icon} />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
         {acessos && (
@@ -221,7 +234,13 @@ export function DashboardScreen({ data }: { data?: any }) {
               ['Vence Amanhã', 'amanha', 'blue'],
               ['Venceu Ontem', 'ontem', 'red'],
             ].map(([label, key, color]) => (
-              <div className={`venc-card accent-${color}`} key={key}>
+              <Link
+                className={`venc-card accent-${color} dash-action-link`}
+                key={key}
+                href={`/clientes?vencimento=${key}`}
+                prefetch={false}
+                aria-label={`${label}: ${stats.vencimentos[key].total} clientes. Ver clientes.`}
+              >
                 <span className="venc-label">
                   <Icon name="calendar" /> {label}
                 </span>
@@ -229,7 +248,10 @@ export function DashboardScreen({ data }: { data?: any }) {
                   {stats.vencimentos[key].total}
                 </strong>
                 <small>{formatMoney(stats.vencimentos[key].valor)}</small>
-              </div>
+                <span className="dash-action-hint">
+                  Ver clientes <span aria-hidden="true">→</span>
+                </span>
+              </Link>
             ))}
           </div>
         </section>
@@ -453,7 +475,12 @@ export function DashboardScreen({ data }: { data?: any }) {
               {data.proximos.length ? (
                 <div className="dist-list">
                   {data.proximos.map((item) => (
-                    <a key={item.id} className="dist-row link" href="/clientes">
+                    <Link
+                      key={item.id}
+                      className="dist-row link"
+                      href={`/clientes?busca=${encodeURIComponent(item.nome)}`}
+                      prefetch={false}
+                    >
                       <span>{item.nome}</span>
                       <span
                         className={`dash-pill ${Number(item.dias) <= 1 ? 'today' : ''}`}
@@ -464,7 +491,7 @@ export function DashboardScreen({ data }: { data?: any }) {
                             ? 'Amanhã'
                             : `em ${item.dias} dias`}
                       </span>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               ) : (

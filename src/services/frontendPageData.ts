@@ -104,6 +104,12 @@ export function nativePageData(
           ])
         : null,
       pix: Boolean(data.pix),
+      renovacoes:
+        view === 'pages/area-cliente' && cliente
+          ? (data.renovacoes || []).map((item) =>
+              pick(item, ['id', 'stage', 'amount', 'paidAt', 'renewedAt']),
+            )
+          : [],
       payerDetailsRequired: data.payerDetailsRequired === true,
       paymentProvider: data.paymentProvider || '',
       erro: data.erro || '',
@@ -423,6 +429,15 @@ function dashboardPageData(base, data) {
   });
   return {
     ...base,
+    attention: data.attention
+      ? {
+          date: data.attention.date,
+          renewals: pick(data.attention.renewals, ['count', 'amount']),
+          deliveries: pick(data.attention.deliveries, ['failed', 'uncertain']),
+          dueToday: pick(data.attention.dueToday, ['count', 'amount']),
+          dueTomorrow: pick(data.attention.dueTomorrow, ['count', 'amount']),
+        }
+      : null,
     stats: {
       ...pick(stats, [
         'ativos',

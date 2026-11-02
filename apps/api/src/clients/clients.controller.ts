@@ -44,6 +44,7 @@ export class ClientsController {
       return response.json({
         page: createClientPageData({
           ...page,
+          user: { id },
           csrfToken: response.locals.csrfToken,
           releaseNoticeLoginId: response.locals.releaseNoticeLoginId,
           sessionExpiresAt: response.locals.sessionExpiresAt,
@@ -78,6 +79,19 @@ export class ClientsController {
     );
     response.set('Cache-Control', 'no-store');
     return result ? response.json(result) : response.sendStatus(404);
+  }
+  @Get('clientes/:id/historico')
+  async history(@Req() request: ClientsRequest, @Res() response: Response) {
+    const result = await this.clients.history(
+      request.session.user.id,
+      request.params.id,
+    );
+    response.set('Cache-Control', 'no-store');
+    return result
+      ? response.json({ ok: true, ...result })
+      : response
+          .status(404)
+          .json({ ok: false, error: 'Cliente não encontrado.' });
   }
   @Get('clientes/preferencias/mensagem-pagamento')
   async preference(@Req() request: ClientsRequest, @Res() response: Response) {

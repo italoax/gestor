@@ -1,4 +1,5 @@
 import { dashboardState } from '../services/dashboardCache.ts';
+import { loadDashboardAttention } from '../services/dashboardAttention.ts';
 
 import {
   workflowResult,
@@ -24,6 +25,17 @@ export function createDashboardWorkflow({
   const DASHBOARD_CACHE_TTL_MS = 60000;
 
   return {
+    attention: (input) =>
+      workflowResult(input, async (reply) => {
+        const attention = await loadDashboardAttention(
+          queryRows,
+          input.session.user.id,
+          appTodayIso(),
+        );
+        reply
+          .set('Cache-Control', 'private, no-store')
+          .json({ ok: true, attention });
+      }),
     overview: (input) =>
       workflowResult(input, async (reply) => {
         try {
@@ -35,10 +47,24 @@ export function createDashboardWorkflow({
             : 'todos';
           const cacheKey = `${userId}:${periodoRawCache}`;
           const cached = dashboardCache.get(cacheKey);
-          if (cached && cached.expiresAt > Date.now()) {
-            return reply.render('pages/dashboard', cached.payload);
-          }
           const today = appTodayIso();
+          // Pagamentos e envios podem mudar no worker, sem um POST no painel.
+          // As pendências são consultadas mesmo quando os gráficos usam cache.
+          const attention = await loadDashboardAttention(
+            queryRows,
+            userId,
+            today,
+          );
+          if (
+            cached &&
+            cached.expiresAt > Date.now() &&
+            cached.date === today
+          ) {
+            return reply.render('pages/dashboard', {
+              ...cached.payload,
+              attention,
+            });
+          }
           const year = Number(today.slice(0, 4));
           const month = Number(today.slice(5, 7));
           const dayOfMonth = Number(today.slice(8, 10));
@@ -437,6 +463,7 @@ export function createDashboardWorkflow({
           };
           const payload = {
             title: 'Dashboard',
+            attention,
             stats,
             acessos,
             ativosPercent,
@@ -470,6 +497,7 @@ export function createDashboardWorkflow({
           // Queries started before a write must not restore stale cached data.
           if (revisionAtStart === dashboardState.revision) {
             dashboardCache.set(cacheKey, {
+              date: today,
               expiresAt: Date.now() + DASHBOARD_CACHE_TTL_MS,
               payload,
             });

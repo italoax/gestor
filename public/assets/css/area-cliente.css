@@ -359,3 +359,73 @@ textarea.portal-input:focus-visible {
     gap: 12px;
   }
 }
+.portal-tracking {
+  margin-top: 24px;
+}
+.portal-tracking-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.portal-tracking-heading h2 {
+  margin: 0;
+}
+.portal-tracking-heading .portal-button {
+  width: auto;
+  min-height: 42px;
+  padding: 9px 14px;
+}
+.portal-renewal-entry {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border, #36313f);
+}
+.portal-renewal-state {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #f2c94c;
+  background: #eab30812;
+}
+.portal-renewal-state.is-renewed {
+  color: #4ade80;
+  background: #22c55e16;
+}
+.portal-renewal-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+  margin: 20px 0;
+  list-style: none;
+}
+.portal-renewal-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted, #aba3b4);
+}
+.portal-renewal-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.portal-renewal-steps [data-complete='true'] {
+  color: #4ade80;
+}
+.portal-renewal-steps [aria-current='step'] {
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .portal-renewal-steps {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}

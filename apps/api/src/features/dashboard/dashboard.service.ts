@@ -11,4 +11,9 @@ export class DashboardService {
     if (!action) throw new Error('Dashboard workflow unavailable.');
     return action(input);
   }
+  attention(input: WorkflowInput): Promise<WorkflowResponse> {
+    const action = this.runtime.features?.['dashboard']?.attention;
+    if (!action) throw new Error('Dashboard attention workflow unavailable.');
+    return action(input);
+  }
 }

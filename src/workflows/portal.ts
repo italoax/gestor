@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import { portalRenewals } from '../services/renewalTracking.ts';
+import { statusByVencimento } from '../services/format.ts';
 import { notifyPortalAccessChanged } from '../services/portalSessionStream.ts';
 import { revealIptvPassword } from '../security/storedSecrets.ts';
 import { startSessionSecurity } from '../services/sessionSecurity.ts';
@@ -179,17 +181,21 @@ export function createPortalWorkflow({
       workflowResult(input, async (reply) => {
         try {
           const cliente = reply.locals.portalCliente;
-          const paymentProvider = await escolherProvedor(cliente.user_id);
-          const pix = Boolean(paymentProvider);
-          const escolhas = await escolhasRenovacao(cliente, (nome) =>
-            queryOne(
-              'SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1',
-              { userId: cliente.user_id, nome },
+          const [paymentProvider, renovacoes, escolhas] = await Promise.all([
+            escolherProvedor(cliente.user_id),
+            portalRenewals(queryRows, cliente.user_id, cliente.id),
+            escolhasRenovacao(cliente, (nome) =>
+              queryOne(
+                'SELECT periodo, tipo, credito_gastos AS creditoGastos FROM planos WHERE user_id = :userId AND nome = :nome LIMIT 1',
+                { userId: cliente.user_id, nome },
+              ),
             ),
-          );
+          ]);
+          const pix = Boolean(paymentProvider);
           reply.render('pages/area-cliente', {
             layout: false,
             cliente,
+            renovacoes,
             adicional: lerPlanoAdicional(cliente.plano_adicional),
             pix,
             payerDetailsRequired: paymentProvider?.provider === 'picpay',
@@ -200,6 +206,26 @@ export function createPortalWorkflow({
         } catch (err) {
           raiseWorkflowError(err);
         }
+      }),
+    renewalStatus: (input) =>
+      workflowResult(input, async (reply) => {
+        const cliente = reply.locals.portalCliente;
+        const adicional = lerPlanoAdicional(cliente.plano_adicional);
+        reply.set('Cache-Control', 'no-store');
+        reply.json({
+          ok: true,
+          renovacoes: await portalRenewals(
+            queryRows,
+            cliente.user_id,
+            cliente.id,
+          ),
+          assinatura: {
+            vencimento: cliente.vencimento,
+            statusLabel: statusByVencimento(cliente.status, cliente.vencimento)
+              .label,
+            vencimentoAdicional: adicional?.vencimento || null,
+          },
+        });
       }),
     renew: (input) =>
       workflowResult(input, async (reply) => {

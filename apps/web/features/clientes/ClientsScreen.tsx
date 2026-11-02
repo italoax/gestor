@@ -1,5 +1,6 @@
 'use client';
 import { useLayoutEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ClientsPage } from '../../../../src/frontend/clients/ClientsPage.tsx';
 import { PanelShell, SiteNotice } from '../../components/layout/PanelShell.tsx';
 import { LegacyControllers } from '../../components/legacy/LegacyControllers.tsx';
@@ -7,6 +8,7 @@ import { Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { PanelStyles } from '../../components/layout/PanelStyles.tsx';
 
 export function ClientsScreen({ data }: { data?: any }) {
+  const filterQuery = useSearchParams().toString();
   useLayoutEffect(() => {
     document.body.className = 'page-app';
   }, []);
@@ -21,7 +23,7 @@ export function ClientsScreen({ data }: { data?: any }) {
           error={data.error}
         />
         <div data-react-page="clientes" id="next-clientes-root">
-          <ClientsPage data={data.page} />
+          <ClientsPage data={{ ...data.page, filterQuery }} />
         </div>
         <LegacyControllers revision={data.page.now} />
         <div hidden>

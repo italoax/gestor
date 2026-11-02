@@ -72,6 +72,9 @@ export function createClientPageData(
         ? locals.sessionExpiresAt
         : undefined,
       verArquivados: Boolean(locals.verArquivados),
+      savedFiltersKey: locals.user?.id
+        ? `gestor:client-queries:${locals.user.id}`
+        : undefined,
       now: now.toISOString(),
     }),
   );

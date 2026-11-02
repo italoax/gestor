@@ -14,6 +14,7 @@ const paths = {
     </>
   ),
   chart: <path d="M3 3v18h18M7 16v-5m5 5V7m5 9V4" />,
+  download: <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />,
   bolt: <path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z" />,
   shield: (
     <path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6l8-3Zm-4 9 3 3 5-6" />

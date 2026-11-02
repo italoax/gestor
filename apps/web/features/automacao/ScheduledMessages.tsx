@@ -36,16 +36,20 @@ export function CampaignEditor({
   item,
   data,
   onClose,
+  initialClients,
 }: {
   item: any;
   data: any;
   onClose: () => void;
+  initialClients?: any[];
 }) {
   const [mode, setMode] = useState(item?.campanha.modo || 'unico');
   const [key] = useState(() => crypto.randomUUID());
   const [text, setText] = useState(item?.campanha.mensagem || '');
   const [selected, setSelected] = useState<number[]>(
-    item?.campanha.clientesIds || [],
+    initialClients?.map((client) => client.id) ||
+      item?.campanha.clientesIds ||
+      [],
   );
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -58,6 +62,15 @@ export function CampaignEditor({
   });
   const submit = useNativeSubmit();
   useEffect(() => {
+    if (initialClients) {
+      setClients({
+        loading: false,
+        error: '',
+        rows: initialClients,
+        more: false,
+      });
+      return;
+    }
     const controller = new AbortController();
     setClients((previous) => ({ ...previous, loading: true, error: '' }));
     const timer = setTimeout(() => {
@@ -104,7 +117,7 @@ export function CampaignEditor({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search, page, retry]);
+  }, [search, page, retry, initialClients]);
   function select(id, checked) {
     setSelected((previous) =>
       checked
@@ -127,9 +140,13 @@ export function CampaignEditor({
             className="btn btn-primary"
             type="submit"
             form="scheduled-message-form"
-            disabled={!selected.length || !text.trim()}
+            disabled={
+              !selected.length || selected.length > 1000 || !text.trim()
+            }
           >
-            Salvar
+            {initialClients
+              ? `Agendar para ${selected.length} ${selected.length === 1 ? 'cliente' : 'clientes'}`
+              : 'Salvar'}
           </button>
         </>
       }
@@ -268,22 +285,30 @@ export function CampaignEditor({
               {selected.length === 1 ? 'selecionado' : 'selecionados'}
             </span>
           </h4>
-          <label className="field">
-            <input
-              className="input"
-              type="search"
-              aria-label="Buscar clientes"
-              value={search}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') event.preventDefault();
-              }}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Nome ou telefone"
-            />
-          </label>
+          {initialClients && (
+            <p className="muted">
+              Destinatários escolhidos na tela de clientes. Desmarque quem não
+              deve receber. O aviso será enviado no horário que você definir.
+            </p>
+          )}
+          {!initialClients && (
+            <label className="field">
+              <input
+                className="input"
+                type="search"
+                aria-label="Buscar clientes"
+                value={search}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.preventDefault();
+                }}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Nome ou telefone"
+              />
+            </label>
+          )}
           <div className="campaign-selection-tools">
             <button
               className="btn btn-muted"
@@ -300,7 +325,9 @@ export function CampaignEditor({
                 )
               }
             >
-              Selecionar página
+              {initialClients
+                ? 'Selecionar destinatários'
+                : 'Selecionar página'}
             </button>
             <button
               className="btn btn-muted"
@@ -352,25 +379,27 @@ export function CampaignEditor({
                   ))
                 )}
               </div>
-              <div className="campaign-selection-tools">
-                <button
-                  className="btn btn-muted"
-                  type="button"
-                  disabled={page === 1}
-                  onClick={() => setPage((value) => value - 1)}
-                >
-                  Anterior
-                </button>
-                <span>Página {page}</span>
-                <button
-                  className="btn btn-muted"
-                  type="button"
-                  disabled={!clients.more}
-                  onClick={() => setPage((value) => value + 1)}
-                >
-                  Próxima
-                </button>
-              </div>
+              {!initialClients && (
+                <div className="campaign-selection-tools">
+                  <button
+                    className="btn btn-muted"
+                    type="button"
+                    disabled={page === 1}
+                    onClick={() => setPage((value) => value - 1)}
+                  >
+                    Anterior
+                  </button>
+                  <span>Página {page}</span>
+                  <button
+                    className="btn btn-muted"
+                    type="button"
+                    disabled={!clients.more}
+                    onClick={() => setPage((value) => value + 1)}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
             </>
           )}
         </section>

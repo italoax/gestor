@@ -24,6 +24,8 @@ export const ClientsModals = memo(function ClientsModals({
   clientForm?: any;
 }) {
   const hasServer = clientForm.servers.length > 0;
+  const step = ['dados', 'plano', 'apps'].indexOf(clientForm.tab);
+  const stepLabels = ['Dados do cliente', 'Plano e servidores', 'Aplicativos'];
   return (
     <>
       <div
@@ -189,6 +191,7 @@ export const ClientsModals = memo(function ClientsModals({
               onClick={() => clientForm.setTab('dados')}
               type="button"
               data-tab="dados"
+              aria-current={clientForm.tab === 'dados' ? 'step' : undefined}
             >
               <Icon name="users" />
               Dados
@@ -203,6 +206,7 @@ export const ClientsModals = memo(function ClientsModals({
               onClick={() => clientForm.setTab('plano')}
               type="button"
               data-tab="plano"
+              aria-current={clientForm.tab === 'plano' ? 'step' : undefined}
             >
               <Icon name="package" />
               Plano
@@ -217,6 +221,7 @@ export const ClientsModals = memo(function ClientsModals({
               onClick={() => clientForm.setTab('apps')}
               type="button"
               data-tab="apps"
+              aria-current={clientForm.tab === 'apps' ? 'step' : undefined}
             >
               <Icon name="phone" />
               Apps
@@ -226,6 +231,16 @@ export const ClientsModals = memo(function ClientsModals({
                 </span>
               )}
             </button>
+          </div>
+          <div className="client-form-progress">
+            <span>
+              Etapa {step + 1} de 3 · {stepLabels[step]}
+            </span>
+            <progress
+              value={step + 1}
+              max={3}
+              aria-label="Progresso do cadastro"
+            />
           </div>
           <form
             method="post"
@@ -256,6 +271,23 @@ export const ClientsModals = memo(function ClientsModals({
             <input type="hidden" name="telefone_secundario" defaultValue="" />
             <input type="hidden" name="captacao" defaultValue="" />
             <input type="hidden" name="observacoes" defaultValue="" />
+            {Object.keys(clientForm.errors).length > 0 && (
+              <div className="client-form-error-summary" role="alert">
+                <strong>Confira os campos indicados antes de salvar.</strong>
+                <ul>
+                  {Object.entries(clientForm.errors).map(([name, message]) => (
+                    <li key={name}>
+                      <button
+                        type="button"
+                        onClick={() => clientForm.focusField(name)}
+                      >
+                        {String(message)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div
               className={`tab-panel ${clientForm.tab === 'dados' ? 'active' : ''}`}
               data-tab-panel="dados"
@@ -1175,6 +1207,26 @@ export const ClientsModals = memo(function ClientsModals({
             <button className="btn btn-muted" type="button" data-close-modal="">
               Cancelar
             </button>
+            {step > 0 && (
+              <button
+                className="btn btn-muted"
+                type="button"
+                onClick={() =>
+                  clientForm.setTab(['dados', 'plano', 'apps'][step - 1])
+                }
+              >
+                Anterior
+              </button>
+            )}
+            {step < 2 && (
+              <button
+                className="btn btn-muted"
+                type="button"
+                onClick={clientForm.nextStep}
+              >
+                Continuar
+              </button>
+            )}
             <button
               className="btn btn-primary"
               type="submit"

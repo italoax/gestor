@@ -95,15 +95,18 @@ export function ClientRow({
       data-sort-status={statusUrgency(c.status, c.vencimento, sortNow)}
     >
       <td className="col-check">
-        <input
-          type="checkbox"
-          className="cli-check"
-          aria-label={`Selecionar ${c.nome}`}
-          checked={selected.has(c.id)}
-          onChange={(event) =>
-            selectRow(c.id, (event.target as HTMLInputElement).checked)
-          }
-        />
+        <label className="client-row-select">
+          <input
+            type="checkbox"
+            className="cli-check"
+            aria-label={`Selecionar ${c.nome}`}
+            checked={selected.has(c.id)}
+            onChange={(event) =>
+              selectRow(c.id, (event.target as HTMLInputElement).checked)
+            }
+          />
+          <span className="client-row-select-label">Selecionar cliente</span>
+        </label>
       </td>
       <td className="cli-c-nome">
         <strong>{c.nome}</strong>
@@ -132,10 +135,10 @@ export function ClientRow({
           </>
         ) : null}
 
-        <div className="cli-m" aria-hidden="true">
+        <div className="cli-m">
           <div className="cli-m-head">
             <div className="cli-m-name">
-              <strong>{c.nome}</strong>
+              <strong title={c.nome}>{c.nome}</strong>
               {c.user || c.idPainel ? (
                 <>
                   <small>{c.idPainel || c.user}</small>
@@ -146,6 +149,7 @@ export function ClientRow({
               {formatMoney(
                 Number(c.valor || 0) + Number(c.adicional?.valor || 0),
               )}
+              {c.adicional && <small>2 acessos</small>}
             </div>
           </div>
           <div className="cli-m-meta">
@@ -155,17 +159,20 @@ export function ClientRow({
             <span className="cli-m-dot">·</span>
             <span className="cli-m-venc">
               <Icon name="calendar" />
-              {formatDateBr(c.vencimento)}
+              <time dateTime={formatDateInput(c.vencimento)}>
+                {formatDateBr(c.vencimento)}
+              </time>
             </span>
+          </div>
+          <div className="cli-m-footer">
             {c.telefone ? (
-              <>
-                <span className="cli-m-dot">·</span>
-                <span className="cli-m-tel">
-                  <Icon name="phone" />
-                  {c.telefone}
-                </span>
-              </>
-            ) : null}
+              <span className="cli-m-tel">
+                <Icon name="phone" />
+                <span>{c.telefone}</span>
+              </span>
+            ) : (
+              <span className="cli-m-no-contact">Sem WhatsApp</span>
+            )}
           </div>
         </div>
       </td>
@@ -250,7 +257,7 @@ export function ClientRow({
           />
         )}
       </td>
-      <td>
+      <td className="cli-status">
         <StatusBadge status={cStatus} />
       </td>
       <td className="col-acoes">
@@ -259,6 +266,7 @@ export function ClientRow({
             className={`cli-ico-btn ${c.adicional ? 'open-multi-payment' : 'open-payment'}`}
             type="button"
             title="Renovar"
+            aria-label={`Renovar ${c.nome}`}
             data-id={c.id}
             data-nome={c.nome}
             data-vencimento={formatDateBr(c.vencimento)}
@@ -339,6 +347,18 @@ export function ClientRow({
                 </button>
               )}
               <div className="cli-menu-sep" role="separator"></div>
+              <button
+                className="cli-menu-item"
+                type="button"
+                role="menuitem"
+                data-client-history={c.id}
+                data-client-name={c.nome}
+              >
+                <span className="cli-menu-icon">
+                  <Icon name="clock" />
+                </span>
+                <span>Histórico do cliente</span>
+              </button>
               <button
                 className="cli-menu-item danger"
                 type="button"

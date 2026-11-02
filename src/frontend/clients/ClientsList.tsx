@@ -1,32 +1,44 @@
 import { ClientRow } from './ClientRow.tsx';
 import { Fragment } from 'react';
 import { Icon } from './ui.tsx';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatMoney } from '../../services/format.ts';
-import { normalizeSearch, sortClients } from './model.ts';
+import { sortClients } from './model.ts';
 import { PanelSearch } from '../components/PanelSearch.tsx';
+import { matchesClientFilters, clientFilterToday } from './filters.ts';
+import { useClientFilters } from './useClientFilters.ts';
+import { ClientFiltersBar } from './ClientFilters.tsx';
+import { ClientBulkActions } from './ClientBulkActions.tsx';
 
 export function ClientsList({
   clientes,
   planos,
   servidores,
+  mensagens,
   renovacoesPendentes,
   csrfToken,
   now,
   verArquivados,
+  filterQuery,
+  savedFiltersKey,
 }: {
   clientes?: any;
   planos?: any;
   servidores?: any;
+  mensagens?: any;
   renovacoesPendentes?: any;
   csrfToken?: any;
   now?: Date;
   verArquivados?: any;
+  filterQuery?: string;
+  savedFiltersKey?: string;
 }) {
   const sortNow = useMemo(() => new Date(now), [now]);
-  const [search, setSearch] = useState('');
+  const today = useMemo(() => clientFilterToday(sortNow), [sortNow]);
+  const filterControl = useClientFilters(filterQuery, savedFiltersKey);
   const [sort, setSort] = useState({ column: 'status', direction: 'desc' });
   const [selected, setSelected] = useState(new Set());
+  const selectAllCheckbox = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const ids = new Set(clientes.map((client) => client.id));
     setSelected(
@@ -37,27 +49,20 @@ export function ClientsList({
     () => sortClients(clientes, sort, sortNow),
     [clientes, sort, sortNow],
   );
-  const term = normalizeSearch(search);
-  const matches = (c) =>
-    !term ||
-    normalizeSearch(
-      [
-        c.nome,
-        c.user,
-        c.telefone,
-        c.email,
-        c.plano,
-        c.adicional?.plano,
-        c.adicional?.servidor,
-        c.servidor,
-        c.aplicativo,
-        c.adicional?.aplicativo,
-        c.idPainel,
-      ]
-        .filter(Boolean)
-        .join(' '),
-    ).includes(term);
+  const matches = (c) => matchesClientFilters(c, filterControl.filters, today);
   const visible = clientesOrdenados.filter(matches);
+  const visibleIds = new Set(visible.map((client) => client.id));
+  const selectedClients = clientesOrdenados.filter((client) =>
+    selected.has(client.id),
+  );
+  const selectedVisibleCount = visible.filter((client) =>
+    selected.has(client.id),
+  ).length;
+  useEffect(() => {
+    if (selectAllCheckbox.current)
+      selectAllCheckbox.current.indeterminate =
+        selectedVisibleCount > 0 && selectedVisibleCount < visible.length;
+  }, [selectedVisibleCount, visible.length]);
   const selectRow = (id, checked) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -130,8 +135,8 @@ export function ClientsList({
             id="cliente-search-input"
             placeholder="Buscar clientes..."
             label="Buscar clientes"
-            value={search}
-            onChange={setSearch}
+            value={filterControl.filters.busca}
+            onChange={(value) => filterControl.change('busca', value)}
             legacySearch
           />
           <div
@@ -140,11 +145,11 @@ export function ClientsList({
             role="status"
             aria-live="polite"
             aria-atomic="true"
-            hidden={!term}
+            hidden={!filterControl.active}
           >
             {visible.length
               ? `${visible.length} ${visible.length === 1 ? 'cliente encontrado' : 'clientes encontrados'} de ${clientes.length}.`
-              : 'Nenhum cliente encontrado. Tente outro nome ou número.'}
+              : 'Nenhum cliente encontrado. Ajuste a busca ou os filtros.'}
           </div>
         </div>
         <button
@@ -156,6 +161,34 @@ export function ClientsList({
           Novo cliente
         </button>
       </div>
+      <ClientFiltersBar
+        control={filterControl}
+        clientes={clientes}
+        planos={planos}
+        servidores={servidores}
+      />
+      {clientes.length > 0 && (
+        <ClientBulkActions
+          clients={selectedClients}
+          visibleIds={visibleIds}
+          totalVisible={visible.length}
+          onSelectVisible={() => selectAll(true)}
+          onClear={() => setSelected(new Set())}
+          onKeepVisible={() =>
+            setSelected(
+              new Set(
+                selectedClients
+                  .filter((client) => visibleIds.has(client.id))
+                  .map((client) => client.id),
+              ),
+            )
+          }
+          mensagens={mensagens}
+          csrfToken={csrfToken}
+          now={sortNow}
+          archived={Boolean(verArquivados)}
+        />
+      )}
       {!clientes.length ? (
         <>
           <div className="cli-empty">
@@ -186,10 +219,11 @@ export function ClientsList({
                   <tr>
                     <th className="col-check">
                       <input
+                        ref={selectAllCheckbox}
                         type="checkbox"
                         className="cli-check"
                         data-check-all=""
-                        aria-label="Selecionar todos"
+                        aria-label="Selecionar todos os clientes visíveis"
                         checked={
                           visible.length > 0 &&
                           visible.every((c) => selected.has(c.id))
@@ -254,12 +288,28 @@ export function ClientsList({
                       }}
                     />
                   ))}
+                  {!visible.length && (
+                    <tr>
+                      <td colSpan={10} className="client-filter-empty">
+                        Nenhum cliente corresponde aos filtros.
+                        <button
+                          type="button"
+                          className="btn btn-ghost"
+                          onClick={filterControl.clear}
+                        >
+                          Limpar filtros
+                        </button>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
             <div className="cli-table-foot">
               <span className="muted">
-                {clientes.length}
+                {filterControl.active
+                  ? `${visible.length} de ${clientes.length}`
+                  : clientes.length}{' '}
                 cliente{clientes.length === 1 ? '' : 's'}
               </span>
             </div>

@@ -26,4 +26,11 @@ export class DashboardController {
       await this.service.overview(workflowInput(request, response)),
     );
   }
+  @Get('/api/dashboard/pendencias')
+  async attention(@Req() request: Request, @Res() response: Response) {
+    sendWorkflowResponse(
+      response,
+      await this.service.attention(workflowInput(request, response)),
+    );
+  }
 }

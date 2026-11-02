@@ -347,11 +347,15 @@ export function useClientForm() {
     setErrors(nextErrors);
     if (!invalid.length) return;
     event.preventDefault();
-    setTab(invalid[0].dataset.tab || 'dados');
+    focusField(invalid[0].name);
+  }
+  function focusField(name: string) {
+    const field = ref.current?.elements.namedItem(name) as HTMLInputElement;
+    if (!field) return;
+    setTab(field.dataset.tab || 'dados');
     requestAnimationFrame(() => {
-      const field = invalid[0];
       const target = field.hidden
-        ? (form.querySelector('[data-servidores-resumo]') as HTMLElement)
+        ? (ref.current.querySelector('[data-servidores-resumo]') as HTMLElement)
         : field;
       let details = target?.closest('details');
       while (details) {
@@ -360,6 +364,26 @@ export function useClientForm() {
       }
       target?.focus();
     });
+  }
+  function nextStep() {
+    const fields = Array.from(
+      ref.current.querySelectorAll('[data-required="1"]'),
+    ) as HTMLInputElement[];
+    const invalid = fields.filter(
+      (field) => field.dataset.tab === tab && validationMessage(field),
+    );
+    setErrors((previous) => ({
+      ...previous,
+      ...Object.fromEntries(
+        invalid.map((field) => [field.name, validationMessage(field)]),
+      ),
+    }));
+    if (invalid.length) {
+      focusField(invalid[0].name);
+      return;
+    }
+    const steps = ['dados', 'plano', 'apps'];
+    setTab(steps[Math.min(2, steps.indexOf(tab) + 1)]);
   }
   function onPageClick(event) {
     const button = (event.target as HTMLInputElement).closest(
@@ -387,6 +411,8 @@ export function useClientForm() {
     status,
     tab,
     setTab,
+    focusField,
+    nextStep,
     total,
     errors,
     errorCountForTab: (name: string) =>

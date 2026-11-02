@@ -36,6 +36,11 @@ export class PortalService {
     if (!action) throw new Error('Portal workflow unavailable.');
     return action(input);
   }
+  renewalStatus(input: WorkflowInput): Promise<WorkflowResponse> {
+    const action = this.runtime.features?.['portal']?.renewalStatus;
+    if (!action) throw new Error('Portal workflow unavailable.');
+    return action(input);
+  }
   accesses(input: WorkflowInput): Promise<WorkflowResponse> {
     const action = this.runtime.features?.['portal']?.accesses;
     if (!action) throw new Error('Portal workflow unavailable.');

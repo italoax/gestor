@@ -1,3 +1,4 @@
+import { PlanFinder } from './PlanFinder.tsx';
 export function LandingContent({ data }: { data?: any }) {
   return (
     <div data-react-page="inicio">
@@ -287,6 +288,10 @@ export function LandingContent({ data }: { data?: any }) {
               {'Conheça os detalhes de cada opção.'}
             </p>
           </div>
+          <PlanFinder
+            contacts={data.contacts}
+            contactReady={data.contactReady}
+          />
           <div className={'plans'}>
             <article className={'plan '}>
               <div className={'plan-top'}>
