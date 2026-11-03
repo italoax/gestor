@@ -1,4 +1,4 @@
-import { confirmFormSubmission, showPanelNotice } from './ui/panel-feedback.js';
+import { confirmFormSubmission } from './ui/panel-feedback.js';
 import { installTheme } from '../../../shared/theme.js';
 import { initPasswordField } from './ui/password-field.js';
 installTheme();

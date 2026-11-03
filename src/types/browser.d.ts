@@ -21,6 +21,7 @@ declare global {
     gestorNavigate?: (href: string) => Promise<boolean>;
     gestorPageModules?: Record<string, (...args: any[]) => any>;
     gestorPolling?: any;
+    __gestorWhatsappSnapshot?: { key: string; at: number; state: any };
     gestorReactClients?: any;
     gestorRefresh?: () => void;
     gestorSetModalState?: (modal: HTMLElement, open: boolean) => void;

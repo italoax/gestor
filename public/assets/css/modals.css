@@ -398,8 +398,7 @@ dialog.catalog-editor[open] {
   opacity: 0.5;
   cursor: default;
 }
-.client-plan-panel .server-selection small,
-.client-plan-panel .server-selection-help {
+.client-plan-panel .server-selection small {
   display: block;
   margin: 8px 0 14px;
   color: var(--muted);
@@ -413,10 +412,6 @@ dialog.catalog-editor[open] {
   font: inherit;
   text-align: inherit;
   cursor: pointer;
-}
-.input-mask {
-  -webkit-text-security: disc;
-  text-security: disc;
 }
 .sidebar-backdrop {
   border: 0;
@@ -511,9 +506,6 @@ dialog.catalog-editor[open] {
 .modal-overlay .modal-sm {
   --dialog-width: 440px;
 }
-.modal-overlay .tx-modal {
-  --dialog-width: 480px;
-}
 .modal-overlay .modal::before {
   display: none;
 }
@@ -591,9 +583,7 @@ dialog.catalog-editor[open] {
   line-height: 1.4;
 }
 :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
-  .modal-tabs,
-:is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
-  .tabs-bar {
+  .modal-tabs {
   position: relative;
   flex: 0 0 auto;
   display: flex;
@@ -801,9 +791,7 @@ dialog.catalog-editor[open] {
     padding: 10px 12px;
   }
   :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
-    .modal-tabs,
-  :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)
-    .tabs-bar {
+    .modal-tabs {
     padding: 10px 14px;
   }
   :is(.modal-overlay, dialog.react-dialog, dialog.react-catalog-dialog)

@@ -7,6 +7,7 @@ import { NativePanel } from '../../components/layout/NativePanel.tsx';
 import { NativeDialog } from '../../components/ui/NativeDialog.tsx';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
 import { SchedulerStatus } from '../../components/layout/SchedulerStatus.tsx';
+import { publishWhatsappState } from '../../../../src/frontend/whatsappIndicator.ts';
 
 const connected = (state) => state?.connected || state?.status === 'conectado';
 const sessionExpiredMessage =
@@ -54,7 +55,15 @@ function CallBlock({ device, token }: { device?: any; token?: string }) {
     </form>
   );
 }
-function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
+function WhatsAppDevice({
+  device,
+  token,
+  stateKey,
+}: {
+  device?: any;
+  token?: string;
+  stateKey?: string;
+}) {
   const [state, setState] = useState(null);
   const [checking, setChecking] = useState(true);
   const [open, setOpen] = useState(false);
@@ -63,6 +72,10 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
   const pending = useRef(false),
     actionController = useRef(null),
     alive = useRef(false);
+  useEffect(() => {
+    if (!checking && state && stateKey)
+      publishWhatsappState(stateKey, Number(device.id), state);
+  }, [state, checking, stateKey, device.id]);
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -181,7 +194,8 @@ function WhatsAppDevice({ device, token }: { device?: any; token?: string }) {
           result.lastError ||
             'Não foi possível alterar a conexão. Tente novamente.',
         );
-      if (alive.current) setState(result);
+      if (alive.current)
+        setState({ ...result, disconnectedByUser: disconnect });
     } catch (error) {
       if (alive.current)
         setState((current) => ({
@@ -427,6 +441,11 @@ export function WhatsAppScreen({ data }: { data?: any }) {
                 key={device.id}
                 device={device}
                 token={data.page.csrfToken}
+                stateKey={
+                  device.id === data.devices[0].id
+                    ? `gestor:wa-state:${data.user.id}`
+                    : undefined
+                }
               />
             ))}
           </div>

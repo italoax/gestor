@@ -4,6 +4,32 @@ export interface WhatsappIndicator {
   deviceId?: number;
 }
 
+export const WHATSAPP_STATE_EVENT = 'gestor:whatsapp-state';
+
+export function publishWhatsappState(
+  key: string,
+  deviceId: number,
+  state: any,
+) {
+  // Compartilha somente o estado visual; QR e códigos de pareamento ficam no cartão.
+  const snapshot = {
+    key,
+    at: Date.now(),
+    state: {
+      deviceId,
+      connected: state.connected,
+      status: state.status,
+      number: state.number,
+      pushName: state.pushName,
+      disconnectedByUser: state.disconnectedByUser === true,
+    },
+  };
+  window.__gestorWhatsappSnapshot = snapshot;
+  document.dispatchEvent(
+    new CustomEvent(WHATSAPP_STATE_EVENT, { detail: snapshot }),
+  );
+}
+
 export function advanceWhatsappIndicator(
   previous: WhatsappIndicator,
   state: any,

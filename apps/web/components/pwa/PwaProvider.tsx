@@ -1,85 +1,21 @@
 'use client';
 import { PanelNotice } from '../ui/PanelNotice.tsx';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { confirmPanelAction } from '../../../../src/browser/assets/js/ui/panel-feedback.ts';
 
-type InstallEvent = Event & {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: string }>;
-};
-const InstallContext = createContext({
-  available: false,
-  busy: false,
-  install: () => {},
-});
-
-export function PwaInstallButton() {
-  const install = useContext(InstallContext);
-  if (!install.available) return null;
-  return (
-    <button
-      className="pwa-install"
-      type="button"
-      disabled={install.busy}
-      onClick={install.install}
-    >
-      <span aria-hidden="true">↓</span>
-      <span>{install.busy ? 'Instalando…' : 'Instalar aplicativo'}</span>
-    </button>
-  );
-}
-
 export function PwaProvider({ children }: { children: React.ReactNode }) {
-  const prompt = useRef<InstallEvent | null>(null);
   const registration = useRef<ServiceWorkerRegistration | null>(null);
   const reloadRequested = useRef(false);
   const dirtyForms = useRef(new Set<HTMLFormElement>());
-  const [available, setAvailable] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [ios, setIos] = useState(false);
-  const [instructions, setInstructions] = useState(false);
   const [online, setOnline] = useState(true);
   const [update, setUpdate] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [message, setMessage] = useState('');
-  const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     window.__gestorPwaManaged = true;
     const lifecycle = new AbortController();
     const options = { signal: lifecycle.signal };
-    const display = matchMedia(
-      '(display-mode: standalone), (display-mode: minimal-ui), (display-mode: fullscreen)',
-    );
-    const standalone = () =>
-      display.matches ||
-      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    const apple =
-      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    setIos(apple);
-    const refreshInstall = () =>
-      setAvailable(!standalone() && (apple || Boolean(prompt.current)));
-    refreshInstall();
-    display.addEventListener('change', refreshInstall, options);
-    window.addEventListener(
-      'beforeinstallprompt',
-      (event) => {
-        // Mantém a oferta nativa de instalação e permite instalar pelo menu.
-        prompt.current = event as InstallEvent;
-        refreshInstall();
-      },
-      options,
-    );
-    window.addEventListener(
-      'appinstalled',
-      () => {
-        prompt.current = null;
-        setAvailable(false);
-        setInstructions(false);
-      },
-      options,
-    );
     const connection = () => setOnline(navigator.onLine !== false);
     connection();
     window.addEventListener('online', connection, options);
@@ -158,10 +94,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (instructions) dialog.current?.showModal();
-  }, [instructions]);
-
-  useEffect(() => {
     if (!updating) return;
     const timer = setTimeout(() => {
       reloadRequested.current = false;
@@ -171,23 +103,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [updating]);
 
-  const install = async () => {
-    if (ios) return setInstructions(true);
-    const event = prompt.current;
-    if (!event || busy) return;
-    setBusy(true);
-    try {
-      await event.prompt();
-      const choice = await event.userChoice;
-      if (choice.outcome === 'accepted') setAvailable(false);
-    } catch {
-      setMessage('Use o menu do navegador para instalar o aplicativo.');
-    } finally {
-      prompt.current = null;
-      setBusy(false);
-      if (!ios) setAvailable(false);
-    }
-  };
   const applyUpdate = async () => {
     if (document.querySelector('form[aria-busy="true"]')) {
       setMessage('Aguarde o salvamento terminar antes de atualizar.');
@@ -208,7 +123,7 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
   };
   const compactUpdate = online && update && !message;
   return (
-    <InstallContext.Provider value={{ available, busy, install }}>
+    <>
       {children}
       {(!online || update || message) && (
         <PanelNotice
@@ -248,23 +163,6 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
           }
         />
       )}
-      {instructions && (
-        <dialog
-          ref={dialog}
-          className="pwa-instructions"
-          aria-labelledby="pwa-install-title"
-          onCancel={() => setInstructions(false)}
-        >
-          <h2 id="pwa-install-title">Instalar no iPhone ou iPad</h2>
-          <p>
-            Abra este site no Safari, toque em Compartilhar e escolha Adicionar
-            à Tela de Início.
-          </p>
-          <button type="button" onClick={() => setInstructions(false)}>
-            Entendi
-          </button>
-        </dialog>
-      )}
-    </InstallContext.Provider>
+    </>
   );
 }

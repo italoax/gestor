@@ -55,5 +55,3 @@ export function createLogger(tag) {
     error: (msg: string, meta?: unknown) => emitir('error', tag, msg, meta),
   };
 }
-// Logger geral pra uso avulso.
-export const log = createLogger('app');

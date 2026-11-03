@@ -1,5 +1,6 @@
 import {
   advanceWhatsappIndicator,
+  WHATSAPP_STATE_EVENT,
   type WhatsappIndicator,
 } from '../../../frontend/whatsappIndicator.js';
 import { initReleaseNotice } from './ui/release-notice.js';
@@ -332,8 +333,8 @@ window.__gestorInitShell = function () {
   });
 
   // Status do WhatsApp no topo — pinta a bolinha (verde/vermelha) e popula o
-  // tooltip com o número conectado. Atualiza a cada 30s pra refletir
-  // reconexões/desconexões. Sem texto "on/off" exibido — só a bolinha.
+  // tooltip com o número conectado. A tela publica alterações imediatamente;
+  // consultas a cada 30s acompanham a conexão nas outras telas.
   var waChip = document.querySelector('[data-wa-chip]') as HTMLElement;
   const waQueryKey = queryScope + ':whatsapp';
   let waState: WhatsappIndicator = whatsappSnapshots.get(waQueryKey)
@@ -384,70 +385,96 @@ window.__gestorInitShell = function () {
   //  - Refetch imediato em visibilitychange/focus/pageshow — cobre o caso
   //    do user voltar pra aba/app depois de ficar em outro app.
   var waFetchInflight = false;
+  let waRevision = 0;
+  function pintarWaChip(s) {
+    // Erros e respostas incompletas não confirmam uma desconexão.
+    const snapshot = whatsappSnapshots.get(waQueryKey);
+    waState =
+      s.disconnectedByUser === true
+        ? { connected: false, disconnectedChecks: 2, deviceId: s.deviceId }
+        : snapshot?.response === s
+          ? snapshot.indicator
+          : advanceWhatsappIndicator(snapshot?.indicator || waState, s);
+    whatsappSnapshots.set(waQueryKey, { indicator: waState, response: s });
+    if (waState.disconnectedChecks === 1)
+      setTimeout(() => atualizarWaChip(true), 1500);
+    const connected = waState.connected;
+    if (connected === undefined) {
+      waChip.classList.remove('is-on', 'is-off');
+      waChip.title = 'Verificando a conexão do WhatsApp';
+      waChip.setAttribute('aria-label', waChip.title);
+      return;
+    }
+    waChip.classList.toggle('is-on', connected);
+    waChip.classList.toggle('is-off', !connected);
+    if (
+      s.connected === true ||
+      s.status === 'conectado' ||
+      waState.disconnectedChecks >= 2
+    )
+      try {
+        sessionStorage.setItem(
+          waChip.dataset.waStateKey,
+          JSON.stringify({
+            connected,
+            at: Date.now(),
+            deviceId: waState.deviceId,
+          }),
+        );
+      } catch (e) {}
+    if (connected && s.number) {
+      var fmt = formatarNumeroWa(s.number);
+      waChip.title =
+        'WhatsApp conectado: ' + fmt + (s.pushName ? ' · ' + s.pushName : '');
+    } else if (connected) {
+      waChip.title = 'WhatsApp conectado';
+    } else {
+      waChip.title = 'WhatsApp desconectado — clique pra conectar';
+    }
+    waChip.setAttribute('aria-label', waChip.title);
+  }
+  function receberEstadoWa(event) {
+    const snapshot = event.detail;
+    if (
+      !waChip ||
+      snapshot?.key !== waChip.dataset.waStateKey ||
+      !snapshot.state
+    )
+      return;
+    waRevision++;
+    // Substitui o cache para que uma consulta já em andamento não o sobrescreva.
+    shellReads.set(waQueryKey, { at: Date.now(), value: snapshot.state });
+    pintarWaChip(snapshot.state);
+  }
+  on(document, WHATSAPP_STATE_EVENT, receberEstadoWa);
+  // O cartão pode terminar sua primeira consulta antes de o shell carregar.
+  const recentSnapshot = window.__gestorWhatsappSnapshot;
+  if (
+    recentSnapshot &&
+    Date.now() - recentSnapshot.at >= 0 &&
+    Date.now() - recentSnapshot.at < 15000
+  )
+    receberEstadoWa({ detail: recentSnapshot });
   function atualizarWaChip(refresh: boolean | Event = false) {
     if (!waChip || waFetchInflight || !window.gestorPolling.canFetch())
       return Promise.resolve();
     waFetchInflight = true;
+    const revision = waRevision;
     return readShellStatus(
       waQueryKey,
       '/whatsapp/status',
       refresh ? 1000 : 30000,
     )
       .then(function (s) {
-        if (lifecycle.signal.aborted) return;
+        if (lifecycle.signal.aborted || revision !== waRevision) return;
         if (!s) {
           waState = { ...waState, disconnectedChecks: 0 };
           return;
         }
-        // Erros e respostas incompletas não confirmam uma desconexão.
-        const snapshot = whatsappSnapshots.get(waQueryKey);
-        waState =
-          snapshot?.response === s
-            ? snapshot.indicator
-            : advanceWhatsappIndicator(snapshot?.indicator || waState, s);
-        whatsappSnapshots.set(waQueryKey, { indicator: waState, response: s });
-        if (waState.disconnectedChecks === 1)
-          setTimeout(() => atualizarWaChip(true), 1500);
-        const connected = waState.connected;
-        if (connected === undefined) {
-          waChip.classList.remove('is-on', 'is-off');
-          waChip.title = 'Verificando a conexão do WhatsApp';
-          waChip.setAttribute('aria-label', waChip.title);
-          return;
-        }
-        waChip.classList.toggle('is-on', connected);
-        waChip.classList.toggle('is-off', !connected);
-        if (
-          s.connected === true ||
-          s.status === 'conectado' ||
-          waState.disconnectedChecks >= 2
-        )
-          try {
-            sessionStorage.setItem(
-              waChip.dataset.waStateKey,
-              JSON.stringify({
-                connected: connected,
-                at: Date.now(),
-                deviceId: waState.deviceId,
-              }),
-            );
-          } catch (e) {}
-        if (connected && s.number) {
-          var fmt = formatarNumeroWa(s.number);
-          waChip.title =
-            'WhatsApp conectado: ' +
-            fmt +
-            (s.pushName ? ' · ' + s.pushName : '');
-          waChip.setAttribute('aria-label', 'WhatsApp conectado em ' + fmt);
-        } else if (connected) {
-          waChip.title = 'WhatsApp conectado';
-        } else {
-          waChip.title = 'WhatsApp desconectado — clique pra conectar';
-        }
-        waChip.setAttribute('aria-label', waChip.title);
+        pintarWaChip(s);
       })
       .catch(function () {
-        if (lifecycle.signal.aborted) return;
+        if (lifecycle.signal.aborted || revision !== waRevision) return;
         waState = { ...waState, disconnectedChecks: 0 };
         /* rede off — nao mexe no estado, evita falso "desconectado" */
       })

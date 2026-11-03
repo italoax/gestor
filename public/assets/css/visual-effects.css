@@ -497,14 +497,7 @@ html.fx-paused {
   scroll-behavior: auto !important;
 }
 .fx-paused
-  :is(
-    .fx-backdrop span,
-    .fx-enter,
-    .hero h1 em,
-    .faq-list details p,
-    .modal,
-    .client-dialog
-  ),
+  :is(.fx-backdrop span, .fx-enter, .hero h1 em, .faq-list details p, .modal),
 .fx-paused .button::after {
   animation: none !important;
 }

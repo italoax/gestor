@@ -229,10 +229,6 @@ h2 {
   font-weight: 600;
   margin: 0 0 20px;
 }
-.portal-actions {
-  display: grid;
-  gap: 12px;
-}
 .portal-footer {
   padding: 24px 0;
   border-top: 1px solid var(--line);

@@ -32,7 +32,6 @@
   --purple: var(--primary);
   --tint: 255, 255, 255;
   --surf-a: 10, 10, 10;
-  --surf-b: 10, 10, 10;
   --accent-rgb: 204, 152, 235;
   --focus: #cc98eb;
   --chart-1: #cba0ec;
@@ -48,12 +47,8 @@
   --radius-card: 14px;
   --radius-control: 10px;
   --radius-dialog: 18px;
-  --space-1: 4px;
-  --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
   --ui-section-gap: var(--space-4);
   --ui-card-gap: var(--space-4);
   --ui-control-gap: var(--space-3);
@@ -79,7 +74,6 @@
   --text: #f1f3f8;
   --muted: #b5bdcb;
   --surf-a: 29, 32, 39;
-  --surf-b: 29, 32, 39;
   --chart-grid: #414956;
   --chart-map-low: #283a4b;
   --map-empty: #333b48;
@@ -108,7 +102,6 @@
   --info: #2457a4;
   --tint: 25, 34, 50;
   --surf-a: 255, 255, 255;
-  --surf-b: 255, 255, 255;
   --accent-rgb: 120, 51, 147;
   --focus: #783393;
   --chart-1: #783393;
@@ -345,9 +338,7 @@
   background: var(--button-success);
   color: #fff;
 }
-:root[data-theme]
-  .page-app
-  :is(.topbar-avatar, .admin-tab.active, .panel-notice-primary) {
+:root[data-theme] .page-app :is(.topbar-avatar, .panel-notice-primary) {
   background: var(--button-primary);
   color: var(--on-primary);
   border-color: var(--button-primary);
@@ -385,7 +376,6 @@
     .account-menu,
     .notif-panel,
     .cli-menu-pop,
-    .dropdown-menu,
     [role='tooltip']
   ) {
   background: var(--surface-2);
@@ -441,9 +431,7 @@
   border-color: var(--border);
   background-image: none;
 }
-:root[data-theme]
-  .page-app
-  :is(.muted, .text-muted, .empty-state p, .loading-state) {
+:root[data-theme] .page-app :is(.muted, .empty-state p) {
   color: var(--muted);
 }
 
@@ -476,10 +464,10 @@
   background: var(--surface-2);
   border-color: var(--border);
 }
-:root[data-theme] .page-app :is(.pos, .text-success) {
+:root[data-theme] .page-app :is(.pos) {
   color: var(--success);
 }
-:root[data-theme] .page-app :is(.neg, .text-danger) {
+:root[data-theme] .page-app :is(.neg) {
   color: var(--danger);
 }
 :root[data-theme] .page-app .panel-notice[data-state='info'] {
