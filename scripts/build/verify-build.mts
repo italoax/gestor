@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { projectRoot } from '../../src/config/paths.ts';
 import { verifyPublicAssets } from '../check/check-public-assets.mts';
+import { stylesheetSources } from './build-styles.mts';
 if (
   ![
     'apps/web/.next/BUILD_ID',
@@ -19,3 +20,11 @@ if (
   );
 }
 verifyPublicAssets();
+for (const source of stylesheetSources(
+  path.join(projectRoot, 'public/assets/css'),
+)) {
+  if (!existsSync(source.replace(/\.css$/, '.min.css')))
+    throw new Error(
+      'CSS de produção ausente. Execute npm run build antes de iniciar o gestor.',
+    );
+}

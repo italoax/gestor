@@ -14,8 +14,7 @@ export class PlansService {
     await this.store.seedPlans(userId);
     const planos = await this.store.dependencies.queryRows(
       `SELECT p.id, p.nome, COALESCE(contagem.clientes, 0) AS clientes,
-              p.tipo, p.periodo, p.observacao, p.credito_gastos AS creditos, p.ativo,
-              p.sigma_package_id AS sigmaPackageId, p.sigma_connections AS sigmaConnections
+              p.tipo, p.periodo, p.observacao, p.credito_gastos AS creditos, p.ativo
          FROM planos p
          LEFT JOIN (
            SELECT user_id, TRIM(plano) AS plano, COUNT(*) AS clientes
@@ -76,8 +75,6 @@ export class PlansService {
         creditoGastos: toNumber(body.creditos, 0),
         observacao: toNullableString(body.observacao),
         ativo: boolField(body.ativo),
-        sigmaPackageId: toNullableString(body.sigma_package_id),
-        sigmaConnections: toNumber(body.sigma_connections, 1),
       };
       // Não substituir entradas inválidas por valores padrão durante a validação.
       data.periodo = Number(String(body.periodo ?? '').trim() || NaN);
@@ -85,9 +82,6 @@ export class PlansService {
         String(body.creditos ?? '')
           .trim()
           .replace(',', '.') || NaN,
-      );
-      data.sigmaConnections = Number(
-        String(body.sigma_connections ?? '1').trim() || NaN,
       );
       if (!data.nome || data.nome.length > 120)
         return reject('Informe um nome de plano com até 120 caracteres.');
@@ -110,16 +104,6 @@ export class PlansService {
         return reject(
           'Informe créditos maiores ou iguais a zero, com até duas casas decimais.',
         );
-      if (
-        !Number.isInteger(data.sigmaConnections) ||
-        data.sigmaConnections < 1 ||
-        data.sigmaConnections > 2147483647
-      )
-        return reject(
-          'Informe uma quantidade inteira de conexões maior que zero.',
-        );
-      if ((data.sigmaPackageId?.length || 0) > 120)
-        return reject('O ID do pacote Sigma deve ter até 120 caracteres.');
       const duplicado = await this.store.dependencies.queryOne(
         'SELECT id FROM planos WHERE user_id = :userId AND TRIM(nome) = :nome AND id <> :id LIMIT 1',
         { userId, nome: data.nome, id: action === 'create_plano' ? 0 : id },
@@ -127,7 +111,7 @@ export class PlansService {
       if (duplicado) return reject('Já existe um plano com esse nome.');
       if (action === 'update_plano') {
         await this.store.dependencies.execute(
-          `UPDATE planos SET nome = :nome, tipo = :tipo, periodo = :periodo, credito_gastos = :creditoGastos, observacao = :observacao, ativo = :ativo, sigma_package_id = :sigmaPackageId, sigma_connections = :sigmaConnections WHERE id = :id AND user_id = :userId`,
+          `UPDATE planos SET nome = :nome, tipo = :tipo, periodo = :periodo, credito_gastos = :creditoGastos, observacao = :observacao, ativo = :ativo WHERE id = :id AND user_id = :userId`,
           data,
         );
         if (atual?.nome)
@@ -140,7 +124,7 @@ export class PlansService {
         return { type: 'success', message: 'Plano atualizado.' };
       } else {
         await this.store.dependencies.execute(
-          `INSERT INTO planos (user_id, nome, tipo, periodo, credito_gastos, clientes, observacao, ativo, sigma_package_id, sigma_connections) VALUES (:userId, :nome, :tipo, :periodo, :creditoGastos, 0, :observacao, :ativo, :sigmaPackageId, :sigmaConnections)`,
+          `INSERT INTO planos (user_id, nome, tipo, periodo, credito_gastos, clientes, observacao, ativo) VALUES (:userId, :nome, :tipo, :periodo, :creditoGastos, 0, :observacao, :ativo)`,
           data,
         );
         return { type: 'success', message: 'Plano criado.' };

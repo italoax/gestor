@@ -34,7 +34,7 @@ export function createPortalWorkflow({
       crypto.createHash('sha256').update(b).digest(),
     );
   const fields =
-    'id, user_id, nome, user, vencimento, hora_vencimento, plano, valor, telas, servidor, sigma_customer_id, plano_adicional, status, aplicativo, senha, pagamento_token, pagamento_curto';
+    'id, user_id, nome, user, vencimento, hora_vencimento, plano, valor, telas, servidor, plano_adicional, status, aplicativo, senha, pagamento_token, pagamento_curto';
   return {
     loginPage: (input) =>
       workflowResult(input, async (reply) => {

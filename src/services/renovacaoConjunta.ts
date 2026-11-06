@@ -67,9 +67,6 @@ export async function validarPlanoAdicional(body, userId, anterior) {
     user: String(body.adicional_user || '')
       .trim()
       .slice(0, 120),
-    idPainel: String(body.adicional_id_painel || '')
-      .trim()
-      .slice(0, 120),
   };
 }
 export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
@@ -191,7 +188,6 @@ export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
               servidor: cliente.servidor,
               telas: cliente.telas,
               vencimento: cliente.vencimento,
-              idPainel: cliente.sigma_customer_id || '',
             }
           : adicional?.id === item.chave
             ? adicional
@@ -200,8 +196,7 @@ export async function renovarPlanosDoCliente(userId, clienteId, pedido) {
         !atual ||
         atual.plano !== item.plano ||
         atual.servidor !== item.servidor ||
-        Number(atual.telas) !== Number(item.telas) ||
-        (atual.idPainel || '') !== (item.idPainel || '')
+        Number(atual.telas) !== Number(item.telas)
       )
         throw new CreditosError(
           'O cadastro de um plano mudou após a cobrança. Confira o pagamento antes de renovar.',

@@ -40,7 +40,7 @@ export function createPaymentWorkflow({
   async function clienteByToken(token) {
     if (!token || token.length < 16) return null;
     return queryOne(
-      `SELECT id, user_id AS userId, nome, user, telas, servidor, sigma_customer_id, plano_adicional, hora_vencimento AS horaVencimento, telefone, plano, valor, vencimento,
+      `SELECT id, user_id AS userId, nome, user, telas, servidor, plano_adicional, hora_vencimento AS horaVencimento, telefone, plano, valor, vencimento,
             pagamento_token AS pagamentoToken
        FROM clientes
       WHERE pagamento_token = :token AND arquivado = 0

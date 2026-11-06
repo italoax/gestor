@@ -78,8 +78,6 @@
           data-observacao="<%= p.observacao || '' %>"
           data-creditos="<%= Number(p.creditos || 0) %>"
           data-ativo="<%= p.ativo ? 1 : 0 %>"
-          data-sigma-package-id="<%= p.sigmaPackageId || '' %>"
-          data-sigma-connections="<%= p.sigmaConnections || 1 %>"
           ><%- include('../partials/ui-icon', { name: 'edit' }) %>
           Editar</button
         >
@@ -125,8 +123,6 @@
       <input type="hidden" name="action" value="create_plano" />
       <input type="hidden" name="id" value="" />
       <input type="hidden" name="observacao" value="" />
-      <input type="hidden" name="sigma_package_id" value="" />
-      <input type="hidden" name="sigma_connections" value="1" />
       <div class="form-grid">
         <label class="field full"
           ><span>Nome do plano *</span

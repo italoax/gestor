@@ -122,7 +122,6 @@ export function useClientForm() {
       'telas',
       'vencimento',
       'user',
-      'id_painel',
       'aplicativo',
       'dispositivo',
     ])
@@ -187,7 +186,6 @@ export function useClientForm() {
       valor: 'valor',
       telas: 'telas',
       forma_pagamento: 'formaPagamento',
-      id_painel: 'idPainel',
       email: 'email',
       captacao: 'captacao',
       aniversario: 'aniversario',
@@ -198,7 +196,6 @@ export function useClientForm() {
       data_inicio: 'dataInicio',
       hora_vencimento: 'horaVencimento',
       pontos_fidelidade: 'pontos',
-      sigma_customer_id: 'sigmaCustomerId',
       dispositivo: 'dispositivo',
       aplicativo: 'aplicativo',
     };
@@ -229,14 +226,12 @@ export function useClientForm() {
         'telas',
         'vencimento',
         'user',
-        'id_painel',
         'aplicativo',
         'dispositivo',
       ])
         setField(
           'adicional_' + name,
-          extra[name === 'id_painel' ? 'idPainel' : name] ??
-            (name === 'telas' ? 1 : ''),
+          extra[name] ?? (name === 'telas' ? 1 : ''),
         );
     } else clearAdditional();
     setServers(selected.filter(Boolean));
@@ -276,7 +271,6 @@ export function useClientForm() {
           'valor',
           'telas',
           'user',
-          'id_painel',
           'aplicativo',
           'dispositivo',
           'vencimento',

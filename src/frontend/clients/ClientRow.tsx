@@ -1,4 +1,5 @@
 ﻿import { Icon, CsrfInput, StatusBadge } from './ui.tsx';
+import { memo } from 'react';
 import {
   formatMoney,
   formatDateBr,
@@ -35,36 +36,33 @@ function ExpiryDate({
   );
 }
 
-export function ClientRow({
+type ClientRowProps = {
+  c?: any;
+  planos?: any;
+  servidores?: any;
+  sortNow?: any;
+  selected?: boolean;
+  visible?: boolean;
+  selectRow?: any;
+  csrfToken?: any;
+  verArquivados?: any;
+};
+
+export const ClientRow = memo(function ClientRow({
   c,
   planos,
   servidores,
   sortNow,
   selected,
+  visible,
   selectRow,
-  matches,
   csrfToken,
   verArquivados,
-}: {
-  c?: any;
-  planos?: any;
-  servidores?: any;
-  sortNow?: any;
-  selected?: any;
-  selectRow?: any;
-  matches?: any;
-  csrfToken?: any;
-  verArquivados?: any;
-}) {
+}: ClientRowProps) {
   const cStatus = statusByVencimento(c.status, c.vencimento, sortNow);
-  const servidorAtual = servidores.find((s) => s.nome === c.servidor);
-  const planoAtual = planos.find((p) => p.nome === c.plano);
   return (
     <tr
-      className={[
-        !matches(c) ? 'hidden' : '',
-        selected.has(c.id) ? 'is-selected' : '',
-      ]
+      className={[!visible ? 'hidden' : '', selected ? 'is-selected' : '']
         .filter(Boolean)
         .join(' ')}
       data-search-item=""
@@ -81,7 +79,6 @@ export function ClientRow({
         c.servidor,
         c.aplicativo,
         c.adicional?.aplicativo,
-        c.idPainel,
       ]
         .filter(Boolean)
         .join(' ')}
@@ -94,13 +91,45 @@ export function ClientRow({
       data-sort-vencimento={formatDateInput(c.vencimento)}
       data-sort-status={statusUrgency(c.status, c.vencimento, sortNow)}
     >
+      <ClientRowContent
+        {...{
+          c,
+          planos,
+          servidores,
+          sortNow,
+          selected,
+          selectRow,
+          csrfToken,
+          verArquivados,
+        }}
+      />
+    </tr>
+  );
+});
+
+// Filtering changes the row visibility without rebuilding its cells and actions.
+const ClientRowContent = memo(function ClientRowContent({
+  c,
+  planos,
+  servidores,
+  sortNow,
+  selected,
+  selectRow,
+  csrfToken,
+  verArquivados,
+}: ClientRowProps) {
+  const cStatus = statusByVencimento(c.status, c.vencimento, sortNow);
+  const servidorAtual = servidores.find((s) => s.nome === c.servidor);
+  const planoAtual = planos.find((p) => p.nome === c.plano);
+  return (
+    <>
       <td className="col-check">
         <label className="client-row-select">
           <input
             type="checkbox"
             className="cli-check"
             aria-label={`Selecionar ${c.nome}`}
-            checked={selected.has(c.id)}
+            checked={selected}
             onChange={(event) =>
               selectRow(c.id, (event.target as HTMLInputElement).checked)
             }
@@ -115,33 +144,15 @@ export function ClientRow({
           {c.email || ''}
           {c.telefone}
         </span>
-        {c.idPainel ? (
-          <>
-            <small className="cli-id">
-              {c.idPainel}
-              <button
-                type="button"
-                className="cli-copy"
-                data-copy={c.idPainel}
-                title="Copiar ID"
-              >
-                ⧉
-              </button>
-            </small>
-          </>
-        ) : c.user ? (
-          <>
-            <small>{c.user}</small>
-          </>
-        ) : null}
+        {c.user ? <small>{c.user}</small> : null}
 
         <div className="cli-m">
           <div className="cli-m-head">
             <div className="cli-m-name">
               <strong title={c.nome}>{c.nome}</strong>
-              {c.user || c.idPainel ? (
+              {c.user ? (
                 <>
-                  <small>{c.idPainel || c.user}</small>
+                  <small>{c.user}</small>
                 </>
               ) : null}
             </div>
@@ -163,16 +174,6 @@ export function ClientRow({
                 {formatDateBr(c.vencimento)}
               </time>
             </span>
-          </div>
-          <div className="cli-m-footer">
-            {c.telefone ? (
-              <span className="cli-m-tel">
-                <Icon name="phone" />
-                <span>{c.telefone}</span>
-              </span>
-            ) : (
-              <span className="cli-m-no-contact">Sem WhatsApp</span>
-            )}
           </div>
         </div>
       </td>
@@ -261,7 +262,24 @@ export function ClientRow({
         <StatusBadge status={cStatus} />
       </td>
       <td className="col-acoes">
-        <div className="cli-acoes">
+        <div className="cli-m-footer">
+          {c.telefone ? (
+            <span className="cli-m-tel">
+              <Icon name="whatsapp" />
+              <span className="cli-m-contact-text">
+                <small>WhatsApp</small>
+                <span>{c.telefone}</span>
+              </span>
+            </span>
+          ) : (
+            <span className="cli-m-no-contact">Sem WhatsApp</span>
+          )}
+        </div>
+        <div
+          className="cli-acoes"
+          role="group"
+          aria-label={`Ações de ${c.nome}`}
+        >
           <button
             className={`cli-ico-btn ${c.adicional ? 'open-multi-payment' : 'open-payment'}`}
             type="button"
@@ -281,7 +299,8 @@ export function ClientRow({
             data-valor-cred={servidorAtual?.valorCred || 0}
             data-hora={c.horaVencimento || '23:59'}
           >
-            ↻
+            <Icon name="renew" />
+            <span className="cli-renew-label">Renovar</span>
           </button>
           <div className="cli-menu">
             <button
@@ -401,7 +420,6 @@ export function ClientRow({
               data-telas={c.telas}
               data-creditos={c.creditosGastos || 0}
               data-forma-pagamento={c.formaPagamento || ''}
-              data-id-painel={c.idPainel || ''}
               data-email={c.email || ''}
               data-captacao={c.captacao || ''}
               data-aniversario={formatDateInput(c.aniversario)}
@@ -414,7 +432,6 @@ export function ClientRow({
               data-dispositivo={c.dispositivo || ''}
               data-aplicativo={c.aplicativo || ''}
               data-pontos={c.pontosFidelidade || 0}
-              data-sigma-customer-id={c.sigmaCustomerId || ''}
             ></button>
             <form
               method="post"
@@ -450,6 +467,6 @@ export function ClientRow({
           </div>
         </div>
       </td>
-    </tr>
+    </>
   );
-}
+});

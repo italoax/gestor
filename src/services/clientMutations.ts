@@ -1,6 +1,10 @@
 // Fluxo de negocio compartilhado pelos controllers Nest e pela entrada Express.
 // As dependencias sao injetadas; importar este modulo nao abre banco ou servicos.
 import { protectIptvPassword } from '../security/storedSecrets.ts';
+import {
+  prepareMessageAttachment,
+  type MessageAttachmentFile,
+} from './messageAttachment.ts';
 export function createClientMutationWorkflow({
   crypto,
   execute,
@@ -19,8 +23,6 @@ export function createClientMutationWorkflow({
   consumoRenovacao,
   debitarCreditos,
   verificarCreditosServidor,
-  decryptSecret,
-  sigmaLoginAndRenew,
   lerPlanoAdicional,
   renovarPlanosDoCliente,
   validarPlanoAdicional,
@@ -146,7 +148,12 @@ export function createClientMutationWorkflow({
     }
   }
 
-  async function mutateClient(userId, body, sendMessage) {
+  async function mutateClient(
+    userId,
+    body,
+    sendMessage,
+    file?: MessageAttachmentFile,
+  ) {
     const notices = [];
     const flash = (type, message) => notices.push({ type, message });
     const redirect = (path) => ({ redirect: path, notices });
@@ -229,41 +236,6 @@ export function createClientMutationWorkflow({
         });
         if (!resultado.duplicado) {
           await verificarCreditosServidor(userId, '', 0, 0);
-          for (const item of resultado.itens) {
-            if (!item.idPainel) continue;
-            try {
-              const planoMap = await queryOne(
-                'SELECT sigma_package_id AS packageId, sigma_connections AS connections FROM planos WHERE user_id = :userId AND nome = :nome',
-                { userId, nome: item.plano },
-              );
-              const integ = await queryOne(
-                "SELECT api_url AS apiUrl, username, senha_enc AS senhaEnc FROM integracoes WHERE user_id = :userId AND tipo = 'sigma' AND status = 'ativo' ORDER BY id LIMIT 1",
-                { userId },
-              );
-              if (!planoMap?.packageId || !integ)
-                throw new Error(
-                  'Configure a integração Sigma e o ID do pacote do plano.',
-                );
-              for (let i = 0; i < Number(body.periodos); i++) {
-                const r = await sigmaLoginAndRenew(
-                  {
-                    apiUrl: integ.apiUrl,
-                    username: integ.username,
-                    password: decryptSecret(integ.senhaEnc || '', userId),
-                  },
-                  item.idPainel,
-                  planoMap.packageId,
-                  Number(planoMap.connections) || 1,
-                );
-                if (!r.ok) throw new Error(r.error || 'Falha no painel.');
-              }
-            } catch (error) {
-              flash(
-                'modal-error',
-                `${item.plano}: salvo no gestor, mas confira a renovação no Sigma. ${error instanceof Error ? error.message : String(error)}`,
-              );
-            }
-          }
         }
         flash(
           'modal-success',
@@ -450,68 +422,7 @@ export function createClientMutationWorkflow({
           saldo.antes,
           saldo.depois,
         );
-        // Integração Sigma: se o cliente estiver vinculado (sigma_customer_id) e
-        // houver integração Sigma ativa + plano mapeado (sigma_package_id), renova
-        // também no painel externo. Falha aqui NÃO derruba a renovação local —
-        // só avisa (o painel pode estar bloqueado por Cloudflare, senha errada, etc).
-        let sigmaOk = false;
-        try {
-          const cliMap = await queryOne(
-            'SELECT sigma_customer_id AS sigmaCustomerId FROM clientes WHERE id = :id AND user_id = :userId LIMIT 1',
-            { id, userId },
-          );
-          const customerId = String(cliMap?.sigmaCustomerId ?? '').trim();
-          if (customerId) {
-            const planoMap = await queryOne(
-              'SELECT sigma_package_id AS sigmaPackageId, sigma_connections AS sigmaConnections FROM planos WHERE nome = :nome AND user_id = :userId LIMIT 1',
-              { nome: plano, userId },
-            );
-            const packageId = String(planoMap?.sigmaPackageId ?? '').trim();
-            const integ = await queryOne(
-              "SELECT api_url AS apiUrl, username, senha_enc AS senhaEnc FROM integracoes WHERE user_id = :userId AND tipo = 'sigma' AND status = 'ativo' ORDER BY id ASC LIMIT 1",
-              { userId },
-            );
-            if (packageId && integ) {
-              const r = await sigmaLoginAndRenew(
-                {
-                  apiUrl: integ.apiUrl,
-                  username: integ.username,
-                  password: decryptSecret(String(integ.senhaEnc ?? ''), userId),
-                },
-                customerId,
-                packageId,
-                Number(planoMap?.sigmaConnections) || 1,
-              );
-              if (r.ok) sigmaOk = true;
-              else
-                flash(
-                  'modal-error',
-                  `Renovado no gestor, mas falhou no painel Sigma: ${r.error}`,
-                );
-            } else if (!integ) {
-              flash(
-                'modal-error',
-                'Cliente vinculado ao Sigma, mas não há integração Sigma ativa (veja Integrações).',
-              );
-            } else {
-              flash(
-                'modal-error',
-                'Cliente vinculado ao Sigma, mas o plano não tem package_id (edite o Plano).',
-              );
-            }
-          }
-        } catch (e) {
-          flash(
-            'modal-error',
-            `Erro ao renovar no painel Sigma: ${e instanceof Error ? e.message : String(e)}`,
-          );
-        }
-        flash(
-          'modal-success',
-          sigmaOk
-            ? 'Pagamento registrado com sucesso e acesso renovado no painel Sigma.'
-            : 'Pagamento registrado com sucesso.',
-        );
+        flash('modal-success', 'Pagamento registrado com sucesso.');
         if (mensagemPagamentoId)
           flash('modal-success', 'Mensagem enviada ao cliente pelo WhatsApp.');
         return redirect('/clientes');
@@ -543,7 +454,17 @@ export function createClientMutationWorkflow({
         const mediaTipo = String(body.media_tipo ?? '')
           .trim()
           .toLowerCase();
-        const mediaUrl = String(body.media_url ?? '').trim();
+        const attachment = file
+          ? prepareMessageAttachment(file, mediaTipo)
+          : null;
+        if (attachment && 'error' in attachment) {
+          flash('modal-error', attachment.error);
+          return redirect('/clientes');
+        }
+        if (mediaTipo && !attachment) {
+          flash('modal-error', 'Selecione o arquivo do anexo.');
+          return redirect('/clientes');
+        }
         let texto = String(body.mensagem_texto ?? '').trim();
         const cliente = (
           await queryRows(
@@ -565,7 +486,7 @@ export function createClientMutationWorkflow({
           )[0];
           texto = String(tpl?.mensagem ?? '').trim();
         }
-        if (!texto && !mediaUrl) {
+        if (!texto && !attachment) {
           flash('modal-error', 'Digite uma mensagem ou anexe uma mídia.');
           return redirect('/clientes');
         }
@@ -574,8 +495,8 @@ export function createClientMutationWorkflow({
           cliente,
           {
             mensagem: texto,
-            mediaTipo: mediaUrl ? mediaTipo || 'image' : null,
-            mediaPath: mediaUrl || null,
+            mediaTipo: attachment?.type || null,
+            mediaPath: attachment?.dataUrl || null,
           },
           undefined,
           await getPixConfig(userId),
@@ -633,7 +554,6 @@ export function createClientMutationWorkflow({
         observacaoPagamento: toNullableString(body.observacao_pagamento),
         // Campos novos (aba Dados/Plano do modelo)
         senha: protectIptvPassword(toNullableString(body.senha), userId),
-        idPainel: toNullableString(body.id_painel),
         email: toNullableString(body.email),
         captacao: toNullableString(body.captacao),
         aniversario: toNullableString(body.aniversario),
@@ -647,11 +567,6 @@ export function createClientMutationWorkflow({
         enviarBoasVindas: boolField(body.enviar_boas_vindas),
         dispositivo: toNullableString(body.dispositivo),
         aplicativo: toNullableString(body.aplicativo),
-        // O form tem UM campo de ID do painel; o schema tem duas colunas (id_painel
-        // e sigma_customer_id) por histórico, guardando a mesma informação. Espelha
-        // aqui: id_painel alimenta a listagem, sigmaCustomerId é o que a renovação
-        // no painel Sigma consulta.
-        sigmaCustomerId: toNullableString(body.id_painel),
       };
       if (
         !data.nome ||
@@ -717,12 +632,12 @@ export function createClientMutationWorkflow({
              forma_pagamento = COALESCE(:formaPagamento, forma_pagamento),
              custo_pagamento = COALESCE(:custoPagamentoOrNull, custo_pagamento),
              observacao_pagamento = COALESCE(:observacaoPagamento, observacao_pagamento),
-             senha = IF(:limparSenha = 1, NULL, COALESCE(:senha, senha)), id_painel = COALESCE(:idPainel, id_painel), email = COALESCE(:email, email), captacao = :captacao,
+             senha = IF(:limparSenha = 1, NULL, COALESCE(:senha, senha)), email = COALESCE(:email, email), captacao = :captacao,
              telefone_secundario = :telefoneSecundario, observacoes = :observacoes, data_inicio = :dataInicio,
              hora_vencimento = :horaVencimento,
              pontos_fidelidade = COALESCE(:pontosFidelidadeOrNull, pontos_fidelidade),
              dispositivo = :dispositivo, aplicativo = :aplicativo,
-             sigma_customer_id = COALESCE(:sigmaCustomerId, sigma_customer_id), plano_adicional = :planoAdicional
+             plano_adicional = :planoAdicional
           WHERE id = :id AND user_id = :userId`,
             {
               ...data,
@@ -815,14 +730,14 @@ export function createClientMutationWorkflow({
           const [novo] = await conn.execute(
             `INSERT INTO clientes (user_id, nome, user, telefone, vencimento, plano, valor, status, servidor, telas,
                creditos_gastos, pago_em, valor_pago, forma_pagamento, custo_pagamento, observacao_pagamento,
-               senha, id_painel, email, captacao, aniversario, link_m3u, time_cliente, telefone_secundario,
+               senha, email, captacao, aniversario, link_m3u, time_cliente, telefone_secundario,
                observacoes, data_inicio, hora_vencimento, pontos_fidelidade,
-               enviar_boas_vindas, dispositivo, aplicativo, sigma_customer_id, pagamento_token, plano_adicional)
+               enviar_boas_vindas, dispositivo, aplicativo, pagamento_token, plano_adicional)
            VALUES (:userId, :nome, :user, :telefone, :vencimento, :plano, :valor, :status, :servidor, :telas,
                :creditosGastos, :pagoEm, :valorPago, :formaPagamento, :custoPagamento, :observacaoPagamento,
-               :senha, :idPainel, :email, :captacao, :aniversario, :linkM3u, :timeCliente, :telefoneSecundario,
+               :senha, :email, :captacao, :aniversario, :linkM3u, :timeCliente, :telefoneSecundario,
                :observacoes, :dataInicio, :horaVencimento, :pontosFidelidade,
-               :enviarBoasVindas, :dispositivo, :aplicativo, :sigmaCustomerId, :pagamentoToken, :planoAdicional)`,
+               :enviarBoasVindas, :dispositivo, :aplicativo, :pagamentoToken, :planoAdicional)`,
             { ...data, planoAdicional },
           );
           if (registrarPagamento && adicional) {
@@ -964,8 +879,8 @@ export function createClientMutationWorkflow({
       throw error;
     }
   }
-  return (userId, body) =>
+  return (userId, body, file?: MessageAttachmentFile) =>
     runClientOperation(userId, body, (sendMessage) =>
-      mutateClient(userId, body, sendMessage),
+      mutateClient(userId, body, sendMessage, file),
     );
 }

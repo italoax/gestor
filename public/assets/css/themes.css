@@ -562,16 +562,6 @@
   height: 20px;
   pointer-events: none;
 }
-.login-theme-control {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top, 0px));
-  right: calc(16px + env(safe-area-inset-right, 0px));
-  z-index: 5;
-}
-:root[data-theme] .login-page .login-shell {
-  position: relative;
-  padding-top: max(80px, calc(24px + env(safe-area-inset-top, 0px)));
-}
 :root[data-theme] .login-page :is(.login-grid, .login-card) {
   background: var(--surface);
   border-color: var(--border);

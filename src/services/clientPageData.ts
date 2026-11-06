@@ -1,5 +1,11 @@
 // Dados compartilhados pelas páginas de clientes em Next e EJS.
+import { minifiedStylePath } from '../shared/assetPaths.ts';
+
 const privateFields = new Set([
+  'idPainel',
+  'id_painel',
+  'sigmaCustomerId',
+  'sigma_customer_id',
   'senha',
   'senha_enc',
   'senhaEnc',
@@ -67,6 +73,11 @@ export function createClientPageData(
       noticeSuccess: locals.noticeSuccess || [],
       noticeError: locals.noticeError || [],
       csrfToken: locals.csrfToken || '',
+      clientStylesheet:
+        locals.assetUrl?.('/assets/css/native-clients.css') ||
+        (process.env.NODE_ENV === 'production'
+          ? minifiedStylePath('/assets/css/native-clients.css')
+          : '/assets/css/native-clients.css'),
       releaseNoticeLoginId: locals.releaseNoticeLoginId || undefined,
       sessionExpiresAt: Number.isFinite(locals.sessionExpiresAt)
         ? locals.sessionExpiresAt

@@ -1,5 +1,6 @@
 import { CsrfInput, Icon } from './ui.tsx';
 import { PanelNotice } from '../../../apps/web/components/ui/PanelNotice.tsx';
+import { DateInput } from '../components/DateInput.tsx';
 import { opcoesRenovacao } from '../../services/renovacaoOpcoes.ts';
 import { formatMoney } from '../../services/format.ts';
 
@@ -401,9 +402,8 @@ export function RenewalModals({
                 label="Pago em"
                 error={singleErrors.pago_em}
               >
-                <input
+                <DateInput
                   {...props('pago_em', 'single', 'input', false)}
-                  type="text"
                   placeholder="dd/mm/aaaa"
                   inputMode="numeric"
                   autoComplete="off"
@@ -437,9 +437,8 @@ export function RenewalModals({
                 label="Vencimento *"
                 error={singleErrors.vencimento}
               >
-                <input
+                <DateInput
                   {...props('vencimento')}
-                  type="text"
                   placeholder="dd/mm/aaaa"
                   inputMode="numeric"
                   autoComplete="off"
@@ -618,9 +617,8 @@ export function RenewalModals({
                             label="Vencimento *"
                             error={multiErrors[dateName]}
                           >
-                            <input
+                            <DateInput
                               {...props(dateName, 'multi')}
-                              type="text"
                               placeholder="dd/mm/aaaa"
                               inputMode="numeric"
                               autoComplete="off"

@@ -36,7 +36,10 @@ export function ClientsPage({
       }}
       onSubmit={clientForm.onPageSubmit}
     >
-      <link rel="stylesheet" href="/assets/css/native-clients.css" />
+      <link
+        rel="stylesheet"
+        href={data?.clientStylesheet || '/assets/css/native-clients.css'}
+      />
       <ClientsList {...data} />
       <ClientsModals {...data} clientForm={clientForm} />
       <RenewalModals {...data} renewal={renewal} />

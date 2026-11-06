@@ -19,8 +19,6 @@ import {
   debitarCreditos,
 } from '../services/creditos.ts';
 import { verificarCreditosServidor } from '../services/autoRenovacao.ts';
-import { decryptSecret } from '../services/crypto.ts';
-import { sigmaLoginAndRenew } from '../services/sigma.ts';
 import { lerPlanoAdicional } from '../services/renovacaoOpcoes.ts';
 import {
   renovarPlanosDoCliente,
@@ -51,8 +49,6 @@ export function createDefaultClientMutationWorkflow() {
     consumoRenovacao,
     debitarCreditos,
     verificarCreditosServidor,
-    decryptSecret,
-    sigmaLoginAndRenew,
     lerPlanoAdicional,
     renovarPlanosDoCliente,
     validarPlanoAdicional,

@@ -14,8 +14,6 @@ const catalogs = {
     'clientes',
     'observacao',
     'ativo',
-    'sigmaPackageId',
-    'sigmaConnections',
   ],
   servidores: [
     'id',
@@ -175,7 +173,6 @@ export function nativePageData(
       'pages/status',
       'pages/dashboard',
       'pages/whatsapp',
-      'pages/integracoes',
       'pages/integracao-pagamento',
       'pages/acessos-clientes',
       'pages/em-breve',
@@ -233,13 +230,6 @@ export function nativePageData(
               ]),
             ),
           })),
-      };
-    if (view === 'pages/integracoes')
-      return {
-        ...base,
-        integracoes: (data.integracoes || []).map((item) =>
-          pick(item, ['id', 'tipo', 'nome', 'apiUrl', 'username', 'status']),
-        ),
       };
     if (view === 'pages/whatsapp')
       return {

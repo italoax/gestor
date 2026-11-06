@@ -80,7 +80,6 @@ export function matchesClientFilters(
         client.servidor,
         client.aplicativo,
         client.adicional?.aplicativo,
-        client.idPainel,
       ]
         .filter(Boolean)
         .join(' '),

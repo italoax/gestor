@@ -1040,8 +1040,20 @@ dialog.catalog-editor[open] {
   width: 17px;
   height: 17px;
 }
-#modal-send-whatsapp .wa-media-url {
+#modal-send-whatsapp .wa-media-file {
   margin-top: 4px;
+  max-width: 100%;
+  cursor: pointer;
+}
+#modal-send-whatsapp .wa-media-file::file-selector-button {
+  margin-right: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
 }
 #modal-send-whatsapp .field-error:empty {
   display: none;

@@ -58,7 +58,6 @@ export const loadSitePage = cache(async () => {
       'pages/status',
       'pages/dashboard',
       'pages/whatsapp',
-      'pages/integracoes',
       'pages/integracao-pagamento',
       'pages/acessos-clientes',
       'pages/area-cliente',

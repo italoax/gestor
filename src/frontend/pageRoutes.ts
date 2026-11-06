@@ -16,7 +16,6 @@ const pages = new Set([
   '/avisos',
   '/transacoes',
   '/whatsapp',
-  '/integracoes',
   '/integracao-pagamento',
   '/minha-conta',
   '/area-cliente',

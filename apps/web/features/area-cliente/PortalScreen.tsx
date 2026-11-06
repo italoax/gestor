@@ -1,6 +1,7 @@
 'use client';
 import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { useEffect, useRef, useState } from 'react';
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
 import { CsrfInput } from '../../../../src/frontend/clients/ui.tsx';
 import { formatDateBr, formatMoney } from '../../../../src/services/format.ts';
 import { useNativeSubmit } from '../../hooks/useNativeSubmit.ts';
@@ -343,7 +344,10 @@ export function PortalScreen({ data }: { data?: any }) {
   ];
   return (
     <>
-      <link rel="stylesheet" href="/assets/css/area-cliente.css" />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/area-cliente.css')}
+      />
       <div className="portal-wrap" data-react-page="area-cliente">
         <header className="portal-header">
           <a className="portal-brand" href="/">

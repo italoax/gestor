@@ -1,5 +1,6 @@
 'use client';
 import { useRef } from 'react';
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
 import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { formatDateBr, formatMoney } from '../../../../src/services/format.ts';
 import { createPix, usePixPayment } from './usePixPayment.ts';
@@ -25,7 +26,10 @@ export function PaymentScreen({ data }: { data?: any }) {
     payer = useRef<HTMLDivElement>(null);
   return (
     <>
-      <link rel="stylesheet" href="/assets/css/native-payment.css" />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/native-payment.css')}
+      />
       <div className="pay-wrap" data-react-page="pagar">
         <div className="pay-card">
           <div className="pay-head">

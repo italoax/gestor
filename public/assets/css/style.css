@@ -1601,8 +1601,10 @@ button.login-link {
 .date-input-wrap {
   position: relative;
   display: block;
+  min-width: 0;
 }
 .date-input-wrap > .input {
+  width: 100%;
   padding-right: 42px;
 }
 .date-input-btn {

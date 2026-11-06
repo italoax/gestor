@@ -1,5 +1,6 @@
 import Script from 'next/script';
 import { loadSitePage } from '../lib/siteBackend.ts';
+import { publicAssetUrl } from '../lib/publicAssets.ts';
 import { LandingContent } from '../features/inicio/LandingContent.tsx';
 
 export const dynamic = 'force-dynamic';
@@ -46,8 +47,14 @@ export default async function Page() {
   const data = await loadSitePage();
   return (
     <>
-      <link rel="stylesheet" href="/assets/css/ix-streaming.css" />
-      <link rel="stylesheet" href="/assets/css/visual-effects.css" />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/ix-streaming.css')}
+      />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/visual-effects.css')}
+      />
       <div
         hidden
         dangerouslySetInnerHTML={{

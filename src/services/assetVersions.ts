@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
+import { minifiedStylePath } from '../shared/assetPaths.ts';
 
 const hash = (content) =>
   createHash('sha256').update(content).digest('hex').slice(0, 16);
 
 // Uma única fonte de versões para o HTML, o manifesto PWA e o service worker.
 // Uploads de clientes e páginas dinâmicas nunca entram no cache do aplicativo.
-export function createAssetVersions(publicRoot) {
+export function createAssetVersions(publicRoot, { minifyStyles = false } = {}) {
   const versions: Record<string, any> = {};
   function collect(directory, prefix = '') {
     for (const entry of readdirSync(directory, { withFileTypes: true }).sort(
@@ -36,6 +37,10 @@ export function createAssetVersions(publicRoot) {
   }
   collect(publicRoot);
   function assetUrl(url) {
+    if (minifyStyles) {
+      const optimized = minifiedStylePath(url);
+      if (versions[optimized.split(/[?#]/)[0]]) url = optimized;
+    }
     const [pathname] = url.split(/[?#]/);
     const version = versions[pathname];
     if (!version) throw new Error('Asset não encontrado: ' + pathname);
@@ -57,7 +62,7 @@ export function createAssetVersions(publicRoot) {
 
   const worker = readFileSync(path.join(publicRoot, 'sw.js'), 'utf8');
   const cacheName = 'gestor-' + hash(JSON.stringify(versions) + worker);
-  const appShell = Object.keys(versions).map(assetUrl);
+  const appShell = [...new Set(Object.keys(versions).map(assetUrl))];
   const workerSource =
     'self.__GESTOR_ASSETS__ = ' +
     JSON.stringify({ cacheName, appShell }) +

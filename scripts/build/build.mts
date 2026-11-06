@@ -19,6 +19,7 @@ const output = new URL('../../dist/', import.meta.url);
 mkdirSync(output, { recursive: true });
 const assets = createAssetVersions(
   fileURLToPath(new URL('../../public/', import.meta.url)),
+  { minifyStyles: true },
 );
 writeFileSync(
   new URL('assets-manifest.json', output),

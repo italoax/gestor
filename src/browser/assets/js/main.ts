@@ -342,7 +342,7 @@ async function initGestor() {
 
   const phone = modules.initPhoneFields({ on });
 
-  const { setDateInputValue } = modules.initDateFields({ setIconLabel });
+  const { setDateInputValue } = modules.initDateFields({ setIconLabel, on });
 
   modules.initTables({ on });
 

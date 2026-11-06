@@ -1,3 +1,9 @@
+import {
+  MAX_MESSAGE_ATTACHMENT_SIZE,
+  messageAttachmentAccept,
+  messageAttachmentFormat,
+} from '../../../../shared/messageAttachments.ts';
+
 window.gestorPageModules = window.gestorPageModules || {};
 window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
   (
@@ -23,21 +29,6 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
       if (nomeEl) nomeEl.textContent = nome || '—';
       const telEl = modal.querySelector('[data-wa-telefone]') as HTMLElement;
       if (telEl) telEl.textContent = tel;
-      // reseta a mídia
-      const mt = form.querySelector('[name="media_tipo"]') as HTMLInputElement;
-      if (mt) mt.value = '';
-      const murl = form.querySelector('.wa-media-url') as HTMLInputElement;
-      if (murl) {
-        murl.hidden = true;
-        murl.disabled = true;
-        murl.value = '';
-      }
-      (
-        form.querySelectorAll('[data-wa-media]') as NodeListOf<HTMLElement>
-      ).forEach((b) => {
-        b.classList.remove('active');
-        b.setAttribute('aria-pressed', 'false');
-      });
       setModalState(modal, true);
     });
   });
@@ -60,12 +51,15 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
     });
   }
 
-  // Botões de Anexar Mídia: define o tipo e mostra o campo de link
+  // Seleciona o tipo de anexo e abre o upload do arquivo.
   const waForm = document.getElementById(
     'modal-send-whatsapp-form',
   ) as HTMLFormElement;
   if (waForm) {
-    const urlInput = waForm.querySelector('.wa-media-url') as HTMLInputElement;
+    const fileInput = waForm.querySelector(
+      '.wa-media-file',
+    ) as HTMLInputElement;
+    const mediaHint = waForm.querySelector('#wa-media-hint') as HTMLElement;
     const tipoInput = waForm.querySelector(
       '[name="media_tipo"]',
     ) as HTMLInputElement;
@@ -82,21 +76,29 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
         : '';
       const hasText = Boolean(waMensagem?.value.trim() || templateText);
       const hasMedia = Boolean(tipoInput?.value);
-      const mediaUrl = hasMedia ? urlInput?.value.trim() : '';
+      const file = hasMedia ? fileInput?.files?.[0] : undefined;
       const messageError =
         !hasText && !hasMedia
           ? 'Digite uma mensagem ou adicione um anexo.'
           : '';
       let mediaError = '';
       if (hasMedia) {
-        if (!mediaUrl) mediaError = 'Informe o link do anexo selecionado.';
-        else if (!urlInput.checkValidity() || !/^https?:\/\//i.test(mediaUrl))
-          mediaError = 'Use um link completo com https:// ou http://.';
+        if (!file) mediaError = 'Selecione o arquivo do anexo.';
+        else if (!file.size)
+          mediaError = 'O arquivo está vazio. Selecione outro anexo.';
+        else if (file.size > MAX_MESSAGE_ATTACHMENT_SIZE)
+          mediaError = 'Arquivo muito grande (máx. 5 MB).';
+        else if (
+          messageAttachmentFormat(file.type, file.name)?.type !==
+          tipoInput.value
+        )
+          mediaError =
+            'O arquivo não corresponde ao tipo de anexo selecionado.';
       }
       setFieldError(waMensagem, 'wa-message-error', messageError);
-      setFieldError(urlInput, 'wa-media-error', mediaError);
+      setFieldError(fileInput, 'wa-media-error', mediaError);
       const error = messageError || mediaError;
-      if (focus && error) (messageError ? waMensagem : urlInput)?.focus();
+      if (focus && error) (messageError ? waMensagem : fileInput)?.focus();
       return !error;
     }
     waForm.addEventListener('submit', (event) => {
@@ -122,7 +124,16 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
     waForm.addEventListener('reset', () => {
       attempted = false;
       setFieldError(waMensagem, 'wa-message-error', '');
-      setFieldError(urlInput, 'wa-media-error', '');
+      setFieldError(fileInput, 'wa-media-error', '');
+      tipoInput.value = '';
+      fileInput.value = '';
+      fileInput.hidden = true;
+      fileInput.disabled = true;
+      if (mediaHint) mediaHint.hidden = true;
+      waForm.querySelectorAll('[data-wa-media]').forEach((button) => {
+        button.classList.remove('active');
+        button.setAttribute('aria-pressed', 'false');
+      });
     });
     (
       waForm.querySelectorAll('[data-wa-media]') as NodeListOf<HTMLElement>
@@ -137,20 +148,25 @@ window.gestorPageModules.initWhatsappMessages = function ({ setModalState }) {
         });
         if (ativo) {
           if (tipoInput) tipoInput.value = '';
-          if (urlInput) {
-            urlInput.hidden = true;
-            urlInput.disabled = true;
+          if (fileInput) {
+            fileInput.value = '';
+            fileInput.hidden = true;
+            fileInput.disabled = true;
           }
+          if (mediaHint) mediaHint.hidden = true;
         } else {
           b.classList.add('active');
           b.setAttribute('aria-pressed', 'true');
           if (tipoInput)
             tipoInput.value = b.getAttribute('data-wa-media') || '';
-          if (urlInput) {
-            urlInput.hidden = false;
-            urlInput.disabled = false;
-            urlInput.focus();
+          if (fileInput) {
+            fileInput.value = '';
+            fileInput.accept = messageAttachmentAccept(tipoInput.value);
+            fileInput.hidden = false;
+            fileInput.disabled = false;
+            fileInput.click();
           }
+          if (mediaHint) mediaHint.hidden = false;
         }
         if (attempted) validate();
       });

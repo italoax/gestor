@@ -1,6 +1,9 @@
 export function lerPlanoAdicional(value) {
   if (!value) return null;
-  return typeof value === 'string' ? JSON.parse(value) : value;
+  const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+  if (!parsed || typeof parsed !== 'object') return parsed;
+  const { idPainel: _legacyPanelId, ...plano } = parsed;
+  return plano;
 }
 // O catálogo e os preços vêm do cadastro, nunca do valor enviado pelo navegador.
 export async function escolhasRenovacao(cliente, buscarPlano) {
@@ -30,7 +33,6 @@ export async function escolhasRenovacao(cliente, buscarPlano) {
       vencimento: String(cliente.vencimento).slice(0, 10),
       telas: Number(cliente.telas),
       user: cliente.user || '',
-      idPainel: cliente.sigma_customer_id || '',
     },
     { ...segundo, ...adicional, chave: adicional.id },
   ];

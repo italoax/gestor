@@ -1,4 +1,15 @@
 import { Decimal } from 'decimal.js';
+const moneyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+const saoPauloDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Sao_Paulo',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 export function messagePreview(value: unknown, maxLength = 110) {
   // Slice por unidades UTF-16 pode cortar um emoji e gerar HTML diferente do cliente.
   const characters = Array.from(String(value || '').replace(/\s+/g, ' '));
@@ -9,9 +20,7 @@ export function messagePreview(value: unknown, maxLength = 110) {
 }
 export function formatMoney(value) {
   const decimal = new Decimal(Number(value ?? 0));
-  return decimal
-    .toNumber()
-    .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  return moneyFormatter.format(decimal.toNumber());
 }
 export function formatDateBr(value) {
   if (!value) return '-';
@@ -99,12 +108,7 @@ function dateOnlyMs(value) {
 // new Date().getDate() dava o dia ERRADO entre 21h e meia-noite SP (= 00h-03h UTC),
 // fazendo um cliente que vence "hoje" aparecer como "vence amanhã".
 function todayMsSaoPaulo(now) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(now);
+  const parts = saoPauloDateFormatter.formatToParts(now);
   const get = (type) =>
     Number(parts.find((p) => p.type === type)?.value ?? '0');
   return Date.UTC(get('year'), get('month') - 1, get('day'));

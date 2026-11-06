@@ -1,7 +1,7 @@
 import { ClientRow } from './ClientRow.tsx';
 import { Fragment } from 'react';
 import { Icon } from './ui.tsx';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { formatMoney } from '../../services/format.ts';
 import { sortClients } from './model.ts';
 import { PanelSearch } from '../components/PanelSearch.tsx';
@@ -49,8 +49,13 @@ export function ClientsList({
     () => sortClients(clientes, sort, sortNow),
     [clientes, sort, sortNow],
   );
-  const matches = (c) => matchesClientFilters(c, filterControl.filters, today);
-  const visible = clientesOrdenados.filter(matches);
+  const visible = useMemo(
+    () =>
+      clientesOrdenados.filter((client) =>
+        matchesClientFilters(client, filterControl.filters, today),
+      ),
+    [clientesOrdenados, filterControl.filters, today],
+  );
   const visibleIds = new Set(visible.map((client) => client.id));
   const selectedClients = clientesOrdenados.filter((client) =>
     selected.has(client.id),
@@ -63,12 +68,15 @@ export function ClientsList({
       selectAllCheckbox.current.indeterminate =
         selectedVisibleCount > 0 && selectedVisibleCount < visible.length;
   }, [selectedVisibleCount, visible.length]);
-  const selectRow = (id, checked) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      checked ? next.add(id) : next.delete(id);
-      return next;
-    });
+  const selectRow = useCallback(
+    (id, checked) =>
+      setSelected((prev) => {
+        const next = new Set(prev);
+        checked ? next.add(id) : next.delete(id);
+        return next;
+      }),
+    [],
+  );
   const selectAll = (checked) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -280,9 +288,9 @@ export function ClientsList({
                         planos,
                         servidores,
                         sortNow,
-                        selected,
+                        selected: selected.has(c.id),
+                        visible: visibleIds.has(c.id),
                         selectRow,
-                        matches,
                         csrfToken,
                         verArquivados,
                       }}

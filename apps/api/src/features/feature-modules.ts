@@ -6,7 +6,6 @@ import { AutomationModule } from './automation/automation.module.ts';
 import { WhatsappModule } from './whatsapp/whatsapp.module.ts';
 import { StatusModule } from './status/status.module.ts';
 import { PaymentSettingsModule } from './payment-settings/payment-settings.module.ts';
-import { IntegrationsModule } from './integrations/integrations.module.ts';
 import { PushModule } from './push/push.module.ts';
 import { NotificationsModule } from './notifications/notifications.module.ts';
 import { PortalModule } from './portal/portal.module.ts';
@@ -21,7 +20,6 @@ export const featureModules = [
   WhatsappModule,
   StatusModule,
   PaymentSettingsModule,
-  IntegrationsModule,
   PushModule,
   NotificationsModule,
   PortalModule,

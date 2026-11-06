@@ -1,7 +1,12 @@
+import { publicAssetUrl } from '../../lib/publicAssets.ts';
+
 export function PaymentUnavailable({ invalid = false }: { invalid?: boolean }) {
   return (
     <>
-      <link rel="stylesheet" href="/assets/css/native-payment.css" />
+      <link
+        rel="stylesheet"
+        href={publicAssetUrl('/assets/css/native-payment.css')}
+      />
       <div className="pay-wrap">
         <div className="pay-card">
           <div className="pay-body" style={{ textAlign: 'center' }}>

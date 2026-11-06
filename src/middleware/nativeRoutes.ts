@@ -51,7 +51,7 @@ export function installNativeRouteMiddleware(app) {
     sessionAction,
   );
   app.post(
-    ['/minha-conta/pix', '/integracao-pagamento', '/integracoes'],
+    ['/minha-conta/pix', '/integracao-pagamento'],
     requireAuth,
     sensitiveRateLimit,
     requireRecentAuthentication,

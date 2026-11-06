@@ -1,5 +1,5 @@
 window.gestorPageModules = window.gestorPageModules || {};
-window.gestorPageModules.initDateFields = function ({ setIconLabel }) {
+window.gestorPageModules.initDateFields = function ({ setIconLabel, on }) {
   const formatDateBrValue = (value, completeYear = false) => {
     const text = String(value || '').trim();
     const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -81,6 +81,7 @@ window.gestorPageModules.initDateFields = function ({ setIconLabel }) {
     e.preventDefault();
     const novo = value.slice(0, pos) + e.key + value.slice(pos + 1);
     input.value = novo;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     // Move caret pra depois do digito substituido, pulando separadores.
     let after = pos + 1;
     while (after < novo.length && !/\d/.test(novo[after]) && after < pos + 2)
@@ -153,26 +154,77 @@ window.gestorPageModules.initDateFields = function ({ setIconLabel }) {
         inp.dispatchEvent(new Event('blur', { bubbles: true }));
       });
     })(input);
-    input.addEventListener('input', () => applyDateMaskKeepCaret(input));
-    input.addEventListener('keydown', dateOvertypeKeydown(input));
-    input.addEventListener('paste', () =>
-      setTimeout(() => setDateInputValue(input, input.value), 0),
-    );
-    input.addEventListener('blur', () => {
-      setDateInputValue(input, input.value, true);
-      input.setCustomValidity(
-        isValidDateBrValue(input.value)
-          ? ''
-          : 'Use uma data válida em dd/mm/aaaa.',
-      );
-    });
-    input.addEventListener('invalid', () => {
-      input.setCustomValidity(
-        isValidDateBrValue(input.value)
-          ? ''
-          : 'Use uma data válida em dd/mm/aaaa.',
-      );
-    });
+  });
+
+  // Delegation includes fields added later by renewal forms and dialogs.
+  const maskedInput = (event: Event) =>
+    event.target instanceof HTMLInputElement &&
+    event.target.hasAttribute('data-date-mask')
+      ? event.target
+      : null;
+  on(
+    document,
+    'input',
+    (event) => {
+      const input = maskedInput(event);
+      if (input) applyDateMaskKeepCaret(input);
+    },
+    true,
+  );
+  on(
+    document,
+    'keydown',
+    (event) => {
+      const input = maskedInput(event);
+      if (input) dateOvertypeKeydown(input)(event);
+    },
+    true,
+  );
+  on(
+    document,
+    'blur',
+    (event) => {
+      const input = maskedInput(event);
+      if (input) {
+        setDateInputValue(input, input.value, true);
+        input.setCustomValidity(
+          isValidDateBrValue(input.value)
+            ? ''
+            : 'Use uma data válida em dd/mm/aaaa.',
+        );
+      }
+    },
+    true,
+  );
+  on(
+    document,
+    'invalid',
+    (event) => {
+      const input = maskedInput(event);
+      if (input)
+        input.setCustomValidity(
+          isValidDateBrValue(input.value)
+            ? ''
+            : 'Use uma data válida em dd/mm/aaaa.',
+        );
+    },
+    true,
+  );
+  on(document, 'click', (event) => {
+    const input = event.target;
+    if (
+      !(input instanceof HTMLInputElement) ||
+      !['date', 'datetime-local', 'month', 'week'].includes(input.type) ||
+      input.classList.contains('date-input-native') ||
+      input.matches(':disabled, [readonly]') ||
+      event.defaultPrevented
+    )
+      return;
+    try {
+      input.showPicker?.();
+    } catch {
+      // Keep the browser's default interaction when showPicker is unavailable.
+    }
   });
 
   return { setDateInputValue };

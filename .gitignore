@@ -3,6 +3,7 @@ dist/
 apps/web/.next/
 public/assets/js/react/
 /public/assets/js/
+/public/assets/css/**/*.min.css
 /public/sw.js
 /public/updates.json
 /apps/web/next-env.d.ts

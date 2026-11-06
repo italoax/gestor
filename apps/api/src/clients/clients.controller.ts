@@ -14,6 +14,7 @@ import { ClientMutationsService } from './client-mutations.service.ts';
 import { ClientsAuthGuard } from './clients.guard.ts';
 import { CatalogExceptionFilter } from '../catalogs/catalog.filter.ts';
 import { createClientPageData } from '../../../../src/services/clientPageData.ts';
+import { readClientMessageUpload } from '../../../../src/middleware/clientMessageUpload.ts';
 interface ClientsRequest extends Request {
   session: Request['session'] & {
     user: { id: number; name: string; isAdmin?: boolean };
@@ -60,9 +61,16 @@ export class ClientsController {
   }
   @Post('clientes')
   async save(@Req() request: ClientsRequest, @Res() response: Response) {
+    try {
+      await readClientMessageUpload(request, response);
+    } catch (error) {
+      request.flash('modal-error', (error as Error).message);
+      return response.redirect('/clientes');
+    }
     const result = await this.mutations.save(
       request.session.user.id,
       request.body ?? {},
+      request.file,
     );
     for (const notice of result.notices)
       request.flash(notice.type, notice.message);

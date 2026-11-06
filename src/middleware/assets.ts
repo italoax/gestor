@@ -7,7 +7,7 @@ export function installAssets(
   publicRoot,
   { development = false, uploadsRoot }: Record<string, any> = {},
 ) {
-  let assets = createAssetVersions(publicRoot);
+  let assets = createAssetVersions(publicRoot, { minifyStyles: !development });
   app.locals.assetUrl = (url) => assets.assetUrl(url);
   app.locals.serviceWorkerUrl = () => '/__pwa/worker?v=' + assets.cacheName;
   if (!development) {

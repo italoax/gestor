@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
-import { build, context, type BuildOptions } from 'esbuild';
+import { build, context, transform, type BuildOptions } from 'esbuild';
+import { buildStyles } from './build-styles.mts';
 import { projectRoot } from '../../src/config/paths.ts';
 import { writeReleaseNotes } from './release-notes.mts';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -8,14 +9,25 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 writeReleaseNotes();
 const development =
   process.argv.includes('--dev') || process.argv.includes('--watch');
+const styles = await buildStyles({ watch: process.argv.includes('--watch') });
 const vendorDirectory = path.join(projectRoot, 'public/assets/js/vendor');
 mkdirSync(path.join(vendorDirectory, 'maps'), { recursive: true });
 writeFileSync(
   path.join(vendorDirectory, 'chart.umd.js'),
-  readFileSync(
-    path.join(projectRoot, 'node_modules/chart.js/dist/chart.umd.js'),
-    'utf8',
-  ).replace(/^\/\/[#@]\s*sourceMappingURL=.*$/gm, ''),
+  (
+    await transform(
+      readFileSync(
+        path.join(projectRoot, 'node_modules/chart.js/dist/chart.umd.js'),
+        'utf8',
+      ),
+      {
+        loader: 'js',
+        minify: !development,
+        sourcemap: false,
+        legalComments: 'none',
+      },
+    )
+  ).code,
 );
 for (const map of ['brazil', 'world'])
   await build({
@@ -55,6 +67,7 @@ const classicEntries = [
   'pages/catalogs',
   'pages/automacao',
   'pages/mensagens',
+  'pages/whatsapp-messages',
 ].map((name) => path.join(sourceRoot, `${name}.ts`));
 const browserOptions: BuildOptions = {
   entryPoints: sources(sourceRoot).filter(
@@ -119,6 +132,7 @@ if (process.argv.includes('--watch')) {
       shell.dispose(),
       panel.dispose(),
       worker.dispose(),
+      styles?.dispose(),
     ]);
   };
   process.once('SIGINT', () => void stop());

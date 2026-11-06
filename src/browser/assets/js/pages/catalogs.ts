@@ -30,16 +30,6 @@ window.gestorPageModules.initCatalogs = function ({ setModalState }) {
         if (pCred) pCred.value = btn.getAttribute('data-creditos') || '0';
         const pAtivo = form.querySelector('[name="ativo"]') as HTMLInputElement;
         if (pAtivo) pAtivo.checked = btn.getAttribute('data-ativo') !== '0';
-        const pSigPkg = form.querySelector(
-          '[name="sigma_package_id"]',
-        ) as HTMLInputElement;
-        if (pSigPkg)
-          pSigPkg.value = btn.getAttribute('data-sigma-package-id') || '';
-        const pSigConn = form.querySelector(
-          '[name="sigma_connections"]',
-        ) as HTMLInputElement;
-        if (pSigConn)
-          pSigConn.value = btn.getAttribute('data-sigma-connections') || '1';
         const pTitulo = modal.querySelector('.modal-header h3') as HTMLElement;
         if (pTitulo) pTitulo.textContent = 'Editar plano';
         const pBtnEd = document.querySelector(

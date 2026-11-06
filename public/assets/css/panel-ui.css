@@ -1471,39 +1471,9 @@ html[data-theme='light'] .page-app .page-transacoes {
   width: 17px;
   height: 17px;
 }
-.page-app :is(.integ-head) {
-  gap: 16px;
-  margin: 0;
-  flex-wrap: wrap;
-}
-.page-app :is(.integ-head) p {
-  line-height: 1.5;
-}
-.page-app :is(.section-title, .integ-card-title, .dash-section-title) {
+.page-app :is(.section-title, .dash-section-title) {
   font-size: 16px;
   line-height: 1.5;
-}
-.page-app .app-content :is(.integ-head) {
-  padding: 0;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.page-app .app-content :is(.integ-head) :is(h2, h3) {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-.page-app .app-content :is(.integ-head) p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-.page-app .page-integracoes > .integ-card {
-  margin-top: 0;
 }
 
 /* Summary cards share the same reading order: label, value, supporting text. */
@@ -1613,7 +1583,6 @@ html[data-theme='light'] .page-app .page-transacoes {
   font-size: 14px;
   white-space: nowrap;
 }
-.page-app .app-content :is(.integ-head) > .btn,
 .page-app .auto-tabs .auto-new {
   min-height: 46px;
   padding: 12px 18px;
@@ -1875,7 +1844,6 @@ html[data-theme='light'] .page-app .page-transacoes {
   :is(
     .cli-table-card,
     .account-card,
-    .integ-card,
     .status-historico,
     .int-pag-card,
     .wa-device,
@@ -1889,7 +1857,7 @@ html[data-theme='light'] .page-app .page-transacoes {
   border-radius: var(--ui-radius);
   box-shadow: none;
 }
-.page-app :is(.table-wrapper, .auto-rule-body, .wa-device-info, .integ-info) {
+.page-app :is(.table-wrapper, .auto-rule-body, .wa-device-info) {
   min-width: 0;
 }
 .page-app :is(.cli-table-foot) {
@@ -1903,7 +1871,7 @@ html[data-theme='light'] .page-app .page-transacoes {
   min-height: 44px;
   border-radius: var(--ui-control-radius);
 }
-.page-app :is(.auto-list, .integ-list, .wa-list, .int-pag-grid, .status-list) {
+.page-app :is(.auto-list, .wa-list, .int-pag-grid, .status-list) {
   gap: var(--ui-card-gap);
 }
 .page-app .page-automacao .auto-list {
@@ -2257,17 +2225,6 @@ html[data-theme='light'] .page-app .page-transacoes {
 .page-app .wa-connect-btn:disabled:hover {
   filter: none;
 }
-.page-app .integ-item {
-  gap: 16px;
-  padding: 16px;
-}
-.page-app .integ-info {
-  overflow-wrap: anywhere;
-}
-.page-app .integ-acoes {
-  gap: 8px;
-  flex-wrap: wrap;
-}
 .page-app .dash-section {
   display: grid;
   gap: 16px;
@@ -2514,11 +2471,7 @@ html[data-theme='light'] .page-app .page-transacoes {
     min-height: 44px;
     height: 44px;
   }
-  .page-app :is(.integ-head) > .btn {
-    width: 100%;
-    justify-content: center;
-  }
-  .page-app :is(.account-card, .auto-rule, .wa-device, .integ-item) {
+  .page-app :is(.account-card, .auto-rule, .wa-device) {
     padding: 16px;
   }
   .page-app .tx-search {
@@ -3406,7 +3359,7 @@ html[data-theme='light'] .page-app .page-transacoes {
 .page-app :is(.srv-stat, .plano-metrics > div, .app-valor) strong {
   font-variant-numeric: tabular-nums;
 }
-.page-app :is(.account-card, .integ-item, .auto-rule) {
+.page-app :is(.account-card, .auto-rule) {
   min-width: 0;
 }
 .page-app .account-card p {
@@ -3503,10 +3456,6 @@ html[data-theme='light'] .page-app .page-transacoes {
   .page-app .push-state-row {
     flex-wrap: wrap;
     gap: 12px;
-  }
-  .page-app .integ-acoes {
-    width: 100%;
-    justify-content: flex-end;
   }
 }
 
@@ -3820,7 +3769,9 @@ html[data-theme='light'] .page-app .page-transacoes {
   white-space: nowrap;
 }
 @media (max-width: 360px) {
-  .page-app .renewal-editor .field:has(> input[data-date-mask]) {
+  .page-app
+    .renewal-editor
+    .field:has(> input[data-date-mask], > .date-input-wrap) {
     grid-column: 1 / -1;
   }
 }
@@ -5015,7 +4966,7 @@ html[data-theme='light'] .transaction-details {
   min-height: 0;
 }
 .page-app .delivery-preview-dialog .modal-header {
-  padding: 12px 18px;
+  padding: 8px 14px;
 }
 .page-app .delivery-preview-dialog .modal-header h3 {
   font-size: 17px;
@@ -5043,23 +4994,25 @@ html[data-theme='light'] .transaction-details {
   height: 20px;
 }
 .page-app .delivery-preview-dialog .delivery-preview {
-  padding: 16px 18px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
-.page-app .delivery-preview-dialog .delivery-preview-intro {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
+.page-app .delivery-preview-dialog .delivery-preview > * {
+  flex-shrink: 0;
+}
+.page-app .delivery-preview-dialog .delivery-preview-intro,
+.delivery-preview-rule > .delivery-preview-label,
+.delivery-preview-stat > small {
+  display: none;
 }
 .delivery-preview-config {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
+  gap: 10px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: color-mix(in srgb, var(--surface-2) 55%, var(--surface));
@@ -5068,7 +5021,7 @@ html[data-theme='light'] .transaction-details {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 7px;
+  gap: 4px;
   min-width: 0;
 }
 .delivery-preview-label {
@@ -5103,7 +5056,7 @@ html[data-theme='light'] .transaction-details {
   width: 165px;
   min-width: 0;
   margin: 0;
-  gap: 7px;
+  gap: 4px;
 }
 .page-app .delivery-preview-dialog .delivery-preview-toolbar .field > span {
   font-size: 12px;
@@ -5133,7 +5086,7 @@ html[data-theme='light'] .transaction-details {
 .delivery-preview-results {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .delivery-preview-section-heading {
@@ -5154,15 +5107,15 @@ html[data-theme='light'] .transaction-details {
 .delivery-preview-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 .delivery-preview-stat {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
@@ -5198,7 +5151,7 @@ html[data-theme='light'] .transaction-details {
   display: flex;
   align-items: center;
   gap: 7px;
-  width: 100%;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--muted);
@@ -5209,11 +5162,7 @@ html[data-theme='light'] .transaction-details {
   color: var(--stat-color);
 }
 .delivery-preview-stat-indicator {
-  width: 8px;
-  height: 8px;
-  margin-left: auto;
-  border-radius: 50%;
-  border: 1px solid var(--border);
+  display: none;
 }
 .delivery-preview-stat[aria-pressed='true'] .delivery-preview-stat-indicator {
   background: var(--stat-color);
@@ -5221,7 +5170,7 @@ html[data-theme='light'] .transaction-details {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--stat-color) 12%, transparent);
 }
 .delivery-preview-stat > strong {
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -5238,7 +5187,7 @@ html[data-theme='light'] .transaction-details {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 .delivery-preview-empty {
   display: flex;
@@ -5293,11 +5242,7 @@ html[data-theme='light'] .transaction-details {
 .delivery-preview-clients {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: min(280px, 34dvh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  gap: 6px;
 }
 .delivery-preview-client {
   border: 1px solid var(--border);
@@ -5313,8 +5258,9 @@ html[data-theme='light'] .transaction-details {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) auto 10px;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 8px;
+  padding: 8px 10px;
+  min-height: 44px;
   list-style: none;
   cursor: pointer;
 }
@@ -5375,18 +5321,18 @@ html[data-theme='light'] .transaction-details {
 .delivery-preview-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 0 16px 16px;
+  gap: 8px;
+  padding: 0 10px 10px;
 }
 .delivery-preview-message {
-  padding: 12px;
+  padding: 10px;
   border-radius: 4px 14px 14px;
   background: color-mix(in srgb, var(--primary) 5%, var(--surface-2));
   border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border));
 }
 .delivery-preview-message-label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   color: var(--muted);
   font-size: 10px;
   font-weight: 600;
@@ -5398,7 +5344,7 @@ html[data-theme='light'] .transaction-details {
   overflow-wrap: anywhere;
   font: inherit;
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.5;
   margin: 0;
 }
 .delivery-preview-message p {
@@ -5415,8 +5361,8 @@ html[data-theme='light'] .transaction-details {
 .delivery-preview-notes {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface-2) 45%, transparent);
   color: var(--muted);
@@ -5429,7 +5375,7 @@ html[data-theme='light'] .transaction-details {
 }
 .delivery-preview-notes strong {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   font-size: 12px;
   color: var(--text);
   font-weight: 600;
@@ -5438,10 +5384,10 @@ html[data-theme='light'] .transaction-details {
   margin: 0;
   padding-left: 15px;
   font-size: 11px;
-  line-height: 1.65;
+  line-height: 1.45;
 }
 .delivery-preview-notes li + li {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .delivery-preview-loading {
   display: flex;
@@ -5456,7 +5402,7 @@ html[data-theme='light'] .transaction-details {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 18px;
+  padding: 8px 14px;
   gap: 16px;
 }
 .delivery-preview-footer-note {
@@ -5478,7 +5424,7 @@ html[data-theme='light'] .transaction-details {
 @media (max-width: 700px) {
   .delivery-preview-config {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
   .delivery-preview-rule {
     display: grid;
@@ -5499,7 +5445,7 @@ html[data-theme='light'] .transaction-details {
 }
 @media (max-width: 480px) {
   .page-app .delivery-preview-dialog .modal-header {
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
   .page-app .delivery-preview-dialog .modal-header h3 {
     font-size: 16px;
@@ -5513,14 +5459,11 @@ html[data-theme='light'] .transaction-details {
     border-radius: 10px;
   }
   .page-app .delivery-preview-dialog .delivery-preview {
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 8px 12px;
+    gap: 8px;
   }
   .delivery-preview-config {
-    padding: 10px;
-  }
-  .delivery-preview-rule {
-    display: flex;
+    padding: 8px;
   }
   .delivery-preview-rule > strong {
     font-size: 14px;
@@ -5533,13 +5476,13 @@ html[data-theme='light'] .transaction-details {
     display: none;
   }
   .delivery-preview-summary {
-    gap: 10px;
+    gap: 8px;
   }
   .delivery-preview-stat {
-    padding: 10px 12px;
+    padding: 8px 10px;
   }
   .delivery-preview-stat > strong {
-    font-size: 24px;
+    font-size: 22px;
   }
   .delivery-preview-stat-top {
     font-size: 12px;
@@ -5559,35 +5502,31 @@ html[data-theme='light'] .transaction-details {
     padding: 14px;
   }
   .delivery-preview-client summary {
-    grid-template-columns: 32px minmax(0, 1fr) 10px;
-    gap: 10px;
-    padding: 14px;
+    grid-template-columns: 28px minmax(0, 1fr) auto 10px;
+    gap: 8px;
+    padding: 8px 10px;
   }
   .delivery-preview-avatar {
-    width: 32px;
-    height: 32px;
-    grid-row: 1/3;
+    width: 28px;
+    height: 28px;
   }
   .delivery-preview-client-badge {
-    grid-column: 2;
-    justify-self: start;
-    grid-row: 2;
+    padding: 4px 6px;
   }
   .delivery-preview-chevron {
-    grid-column: 3;
-    grid-row: 1/3;
+    grid-column: 4;
   }
   .delivery-preview-client-name small {
     display: none;
   }
   .delivery-preview-content {
-    padding: 0 12px 12px;
+    padding: 0 10px 10px;
   }
   .delivery-preview-message {
-    padding: 12px;
+    padding: 10px;
   }
   .page-app .delivery-preview-dialog .modal-footer {
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
   .page-app .delivery-preview-dialog .modal-footer .btn {
     flex: 0 0 auto;
@@ -5620,9 +5559,6 @@ html[data-theme='light'] .transaction-details {
   .delivery-preview-stat > small,
   .delivery-preview-empty-icon {
     display: none;
-  }
-  .delivery-preview-clients {
-    max-height: min(220px, 26dvh);
   }
   .delivery-preview-notes {
     padding: 8px 10px;

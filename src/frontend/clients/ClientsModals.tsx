@@ -1,5 +1,6 @@
 import { PanelFlashNotice } from '../../../apps/web/components/ui/PanelFlashNotice.tsx';
 import { Fragment } from 'react';
+import { DateInput } from '../components/DateInput.tsx';
 import { Icon, CsrfInput } from './ui.tsx';
 import { memo } from 'react';
 export const ClientsModals = memo(function ClientsModals({
@@ -50,6 +51,7 @@ export const ClientsModals = memo(function ClientsModals({
             method="post"
             action="/clientes"
             id="modal-send-whatsapp-form"
+            encType="multipart/form-data"
             className="modal-body"
             data-native-submit="1"
             noValidate
@@ -136,15 +138,17 @@ export const ClientsModals = memo(function ClientsModals({
                   </button>
                 </div>
                 <input
-                  className="input wa-media-url"
-                  type="url"
-                  name="media_url"
-                  aria-label="Link do anexo"
-                  aria-describedby="wa-media-error"
-                  placeholder="https://..."
+                  className="input wa-media-file"
+                  type="file"
+                  name="media_file"
+                  aria-label="Arquivo do anexo"
+                  aria-describedby="wa-media-hint wa-media-error"
                   hidden
                   disabled
                 />
+                <small className="muted" id="wa-media-hint" hidden>
+                  Selecione um arquivo de até 5 MB.
+                </small>
                 <small className="field-error" id="wa-media-error" />
               </div>
             </div>
@@ -417,11 +421,7 @@ export const ClientsModals = memo(function ClientsModals({
                       type="password"
                       name="senha"
                       maxLength={190}
-                      placeholder={
-                        clientForm.editing
-                          ? 'Clique em Mostrar para consultar'
-                          : undefined
-                      }
+                      placeholder={clientForm.editing ? '••••••••' : undefined}
                       autoComplete="off"
                       data-1p-ignore=""
                       data-lpignore="true"
@@ -455,17 +455,6 @@ export const ClientsModals = memo(function ClientsModals({
                     role="status"
                     aria-live="polite"
                   ></span>
-                  {clientForm.editing && (
-                    <small className="muted">
-                      Deixe em branco para manter ou digite uma nova senha.
-                    </small>
-                  )}
-                  {clientForm.editing && (
-                    <label>
-                      <input type="checkbox" name="limpar_senha" value="1" />{' '}
-                      Remover a senha atual
-                    </label>
-                  )}
                 </div>
 
                 <label
@@ -719,13 +708,12 @@ export const ClientsModals = memo(function ClientsModals({
                   </label>
                   <label className="field">
                     <span>Vencimento *</span>
-                    <input
+                    <DateInput
                       className={
                         clientForm.errors.vencimento
                           ? 'input input-error'
                           : 'input'
                       }
-                      type="text"
                       name="vencimento"
                       placeholder="dd/mm/aaaa"
                       inputMode="numeric"
@@ -951,7 +939,7 @@ export const ClientsModals = memo(function ClientsModals({
                   </label>
                 </div>
                 <details className="server-extra">
-                  <summary>Acesso e integração</summary>
+                  <summary>Acesso</summary>
                   <div className="client-fields">
                     <label className="field">
                       <span>Usuário</span>
@@ -962,19 +950,6 @@ export const ClientsModals = memo(function ClientsModals({
                             : 'input'
                         }
                         name="adicional_user"
-                        maxLength={120}
-                        disabled={!clientForm.additional}
-                      />
-                    </label>
-                    <label className="field full">
-                      <span>ID no painel Sigma</span>
-                      <input
-                        className={
-                          clientForm.errors.adicional_id_painel
-                            ? 'input input-error'
-                            : 'input'
-                        }
-                        name="adicional_id_painel"
                         maxLength={120}
                         disabled={!clientForm.additional}
                       />

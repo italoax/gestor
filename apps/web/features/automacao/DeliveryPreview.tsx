@@ -182,7 +182,7 @@ export function DeliveryPreview({
                       'elegiveis',
                       'Elegíveis',
                       'users',
-                      'Envios pendentes nesta data',
+                      'Clientes que atendem aos filtros',
                     ],
                     [
                       'ignorados',
@@ -211,8 +211,8 @@ export function DeliveryPreview({
                   ))}
                 </div>
                 <p className="delivery-preview-hint">
-                  A seleção considera os filtros da regra e os envios já
-                  registrados na data escolhida.
+                  A seleção considera os filtros da regra na data escolhida,
+                  incluindo quem já recebeu a mensagem.
                 </p>
                 {!result.clientes.length ? (
                   <div className="delivery-preview-empty">
@@ -228,7 +228,7 @@ export function DeliveryPreview({
                     </h4>
                     <p>
                       {group === 'elegiveis'
-                        ? 'Não há envios pendentes para os filtros dessa data.'
+                        ? 'Nenhum cliente atende aos filtros dessa data.'
                         : 'Todos os clientes analisados estão elegíveis para esta data.'}
                     </p>
                     {group === 'elegiveis' && result.resumo.ignorados > 0 && (

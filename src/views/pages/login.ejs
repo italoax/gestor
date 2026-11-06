@@ -1,7 +1,6 @@
 <% const isTwoFactor = typeof twoFactorRequired !== 'undefined' && twoFactorRequired; %>
 <link rel="stylesheet" href="<%= assetUrl('/assets/css/native-login.css') %>" />
 <main class="login-shell">
-  <div class="login-theme-control"><%- include('../partials/theme-selector') %></div>
   <section class="login-grid" aria-labelledby="login-title">
     <div class="login-brand">
       <div class="login-brand-top"
@@ -11,8 +10,6 @@
             width="828"
             height="350"
             alt="IXTV Streaming" /></span
-        ><span class="login-chip"
-          ><%- include('../partials/ui-icon', { name: 'shield' }) %>Acesso restrito</span
         ></div
       >
       <h1 id="login-title"> Gestor IXTV </h1>
@@ -48,7 +45,10 @@
     </div>
     <div class="login-card">
       <div class="login-card-header">
-        <span class="login-kicker"><%= isTwoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA' %></span>
+        <div class="login-card-heading">
+          <span class="login-kicker"><%= isTwoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA' %></span>
+          <span class="login-chip"><%- include('../partials/ui-icon', { name: 'shield' }) %>Acesso restrito</span>
+        </div>
         <h2><%= isTwoFactor ? 'Verificação em duas etapas' : 'Entrar no painel' %></h2>
         <p><%= isTwoFactor ? 'Digite o código do Google Authenticator ou um código de recuperação.' : 'Informe seu usuário e sua senha para continuar.' %></p>
       </div>

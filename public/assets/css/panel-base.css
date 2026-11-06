@@ -2115,7 +2115,7 @@
   color: var(--text);
   background: rgba(var(--accent-rgb), 0.12);
 }
-.wa-media-url {
+.wa-media-file {
   margin-top: 10px;
 }
 

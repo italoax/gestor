@@ -19,7 +19,9 @@ export function consultaDestinatariosCobranca(userId, regra, today) {
     FROM clientes WHERE user_id = :userId AND plano_adicional IS NOT NULL) acessos`;
   const tipo = String(regra.tipo).toLowerCase().trim();
   const params: Record<string, unknown> = { userId, today };
-  const conditions = [{ sql: "status = 'Ativo'", reason: 'Cliente inativo' }];
+  const conditions: { sql: string; reason: string; dateBased?: boolean }[] = [
+    { sql: "status = 'Ativo'", reason: 'Cliente inativo' },
+  ];
   const campanha = lerCampanha(regra.campanhaConfig);
   if (campanha) {
     const ids = campanha.clientesIds.map((id, index) => {
@@ -42,12 +44,14 @@ export function consultaDestinatariosCobranca(userId, regra, today) {
     conditions.push({
       sql: "DATEDIFF(:today, DATE(CONVERT_TZ(created_at, '+00:00', '-03:00'))) = :periodoCadastro",
       reason: 'Cadastro fora do período da regra',
+      dateBased: true,
     });
     params.periodoCadastro = Math.abs(Number(regra.periodo) || 0);
   } else if (regraPorVencimento(regra)) {
     conditions.push({
       sql: 'DATEDIFF(vencimento, :today) = :periodoAlvo',
       reason: 'Vencimento fora do período da regra',
+      dateBased: true,
     });
     const dias = Math.abs(Number(regra.periodo) || 0);
     params.periodoAlvo =

@@ -226,16 +226,6 @@ function CatalogEditor({
                 name="observacao"
                 value={item?.observacao ?? ''}
               />
-              <input
-                type="hidden"
-                name="sigma_package_id"
-                value={item?.sigmaPackageId ?? ''}
-              />
-              <input
-                type="hidden"
-                name="sigma_connections"
-                value={item?.sigmaConnections || 1}
-              />
               <label className="field">
                 <span>Unidade *</span>
                 <select

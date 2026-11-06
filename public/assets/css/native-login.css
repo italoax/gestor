@@ -133,6 +133,13 @@
   box-shadow: none;
   order: 0;
 }
+.login-card-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 .login-kicker {
   display: block;
   color: var(--primary);

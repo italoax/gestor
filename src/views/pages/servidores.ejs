@@ -45,7 +45,7 @@
   <div class="catalog-grid srv-grid">
     <% servidores.forEach(s => {
         // So renderizamos os campos que a UI realmente usa/edita. Campos legados
-        // (link_painel, cobranca_por_telas, integracao, renovacao_automatica,
+        // (cobranca_por_telas,
         // dispositivo_whatsapp, url_app_*, dns_*, url_api_*, epg, pix_*, url_renovacao)
         // seguem existindo no schema — o backend simplesmente grava NULL/0 neles.
         const editData = ` data-id="${s.id}" data-nome="${esc(s.nome)}"`

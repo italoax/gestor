@@ -4,7 +4,6 @@ import { PanelNotice } from '../../components/ui/PanelNotice.tsx';
 import { describeNoticeError } from '../../../../src/browser/assets/js/ui/panel-feedback.ts';
 import { Icon } from '../../../../src/frontend/clients/ui.tsx';
 import { publicAssetUrl } from '../../lib/publicAssets.ts';
-import { ThemeSelector } from '../../components/ui/ThemeSelector.tsx';
 
 export function LoginScreen({ data }: { data?: any }) {
   const [visible, setVisible] = useState(false);
@@ -98,9 +97,6 @@ export function LoginScreen({ data }: { data?: any }) {
         precedence="panel"
       />
       <main className="login-shell" data-react-page="login">
-        <div className="login-theme-control">
-          <ThemeSelector />
-        </div>
         <section className="login-grid" aria-labelledby="login-title">
           <div className="login-brand">
             <div className="login-brand-top">
@@ -111,10 +107,6 @@ export function LoginScreen({ data }: { data?: any }) {
                   height="350"
                   alt="IXTV Streaming"
                 />
-              </span>
-              <span className="login-chip">
-                <Icon name="shield" />
-                Acesso restrito
               </span>
             </div>
             <h1 id="login-title">Gestor IXTV</h1>
@@ -157,9 +149,15 @@ export function LoginScreen({ data }: { data?: any }) {
           </div>
           <div className="login-card">
             <div className="login-card-header">
-              <span className="login-kicker">
-                {twoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA'}
-              </span>
+              <div className="login-card-heading">
+                <span className="login-kicker">
+                  {twoFactor ? 'CONFIRMAÇÃO DE ACESSO' : 'BEM-VINDO DE VOLTA'}
+                </span>
+                <span className="login-chip">
+                  <Icon name="shield" />
+                  Acesso restrito
+                </span>
+              </div>
               <h2>
                 {twoFactor ? 'Verificação em duas etapas' : 'Entrar no painel'}
               </h2>

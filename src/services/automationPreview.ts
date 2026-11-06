@@ -115,26 +115,30 @@ export function createAutomationPreview({
       rule,
       date,
     );
-    Object.assign(params, {
-      regraId: id,
-      reservaData: dataReservaCampanha(rule.campanhaConfig, date),
-    });
+    const includeHistory = id > 0 && String(body.rascunho) !== '1';
+    if (includeHistory) {
+      params.regraId = id;
+      params.reservaData = dataReservaCampanha(rule.campanhaConfig, date);
+    }
+    // O vencimento pode mudar após o envio, por exemplo quando o cliente renova.
+    // O registro do mesmo acesso mantém o destinatário na prévia daquele dia.
+    const recorded = `EXISTS (SELECT 1 FROM cobrancas_envios ce
+      WHERE ce.cobranca_id=:regraId AND ce.cliente_id=acessos.id
+        AND ce.acesso_chave=${regraPorVencimento(rule) ? 'acessos.acessoChave' : "'principal'"}
+        AND ce.data_envio=:reservaData AND ce.status IN ('enviado','pendente'))`;
     const reasons = conditions
-      .map(({ sql, reason }, index) => {
+      .map(({ sql, reason, dateBased }, index) => {
         params['reason' + index] = reason;
-        return `WHEN NOT COALESCE((${sql}),0) THEN :reason${index}`;
+        const condition =
+          includeHistory && dateBased ? `(${sql}) OR ${recorded}` : sql;
+        return `WHEN NOT COALESCE((${condition}),0) THEN :reason${index}`;
       })
       .join(' ');
     const filtered = `SELECT acessos.*,CASE ${reasons} ELSE '' END AS motivoFiltro FROM ${source} WHERE user_id=:userId`;
-    const classified = `SELECT acessos.*,ce.status AS envioStatus,CASE WHEN motivoFiltro<>'' THEN motivoFiltro
-      WHEN ce.status='enviado' THEN 'Envio já confirmado nesta data'
-      WHEN ce.status='pendente' THEN 'Envio em andamento'
-      WHEN ce.status IN ('incerto','erro') THEN 'Envio anterior exige conferência no WhatsApp'
-      WHEN ce.status IS NOT NULL AND ce.status<>'nao_enviado' THEN 'Envio anterior bloqueia nova tentativa'
-      ELSE '' END AS motivo
-      FROM (${filtered}) acessos LEFT JOIN cobrancas_envios ce ON ce.cobranca_id=:regraId AND ce.cliente_id=acessos.id
-        AND ce.acesso_chave=${regraPorVencimento(rule) ? 'acessos.acessoChave' : "'principal'"} AND ce.data_envio=:reservaData
-      WHERE acessos.user_id=:userId`;
+    // Os demais filtros de cadastro continuam valendo para todos os acessos.
+    // As reservas e a prevenção de duplicidade pertencem à execução do envio.
+    const classified = `SELECT acessos.*,motivoFiltro AS motivo
+      FROM (${filtered}) acessos WHERE acessos.user_id=:userId`;
     const totals = await queryOne(
       `SELECT COUNT(*) AS total,COALESCE(SUM(disponivel),0) AS elegiveis FROM (
       SELECT id,MAX(motivo='') AS disponivel FROM (${classified}) classificados GROUP BY id) clientesPrevia`,

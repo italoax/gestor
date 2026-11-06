@@ -40,8 +40,6 @@ import {
   PROVIDER_NOMES,
   escolherProvedor,
 } from '../services/paymentProvider.ts';
-import { encryptSecret, decryptSecret } from '../services/crypto.ts';
-import { sigmaLogin } from '../services/sigma.ts';
 import { vapidPublicKey, pushDisponivel } from '../services/push.ts';
 import { publicHttpsUrl } from '../services/publicNetwork.ts';
 import {
@@ -69,7 +67,6 @@ import { getPixConfig } from '../services/pixConfig.ts';
 import { createWhatsappWorkflow } from './whatsapp.ts';
 import { createStatusWorkflow } from './status.ts';
 import { createPaymentSettingsWorkflow } from './payment-settings.ts';
-import { createIntegrationsWorkflow } from './integrations.ts';
 import { createPushWorkflow } from './push.ts';
 import { createNotificationsWorkflow } from './notifications.ts';
 import { createPortalWorkflow } from './portal.ts';
@@ -157,15 +154,6 @@ export function createDefaultFeatures() {
       salvarConfig,
       PROVIDER_LISTA,
       PROVIDER_NOMES,
-    }),
-    integrations: createIntegrationsWorkflow({
-      auditSecurity: recordSecurityEvent,
-      execute,
-      queryOne,
-      queryRows,
-      encryptSecret,
-      decryptSecret,
-      sigmaLogin,
     }),
     push: createPushWorkflow({
       execute,

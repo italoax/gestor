@@ -5,6 +5,7 @@ import type { AuthDependencies } from './auth/auth.types.ts';
 import type { PaymentWorkflow } from './payments/payments.types.ts';
 import type { FeatureWorkflows } from './features/workflow.types.ts';
 import type { SchedulerHealth } from '../../../src/shared/schedulerHealth.ts';
+import type { MessageAttachmentFile } from '../../../src/services/messageAttachment.ts';
 
 export const BACKEND_RUNTIME = Symbol('BACKEND_RUNTIME');
 export interface BackendRuntime {
@@ -21,6 +22,7 @@ export interface BackendRuntime {
   clientMutations?: (
     userId: number,
     body: Record<string, unknown>,
+    file?: MessageAttachmentFile,
   ) => Promise<{
     redirect: string;
     notices: { type: string; message: string }[];
